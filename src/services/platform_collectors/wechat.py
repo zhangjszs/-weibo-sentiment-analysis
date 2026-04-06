@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 import requests
 
-from .base import BasePlatformCollector, Platform, PlatformContent
+from .base import BasePlatformCollector, ContentType, Platform, PlatformContent
 
 
 class WechatCollector(BasePlatformCollector):
@@ -82,7 +82,7 @@ class WechatCollector(BasePlatformCollector):
             results.append(PlatformContent(
                 platform=self.platform,
                 content_id=f"wechat_{i}_{int(base_time.timestamp())}",
-                content_type=Platform.ContentType.ARTICLE,
+                content_type=ContentType.ARTICLE,
                 author_id=account[1],
                 author_name=account[0],
                 content=f"【{account[0]}】关于{keyword}的深度分析文章...",

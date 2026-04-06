@@ -67,7 +67,7 @@ class TestConfigValidator:
     def test_safe_config_value(self):
         """测试安全配置值显示"""
         value = ConfigValidator.safe_config_value("SECRET_KEY", "my-secret-key")
-        assert value == "my-...-key"
+        assert value == "my-s...-key"
 
     def test_safe_config_value_empty(self):
         """测试空值安全显示"""

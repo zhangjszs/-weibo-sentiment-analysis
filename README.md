@@ -125,7 +125,7 @@
 
 ### 环境要求
 
-- **Python** 3.8 - 3.12 
+- **Python** 3.8 - 3.12
 - **Node.js** 16+
 - **MySQL** 5.7+ (推荐，但也支持调整 SQLAlchemy 连接任何通用库)
 
@@ -140,11 +140,13 @@
 # 3. 直接在项目根目录运行
 .\start.bat
 ```
+
 `start.bat` 会自动为你同时拉起 Flask 后端（5000 端口）和 Vite 前端（3000 端口）。要停止服务，只需运行：`.\start.bat stop`。
 
 ### 🛠️ 手动分步启动
 
 **1. 后端 (Flask)**
+
 ```bash
 # 激活环境并安装依赖
 pip install -r requirements.txt
@@ -156,6 +158,7 @@ python run.py
 ```
 
 **2. 前端 (Vite/Vue)**
+
 ```bash
 cd frontend
 pnpm install
@@ -178,6 +181,7 @@ pnpm dev
 ### 🐳 全栈容器编排（前后端 + MySQL + Spider/NLP）
 
 项目根目录已提供 `docker-compose.yml`，可一键拉起：
+
 - `mysql`（业务库）
 - `redis`（队列/结果后端）
 - `web`（Flask 后端，5000）
@@ -190,6 +194,7 @@ docker compose up -d --build
 ```
 
 服务端口：
+
 - `3000`：前端
 - `5000`：后端 API
 - `3306`：MySQL
@@ -197,17 +202,20 @@ docker compose up -d --build
 - `8091`：NLP API
 
 如果只想启动 Spider/NLP 独立服务（主后端在宿主机运行）：
+
 ```bash
 docker compose up -d --build redis spider-api spider-worker nlp-api nlp-worker
 ```
 
 并在宿主机 `.env` 中开启并配置：
+
 - `SPIDER_SERVICE_ENABLED=True`
 - `SPIDER_SERVICE_BASE_URL=http://localhost:8090`
 - `NLP_SERVICE_ENABLED=True`
 - `NLP_SERVICE_BASE_URL=http://localhost:8091`
 
 停止容器：
+
 ```bash
 docker compose down
 ```
@@ -215,17 +223,20 @@ docker compose down
 ## 主要功能
 
 ### 数据采集
+
 - 微博文章爬取
 - 评论数据采集
 - 用户信息获取
 
 ### 数据分析
+
 - 情感分析（正面/中性/负面）
 - 热词提取
 - 地域分布分析
 - 时间趋势分析
 
 ### 数据可视化
+
 - 首页数据概览
 - 热词分析
 - 文章分析
@@ -324,5 +335,6 @@ ruff check src/
 ## 联系方式
 
 如有问题或建议，欢迎提交 Issue 或 Pull Request。
-#   - w e i b o - s e n t i m e n t - a n a l y s i s  
+#    - w e i b o - s e n t i m e n t - a n a l y s i s 
+ 
  

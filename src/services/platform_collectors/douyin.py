@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 import requests
 
-from .base import BasePlatformCollector, Platform, PlatformContent
+from .base import BasePlatformCollector, ContentType, Platform, PlatformContent
 
 
 class DouyinCollector(BasePlatformCollector):
@@ -59,7 +59,7 @@ class DouyinCollector(BasePlatformCollector):
             results.append(PlatformContent(
                 platform=self.platform,
                 content_id=f"douyin_{i}_{int(base_time.timestamp())}",
-                content_type=Platform.ContentType.VIDEO,
+                content_type=ContentType.VIDEO,
                 author_id=creator[1],
                 author_name=creator[0],
                 content=f"#{keyword} 带你了解最新的科技趋势！点击了解更多",

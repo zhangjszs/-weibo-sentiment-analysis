@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 import requests
 
-from .base import BasePlatformCollector, Platform, PlatformContent
+from .base import BasePlatformCollector, ContentType, Platform, PlatformContent
 
 
 class ZhihuCollector(BasePlatformCollector):
@@ -97,7 +97,7 @@ class ZhihuCollector(BasePlatformCollector):
             results.append(PlatformContent(
                 platform=self.platform,
                 content_id=f"zhihu_{i}_{int(base_time.timestamp())}",
-                content_type=Platform.ContentType.ANSWER,
+                content_type=ContentType.ANSWER,
                 author_id=author[1],
                 author_name=author[0],
                 content=f"关于{keyword}的问题，我认为需要从以下几个方面分析：首先...",

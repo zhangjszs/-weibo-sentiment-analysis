@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 
 import requests
 
-from .base import BasePlatformCollector, Platform, PlatformContent
+from .base import BasePlatformCollector, ContentType, Platform, PlatformContent
 
 
 class BilibiliCollector(BasePlatformCollector):
@@ -90,7 +90,7 @@ class BilibiliCollector(BasePlatformCollector):
             results.append(PlatformContent(
                 platform=self.platform,
                 content_id=f"BV1xx411x7{i:02d}",
-                content_type=Platform.ContentType.VIDEO,
+                content_type=ContentType.VIDEO,
                 author_id=up[1],
                 author_name=up[0],
                 content=f"【{up[0]}】{keyword}深度体验测评！",
