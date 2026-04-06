@@ -1,0 +1,74 @@
+# EditorConfig 跨编辑器配置
+# 确保团队成员使用一致的编码风格
+# https://editorconfig.org
+
+# 根配置
+root = true
+
+# ===== 所有文件的默认设置 =====
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# ===== Python 文件 =====
+[*.py]
+indent_style = space
+indent_size = 4
+max_line_length = 88
+
+# ===== JavaScript/TypeScript 文件 =====
+[*.{js,jsx,ts,tsx}]
+indent_style = space
+indent_size = 2
+
+# ===== CSS/SCSS 文件 =====
+[*.{css,scss,less}]
+indent_style = space
+indent_size = 2
+
+# ===== HTML 模板 =====
+[*.html]
+indent_style = space
+indent_size = 2
+
+# ===== JSON 文件 =====
+[*.json]
+indent_style = space
+indent_size = 2
+
+# ===== YAML 配置文件 =====
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+
+# ===== TOML 配置文件 =====
+[*.toml]
+indent_style = space
+indent_size = 4
+
+# ===== Markdown 文档 =====
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
+
+# ===== Makefile =====
+[Makefile]
+indent_style = tab
+
+# ===== Shell 脚本 =====
+[*.{sh,bash}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+
+# ===== Windows 批处理 =====
+[*.{bat,cmd}]
+end_of_line = crlf
+
+# ===== Git 配置 =====
+[.git*]
+indent_style = tab

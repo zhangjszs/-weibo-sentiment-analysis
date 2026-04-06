@@ -1,0 +1,991 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}首页{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/backend-plugin.min.css">
+    <link rel="stylesheet" href="/static/css/backend.css">
+    <meta name="referrer" content="no-referrer" />
+    <link rel="dns-prefetch" href="//h5.sinaimg.cn">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Base & Original Layout --- */
+        /* Custom styles for top navigation (Original Base) */
+        #top-nav-menu .nav-item .nav-link {
+            display: flex;
+            flex-direction: column;
+            /* Icon above text */
+            align-items: center;
+            /* Center items horizontally */
+            text-align: center;
+            /* === FIX: Button Shift - Standardize Padding & Add Transparent Border === */
+            padding-top: 10px;
+            padding-bottom: 10px;
+            padding-left: 18px;
+            /* Match hover/active horizontal padding */
+            padding-right: 18px;
+            /* Match hover/active horizontal padding */
+            border: 1px solid transparent;
+            /* Prevent shift if border added on hover elsewhere */
+            /* === FIX End === */
+            min-width: 100px;
+            /* Ensure items have some width */
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            /* Added border-color */
+            position: relative;
+            border-radius: 4px;
+            /* Base radius, hover/active overrides */
+            margin: 0 2px;
+            /* Base margin */
+        }
+
+        #top-nav-menu .nav-item .nav-link i {
+            margin-bottom: 5px;
+            /* Space between icon and text */
+            line-height: 1;
+        }
+
+        #top-nav-menu .nav-item .nav-link i svg {
+            width: 24px;
+            /* Adjust icon size */
+            height: 24px;
+            transition: stroke 0.3s ease;
+            /* Keep base transition */
+        }
+
+        #top-nav-menu .nav-item .nav-link span {
+            margin-left: 0 !important;
+            /* Remove default margin */
+            line-height: 1.2;
+            /* Adjust text line height */
+            font-size: 0.85em;
+            /* Adjust text size if needed */
+            font-family: inherit;
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+            font-weight: normal;
+            /* Default font weight */
+            text-shadow: none;
+        }
+
+        /* Ensure logo and controls have space (Original) */
+        .iq-navbar-custom .navbar-brand {
+            margin-right: 20px;
+            /* Add space after logo */
+            display: flex;
+            /* Align icon and text */
+            align-items: center;
+            /* Vertically center icon and text */
+        }
+
+        .iq-navbar-custom .navbar-toggler {
+            margin-left: 15px;
+            /* Space before toggler */
+        }
+
+        .navbar-collapse {
+            justify-content: space-between;
+            /* Space out nav sections */
+        }
+
+        /* Original Layout Fixes - Keep these */
+        .wrapper .content-page {
+            margin-left: 0 !important;
+            padding-left: 15px !important;
+            max-width: none !important;
+            width: auto !important;
+        }
+
+        .iq-top-navbar {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            max-width: none !important;
+            width: 100% !important;
+            left: 0 !important;
+        }
+
+        /* --- Start of Custom Theme --- */
+
+        /* 1. 全局背景和文字颜色 (Original) */
+        body {
+            background-color: #F0F8FF;
+            color: #333;
+        }
+
+        .content-page {
+            background-color: transparent;
+        }
+
+        /* 2. === Enhanced Navbar Style === */
+        .iq-navbar-custom {
+            /* Frosted Background */
+            background-color: rgba(0, 90, 160, 0.8);
+            /* Slightly deeper blue, 80% opacity */
+            -webkit-backdrop-filter: blur(14px);
+            /* Blur effect */
+            backdrop-filter: blur(14px);
+
+            /* Depth & Separation */
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            /* Subtle bottom border */
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+            /* Soft shadow */
+
+            /* Layout Properties (Keep Original) */
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        /* 2a. === Enhanced Navbar Logo & Title === */
+        /* Logo Image */
+        .iq-navbar-custom .navbar-brand img {
+            height: 40px;
+            /* Increased logo height */
+            width: auto;
+            vertical-align: middle;
+            /* Ensure alignment */
+            transition: transform 0.3s ease;
+            /* filter: drop-shadow(...) was removed from here */
+        }
+
+        /* Optional: Logo Hover effect */
+        /* .iq-navbar-custom .navbar-brand:hover img { transform: scale(1.05); } */
+
+        /* Logo Title Text */
+        .iq-navbar-custom .navbar-brand span {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            /* Keep bold */
+            font-size: 1.1em;
+            /* Keep size */
+            color: rgba(255, 255, 255, 0.95);
+            /* Brighter white */
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            /* Keep shadow */
+            background: none;
+            -webkit-background-clip: initial;
+            background-clip: initial;
+            display: inline-block;
+            padding: 2px 0;
+            margin-left: 10px;
+            /* Adjusted space from icon */
+            line-height: initial;
+        }
+
+        /* 2b. === Enhanced Nav Links - Default State === */
+        /* Default styles adjusted above for button shift fix */
+        #top-nav-menu .nav-item .nav-link {
+            color: #EAEAEA;
+            /* Slightly softer white */
+            /* Inherits padding, border etc. from the adjusted rule above */
+        }
+
+        #top-nav-menu .nav-item .nav-link span {
+            color: #EAEAEA;
+            /* Match link color */
+            /* Inherits other styles */
+        }
+
+        #top-nav-menu .nav-item .nav-link i svg {
+            stroke: #EAEAEA;
+            /* Softer white stroke for icons */
+        }
+
+        /* 2d. === Enhanced Nav Links - Hover State === */
+        #top-nav-menu .nav-item .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            /* Soft highlight */
+            color: #FFFFFF;
+            /* Bright white on hover */
+            border-radius: 20px;
+            /* Apply pill shape on hover */
+            border-color: transparent;
+            /* Keep border transparent */
+            /* Padding is consistent from default state */
+        }
+
+        #top-nav-menu .nav-item .nav-link:hover span {
+            color: #FFFFFF;
+        }
+
+        #top-nav-menu .nav-item .nav-link:hover i svg {
+            stroke: #FFFFFF;
+        }
+
+        /* 2e. === Enhanced Nav Links - Active State === */
+        #top-nav-menu .nav-item.active .nav-link {
+            background-color: rgba(255, 255, 255, 0.18);
+            /* Slightly stronger highlight */
+            color: #FFFFFF;
+            /* Bright white */
+            font-weight: 600;
+            /* Semibold weight */
+            border-radius: 20px;
+            /* Pill shape */
+            border-color: transparent;
+            /* Keep border transparent */
+            /* Padding is consistent from default state */
+        }
+
+        #top-nav-menu .nav-item.active .nav-link span {
+            color: #FFFFFF;
+            font-weight: 600;
+            /* Match weight */
+        }
+
+        #top-nav-menu .nav-item.active .nav-link i svg {
+            stroke: #FFFFFF;
+        }
+
+        /* 2f. === Enhanced User Name === */
+        .navbar-nav .nav-item .user-name {
+            color: #FFFFFF;
+            font-weight: 600;
+            /* Slightly bolder */
+        }
+
+        /* 2g. Navbar Dropdown Menu (Original) */
+        .dropdown-menu {
+            background-color: #FFFFFF;
+            border: 1px solid #B0E0E6;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-menu .dropdown-item a {
+            color: #0078D4;
+            transition: color 0.2s ease;
+        }
+
+        .dropdown-menu .dropdown-item:hover {
+            background-color: #E0F7FA;
+        }
+
+        .dropdown-menu .dropdown-item:hover a {
+            color: #005A9E;
+        }
+
+        /* 2h. Navbar Toggler Icon (Original) */
+        .iq-navbar-custom .navbar-toggler svg {
+            stroke: #FFFFFF;
+        }
+
+        /* 3. Content Area Styles (Original) */
+        .card {
+            background-color: #FFFFFF;
+            border: 1px solid #D6EAF8;
+            box-shadow: 0 1px 3px rgba(0, 120, 212, 0.1);
+            border-radius: 6px;
+            transition: box-shadow 0.3s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 120, 212, 0.15);
+        }
+
+        .content-page h4,
+        .card-header h4.card-title {
+            color: #005A9E;
+            font-weight: bold;
+        }
+
+        .card .text-secondary {
+            color: #6c757d;
+        }
+
+        .card h5.font-weight-bold {
+            color: #0078D4;
+        }
+
+        .card-body-list .list-item {
+            border-bottom: 1px solid #E8F5E9;
+            padding: 1rem;
+        }
+
+        .card-body-list .list-item:last-child {
+            border-bottom: none;
+        }
+
+        .list-style-detail p:first-child {
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+        }
+
+        .list-style-detail p.mb-0 {
+            color: #555;
+            width: auto;
+            text-overflow: initial;
+            white-space: normal;
+            overflow: initial;
+            max-width: 100%;
+        }
+
+        .list-style-action h6 {
+            color: #DC3545;
+            font-size: 0.9em;
+        }
+
+        .btn-secondary {
+            background-color: #0078D4;
+            border-color: #005A9E;
+            color: #FFFFFF;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-secondary:hover {
+            background-color: #005A9E;
+            border-color: #004578;
+            color: #FFFFFF;
+        }
+
+        /* --- End of Custom Theme --- */
+    </style>
+</head>
+
+<body class="">
+    <div class="wrapper">
+        <div class="iq-top-navbar">
+            <div class="iq-navbar-custom">
+                <nav class="navbar navbar-expand-lg navbar-light p-0">
+                    <a href="" class="navbar-brand">
+                        <img src="/static/image/my_logo.png" class="img-fluid rounded-normal" alt="logo"
+                            style="height: 60px; width: auto; margin-right: 10px;">
+
+                        <span>微博舆情数据分析</span>
+                    </a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse"
+                        data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                        aria-expanded="false" aria-label="Toggle navigation">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-secondary" width="30" fill="none"
+                            viewbox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 6h16M4 12h16m-7 6h7"></path>
+                        </svg>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        {% block nav %}
+                        <ul id="top-nav-menu" class="navbar-nav mr-auto">
+                            <li class="nav-item">
+                                <a href="/page/home" class="nav-link svg-icon">
+                                    <i class="">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>首页</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/tableData" class="nav-link collapsed svg-icon">
+                                    <i>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>热词统计</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/tableDataArticle" class="nav-link collapsed svg-icon">
+                                    <i>
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>微博舆情统计</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/articleChar" class="nav-link svg-icon">
+                                    <i class="">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>文章分析</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/ipChar" class="nav-link svg-icon">
+                                    <i class="">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>IP分析</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/commentChar" class="nav-link svg-icon">
+                                    <i class="">
+                                        <svg class="icon line" width="18" id="receipt"
+                                            xmlns="http://www.w3.org/2000/svg" viewbox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path
+                                                d="M17,16V3L13,5,10,3,7,5,3,3V17.83A3.13,3.13,0,0,0,5.84,21,3,3,0,0,0,9,18V17a1,1,0,0,1,1-1H20a1,1,0,0,1,1,1v1a3,3,0,0,1-3,3H6"
+                                                style="fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;">
+                                            </path>
+                                            <line x1="8" y1="10" x2="12" y2="10"
+                                                style="fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 2;">
+                                            </line>
+                                        </svg>
+                                    </i>
+                                    <span>评论分析</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/yuqingChar" class="nav-link svg-icon">
+                                    <i class="">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>舆情分析</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="/page/contentCloud" class="nav-link svg-icon">
+                                    <i class="">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                            viewbox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                                            </path>
+                                        </svg>
+                                    </i>
+                                    <span>文章内容词云图</span>
+                                </a>
+                            </li>
+                        </ul>
+                        {% endblock %}
+
+                        <ul class="navbar-nav ml-auto navbar-list align-items-center">
+                            <li class="nav-item">
+                                <div class="change-mode">
+                                    <div class="custom-control custom-switch custom-switch-icon custom-control-inline">
+                                        <div class="custom-switch-inner">
+                                            <p class="mb-0"> </p>
+                                            <input type="checkbox" class="custom-control-input" id="dark-mode"
+                                                data-active="true">
+                                            <label class="custom-control-label" for="dark-mode" data-mode="toggle">
+                                                <span class="switch-icon-right">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" id="h-moon" height="20"
+                                                        width="20" class="h-6 w-6" fill="none" viewbox="0 0 24 24"
+                                                        stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
+                                                        </path>
+                                                    </svg>
+                                                </span>
+                                                <span class="switch-icon-left">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" id="h-sun" height="20"
+                                                        width="20" class="h-6 w-6" fill="none" viewbox="0 0 24 24"
+                                                        stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2"
+                                                            d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
+                                                        </path>
+                                                    </svg>
+                                                </span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="nav-item nav-icon dropdown">
+                                <a href="#" class="nav-item nav-icon dropdown-toggle pr-0 search-toggle"
+                                    id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true"
+                                    aria-expanded="false">
+                                    <span class="mb-0 ml-2 user-name">{{ username }}</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
+                                    <li class="dropdown-item  d-flex svg-icon ">
+                                        <svg class="svg-icon mr-0 text-secondary" id="h-05-p" width="20"
+                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                                            </path>
+                                        </svg>
+                                        <a href="/user/login" onclick="SessionUtils.logout(); return false;">退出登录</a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            </div>
+        </div>
+
+        {% block content %}
+        <div class="content-page">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-12 mb-4 mt-1">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center">
+                            <h4 class="font-weight-bold">首页</h4>
+                            <button id="refreshBtn" class="btn btn-primary" onclick="refreshData()">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+                                    viewBox="0 0 16 16" style="margin-right: 5px;">
+                                    <path fill-rule="evenodd"
+                                        d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                                    <path
+                                        d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                                </svg>
+                                刷新数据
+                            </button>
+                        </div>
+                    </div>
+                    <!-- 今日统计卡片 -->
+                    <div class="col-lg-8 col-md-12">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #0078D4;">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="">
+                                                <p class="mb-2 text-secondary">总文章数</p>
+                                                <div class="d-flex flex-wrap justify-content-start align-items-center">
+                                                    <h5 class="mb-0 font-weight-bold">{{ articleLen }}篇</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #28a745;">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="">
+                                                <p class="mb-2 text-secondary">今日新增</p>
+                                                <div class="d-flex flex-wrap justify-content-start align-items-center">
+                                                    <h5 id="todayCount" class="mb-0 font-weight-bold">--</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #ffc107;">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="">
+                                                <p class="mb-2 text-secondary">最火作者</p>
+                                                <div class="d-flex flex-wrap justify-content-start align-items-center">
+                                                    <h5 class="mb-0 font-weight-bold" style="font-size: 0.9em;">{{
+                                                        maxLikeAuthorName }}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card" style="border-left: 4px solid #dc3545;">
+                                    <div class="card-body">
+                                        <div class="d-flex align-items-center">
+                                            <div class="">
+                                                <p class="mb-2 text-secondary">热门地区</p>
+                                                <div class="d-flex flex-wrap justify-content-start align-items-center">
+                                                    <h5 class="mb-0 font-weight-bold">{{ maxCity }}</h5>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                            <h4 class="font-weight-bold">文章发布时间分布</h4>
+                                            <span id="lastUpdate" class="text-muted" style="font-size: 0.85em;">最后更新:
+                                                --</span>
+                                        </div>
+                                        <div id="main" style="width:100%;height:350px">
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-8">
+                        <div class="card card-block card-stretch card-height">
+                            <div class="card-header card-header-border d-flex justify-content-between">
+                                <div class="header-title">
+                                    <h4 class="card-title">评论点赞量 Top Fore</h4>
+                                </div>
+                            </div>
+                            <div class="card-body-list">
+                                <ul class="list-style-3 mb-0">
+                                    {% for comment in topFiveComments %}
+                                    <li class="p-3 list-item d-flex justify-content-start align-items-center">
+                                        {# <div class="avatar">#}
+                                            {# <img class="avatar avatar-img avatar-60 rounded" src="{{ comment[8] }}"
+                                                alt="1.jpg">#}
+                                            {# </div>#}
+                                        <div class="list-style-detail mr-2">
+                                            <p>
+                                                🧑‍{{ comment[5] }}
+                                            </p>
+                                            <p class="mb-0"
+                                                style="color:#ccc;width:300px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden">
+                                                {{ comment[4] }}
+                                            </p>
+                                        </div>
+                                        <div class="list-style-action d-flex justify-content-end ml-auto">
+                                            <h6 class="font-weight-bold text-danger">
+                                                👍{{ comment[2] }}
+                                            </h6>
+                                        </div>
+                                    </li>
+                                    {% endfor %}
+                                </ul>
+                                <div class="d-flex justify-content-end align-items-center border-top-table p-3">
+                                    <a href="/page/tableData" class="btn btn-secondary btn-sm">查看全部</a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card card-block card-stretch card-height">
+                            <div class="card-header d-flex justify-content-between">
+                                <div class="header-title">
+                                    <h4 class="card-title">文章类型占比</h4>
+                                </div>
+                            </div>
+                            <div class="card-body p-10">
+                                <div id="mainTwo" style="width:100%;height:450px">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card card-block card-stretch card-height">
+                            <div class="card-header d-flex justify-content-between">
+                                <div class="header-title">
+                                    <h4 class="card-title">评论用户名词云图</h4>
+                                </div>
+                            </div>
+                            <div class="card-body p-10">
+                                <img style="width:100%" src="/static/authorNameCloud.jpg" alt="">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card card-block card-stretch card-height">
+                            <div class="card-header d-flex justify-content-between">
+                                <div class="header-title">
+                                    <h4 class="card-title">评论用户时间占比</h4>
+                                </div>
+                            </div>
+                            <div class="card-body p-10">
+                                <div id="mainThree" style="width:100%;height:450px">
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+    </div>
+
+    <script src="/static/echarts.min.js"></script>
+    <script src="/static/china.js"></script>
+
+    {% block echarts %}
+    <script>
+        var lineChart = document.getElementById('main');
+
+        var myCharts = echarts.init(lineChart, { width: 'auto', height: 350 }); // Adjust width to auto or specific value
+        var xData = {{ xData | tojson }}
+        var yData = {{ yData }};
+        var xRes = []
+        var yRes = []
+        for (var i = 0; i < 8; i++) {
+            xRes.push(xData[i])
+            yRes.push(yData[i])
+        }
+        var options = {
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {},
+            toolbox: {
+                show: true,
+                feature: {
+                    dataZoom: {
+                        yAxisIndex: 'none'
+                    },
+                    dataView: { readOnly: false },
+                    magicType: { type: ['line', 'bar'] },
+                    restore: {},
+                    saveAsImage: {}
+                }
+            },
+            xAxis: {
+                type: 'category',
+                data: xRes,
+                boundaryGap: false,
+
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [{
+                name: "日期个数",
+                data: yRes,
+                type: 'line',
+                smooth: true, // 圆润的折线
+                areaStyle: {
+                    color: 'rgba(0, 128, 255, 0.2)' // 添加阴影效果
+                },
+                lineStyle: {
+                    width: 5 // 设置较宽的折线
+                },
+                emphasis: {
+                    focus: 'series' // 高亮显示整个系列
+                }
+            }],
+            grid: { // Add grid configuration
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            }
+        };
+
+
+        let count = 8;
+        setInterval(() => {
+            if (count >= xData.length) count = 0
+            xRes.shift()
+            xRes.push(xData[count])
+            yRes.shift()
+            yRes.push(yData[count])
+            count++
+            myCharts.setOption({
+                xAxis: [{
+                    data: xRes
+                }],
+                series: [
+                    {
+                        data: yRes
+                    }
+                ]
+            })
+        }, 2000)
+        myCharts.setOption(options);
+        // Add resize listener
+        window.addEventListener('resize', function () {
+            myCharts.resize();
+        });
+    </script>
+    <script>
+        var chartDom = document.getElementById('mainTwo');
+        var myChart = echarts.init(chartDom);
+        var option;
+
+        option = {
+            title: {
+                // text: '各文章类型占比饼状图', // Title removed as per card header
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item'
+            },
+            legend: {
+                type: 'scroll', // Enable scrollable legend if many items
+                orient: 'vertical',
+                right: 10, // Position legend to the right
+                top: 20,
+                bottom: 20,
+                // left: 'left' // Original position
+            },
+            series: [
+                {
+                    name: '类型个数',
+                    type: 'pie',
+                    radius: '70%', // Increase radius
+                    center: ['40%', '50%'], // Adjust center to make space for legend
+                    data: {{ userCreatedDicData | tojson }},
+        emphasis: {
+            itemStyle: {
+                shadowBlur: 10,
+                    shadowOffsetX: 0,
+                        shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+        }
+                }
+              ]
+            };
+
+        option && myChart.setOption(option);
+        window.addEventListener('resize', function () { myChart.resize(); });
+    </script>
+    <script>
+        var chartDom = document.getElementById('mainThree');
+        var myChart = echarts.init(chartDom);
+        var option;
+
+        option = {
+            tooltip: {
+                trigger: 'item'
+            },
+            legend: {
+                type: 'scroll',
+                orient: 'vertical', // Vertical legend
+                right: 10, // Position to the right
+                top: 20,
+                bottom: 20,
+                // top: '5%', // Original position
+                // left: 'center', // Original position
+            },
+            series: [
+                {
+                    name: '用户发布微博个数',
+                    type: 'pie',
+                    radius: ['40%', '70%'], // Adjust radius for donut chart
+                    center: ['40%', '50%'], // Adjust center for legend
+                    avoidLabelOverlap: false,
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: 20, // Adjusted font size
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: {{ commentUserCreatedDicData | tojson }}
+                }
+              ]
+            };
+
+        option && myChart.setOption(option);
+        window.addEventListener('resize', function () { myChart.resize(); });
+    </script>
+
+    <!-- 刷新数据和今日统计功能 -->
+    <script>
+        // 加载今日统计
+        function loadTodayStats() {
+            fetch('/api/stats/today')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        document.getElementById('todayCount').textContent =
+                            (data.data.today_articles || 0) + '篇';
+                        if (data.data.latest_update) {
+                            document.getElementById('lastUpdate').textContent =
+                                '最后更新: ' + data.data.latest_update;
+                        }
+                    }
+                })
+                .catch(err => console.error('加载今日统计失败:', err));
+        }
+
+        // 刷新数据
+        function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            const originalText = btn.innerHTML;
+
+            // 显示加载状态
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 刷新中...';
+
+            fetch('/api/spider/refresh', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ page_num: 3 })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        alert('刷新成功！爬取 ' + data.data.crawled + ' 条数据');
+                        // 刷新页面以显示新数据
+                        location.reload();
+                    } else {
+                        alert('刷新失败: ' + data.msg);
+                    }
+                })
+                .catch(err => {
+                    alert('刷新失败: ' + err.message);
+                })
+                .finally(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                });
+        }
+
+        // 页面加载时获取今日统计
+        document.addEventListener('DOMContentLoaded', loadTodayStats);
+    </script>
+    {% endblock %}
+    <script src="/static/js/backend-bundle.min.js"></script>
+    <script src="/static/js/customizer.js"></script>
+    <script src="/static/js/flex-tree.min.js"></script>
+    <script src="/static/js/tree.js"></script>
+    <script src="/static/js/table-treeview.js"></script>
+    <script src="/static/js/sweetalert.js"></script>
+    <script src="/static/js/vector-map-custom.js"></script>
+    <script src="/static/js/chart-custom.js"></script>
+    <script src="/static/js/01.js"></script>
+    <script src="/static/js/02.js"></script>
+    <script src="/static/js/slider.js"></script>
+    <script src="/static/js/app.js"></script>
+
+    <!-- 会话管理器 - 自动处理会话超时和跳转 -->
+    <script src="/static/js/session-manager.js"></script>
+</body>
+
+</html>

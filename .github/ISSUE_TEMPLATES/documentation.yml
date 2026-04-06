@@ -1,0 +1,94 @@
+---
+name: 📚 文档改进
+description: 报告文档问题或建议改进
+title: "[Docs]: "
+labels: ["documentation"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📚 文档改进
+
+        帮助我们改进项目文档！
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: 文档类型
+      description: 您要改进哪种类型的文档？
+      options:
+        - README.md - 项目主要说明文档
+        - API 文档 - 接口使用说明
+        - 部署文档 - 安装部署指南
+        - 开发文档 - 开发者指南
+        - 其他文档
+    validations:
+      required: true
+
+  - type: input
+    id: doc-location
+    attributes:
+      label: 文档位置
+      description: 具体是哪个文件或页面？
+      placeholder: docs/api.md 或 README.md#安装说明
+
+  - type: textarea
+    id: current-state
+    attributes:
+      label: 当前状态
+      description: 当前文档的内容或状态
+      placeholder: 当前文档说的是...
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 存在的问题
+      description: 文档有什么问题或可以改进的地方？
+      placeholder: |
+        - 信息不完整
+        - 步骤不清楚
+        - 缺少示例
+        - 内容过时
+        - 其他问题...
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 改进建议
+      description: 您建议如何改进？
+      placeholder: |
+        我建议：
+        1. 添加...
+        2. 修改...
+        3. 补充...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      description: 这个文档改进的紧急程度？
+      options:
+        - 低 - 小问题，不影响理解
+        - 中 - 影响文档可用性
+        - 高 - 严重影响用户使用
+        - 紧急 - 导致用户无法完成任务
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 附加信息
+      description: 其他相关信息
+      placeholder: 截图、相关链接、具体示例等
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 检查清单
+      options:
+        - label: 我已经阅读了相关文档
+          required: true
+        - label: 这不是重复的文档改进请求
+          required: true
+        - label: 我愿意帮助改进这个文档（可选）
+          required: false

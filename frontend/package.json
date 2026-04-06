@@ -1,0 +1,34 @@
+{
+  "name": "weibo-analysis-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "axios": "^1.13.5",
+    "echarts": "^6.0.0",
+    "element-plus": "^2.13.2",
+    "pinia": "^3.0.4",
+    "sass": "^1.97.3",
+    "socket.io-client": "^4.8.1",
+    "vue": "^3.5.24",
+    "vue-draggable-plus": "^0.6.1",
+    "vue-echarts": "^8.0.1",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "prettier": "^3.3.3",
+    "vite": "^7.2.4"
+  }
+}

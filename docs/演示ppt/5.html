@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据分析与模型 - Slide 5 (Light/Blue/Split)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-border-color: #E5E7EB; /* gray-200 */
+            --section-card-bg: #FFFFFF; /* White cards for contrast */
+            --section-border-color: #D1D5DB; /* gray-300 */
+
+            /* Chrome Dark Gray */
+            --chrome-dark-gray: #303134;
+        }
+
+        /* --- Base Body Styles --- */
+        body {
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: var(--bg-color); /* Light Background */
+            color: var(--text-color-base); /* Default dark text */
+            overflow-x: hidden;
+        }
+
+        /* --- Utility Classes (Edge Blue) --- */
+        .text-edge-blue {
+            color: var(--edge-blue);
+        }
+
+        .border-edge-blue {
+            border-color: var(--edge-blue);
+        }
+
+        /* --- Main Title Styles (Character Split) --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2rem, 5vw, 4rem);
+            text-align: center;
+            border-bottom: 2px solid var(--card-border-color); /* Lighter border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            text-shadow: none; /* Remove shadow for light mode */
+            color: inherit; /* Let spans control color */
+        }
+
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Use Chrome dark gray */
+        }
+
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            animation: gradient-animation 4s linear infinite;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .en-label-small {
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+            color: var(--text-color-muted); /* Muted dark text color */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
+            display: block; /* Ensure block for margin/centering */
+        }
+
+        /* --- Gradient Animation Definition --- */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* --- General Animation --- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            opacity: 0;
+            animation: fadeInUp 0.7s ease-out forwards;
+        }
+
+        /* --- Section/Card Styles (Light Mode) --- */
+        .section-card {
+            background-color: var(--section-card-bg);
+            border: 1px solid var(--section-border-color); /* Add border */
+            border-radius: 1rem;
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+        }
+
+        .section-card:hover {
+            transform: translateY(-8px);
+            /* Edge Blue glow */
+            box-shadow: 0 10px 30px rgba(0, 161, 241, 0.2);
+        }
+
+        .section-title {
+            color: var(--text-color-base);
+        }
+
+        /* Dark section title */
+        .section-title i {
+            color: var(--edge-blue);
+        }
+
+        /* Blue icon */
+
+        .analysis-method {
+        }
+
+        .method-icon {
+            color: var(--edge-blue); /* Blue icon */
+            background-color: #eef2ff; /* Light blue-gray background */
+        }
+
+        .method-title {
+            color: var(--text-color-base);
+        }
+
+        /* Dark method title */
+        .method-desc {
+            color: var(--text-color-muted);
+            line-height: 1.6;
+        }
+
+        /* Muted method desc */
+
+        .chart-container {
+            position: relative;
+        }
+
+        .tools-group-title {
+            color: var(--text-color-base); /* Dark group title */
+            border-bottom: 1px solid var(--card-border-color); /* Lighter border */
+            padding-bottom: 0.5rem;
+        }
+
+        .tool-pill {
+            background-color: #e5e7eb; /* Light gray background */
+            border-radius: 9999px;
+            color: var(--text-color-muted); /* Muted text */
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .tool-pill:hover {
+            background-color: #d1d5db; /* Darker gray on hover */
+            transform: translateY(-3px);
+            color: var(--text-color-base); /* Darker text */
+        }
+
+        .tool-pill i {
+            color: var(--edge-blue);
+            margin-right: 0.5rem;
+        }
+
+        /* Blue icon */
+
+        .model-card {
+            background-color: var(--card-bg-color); /* Light gray background */
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--card-border-color); /* Light border */
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .model-card:hover {
+            background-color: #e5e7eb; /* Darker gray on hover */
+            transform: translateY(-5px);
+            border-color: var(--edge-blue); /* Blue border */
+        }
+
+        .model-icon i {
+            color: var(--edge-blue);
+        }
+
+        /* Blue icon */
+        .model-name {
+            color: var(--text-color-base);
+        }
+
+        /* Dark name */
+        .model-desc {
+            color: var(--text-color-muted);
+            line-height: 1.5;
+        }
+
+        /* Muted desc */
+
+        /* Navigation Styles (Light Mode - Blue) */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2);
+        }
+
+        .nav-button:hover {
+            background-color: var(--edge-blue-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3);
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd;
+            color: #6c757d;
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+        .point-icon {
+            padding-top: 0.2rem;
+        }
+
+    </style>
+</head>
+
+<body class="">
+<div class="slide min-h-screen flex items-center justify-center p-6 md:p-12">
+    <div class="content w-full max-w-7xl mx-auto">
+
+        <h1 class="main-title animate-fadeInUp">
+            <span class="title-black-part">数据分析</span><span class="title-gradient-part">与模型</span>
+            <span class="block en-label-small text-color-muted mt-2">Data Analysis & Modeling</span>
+        </h1>
+
+        <div class="sections-container flex flex-col lg:flex-row gap-8 md:gap-10">
+
+            <div class="section section-card flex-1 p-8 animate-fadeInUp" style="animation-delay: 0.2s;">
+                <div class="section-title text-3xl md:text-4xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-chart-bar text-edge-blue text-3xl md:text-4xl mr-4"></i> 数据分析方法
+                </div>
+                <div class="space-y-6">
+                    <div class="analysis-method flex items-start gap-4">
+                        <div class="method-icon text-2xl md:text-3xl w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-fire-alt"></i>
+                        </div>
+                        <div class="method-content flex-1">
+                            <div class="method-title text-lg md:text-xl font-semibold mb-1">频次分析</div>
+                            <div class="method-desc text-base">
+                                通过统计关键词和话题的出现频次，评估话题热度，了解公众关注焦点。分析用户互动数据，评估用户参与度和话题影响力。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="analysis-method flex items-start gap-4">
+                        <div class="method-icon text-2xl md:text-3xl w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center">
+                            <i class="far fa-smile"></i>
+                        </div>
+                        <div class="method-content flex-1">
+                            <div class="method-title text-lg md:text-xl font-semibold mb-1">情感倾向分析</div>
+                            <div class="method-desc text-base">
+                                运用自然语言处理技术，对微博文本进行情感分类，判断情感倾向。帮助了解公众对事件的态度，为舆情应对提供参考。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="analysis-method flex items-start gap-4">
+                        <div class="method-icon text-2xl md:text-3xl w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="method-content flex-1">
+                            <div class="method-title text-lg md:text-xl font-semibold mb-1">时间序列分析</div>
+                            <div class="method-desc text-base">
+                                预测话题热度随时间的变化趋势，提前预警舆情危机。通过分析历史数据，为舆情应对提供时间窗口。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container mt-8 min-h-[280px] md:min-h-[320px]">
+                    <canvas id="analysisChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section section-card flex-1 p-8 animate-fadeInUp" style="animation-delay: 0.4s;">
+                <div class="section-title text-3xl md:text-4xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-tools text-edge-blue text-3xl md:text-4xl mr-4"></i> 使用的工具与库
+                </div>
+                <div class="tools-container flex flex-col space-y-8">
+                    <div class="tools-group">
+                        <div class="tools-group-title text-xl font-semibold mb-4">Python数据处理库</div>
+                        <div class="tools-pills flex flex-wrap gap-3">
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fab fa-python"></i> Pandas</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-calculator"></i> NumPy</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-language"></i> jieba分词</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-comment-dots"></i> TextBlob</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-code"></i> NLTK</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-chart-area"></i> Matplotlib</div>
+                        </div>
+                    </div>
+                    <div class="tools-group">
+                        <div class="tools-group-title text-xl font-semibold mb-4">情感分析模型</div>
+                        <div class="ml-models grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="model-card p-5">
+                                <div class="model-icon text-4xl mb-3"><i class="fas fa-vector-square"></i></div>
+                                <div class="model-name text-lg font-semibold mb-1">支持向量机 (SVM)</div>
+                                <div class="model-desc text-sm">
+                                    高效的二分类模型，适用于高维特征空间，具有很好的泛化能力。
+                                </div>
+                            </div>
+                            <div class="model-card p-5">
+                                <div class="model-icon text-4xl mb-3"><i class="fas fa-percentage"></i></div>
+                                <div class="model-name text-lg font-semibold mb-1">朴素贝叶斯</div>
+                                <div class="model-desc text-sm">
+                                    基于概率理论的分类器，训练速度快，在文本分类任务中表现出色。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="tools-group">
+                        <div class="tools-group-title text-xl font-semibold mb-4">深度学习框架</div>
+                        <div class="tools-pills flex flex-wrap gap-3">
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-brain"></i> TensorFlow</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-fire"></i> PyTorch</div>
+                            <div class="tool-pill px-4 py-1 text-sm"><i class="fas fa-network-wired"></i> Keras</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
+    <a href="4.html" class="nav-button prev-button">上一页</a>
+    <a href="6.html" class="nav-button next-button">下一页</a>
+</div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const canvasElement = document.getElementById('analysisChart');
+        if (canvasElement) {
+            const ctx = canvasElement.getContext('2d');
+
+            // Updated colors for Light Mode Chart
+            const gridColor = 'rgba(0, 0, 0, 0.1)';         // Light gray grid
+            const labelColor = 'rgba(0, 0, 0, 0.7)';        // Dark gray labels
+            const pointLabelColor = 'rgba(0, 0, 0, 0.85)';  // Darker point labels
+            const tickColor = 'rgba(0, 0, 0, 0.6)';         // Dark gray ticks
+            const edgeBlue = getComputedStyle(document.documentElement).getPropertyValue('--edge-blue').trim() || '#00A1F1'; // Get blue from CSS
+            const accentBlue = '#36A2EB'; // Keep second blue distinct
+            const pointBorderColor = '#ffffff'; // White borders often look ok
+            const tooltipBgColor = 'rgba(255, 255, 255, 0.9)'; // Light tooltip bg
+            const tooltipTextColor = '#333333'; // Dark tooltip text
+
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['正面识别', '负面识别', '中性识别', '情感强度', '准确率', '处理速度'],
+                    datasets: [{
+                        label: 'SVM模型',
+                        data: [85, 82, 75, 68, 83, 79],
+                        backgroundColor: 'rgba(0, 161, 241, 0.2)', // Use Edge Blue rgba
+                        borderColor: edgeBlue,
+                        pointBackgroundColor: edgeBlue,
+                        pointBorderColor: pointBorderColor,
+                        pointHoverBackgroundColor: pointBorderColor,
+                        pointHoverBorderColor: edgeBlue,
+                        borderWidth: 2,
+                    }, {
+                        label: '朴素贝叶斯模型',
+                        data: [78, 80, 82, 65, 79, 90],
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)', // Keep accent blue rgba
+                        borderColor: accentBlue,
+                        pointBackgroundColor: accentBlue,
+                        pointBorderColor: pointBorderColor,
+                        pointHoverBackgroundColor: pointBorderColor,
+                        pointHoverBorderColor: accentBlue,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: {color: gridColor},
+                            grid: {color: gridColor},
+                            pointLabels: {color: pointLabelColor, font: {size: 11}},
+                            ticks: {
+                                backdropColor: 'transparent',
+                                color: tickColor,
+                                stepSize: 20,
+                                font: {size: 10}
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {color: labelColor, font: {size: 12}}
+                        },
+                        tooltip: {
+                            backgroundColor: tooltipBgColor,
+                            titleColor: tooltipTextColor,
+                            bodyColor: tooltipTextColor,
+                            padding: 10,
+                            cornerRadius: 4,
+                            titleFont: {weight: 'bold'},
+                            bodyFont: {size: 11}
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error("Canvas element #analysisChart not found.");
+        }
+    });
+</script>
+
+<script> // Navigation script unchanged
+const prevSlideURL = '4.html';
+const nextSlideURL = '6.html';
+
+function navigateTo(url) {
+    if (url) {
+        window.location.href = url;
+    }
+}
+
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+        navigateTo(prevSlideURL);
+    } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+        navigateTo(nextSlideURL);
+    }
+});
+const prevButton = document.querySelector('.prev-button');
+const nextButton = document.querySelector('.next-button');
+if (prevButton) {
+    prevButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        navigateTo(prevSlideURL);
+    });
+}
+if (nextButton) {
+    if (nextSlideURL) {
+        nextButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(nextSlideURL);
+        });
+    } else {
+        nextButton.classList.add('disabled');
+        nextButton.href = '#';
+    }
+}
+</script>
+</body>
+</html>

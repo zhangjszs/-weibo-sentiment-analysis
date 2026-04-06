@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+   <title>系统错误 | 微博舆情分析系统</title>
+   <meta name="description" content="系统错误页面 - 微博舆情分析可视化系统">
+
+   <!-- 引入原有样式 -->
+   <link rel="stylesheet" href="/static/css/backend-plugin.min.css">
+   <link rel="stylesheet" href="/static/css/backend.css">
+
+   <!-- 添加自定义样式 -->
+   <style>
+      body {
+         background: linear-gradient(135deg, #e74c3c 0%, #c0392b 50%, #8e44ad 100%);
+         font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+         min-height: 100vh;
+         overflow-x: hidden;
+      }
+
+      .error-container {
+         min-height: 100vh;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         position: relative;
+         padding: 20px;
+      }
+
+      .error-card {
+         background: rgba(255, 255, 255, 0.1);
+         backdrop-filter: blur(20px);
+         border-radius: 25px;
+         padding: 60px 40px;
+         text-align: center;
+         color: white;
+         box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+         border: 1px solid rgba(255, 255, 255, 0.2);
+         max-width: 600px;
+         width: 100%;
+         animation: slideInUp 0.8s ease-out;
+         position: relative;
+         overflow: hidden;
+      }
+
+      .error-card::before {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: -100%;
+         width: 100%;
+         height: 100%;
+         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+         animation: shine 3s infinite;
+      }
+
+      .error-icon {
+         width: 120px;
+         height: 120px;
+         margin: 0 auto 30px;
+         background: linear-gradient(45deg, #ff6b6b, #feca57);
+         border-radius: 50%;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         box-shadow: 0 15px 35px rgba(255, 107, 107, 0.3);
+         animation: pulse 2s ease-in-out infinite;
+      }
+
+      .error-icon svg {
+         width: 60px;
+         height: 60px;
+         color: white;
+      }
+
+      .error-title {
+         font-size: 2.5rem;
+         margin: 20px 0;
+         font-weight: 300;
+         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+         background: linear-gradient(45deg, #ffffff, #f8f9fa);
+         background-clip: text;
+         -webkit-background-clip: text;
+         -webkit-text-fill-color: transparent;
+      }
+
+      .error-message {
+         font-size: 1.3rem;
+         margin-bottom: 15px;
+         opacity: 0.95;
+         font-weight: 500;
+         color: #ffeb3b;
+         text-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
+      }
+
+      .error-subtitle {
+         font-size: 1rem;
+         margin-bottom: 40px;
+         opacity: 0.8;
+         line-height: 1.6;
+      }
+
+      .action-buttons {
+         display: flex;
+         gap: 20px;
+         justify-content: center;
+         flex-wrap: wrap;
+      }
+
+      .action-button {
+         background: linear-gradient(45deg, #ff6b6b, #feca57);
+         border: none;
+         padding: 15px 25px;
+         border-radius: 50px;
+         color: white;
+         font-size: 1rem;
+         font-weight: 500;
+         text-decoration: none;
+         display: inline-flex;
+         align-items: center;
+         gap: 8px;
+         transition: all 0.3s ease;
+         box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+         position: relative;
+         overflow: hidden;
+         min-width: 140px;
+         justify-content: center;
+      }
+
+      .action-button.secondary {
+         background: linear-gradient(45deg, #6c5ce7, #74b9ff);
+         box-shadow: 0 8px 25px rgba(108, 92, 231, 0.3);
+      }
+
+      .action-button::before {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: -100%;
+         width: 100%;
+         height: 100%;
+         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+         transition: left 0.5s;
+      }
+
+      .action-button:hover {
+         transform: translateY(-3px);
+         box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+         text-decoration: none;
+         color: white;
+      }
+
+      .action-button.secondary:hover {
+         box-shadow: 0 12px 35px rgba(108, 92, 231, 0.4);
+      }
+
+      .action-button:hover::before {
+         left: 100%;
+      }
+
+      .floating-particles {
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         pointer-events: none;
+         overflow: hidden;
+      }
+
+      .particle {
+         position: absolute;
+         background: rgba(255, 255, 255, 0.1);
+         border-radius: 50%;
+         animation: floatParticle 8s ease-in-out infinite;
+      }
+
+      .particle:nth-child(1) {
+         width: 6px;
+         height: 6px;
+         top: 20%;
+         left: 10%;
+         animation-delay: 0s;
+      }
+
+      .particle:nth-child(2) {
+         width: 8px;
+         height: 8px;
+         top: 80%;
+         left: 80%;
+         animation-delay: 2s;
+      }
+
+      .particle:nth-child(3) {
+         width: 4px;
+         height: 4px;
+         top: 40%;
+         left: 90%;
+         animation-delay: 4s;
+      }
+
+      .particle:nth-child(4) {
+         width: 10px;
+         height: 10px;
+         top: 70%;
+         left: 20%;
+         animation-delay: 1s;
+      }
+
+      .particle:nth-child(5) {
+         width: 5px;
+         height: 5px;
+         top: 30%;
+         left: 70%;
+         animation-delay: 3s;
+      }
+
+      .particle:nth-child(6) {
+         width: 7px;
+         height: 7px;
+         top: 60%;
+         left: 50%;
+         animation-delay: 5s;
+      }
+
+      @keyframes slideInUp {
+         from {
+            opacity: 0;
+            transform: translateY(50px) scale(0.9);
+         }
+
+         to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+         }
+      }
+
+      @keyframes pulse {
+
+         0%,
+         100% {
+            transform: scale(1);
+         }
+
+         50% {
+            transform: scale(1.05);
+         }
+      }
+
+      @keyframes shine {
+         0% {
+            left: -100%;
+         }
+
+         100% {
+            left: 100%;
+         }
+      }
+
+      @keyframes floatParticle {
+
+         0%,
+         100% {
+            transform: translateY(0) rotate(0deg);
+            opacity: 0.3;
+         }
+
+         25% {
+            transform: translateY(-20px) rotate(90deg);
+            opacity: 0.8;
+         }
+
+         50% {
+            transform: translateY(-40px) rotate(180deg);
+            opacity: 0.5;
+         }
+
+         75% {
+            transform: translateY(-20px) rotate(270deg);
+            opacity: 0.8;
+         }
+      }
+
+      @media (max-width: 768px) {
+         .error-card {
+            padding: 40px 20px;
+            margin: 20px;
+         }
+
+         .error-title {
+            font-size: 2rem;
+         }
+
+         .error-message {
+            font-size: 1.1rem;
+         }
+
+         .action-buttons {
+            flex-direction: column;
+            align-items: center;
+         }
+
+         .action-button {
+            width: 100%;
+            max-width: 250px;
+         }
+      }
+   </style>
+</head>
+
+<body>
+   <div class="error-container">
+      <div class="floating-particles">
+         <div class="particle"></div>
+         <div class="particle"></div>
+         <div class="particle"></div>
+         <div class="particle"></div>
+         <div class="particle"></div>
+         <div class="particle"></div>
+      </div>
+
+      <div class="error-card">
+         <div class="error-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+               <path
+                  d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+         </div>
+
+         <h1 class="error-title">系统出现错误</h1>
+         <p class="error-message">{{ errorMsg if errorMsg else '抱歉，系统遇到了一个未知错误' }}</p>
+         <p class="error-subtitle">
+            我们已经记录了这个问题，技术团队正在处理中。<br>
+            您可以尝试刷新页面或返回登录页面重新开始。
+         </p>
+
+         <div class="action-buttons">
+            <a href="javascript:location.reload()" class="action-button secondary">
+               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M1 4V10H7M23 20V14H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" />
+                  <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10M3.51 15A9 9 0 0 0 18.36 18.36L23 14" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+               </svg>
+               刷新页面
+            </a>
+            <a href="/user/login" class="action-button">
+               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                     d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                  <path d="M9 22V12H15V22" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                     stroke-linejoin="round" />
+               </svg>
+               返回首页
+            </a>
+         </div>
+      </div>
+   </div>
+
+   <!-- 原有脚本保留以确保兼容性 -->
+   <script src="/static/js/backend-bundle.min.js"></script>
+   <script src="/static/js/customizer.js"></script>
+   <script src="/static/js/sidebar.js"></script>
+   <script src="/static/js/flex-tree.min.js"></script>
+   <script src="/static/js/tree.js"></script>
+   <script src="/static/js/table-treeview.js"></script>
+   <script src="/static/js/sweetalert.js"></script>
+   <script src="/static/js/vector-map-custom.js"></script>
+   <script src="/static/js/chart-custom.js"></script>
+   <script src="/static/js/01.js"></script>
+   <script src="/static/js/02.js"></script>
+   <script src="/static/js/slider.js"></script>
+   <script src="/static/js/app.js"></script>
+
+   <!-- 添加自定义交互脚本 -->
+   <script>
+      // 添加鼠标移动视差效果
+      document.addEventListener('mousemove', function (e) {
+         const particles = document.querySelectorAll('.particle');
+         const mouseX = e.clientX / window.innerWidth;
+         const mouseY = e.clientY / window.innerHeight;
+
+         particles.forEach((particle, index) => {
+            const speed = (index + 1) * 0.015;
+            const x = (mouseX - 0.5) * speed * 50;
+            const y = (mouseY - 0.5) * speed * 50;
+            particle.style.transform = `translate(${x}px, ${y}px)`;
+         });
+
+         // 卡片轻微倾斜效果
+         const card = document.querySelector('.error-card');
+         const tiltX = (mouseY - 0.5) * 5;
+         const tiltY = (mouseX - 0.5) * -5;
+         card.style.transform = `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+      });
+
+      // 重置卡片倾斜
+      document.addEventListener('mouseleave', function () {
+         const card = document.querySelector('.error-card');
+         card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg)';
+      });
+
+      // 添加按钮点击波纹效果
+      document.querySelectorAll('.action-button').forEach(button => {
+         button.addEventListener('click', function (e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+
+            ripple.style.cssText = `
+            position: absolute;
+            width: ${size}px;
+            height: ${size}px;
+            left: ${x}px;
+            top: ${y}px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple 0.6s linear;
+            pointer-events: none;
+          `;
+
+            this.style.position = 'relative';
+            this.appendChild(ripple);
+
+            setTimeout(() => {
+               ripple.remove();
+            }, 600);
+         });
+      });
+
+      // 添加CSS动画关键帧
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes ripple {
+          to {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+
+      // 添加错误消息淡入效果
+      const errorMessage = document.querySelector('.error-message');
+      if (errorMessage && errorMessage.textContent.trim()) {
+         errorMessage.style.animation = 'fadeInBounce 0.8s ease-out 0.5s both';
+      }
+
+      // 添加额外的CSS动画
+      const additionalStyle = document.createElement('style');
+      additionalStyle.textContent = `
+        @keyframes fadeInBounce {
+          0% {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          60% {
+            opacity: 1;
+            transform: translateY(5px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `;
+      document.head.appendChild(additionalStyle);
+   </script>
+</body>
+
+</html>

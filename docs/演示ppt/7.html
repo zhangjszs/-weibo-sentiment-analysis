@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统实现与功能展示 - Slide 7 (Light/Blue/Split)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+    <style>
+        /* --- START: Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-bg-hover: #FFFFFF; /* White or slightly diff gray on hover */
+            --card-border-color: #E5E7EB; /* gray-200 */
+
+            /* Chrome Dark Gray for Title Split */
+            --chrome-dark-gray: #303134;
+        }
+
+        /* --- END: Theme Variables --- */
+
+        /* --- Base Styles --- */
+        body {
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: var(--bg-color); /* Light background */
+            color: var(--text-color-base); /* Default dark text */
+            overflow-x: hidden;
+        }
+
+        /* --- Animation Definition --- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            opacity: 0; /* Start hidden */
+            animation: fadeInUp 0.7s ease-out forwards;
+        }
+
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+
+        /* --- Main Title Styling --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2.5rem, 6vw, 4rem);
+            text-align: center;
+            border-bottom: 2px solid var(--card-border-color); /* Light border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            text-shadow: none; /* Remove dark text shadow */
+            color: inherit; /* Let spans control color */
+        }
+
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Use specified dark gray */
+        }
+
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            animation: gradient-animation 4s linear infinite;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .en-label-small {
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+            color: var(--text-color-caption); /* Use caption color */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 8px; /* Approx mt-2 */
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
+            display: block;
+        }
+
+        /* --- Section Card Styles (Light Mode) --- */
+        .section-card {
+            background-color: var(--card-bg-color);
+            border-radius: 1rem;
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--card-border-color); /* Add subtle border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow */
+        }
+
+        .section-card:hover {
+            transform: translateY(-8px);
+            /* Updated shadow for blue accent */
+            box-shadow: 0 10px 25px -5px rgba(0, 161, 241, 0.15), 0 8px 10px -6px rgba(0, 161, 241, 0.1);
+        }
+
+        .section-title-icon {
+            color: var(--edge-blue);
+        }
+
+        /* Use blue accent */
+        .section-title-text {
+            color: var(--text-color-base);
+        }
+
+        /* Dark text */
+
+        /* --- Diagram Styles (Light Mode) --- */
+        .diagram-container {
+            background-color: rgba(229, 231, 235, 0.4); /* Light gray background */
+            border-radius: 0.75rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid var(--card-border-color); /* Match card border */
+        }
+
+        .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* --- Interface Card Styles (Light Mode) --- */
+        .interface-card {
+            background-color: #FFFFFF; /* White background for contrast */
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--card-border-color); /* Use light border */
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .interface-card:hover {
+            background-color: #FFFFFF; /* Keep white */
+            transform: translateY(-5px);
+            border-color: var(--edge-blue); /* Highlight with blue border */
+            box-shadow: 0 6px 12px rgba(0, 161, 241, 0.1);
+        }
+
+        .interface-icon {
+            background-color: rgba(0, 161, 241, 0.1); /* Light blue tint */
+            border-radius: 0.5rem;
+        }
+
+        .interface-icon i {
+            color: var(--edge-blue);
+        }
+
+        /* Blue icon */
+        .interface-title {
+            color: var(--text-color-base);
+        }
+
+        /* Dark title */
+        .interface-desc {
+            color: var(--text-color-muted);
+            line-height: 1.6;
+        }
+
+        /* Muted description */
+        .interface-mockup {
+            background-color: var(--card-bg-color); /* Light gray mockup bg */
+            border: 1px dashed var(--card-border-color); /* Dashed border */
+            border-radius: 0.375rem;
+            margin-top: auto;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .mockup-element {
+            background-color: #D1D5DB;
+            border-radius: 0.25rem;
+        }
+
+        /* Mid Gray */
+        .mockup-element.btn {
+            background-color: var(--edge-blue); /* Blue button */
+            color: white;
+            font-size: 0.6rem;
+            line-height: clamp(10px, 2vh, 15px);
+            text-align: center;
+        }
+
+        .mockup-chart {
+            background-color: #E5E7EB;
+            border-radius: 0.25rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Lighter gray */
+        .mockup-bar {
+            background-color: var(--edge-blue); /* Blue bars */
+            border-radius: 2px 2px 0 0;
+            position: absolute;
+            bottom: 0;
+            width: 15%; /* Example width */
+        }
+
+        /* --- Feature Points Styles (Light Mode) --- */
+        .feature-points-container {
+            border-top: 1px solid var(--card-border-color);
+        }
+
+        .feature-icon {
+            background-color: rgba(0, 161, 241, 0.1); /* Light blue tint */
+            border-radius: 9999px;
+        }
+
+        .feature-icon i {
+            color: var(--edge-blue);
+            font-size: 0.8rem;
+        }
+
+        /* Blue icon */
+        .feature-text {
+            color: var(--text-color-muted);
+        }
+
+        /* Muted text */
+        .feature-text strong {
+            color: var(--text-color-base);
+            font-weight: 600;
+        }
+
+        /* Dark bold text */
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2);
+        }
+
+        .nav-button:hover {
+            background-color: var(--edge-blue-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3);
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd;
+            color: #6c757d;
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+    </style>
+</head>
+
+<body class="">
+<div class="slide min-h-screen flex items-center justify-center p-6 md:p-12">
+    <div class="content w-full max-w-7xl mx-auto">
+
+        <h1 class="main-title animate-fadeInUp">
+            <span class="title-black-part">系统实现与功</span><span class="title-gradient-part">能展示</span><span
+                class="en-label-small">System Implementation & Functionality Showcase</span>
+        </h1>
+
+        <div class="main-container flex flex-col lg:flex-row gap-8 md:gap-10">
+
+            <div class="section section-card flex-1 p-6 md:p-8 animate-fadeInUp" style="animation-delay: 0.2s;">
+                <div class="section-title text-2xl md:text-3xl font-bold mb-5 flex items-center">
+                    <i class="fas fa-sitemap section-title-icon text-2xl md:text-3xl mr-4"></i>
+                    <span class="section-title-text">系统架构概述</span>
+                </div>
+                <div class="architecture-diagram flex-grow flex flex-col items-center justify-center">
+                    <div class="diagram-container w-full p-4 md:p-6">
+                        <div class="mermaid">
+                            flowchart TD
+                            A[数据源<br>Weibo API/爬虫] -->|原始数据| B(数据采集模块);
+                            B -->|结构化数据| C(数据处理模块);
+                            C -->|清洗/标准化| D(数据分析模块);
+                            D -->|分析结果| E(可视化模块);
+                            subgraph 数据存储与访问
+                            F[(MySQL数据库)];
+                            end
+                            B -.->|存储| F;
+                            C -.->|读/写| F;
+                            D -.->|读取| F;
+                            E -.->|读取| F;
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section section-card flex-1 p-6 md:p-8 animate-fadeInUp flex flex-col"
+                 style="animation-delay: 0.4s;">
+                <div class="section-title text-2xl md:text-3xl font-bold mb-5 flex items-center flex-shrink-0">
+                    <i class="fas fa-desktop section-title-icon text-2xl md:text-3xl mr-4"></i>
+                    <span class="section-title-text">系统界面展示</span>
+                </div>
+                <div class="interface-preview grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6 mb-6">
+                    <div class="interface-card p-4 md:p-5">
+                        <div class="interface-icon w-10 h-10 flex items-center justify-center mb-4"><i
+                                class="fas fa-sign-in-alt text-xl"></i></div>
+                        <div class="interface-title text-lg font-semibold mb-2">登录界面</div>
+                        <div class="interface-desc text-sm mb-4">提供用户认证，支持多种登录方式，确保系统安全。</div>
+                        <div class="interface-mockup p-3">
+                            <div class="mockup-element h-3 mb-2 w-11/12"></div>
+                            <div class="mockup-element h-3 mb-2 w-8/12"></div>
+                            <div class="mockup-element h-3 mb-3 w-11/12"></div>
+                            <div class="mockup-element btn h-4 w-5/12 text-xs">登录</div>
+                        </div>
+                    </div>
+                    <div class="interface-card p-4 md:p-5">
+                        <div class="interface-icon w-10 h-10 flex items-center justify-center mb-4"><i
+                                class="fas fa-search text-xl"></i></div>
+                        <div class="interface-title text-lg font-semibold mb-2">数据输入与查询</div>
+                        <div class="interface-desc text-sm mb-4">支持自定义数据输入和多条件查询，操作简便直观。</div>
+                        <div class="interface-mockup p-3">
+                            <div class="mockup-element h-3 mb-2 w-8/12"></div>
+                            <div class="flex w-11/12 gap-2 mb-2">
+                                <div class="mockup-element h-4 flex-grow mb-0"></div>
+                                <div class="mockup-element btn h-4 w-1/3 mb-0 text-xs">查询</div>
+                            </div>
+                            <div class="mockup-element h-2 mb-1 w-full"></div>
+                            <div class="mockup-element h-2 mb-1 w-full"></div>
+                            <div class="mockup-element h-2 w-1/2"></div>
+                        </div>
+                    </div>
+                    <div class="interface-card p-4 md:p-5">
+                        <div class="interface-icon w-10 h-10 flex items-center justify-center mb-4"><i
+                                class="fas fa-chart-pie text-xl"></i></div>
+                        <div class="interface-title text-lg font-semibold mb-2">数据分析结果</div>
+                        <div class="interface-desc text-sm mb-4">通过图表和表格形式展示舆情数据，支持交互操作。</div>
+                        <div class="interface-mockup p-3">
+                            <div class="mockup-chart w-11/12 h-16 mb-2">
+                                <div class="mockup-bar" style="height: 60%; left: 5%;"></div>
+                                <div class="mockup-bar" style="height: 40%; left: 25%;"></div>
+                                <div class="mockup-bar" style="height: 75%; left: 45%;"></div>
+                                <div class="mockup-bar" style="height: 30%; left: 65%;"></div>
+                                <div class="mockup-bar" style="height: 50%; left: 85%; width: 10%;"></div>
+                            </div>
+                            <div class="mockup-element h-2 w-8/12"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-points-container mt-auto pt-6 ">
+                    <div class="space-y-4">
+                        <div class="feature-item flex items-start gap-3">
+                            <div class="feature-icon w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1"><i
+                                    class="fas fa-layer-group"></i></div>
+                            <div class="feature-text text-base md:text-lg"><strong>模块化架构：</strong>数据采集、处理、分析和可视化模块相互独立，便于维护和扩展。
+                            </div>
+                        </div>
+                        <div class="feature-item flex items-start gap-3">
+                            <div class="feature-icon w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1"><i
+                                    class="fas fa-database"></i></div>
+                            <div class="feature-text text-base md:text-lg"><strong>数据存储与管理：</strong>采用MySQL关系型数据库，支持大规模数据存储、高效索引和查询。
+                            </div>
+                        </div>
+                        <div class="feature-item flex items-start gap-3">
+                            <div class="feature-icon w-7 h-7 flex items-center justify-center flex-shrink-0 mt-1"><i
+                                    class="fas fa-server"></i></div>
+                            <div class="feature-text text-base md:text-lg"><strong>分布式部署：</strong>支持多节点部署，提高系统处理能力和可靠性，确保高可用性。
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
+    <a href="6.html" class="nav-button prev-button">上一页</a>
+    <a href="8.html" class="nav-button next-button">下一页</a>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        try {
+            // Use CSS variables defined in :root for consistency
+            const rootStyles = getComputedStyle(document.documentElement);
+            const bgColor = rootStyles.getPropertyValue('--bg-color').trim() || '#ffffff';
+            const textColor = rootStyles.getPropertyValue('--text-color-base').trim() || '#1f2937';
+            const cardBorderColor = rootStyles.getPropertyValue('--card-border-color').trim() || '#e5e7eb';
+            const mutedTextColor = rootStyles.getPropertyValue('--text-color-muted').trim() || '#6b7280';
+            const cardBgColor = rootStyles.getPropertyValue('--card-bg-color').trim() || '#f9fafb';
+            const accentColor = rootStyles.getPropertyValue('--edge-blue').trim() || '#00A1F1'; // Use blue accent
+
+            mermaid.initialize({
+                startOnLoad: true,
+                // Using 'neutral' theme which adapts better to light/dark based on variables
+                theme: 'neutral',
+                themeVariables: {
+                    // Override specific variables for better light mode rendering
+                    background: bgColor, // Use page background
+                    primaryColor: cardBgColor, // Use card background for nodes
+                    primaryTextColor: textColor, // Base text color
+                    primaryBorderColor: cardBorderColor, // Card border
+                    lineColor: mutedTextColor, // Muted color for lines
+                    secondaryColor: cardBgColor, // Similar to primary
+                    tertiaryColor: cardBgColor, // Similar to primary
+
+                    textColor: textColor, // Default text
+                    nodeBorder: cardBorderColor, // Node border
+                    clusterBkg: 'rgba(229, 231, 235, 0.3)', // Light gray cluster bg
+                    clusterBorder: cardBorderColor,
+
+                    nodeTextColor: textColor,
+                    fontSize: '14px',
+
+                    // Potentially color arrows/specific elements with accent
+                    // mainBkg: accentColor, // Example if needed
+                    // edgeLabelBackground: bgColor, // Background for edge labels
+                    actorTextColor: textColor,
+                    noteTextColor: textColor,
+                    noteBkgColor: cardBgColor,
+                    noteBorderColor: cardBorderColor,
+                    labelTextColor: textColor,
+                    loopTextColor: textColor,
+                    activationBorderColor: cardBorderColor,
+                    activationBkgColor: cardBgColor,
+                    sequenceNumberColor: textColor,
+                    sectionBkgColor: 'rgba(0, 161, 241, 0.1)', // Light blue tint for sections
+                    altSectionBkgColor: cardBgColor,
+
+                },
+                flowchart: {htmlLabels: true, curve: 'basis'}
+            });
+        } catch (e) {
+            console.error("Mermaid initialization failed:", e);
+        }
+    });
+</script>
+<script>
+    // Navigation script remains the same
+    const prevSlideURL = '6.html';
+    const nextSlideURL = '8.html';
+
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+            navigateTo(nextSlideURL);
+        }
+    });
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+    if (prevButton) {
+        prevButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(prevSlideURL);
+        });
+    }
+    if (nextButton) {
+        if (nextSlideURL) {
+            nextButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(nextSlideURL);
+            });
+        } else {
+            nextButton.classList.add('disabled');
+            nextButton.href = '#';
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>内容概览 - Light Mode (Blue Accent, Split Title)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10/dist/framer-motion.global.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Chrome Dark Gray */
+            --chrome-dark-gray: #303134;
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-border-color: #E5E7EB; /* gray-200 */
+        }
+
+        /* --- Base --- */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color-base); /* Default dark text */
+            font-family: 'Roboto', 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .content-wrapper {
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: clamp(40px, 8vw, 80px) clamp(20px, 4vw, 40px);
+        }
+
+        /* --- Main Title (Split Style) --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2rem, 5vw, 4rem);
+            text-align: center;
+            border-bottom: 2px solid var(--card-border-color); /* Light border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            color: inherit; /* Let spans control color */
+        }
+
+        /* Adjust English subtitle color */
+        .main-title .en-label-small {
+            color: var(--text-color-caption);
+        }
+
+        /* -- Title Split Parts -- */
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Use Chrome Dark Gray */
+        }
+
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+            animation: gradient-animation 4s linear infinite;
+        }
+
+        /* Gradient Animation Keyframes */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* --- Bento Items (Light Mode) --- */
+        .bento-item {
+            background-color: var(--card-bg-color); /* Light background */
+            border-radius: 1.25rem;
+            padding: clamp(1.2rem, 3vw, 2rem);
+            overflow: hidden;
+            position: relative;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease-out, opacity 0.4s ease-out, border-color 0.3s ease;
+            opacity: 0;
+            transform: translateY(30px) scale(0.98);
+            border: 1px solid var(--card-border-color); /* Light border */
+            display: flex;
+            align-items: flex-start;
+            min-height: 130px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle light shadow */
+        }
+
+        /* Scroll reveal animation */
+        .bento-item.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            /* Removed shadow from here */
+        }
+
+        /* Hover state */
+        .bento-item:hover {
+            transform: translateY(-6px) scale(1.03);
+            border-color: var(--edge-blue); /* Highlight border with blue */
+            /* Update shadow to use blue accent */
+            box-shadow: 0 10px 15px -3px rgba(0, 161, 241, 0.1), 0 4px 6px -2px rgba(0, 161, 241, 0.05);
+            background-color: var(--bg-color); /* Can change slightly on hover, e.g., white */
+        }
+
+
+        /* --- Icon Style (Blue Accent) --- */
+        .item-icon {
+            font-size: clamp(1.8rem, 3vw, 2.2rem);
+            color: var(--edge-blue); /* Use Edge Blue */
+            opacity: 0.9;
+            width: clamp(45px, 7vw, 60px);
+            height: clamp(45px, 7vw, 60px);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 161, 241, 0.1); /* Use Blue RGBA */
+            border-radius: 50%;
+            margin-right: clamp(1.2rem, 2.5vw, 1.8rem);
+        }
+
+        /* --- Text Block Container (UNCHANGED) --- */
+        .item-text {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Item Number Style (Blue Accent) --- */
+        .item-number {
+            font-family: 'Roboto', sans-serif;
+            font-weight: 900;
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
+            line-height: 1;
+            color: var(--edge-blue); /* Use Edge Blue */
+            margin-bottom: 4px;
+            width: 3.5ch;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        /* --- Text Styles within Bento (Light Mode) --- */
+        .zh-title-medium {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 700;
+            font-size: clamp(1.25rem, 2.3vw, 1.6rem);
+            line-height: 1.3;
+            color: var(--text-color-base); /* Use base dark text */
+            margin-bottom: 0;
+        }
+
+        .en-label-small {
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+            color: var(--text-color-caption); /* Use caption color */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 3px;
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        /* --- Navigation (Blue Accent) --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2);
+        }
+
+        .nav-button:hover {
+            background-color: var(--edge-blue-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3);
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd;
+            color: #6c757d;
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="content-wrapper">
+    <h1 class="main-title">
+        <span class="title-black-part">内容</span><span class="title-gradient-part">概览</span>
+        <span class="block en-label-small mt-2">Content Overview</span>
+    </h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-project-diagram"></i></div>
+            <div class="item-text">
+                <div class="item-number">01</div>
+                <div class="zh-title-medium">项目介绍</div>
+                <div class="en-label-small">Project Introduction</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-database"></i></div>
+            <div class="item-text">
+                <div class="item-number">02</div>
+                <div class="zh-title-medium">数据采集与处理</div>
+                <div class="en-label-small">Data Collection & Processing</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-brain"></i></div>
+            <div class="item-text">
+                <div class="item-number">03</div>
+                <div class="zh-title-medium">数据分析与模型</div>
+                <div class="en-label-small">Analysis & Modeling</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-chart-pie"></i></div>
+            <div class="item-text">
+                <div class="item-number">04</div>
+                <div class="zh-title-medium">数据可视化</div>
+                <div class="en-label-small">Data Visualization</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-laptop-code"></i></div>
+            <div class="item-text">
+                <div class="item-number">05</div>
+                <div class="zh-title-medium">系统实现与功能展示</div>
+                <div class="en-label-small">System Implementation</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-vial"></i></div>
+            <div class="item-text">
+                <div class="item-number">06</div>
+                <div class="zh-title-medium">系统性能与测试</div>
+                <div class="en-label-small">Performance & Testing</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-lightbulb"></i></div>
+            <div class="item-text">
+                <div class="item-number">07</div>
+                <div class="zh-title-medium">总结与展望</div>
+                <div class="en-label-small">Conclusion & Outlook</div>
+            </div>
+        </div>
+
+        <div class="bento-item">
+            <div class="item-icon"><i class="fas fa-handshake"></i></div>
+            <div class="item-text">
+                <div class="item-number">08</div>
+                <div class="zh-title-medium">致谢</div>
+                <div class="en-label-small">Acknowledgements</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-navigation">
+    <a href="ppt.html" class="nav-button prev-button">上一页</a>
+    <a href="3.html" class="nav-button next-button">下一页</a>
+</div>
+
+<script>
+    // --- Intersection Observer for Scroll Animations (UNCHANGED) ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const bentoItems = document.querySelectorAll('.bento-item');
+        if (!bentoItems.length) return;
+        const observerOptions = {root: null, rootMargin: '0px', threshold: 0.1};
+        const observerCallback = (entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    // observer.unobserve(entry.target); // Optional
+                }
+            });
+        };
+        const intersectionObserver = new IntersectionObserver(observerCallback, observerOptions);
+        bentoItems.forEach(item => intersectionObserver.observe(item));
+    });
+
+    // --- Navigation Logic (UNCHANGED) ---
+    const prevSlideURL = 'ppt.html';
+    const nextSlideURL = '3.html';
+
+    // const nextSlideURL = null; // *** Uncomment if LAST page ***
+
+    function navigateTo(url) {
+        if (url) window.location.href = url;
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) navigateTo(prevSlideURL);
+        else if (event.key === 'ArrowRight' || event.keyCode === 39) navigateTo(nextSlideURL);
+    });
+
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+
+    if (prevButton) {
+        if (prevSlideURL) prevButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(prevSlideURL);
+        });
+        else {
+            prevButton.classList.add('disabled');
+            prevButton.href = '#';
+        }
+    }
+    if (nextButton) {
+        if (nextSlideURL) nextButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(nextSlideURL);
+        });
+        else {
+            nextButton.classList.add('disabled');
+            nextButton.href = '#';
+        }
+    }
+</script>
+
+</body>
+</html>

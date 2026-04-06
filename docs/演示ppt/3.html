@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>项目介绍 - Slide 3 (Light - Blue - Split Title)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-border-color: #E5E7EB; /* gray-200 */
+
+            /* Chrome Dark Gray */
+            --chrome-dark-gray: #303134;
+        }
+
+        /* Base styling */
+        body {
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: var(--bg-color); /* Light background */
+            color: var(--text-color-base); /* Default dark text */
+            overflow-x: hidden;
+        }
+
+        /* Animation definition */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Apply animation class */
+        .animate-fadeInUp {
+            opacity: 0;
+            animation: fadeInUp 0.7s ease-out forwards;
+        }
+
+        /* --- Gradient Animation Definition --- */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* --- Title Styles --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2rem, 5vw, 4rem);
+            text-align: center;
+            border-bottom: 2px solid var(--card-border-color); /* Light border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            /* Removed color and text-shadow for light mode / split effect */
+            color: inherit; /* Let spans define color */
+            /* Inherits animation from animate-fadeInUp class */
+        }
+
+        /* Spans for character split title */
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Use dark gray */
+        }
+
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            animation: gradient-animation 4s linear infinite;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        .en-label-small {
+            display: block;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+            color: var(--text-color-caption); /* Updated color */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.5rem;
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        /* --- Section Card Styles (Light Mode) --- */
+        .section-card {
+            background-color: var(--card-bg-color); /* Light card background */
+            border: 1px solid var(--card-border-color); /* Light border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow */
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; /* Include border-color */
+            border-radius: 0.75rem; /* Keep existing radius */
+            padding: 2rem; /* Keep existing padding */
+        }
+
+        /* Hover effect for sections (Light Mode - Blue) */
+        .section-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--edge-blue); /* Highlight border */
+            box-shadow: 0 10px 20px rgba(0, 161, 241, 0.15), 0 6px 6px rgba(0, 161, 241, 0.1); /* Adjusted blue shadow */
+        }
+
+        /* Section text colors */
+        .section-title {
+            color: var(--text-color-base);
+        }
+
+        /* Dark text */
+        .point-text {
+            color: var(--text-color-muted);
+        }
+
+        /* Muted text */
+        .point-text strong {
+            color: var(--text-color-base);
+        }
+
+        /* Slightly darker for strong */
+
+        /* Icon Colors */
+        .section-title i, .point-icon i {
+            color: var(--edge-blue); /* Use blue accent */
+        }
+
+        .point-icon {
+            padding-top: 0.2rem; /* Keep vertical alignment */
+            flex-shrink: 0; /* Keep existing flex behavior */
+        }
+
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
+        .slide-navigation {
+            /* Tailwind classes handle layout: fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5 */
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue); /* Use solid blue */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Subtle blue shadow */
+        }
+
+        .nav-button:hover {
+            background-color: var(--edge-blue-dark); /* Darker blue on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3); /* Brighter blue shadow */
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd; /* Lighter gray for disabled */
+            color: #6c757d; /* Darker gray text for disabled */
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+    </style>
+</head>
+
+<body class="">
+<div class="slide min-h-screen flex items-center justify-center p-6 md:p-12">
+    <div class="content w-full max-w-7xl mx-auto">
+        <h1 class="main-title animate-fadeInUp" style="animation-delay: 0.1s;">
+            <span class="title-black-part">项目</span><span class="title-gradient-part">介绍</span>
+            <span class="en-label-small">Project Introduction</span>
+        </h1>
+
+        <div class="sections-container flex flex-col md:flex-row gap-8 md:gap-10">
+
+            <div class="section section-card flex-1 p-8 rounded-xl animate-fadeInUp transition-all duration-300 ease-out"
+                 style="animation-delay: 0.3s;">
+                <div class="section-title text-3xl md:text-4xl font-bold mb-6 flex items-center"><i
+                        class="fas fa-book-open text-3xl md:text-4xl mr-4"></i> 项目背景
+                </div>
+                <div class="section-content space-y-5">
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed">
+                            <strong>微博舆情分析的重要性：</strong>作为信息传播的重要平台，企业可通过舆情分析掌握产品口碑，可政府了解民意，优化公共服务。
+                        </div>
+                    </div>
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed"><strong>当前数据挑战：</strong>微博每天产生海量数据，信息类型多样化（文字、图片、视频等），传统人工监测方式已无法满足需求。
+                        </div>
+                    </div>
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-database"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed"><strong>舆情监测需求：</strong>需要处理大量复杂数据，急需、准确的自动化舆情分析系统来满足实时监测和数据挖掘需求。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section section-card flex-1 p-8 rounded-xl animate-fadeInUp transition-all duration-300 ease-out"
+                 style="animation-delay: 0.5s;">
+                <div class="section-title text-3xl md:text-4xl font-bold mb-6 flex items-center"><i
+                        class="fas fa-bullseye text-3xl md:text-4xl mr-4"></i> 系统目标
+                </div>
+                <div class="section-content space-y-5">
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-download"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed"><strong>获取微博舆情数据：</strong>确保数据采集的高效性和完整性，为后续分析提供可靠的数据基础。
+                        </div>
+                    </div>
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-cogs"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed"><strong>数据处理与分析：</strong>运用先进技术手段，包括自然语言处理和机器学习，挖掘数据背后的价值，为决策提供强力支持。
+                        </div>
+                    </div>
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed">
+                            <strong>通过数据可视化帮助决策：</strong>洞察展示舆情动态，使决策者快速理解舆情动态，做出科学决策。
+                        </div>
+                    </div>
+                    <div class="point flex items-start">
+                        <div class="point-icon w-7 text-center mr-4 text-xl"><i class="fas fa-clock"></i>
+                        </div>
+                        <div class="point-text text-base md:text-lg leading-relaxed"><strong>实时监测与预警：</strong>建立舆情预警机制，及时发现潜在风险，提前制定应对策略。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
+    <a href="2.html" class="nav-button prev-button">上一页</a>
+    <a href="4.html" class="nav-button next-button">下一页</a>
+</div>
+
+<script>
+    // Script remains the same
+    const prevSlideURL = '2.html';
+    const nextSlideURL = '4.html';
+
+    // const nextSlideURL = null; // Uncomment if last slide
+
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+            navigateTo(nextSlideURL);
+        }
+    });
+
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+
+    if (prevButton) {
+        if (prevSlideURL) {
+            prevButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(prevSlideURL);
+            });
+        } else {
+            prevButton.classList.add('disabled');
+            prevButton.href = '#';
+        }
+    }
+    if (nextButton) {
+        if (nextSlideURL) {
+            nextButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(nextSlideURL);
+            });
+        } else {
+            nextButton.classList.add('disabled');
+            nextButton.href = '#';
+        }
+    }
+</script>
+</body>
+</html>

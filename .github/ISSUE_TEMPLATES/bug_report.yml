@@ -1,0 +1,127 @@
+---
+name: 🐛 Bug 报告
+description: 报告软件中的错误或问题
+title: "[Bug]: "
+labels: ["bug", "triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Bug 报告
+
+        感谢您报告这个 bug！请提供详细的信息来帮助我们更好地理解和解决问题。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug 描述
+      description: 请简要描述您遇到的 bug
+      placeholder: 描述 bug 的表现和影响
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤
+      description: 请提供复现这个 bug 的详细步骤
+      placeholder: |
+        1. 进入 '...'
+        2. 点击 '....'
+        3. 滚动到 '....'
+        4. 看到错误
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+      description: 描述您期望发生什么
+      placeholder: 应用应该正常工作，不应该出现错误
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 描述实际发生了什么
+      placeholder: 应用崩溃了，显示错误信息...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 严重程度
+      description: 这个 bug 的严重程度如何？
+      options:
+        - 低 - 轻微问题，不影响主要功能
+        - 中 - 影响某些功能，但有替代方案
+        - 高 - 严重影响功能使用
+        - 紧急 - 导致应用无法使用或数据丢失
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本信息
+      description: 您使用的软件版本
+      placeholder: v1.0.0 或 commit hash
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 请提供您的运行环境信息
+      value: |
+        - 操作系统: [例如 Windows 10, macOS 12.0, Ubuntu 20.04]
+        - Python 版本: [例如 3.8, 3.9, 3.10]
+        - 浏览器: [例如 Chrome 91, Firefox 89] (如果是 Web 应用)
+        - 数据库: [例如 MySQL 8.0, PostgreSQL 13]
+        - 其他相关信息:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 错误日志
+      description: 如果有错误日志，请粘贴相关内容
+      placeholder: |
+        粘贴错误日志、堆栈跟踪或其他相关信息
+        ```
+        错误信息...
+        ```
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 附加信息
+      description: 其他有助于解决这个问题的信息
+      placeholder: 截图、配置文件、相关链接等
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 检查清单
+      description: 请确认您已经完成了这些检查
+      options:
+        - label: 我已经搜索了现有的 issues，确保这个问题没有被报告过
+          required: true
+        - label: 我已经尝试了最新版本，问题仍然存在
+          required: false
+        - label: 我已经阅读了相关文档和故障排除指南
+          required: false
+        - label: 我提供了足够的信息来重现这个问题
+          required: true

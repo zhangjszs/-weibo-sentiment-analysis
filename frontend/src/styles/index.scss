@@ -1,0 +1,295 @@
+@use 'sass:color';
+
+// Global Reset & Base Styles
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  color: $text-primary;
+  background-color: $background-color;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+}
+
+a {
+  color: $primary-color;
+  text-decoration: none;
+  transition: $transition-fast;
+
+  &:hover {
+    color: $primary-hover;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid rgba($primary-color, 0.6);
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// Utility Classes
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.mb-4 {
+  margin-bottom: $spacing-md;
+}
+
+.mt-4 {
+  margin-top: $spacing-md;
+}
+
+// Element Plus Overrides - Modern SaaS Style
+
+// Cards
+.el-card {
+  border: 1px solid var(--el-border-color-light) !important;
+  border-radius: $border-radius-large;
+  background-color: $surface-color;
+  box-shadow: $box-shadow-sm !important;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  margin-bottom: $spacing-lg;
+
+  &:hover {
+    box-shadow: $box-shadow-base !important;
+    transform: translateY(-1px);
+  }
+
+  &__header {
+    padding: $spacing-md $spacing-lg;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    font-weight: 600;
+    font-size: 15px;
+    /* slightly smaller, finer */
+    color: $text-primary;
+    letter-spacing: -0.01em;
+  }
+
+  &__body {
+    padding: $spacing-lg;
+  }
+}
+
+// Buttons
+.el-button {
+  font-weight: $font-weight-medium;
+  border-radius: $border-radius-base;
+  transition: $transition-base;
+
+  &--primary {
+    background-color: $primary-color;
+    border-color: $primary-color;
+    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+
+    &:hover,
+    &:focus {
+      background-color: $primary-hover;
+      border-color: $primary-hover;
+      box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+    }
+  }
+}
+
+// Tables
+.el-table {
+  --el-table-header-bg-color: #{$background-color-base};
+  --el-table-border-color: #{$border-color-light};
+  --el-table-row-hover-bg-color: #{$background-color-base};
+
+  border-radius: $border-radius-base;
+  overflow: hidden;
+  box-shadow: none !important;
+  border: 1px solid var(--el-border-color-light);
+
+  th.el-table__cell {
+    background-color: var(--el-bg-color-page) !important;
+    color: $text-primary;
+    font-weight: 600;
+    border-bottom: 1px solid var(--el-border-color-light) !important;
+    height: 48px;
+    font-size: 13px;
+  }
+
+  td.el-table__cell {
+    padding: 14px 0;
+    color: $text-regular;
+    font-size: 14px;
+    border-bottom: 1px solid var(--el-border-color-lighter) !important;
+  }
+
+  // Remove outer borders and internal vertical borders completely
+  &--border,
+  .el-table--border th.el-table__cell,
+  .el-table__body-wrapper .el-table--border.is-scrolling-left~.el-table__fixed {
+    border-right: none !important;
+  }
+}
+
+// Inputs
+.el-input__wrapper,
+.el-select__wrapper {
+  box-shadow: 0 0 0 1px var(--el-border-color) inset !important;
+  border-radius: $border-radius-small;
+  padding: 6px 12px;
+  background-color: transparent !important;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 0 0 1px var(--el-border-color-dark) inset !important;
+  }
+
+  &.is-focus,
+  &.is-focused {
+    box-shadow:
+      0 0 0 2px rgba($primary-color, 0.1) inset,
+      0 0 0 1px $primary-color inset !important;
+  }
+}
+
+// Pagination
+.el-pagination {
+  justify-content: flex-end;
+  margin-top: $spacing-lg;
+
+  button,
+  li {
+    background: transparent !important;
+    border-radius: $border-radius-small;
+    font-size: 13px;
+    font-weight: 500;
+
+    &:hover {
+      color: $primary-color;
+      background-color: var(--el-color-primary-light-9) !important;
+    }
+
+    &.is-active {
+      background-color: var(--el-color-primary-light-9) !important;
+      color: $primary-color;
+      font-weight: 600;
+      border: 1px solid rgba($primary-color, 0.2);
+    }
+  }
+}
+
+// Menus
+.el-menu {
+  border-right: none !important;
+}
+
+// Transitions
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease-out, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+// Dark Mode
+.dark {
+  background-color: #0f172a !important; // Slate 900
+  color: #e2e8f0 !important; // Slate 200
+
+  .el-card {
+    background-color: #1e293b; // Slate 800
+    border: 1px solid #334155; // Slate 700
+
+    &__header {
+      border-bottom-color: #334155;
+      color: #f8fafc;
+    }
+  }
+
+  .el-table {
+    --el-table-header-bg-color: #1e293b;
+    --el-table-bg-color: #1e293b;
+    --el-table-tr-bg-color: #1e293b;
+    --el-table-border-color: #334155;
+    --el-table-row-hover-bg-color: #334155;
+
+    background-color: #1e293b;
+    color: #e2e8f0;
+
+    th.el-table__cell {
+      background-color: #0f172a !important;
+      color: #94a3b8;
+      border-bottom-color: #334155;
+    }
+
+    td.el-table__cell {
+      border-bottom-color: #334155;
+      color: #e2e8f0;
+    }
+  }
+
+  .el-input__wrapper {
+    background-color: #1e293b;
+    box-shadow: 0 0 0 1px #334155 inset !important;
+
+    &:hover {
+      box-shadow: 0 0 0 1px #64748b inset !important;
+    }
+  }
+
+  .el-button--primary {
+    background-color: $primary-color;
+    border-color: $primary-color;
+  }
+}

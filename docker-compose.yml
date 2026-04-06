@@ -1,0 +1,275 @@
+name: weibo-fullstack
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: weibo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wb}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init_database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: weibo-redis
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-}"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weibo-backend
+    environment:
+      # Flask 配置
+      FLASK_ENV: ${FLASK_ENV:-production}
+      DEBUG: ${DEBUG:-False}
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-key-change-me}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      
+      # 跨域配置
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-weibo_access_token}
+      
+      # 管理员配置
+      ADMIN_USERS: ${ADMIN_USERS:-admin}
+      AUTO_CREATE_DEMO_ADMIN: ${AUTO_CREATE_DEMO_ADMIN:-True}
+      DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-admin}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Admin123!}
+      
+      # 数据库配置
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      DB_NAME: ${MYSQL_DATABASE:-wb}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+      
+      # Redis / Celery 配置
+      REDIS_URL: redis://redis:6379/0
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # 爬虫配置
+      WEIBO_COOKIE: ${WEIBO_COOKIE:-}
+      WEIBO_USER_AGENT: ${WEIBO_USER_AGENT:-}
+      SPIDER_TIMEOUT: ${SPIDER_TIMEOUT:-45}
+      SPIDER_DELAY: ${SPIDER_DELAY:-15}
+      SPIDER_MAX_RETRIES: ${SPIDER_MAX_RETRIES:-3}
+      SPIDER_USE_PROXY: ${SPIDER_USE_PROXY:-False}
+      
+      # Spider 服务配置
+      SPIDER_SERVICE_ENABLED: "True"
+      SPIDER_SERVICE_BASE_URL: http://spider-api:8090
+      SPIDER_SERVICE_TIMEOUT: ${SPIDER_SERVICE_TIMEOUT:-15}
+      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:-}
+      SPIDER_SERVICE_FALLBACK_LOCAL: "True"
+      
+      # NLP 服务配置
+      NLP_SERVICE_ENABLED: "True"
+      NLP_SERVICE_BASE_URL: http://nlp-api:8091
+      NLP_SERVICE_TIMEOUT: ${NLP_SERVICE_TIMEOUT:-20}
+      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
+      NLP_SERVICE_FALLBACK_LOCAL: "True"
+      
+      # LLM 配置
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
+      
+      # 启动预热
+      ENABLE_STARTUP_WARMUP: ${ENABLE_STARTUP_WARMUP:-True}
+      STARTUP_WARMUP_DELAY: ${STARTUP_WARMUP_DELAY:-0.5}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: weibo-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+
+  spider-api:
+    build:
+      context: ./spider_service
+      dockerfile: Dockerfile
+    container_name: weibo-spider-api
+    environment:
+      # 数据库配置（爬虫服务需要访问数据库）
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      DB_NAME: ${MYSQL_DATABASE:-wb}
+      
+      # Redis 配置
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # 爬虫配置
+      WEIBO_COOKIE: ${WEIBO_COOKIE:-}
+      WEIBO_USER_AGENT: ${WEIBO_USER_AGENT:-}
+      SPIDER_TIMEOUT: ${SPIDER_TIMEOUT:-45}
+      SPIDER_DELAY: ${SPIDER_DELAY:-15}
+      SPIDER_MAX_RETRIES: ${SPIDER_MAX_RETRIES:-3}
+      SPIDER_USE_PROXY: ${SPIDER_USE_PROXY:-False}
+      
+      # 服务鉴权
+      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:-}
+    command: ["python", "app/main.py"]
+    ports:
+      - "8090:8090"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  spider-worker:
+    build:
+      context: ./spider_service
+      dockerfile: Dockerfile
+    container_name: weibo-spider-worker
+    environment:
+      # 数据库配置
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      DB_NAME: ${MYSQL_DATABASE:-wb}
+      
+      # Redis 配置
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # 爬虫配置
+      WEIBO_COOKIE: ${WEIBO_COOKIE:-}
+      WEIBO_USER_AGENT: ${WEIBO_USER_AGENT:-}
+      SPIDER_TIMEOUT: ${SPIDER_TIMEOUT:-45}
+      SPIDER_DELAY: ${SPIDER_DELAY:-15}
+      SPIDER_MAX_RETRIES: ${SPIDER_MAX_RETRIES:-3}
+      SPIDER_USE_PROXY: ${SPIDER_USE_PROXY:-False}
+    command: ["celery", "-A", "celery_app", "worker", "--loglevel=info", "-Q", "spider,default"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nlp-api:
+    build:
+      context: ./nlp_service
+      dockerfile: Dockerfile
+    container_name: weibo-nlp-api
+    environment:
+      # Redis 配置
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # LLM 配置
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
+      
+      # 服务鉴权
+      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
+    command: ["python", "app/main.py"]
+    ports:
+      - "8091:8091"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  nlp-worker:
+    build:
+      context: ./nlp_service
+      dockerfile: Dockerfile
+    container_name: weibo-nlp-worker
+    environment:
+      # Redis 配置
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      
+      # LLM 配置
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
+    command: ["celery", "-A", "celery_app", "worker", "--loglevel=info", "-Q", "nlp,default"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql_data:
+  redis_data:

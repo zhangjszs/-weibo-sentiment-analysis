@@ -1,0 +1,88 @@
+# Pre-commit 钩子配置
+# 在代码提交前自动运行代码检查和格式化
+# 安装：pip install pre-commit && pre-commit install
+# 手动运行：pre-commit run --all-files
+
+# 默认 stages
+default_stages: [pre-commit]
+
+# 仓库配置
+repos:
+  # ===== 预置钩子（通用文件检查）=====
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      # 检测大文件
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      # 检查 YAML 语法
+      - id: check-yaml
+        exclude: '.github/'
+      # 检查 TOML 语法
+      - id: check-toml
+      # 检查 JSON 语法
+      - id: check-json
+        exclude: '.vscode/'
+      # 修复行尾空白
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      # 确保文件末尾有换行
+      - id: end-of-file-fixer
+        exclude: '\.md$'
+      # 修复混合行尾
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      # 检查合并冲突标记
+      - id: check-merge-conflict
+      # 检测私钥
+      - id: detect-private-key
+      # 检查 Python AST 语法
+      - id: check-ast
+
+  # ===== Black 代码格式化 =====
+  - repo: https://github.com/psf/black
+    rev: 24.1.1
+    hooks:
+      - id: black
+        language_version: python3
+        args: ['--config', 'pyproject.toml']
+        exclude: |
+          (?x)^(
+            \.venv/|
+            venv/|
+            __pycache__/|
+            cache/|
+            logs/|
+            model/.*\.pkl
+          )$
+
+  # ===== isort 导入排序 =====
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ['--settings-path', 'pyproject.toml']
+
+  # ===== Ruff 快速代码检查 (替代 flake8) =====
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.2.1
+    hooks:
+      - id: ruff
+        args: ['--fix', '--config', 'pyproject.toml']
+
+  # ===== 安全检查 =====
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.7
+    hooks:
+      - id: bandit
+        args: ['-c', 'pyproject.toml', '-ll']
+        additional_dependencies: ['bandit[toml]']
+        exclude: 'tests/'
+
+# CI 环境跳过某些钩子
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit hooks
+  autoupdate_commit_msg: |
+    [pre-commit.ci] pre-commit autoupdate
+  skip: []

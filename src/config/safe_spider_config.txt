@@ -1,0 +1,29 @@
+# 保守的爬虫配置 - 解决403问题
+# 请将此配置复制到config.py中相应位置
+
+# 更安全的延迟配置
+DEFAULT_DELAY = (15, 30)  # 15-30秒延迟，避免触发反爬
+DEFAULT_TIMEOUT = 45      # 45秒超时
+MAX_RETRIES = 1          # 只重试1次
+
+# 更真实的请求头
+SAFE_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Accept-Encoding': 'gzip, deflate, br, zstd',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'DNT': '1',
+    'Pragma': 'no-cache',
+    'Sec-CH-UA': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    'Sec-CH-UA-Mobile': '?0',
+    'Sec-CH-UA-Platform': '"Windows"',
+    'Sec-Fetch-Dest': 'empty',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Site': 'same-origin',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Referer': 'https://weibo.com/',
+    # ⚠️ 重要：请在下面添加您的最新Cookie
+    'Cookie': '请在这里粘贴您的最新Cookie'
+}

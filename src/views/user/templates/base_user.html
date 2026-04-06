@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>
+        {% block title%}
+        登录
+        {% endblock %}</title>
+
+    <link rel="stylesheet" href="/static/css/backend-plugin.min.css">
+    <link rel="stylesheet" href="/static/css/backend.css">
+
+    <style>
+        /* Remove the old background position animation keyframes */
+        /* @keyframes streakAnimation { ... } */
+        /* Remove the shootingStars background position animation keyframes */
+        /* @keyframes shootingStars { ... } */
+
+        /* Define the animation for individual shooting star elements */
+        @keyframes shoot {
+            /* 0% state: Start off-screen (implicitly positioned by top/left and initial transform) */
+            /* Start fully transparent */
+            0% { opacity: 0; transform: rotate(45deg) translateY(0vh); }
+            /* Quickly fade in */
+            5% { opacity: 1; }
+            /* Stay visible for most of the animation */
+            95% { opacity: 1; }
+            /* Fade out and move off-screen */
+            100% { opacity: 0; transform: rotate(45deg) translateY(150vh); } /* Adjust translateY distance based on desired travel path */
+        }
+
+
+        /* 2. Define the main background class */
+        .login-content-tech-bg {
+            background-color: #0078D4; /* Fallback */
+            background-image:
+                /* Layer 1: Original Radial Glow (kept) */
+                radial-gradient(circle at 15% 15%, rgba(0, 209, 237, 0.25) 0%, transparent 40%),
+                /* Layer 2: Original Static Lines (kept) */
+                repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.08) 10px, rgba(255, 255, 255, 0.08) 12px),
+                /* Layer 3: Original Main Gradient (kept) */
+                linear-gradient(135deg, #004c8a 0%, #0078D4 45%, #00A1F1 75%, #00c0e0 100%);
+
+            /* Keep background-repeat/size as they apply to the static layers now */
+            background-repeat: no-repeat, repeat, no-repeat; /* Adjusted repeat for remaining layers */
+            background-size: cover, auto, cover; /* Adjusted size for remaining layers */
+
+             /* No animation on the background-position of this element */
+            /* animation: ... */
+
+            overflow: hidden;
+            position: relative; /* Crucial for positioning absolute children */
+            /* Ensure this layer is below the card container */
+            z-index: 0;
+        }
+
+        /* Style for the individual shooting star elements */
+        .shooting-star {
+            position: absolute; /* Position relative to the parent .login-content-tech-bg */
+            width: 3px; /* Width of the shooting star trail */
+            height: 100px; /* Length of the shooting star trail */
+            background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.8) 50%, transparent 100%); /* Gradient for tail effect */
+            z-index: 0; /* Ensure stars are below the card (container z-index is 1) */
+            opacity: 0; /* Start invisible */
+            transform-origin: top center; /* Rotate and translate from the top tip */
+            transform: rotate(45deg); /* Rotate to a diagonal angle (adjust as needed) */
+            animation: shoot 5s linear infinite; /* Apply the animation (adjust duration) */
+            /* Initial position and delay/duration will be set by :nth-child */
+        }
+
+        /* Set different start positions and animation delays for each star (updated for 20 stars) */
+        .shooting-star:nth-child(1) { top: 0; left: 5%; animation-delay: 0s; animation-duration: 5s;}
+        .shooting-star:nth-child(2) { top: 0; left: 10%; animation-delay: 1s; animation-duration: 6s;}
+        .shooting-star:nth-child(3) { top: 0; left: 15%; animation-delay: 2.5s; animation-duration: 4.5s;}
+        .shooting-star:nth-child(4) { top: 0; left: 20%; animation-delay: 0.5s; animation-duration: 5.5s;}
+        .shooting-star:nth-child(5) { top: 0; left: 25%; animation-delay: 3s; animation-duration: 6s;}
+        .shooting-star:nth-child(6) { top: 5%; left: 8%; animation-delay: 1.5s; animation-duration: 5s;}
+        .shooting-star:nth-child(7) { top: 0; left: 30%; animation-delay: 4s; animation-duration: 7s;}
+        .shooting-star:nth-child(8) { top: 5%; left: 35%; animation-delay: 2s; animation-duration: 5.2s;}
+        .shooting-star:nth-child(9) { top: 0; left: 40%; animation-delay: 4.5s; animation-duration: 6.5s;}
+        .shooting-star:nth-child(10) { top: 0; left: 45%; animation-delay: 5s; animation-duration: 5s;}
+        .shooting-star:nth-child(11) { top: 10%; left: 48%; animation-delay: 3.5s; animation-duration: 7.2s;}
+        .shooting-star:nth-child(12) { top: 0; left: 55%; animation-delay: 6s; animation-duration: 4s;}
+        .shooting-star:nth-child(13) { top: 5%; left: 60%; animation-delay: 2s; animation-duration: 5.8s;}
+        .shooting-star:nth-child(14) { top: 0; left: 65%; animation-delay: 7s; animation-duration: 6.8s;}
+        .shooting-star:nth-child(15) { top: 15%; left: 68%; animation-delay: 8s; animation-duration: 5.5s;}
+        .shooting-star:nth-child(16) { top: 0; left: 70%; animation-delay: 9s; animation-duration: 4.8s;}
+        .shooting-star:nth-child(17) { top: 0; left: 75%; animation-delay: 10s; animation-duration: 6.2s;}
+        .shooting-star:nth-child(18) { top: 10%; left: 78%; animation-delay: 4.2s; animation-duration: 7s;}
+        .shooting-star:nth-child(19) { top: 0; left: 85%; animation-delay: 5.8s; animation-duration: 5.3s;}
+        .shooting-star:nth-child(20) { top: 5%; left: 90%; animation-delay: 7.5s; animation-duration: 4.5s;}
+
+
+        /* 3. Define Pseudo-elements for extra background shapes (kept) */
+        .login-content-tech-bg::before {
+            content: '';
+            position: absolute;
+            bottom: -20%; right: -15%;
+            width: 50%; padding-bottom: 50%;
+            background: radial-gradient(circle, rgba(0, 161, 241, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+             z-index: 0;
+            transform: rotate(15deg);
+        }
+         .login-content-tech-bg::after {
+            content: '';
+            position: absolute;
+            top: -10%; left: -20%;
+            width: 60%; padding-bottom: 60%;
+            background: linear-gradient(60deg, rgba(0, 209, 237, 0.1) 0%, transparent 60%);
+             z-index: 0;
+            transform: rotate(-40deg);
+            clip-path: polygon(0% 0%, 100% 0%, 100% 70%, 50% 100%, 0% 70%);
+         }
+
+        /* 4. Adjust container layering (kept) */
+        .login-content-tech-bg .container {
+            position: relative;
+            z-index: 1; /* Ensure card content is above stars and background */
+        }
+
+        /* 5. Redesign the Login Card (kept) */
+        .login-content-tech-bg .card {
+            /* --- New Appearance --- */
+            background-color: rgba(229, 229, 234, 0.8);
+            border: 1px solid rgba(180, 180, 180, 0.3);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.15);
+            border-radius: 0.75rem;
+            font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* 6. Ensure text inside redesigned card is readable (kept) */
+        .login-content-tech-bg .card h3,
+        .login-content-tech-bg .card label,
+        .login-content-tech-bg .card input,
+        .login-content-tech-bg .card p,
+        .login-content-tech-bg .card a {
+            color: #1c1c1e;
+        }
+         .login-content-tech-bg .card .text-secondary {
+             color: #636366 !important;
+          }
+
+        /* Modified style for the line-around span (kept) */
+         .login-content-tech-bg .card .line-around span {
+             display: none;
+         }
+
+        /* Ensure the line is still visible (kept) */
+        .login-content-tech-bg .card .line-around {
+             position: relative;
+             text-align: center;
+             margin-bottom: 20px;
+             margin-top: 20px;
+         }
+
+         .login-content-tech-bg .card .line-around::before,
+         .login-content-tech-bg .card .line-around::after {
+             content: '';
+             position: absolute;
+             top: 50%;
+             width: 45%;
+             height: 1px;
+             background-color: #b4b4b4;
+         }
+
+         .login-content-tech-bg .card .line-around::before {
+             left: 0;
+         }
+
+         .login-content-tech-bg .card .line-around::after {
+             right: 0;
+         }
+
+        .login-content-tech-bg .card input::placeholder {
+             color: #8e8e93;
+         }
+
+        /* Empty .login-content-tech-bg .card .btn-primary rule removed */
+
+        /* --- Custom style for the logo --- (kept) */
+        .login-logo {
+            display: block;
+            margin: 0 auto 20px auto;
+            max-width: 150px;
+            height: auto;
+        }
+
+    </style>
+</head>
+<body class=" ">
+
+    <div class="wrapper">
+        <section class="login-content login-content-tech-bg">
+
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="shooting-star"></div>
+            <div class="container h-100">
+                {% block content %}
+                <div class="row align-items-center justify-content-center h-100">
+                    <div class="col-md-5">
+                        <div class="card p-3">
+                            <div class="card-body">
+                                <img src="/static/image/my_logo.png" alt="系统Logo" class="login-logo">
+
+                                <h3 class="mb-3 font-weight-bold text-center">基于echarts的微博话题分析可视化系统</h3>
+                                <div class="mb-5">
+                                    <p class="line-around text-secondary mb-0"></p>
+                                </div>
+                                <form method="POST" action="/user/login">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <div class="row">
+                                        <div class="col-lg-12">
+                                            <div class="form-group">
+                                                <label class="text-secondary">用户名</label>
+                                                <input name="username" class="form-control" type="text" placeholder="输入您的用户名">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-12 mt-2">
+                                            <div class="form-group">
+                                                 <label class="text-secondary">密码</label>
+                                                <input name="password" class="form-control" type="password" placeholder="输入您的密码">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary btn-block mt-2">登录</button>
+                                    <div class="col-lg-12 mt-3">
+                                         <p class="mb-0 text-center">还没有账号? <a href="/user/register">注册</a></p>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endblock %}
+            </div>
+        </section>
+    </div>
+
+    <script src="/static/js/backend-bundle.min.js"></script>
+    <script src="/static/js/customizer.js"></script>
+    <script src="/static/js/sidebar.js"></script>
+    <script src="/static/js/flex-tree.min.js"></script>
+    <script src="/static/js/tree.js"></script>
+    <script src="/static/js/table-treeview.js"></script>
+    <script src="/static/js/sweetalert.js"></script>
+    <script src="/static/js/vector-map-custom.js"></script>
+    <script src="/static/js/chart-custom.js"></script>
+    <script src="/static/js/01.js"></script>
+    <script src="/static/js/02.js"></script>
+    <script src="/static/js/slider.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

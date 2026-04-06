@@ -1,0 +1,78 @@
+:root {
+  /* Brand Color - Indigo */
+  --el-color-primary: #4f46e5;
+  --el-color-primary-light-1: #6366f1;
+  --el-color-primary-light-3: #818cf8;
+  --el-color-primary-light-5: #a5b4fc;
+  --el-color-primary-light-7: #c7d2fe;
+  --el-color-primary-light-8: #e0e7ff;
+  --el-color-primary-light-9: #eef2ff;
+  --el-color-primary-dark-2: #3730a3;
+
+  /* Backgrounds & Surfaces */
+  --el-bg-color-page: #fafafa;
+  /* Vercel uses ultra light gray/white for background */
+  --el-bg-color: #ffffff;
+  --el-fill-color-blank: #ffffff;
+  /* pure white cards */
+  --el-bg-color-overlay: #ffffff;
+
+  /* Text Colors */
+  --el-text-color-primary: #171717;
+  /* Vercel dark slate text */
+  --el-text-color-regular: #666666;
+  /* Subtitle color */
+  --el-text-color-secondary: #888888;
+  --el-text-color-placeholder: #a1a1aa;
+
+  /* Borders & Dividers */
+  --el-border-color: #eaeaea;
+  /* Vercel ultra light border */
+  --el-border-color-light: #eaeaea;
+  --el-border-color-lighter: #f5f5f5;
+  --el-border-color-extra-light: #fafafa;
+
+  /* Border Radius */
+  --el-border-radius-base: 12px;
+  /* Bigger modern radius */
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 24px;
+
+  /* Shadows - Light and elegant */
+  --el-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  /* Extremely subtle */
+  --el-box-shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --el-box-shadow-lighter: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+  --el-box-shadow-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+
+  /* Overrides for specific components */
+  --el-menu-active-color: var(--el-color-primary);
+  --el-menu-hover-bg-color: var(--el-color-primary-light-9);
+}
+
+html.dark {
+  /* Dark Mode Adjustments */
+  --el-color-primary: #6366f1;
+  /* Slightly lighter indigo for dark mode */
+  --el-color-primary-light-3: #818cf8;
+  --el-color-primary-light-5: #a5b4fc;
+  --el-color-primary-light-7: #c7d2fe;
+  --el-color-primary-light-8: #e0e7ff;
+  --el-color-primary-light-9: #eef2ff;
+  --el-color-primary-dark-2: #4f46e5;
+
+  --el-bg-color-page: #0f172a;
+  /* Slate 900 */
+  --el-bg-color: #1e293b;
+  /* Slate 800 */
+  --el-bg-color-overlay: #1e293b;
+
+  --el-text-color-primary: #f8fafc;
+  --el-text-color-regular: #e2e8f0;
+  --el-text-color-secondary: #94a3b8;
+  --el-text-color-placeholder: #64748b;
+
+  --el-border-color: #334155;
+  --el-border-color-light: #1e293b;
+  --el-border-color-lighter: #0f172a;
+}

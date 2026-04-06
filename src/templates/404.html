@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+   <meta charset="utf-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+   <title>404 - 页面未找到 | 微博舆情分析系统</title>
+   <meta name="description" content="页面未找到 - 微博舆情分析可视化系统">
+
+   <!-- 引入原有样式 -->
+   <link rel="stylesheet" href="/static/css/backend-plugin.min.css">
+   <link rel="stylesheet" href="/static/css/backend.css">
+
+   <!-- 添加自定义样式 -->
+   <style>
+      body {
+         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+         font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+         min-height: 100vh;
+         overflow: hidden;
+      }
+
+      .error-container {
+         min-height: 100vh;
+         display: flex;
+         align-items: center;
+         justify-content: center;
+         position: relative;
+      }
+
+      .error-content {
+         text-align: center;
+         color: white;
+         z-index: 10;
+         animation: fadeInUp 1s ease-out;
+      }
+
+      .error-number {
+         font-size: 12rem;
+         font-weight: bold;
+         background: linear-gradient(45deg, #ff6b6b, #feca57);
+         background-clip: text;
+         -webkit-background-clip: text;
+         -webkit-text-fill-color: transparent;
+         text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+         margin: 0;
+         line-height: 1;
+         animation: glow 2s ease-in-out infinite alternate;
+      }
+
+      .error-title {
+         font-size: 2.5rem;
+         margin: 20px 0;
+         font-weight: 300;
+         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .error-subtitle {
+         font-size: 1.2rem;
+         margin-bottom: 30px;
+         opacity: 0.9;
+         max-width: 500px;
+         margin-left: auto;
+         margin-right: auto;
+      }
+
+      .back-button {
+         background: linear-gradient(45deg, #ff6b6b, #feca57);
+         border: none;
+         padding: 15px 30px;
+         border-radius: 50px;
+         color: white;
+         font-size: 1.1rem;
+         font-weight: 500;
+         text-decoration: none;
+         display: inline-flex;
+         align-items: center;
+         gap: 10px;
+         transition: all 0.3s ease;
+         box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+         position: relative;
+         overflow: hidden;
+      }
+
+      .back-button::before {
+         content: '';
+         position: absolute;
+         top: 0;
+         left: -100%;
+         width: 100%;
+         height: 100%;
+         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+         transition: left 0.5s;
+      }
+
+      .back-button:hover {
+         transform: translateY(-3px);
+         box-shadow: 0 12px 35px rgba(255, 107, 107, 0.4);
+         text-decoration: none;
+         color: white;
+      }
+
+      .back-button:hover::before {
+         left: 100%;
+      }
+
+      .floating-elements {
+         position: absolute;
+         top: 0;
+         left: 0;
+         width: 100%;
+         height: 100%;
+         pointer-events: none;
+         overflow: hidden;
+      }
+
+      .floating-element {
+         position: absolute;
+         background: rgba(255, 255, 255, 0.1);
+         border-radius: 50%;
+         animation: float 6s ease-in-out infinite;
+      }
+
+      .floating-element:nth-child(1) {
+         width: 80px;
+         height: 80px;
+         top: 20%;
+         left: 10%;
+         animation-delay: 0s;
+      }
+
+      .floating-element:nth-child(2) {
+         width: 120px;
+         height: 120px;
+         top: 60%;
+         right: 15%;
+         animation-delay: 2s;
+      }
+
+      .floating-element:nth-child(3) {
+         width: 60px;
+         height: 60px;
+         bottom: 20%;
+         left: 20%;
+         animation-delay: 4s;
+      }
+
+      .floating-element:nth-child(4) {
+         width: 100px;
+         height: 100px;
+         top: 10%;
+         right: 25%;
+         animation-delay: 1s;
+      }
+
+      .floating-element:nth-child(5) {
+         width: 40px;
+         height: 40px;
+         bottom: 30%;
+         right: 10%;
+         animation-delay: 3s;
+      }
+
+      @keyframes fadeInUp {
+         from {
+            opacity: 0;
+            transform: translateY(50px);
+         }
+
+         to {
+            opacity: 1;
+            transform: translateY(0);
+         }
+      }
+
+      @keyframes glow {
+         from {
+            text-shadow: 0 0 30px rgba(255, 107, 107, 0.5);
+         }
+
+         to {
+            text-shadow: 0 0 50px rgba(255, 107, 107, 0.8), 0 0 80px rgba(255, 107, 107, 0.3);
+         }
+      }
+
+      @keyframes float {
+
+         0%,
+         100% {
+            transform: translateY(0) rotate(0deg);
+         }
+
+         33% {
+            transform: translateY(-20px) rotate(120deg);
+         }
+
+         66% {
+            transform: translateY(20px) rotate(240deg);
+         }
+      }
+
+      @media (max-width: 768px) {
+         .error-number {
+            font-size: 8rem;
+         }
+
+         .error-title {
+            font-size: 2rem;
+         }
+
+         .error-subtitle {
+            font-size: 1rem;
+            padding: 0 20px;
+         }
+      }
+   </style>
+</head>
+
+<body>
+   <div class="error-container">
+      <div class="floating-elements">
+         <div class="floating-element"></div>
+         <div class="floating-element"></div>
+         <div class="floating-element"></div>
+         <div class="floating-element"></div>
+         <div class="floating-element"></div>
+      </div>
+
+      <div class="error-content">
+         <h1 class="error-number">404</h1>
+         <h2 class="error-title">页面走丢了</h2>
+         <p class="error-subtitle">抱歉，您访问的页面可能已被移动、删除或者从未存在过。<br>让我们帮您回到正确的地方。</p>
+         <a href="/user/login" class="back-button">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+               <path d="M10 19L3 12L10 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+               <path d="M21 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+            </svg>
+            返回登录页
+         </a>
+      </div>
+   </div>
+
+   <!-- 原有脚本保留以确保兼容性 -->
+   <script src="/static/js/backend-bundle.min.js"></script>
+   <script src="/static/js/customizer.js"></script>
+   <script src="/static/js/sidebar.js"></script>
+   <script src="/static/js/flex-tree.min.js"></script>
+   <script src="/static/js/tree.js"></script>
+   <script src="/static/js/table-treeview.js"></script>
+   <script src="/static/js/sweetalert.js"></script>
+   <script src="/static/js/vector-map-custom.js"></script>
+   <script src="/static/js/chart-custom.js"></script>
+   <script src="/static/js/01.js"></script>
+   <script src="/static/js/02.js"></script>
+   <script src="/static/js/slider.js"></script>
+   <script src="/static/js/app.js"></script>
+
+   <!-- 添加自定义交互脚本 -->
+   <script>
+      // 添加鼠标移动视差效果
+      document.addEventListener('mousemove', function (e) {
+         const floatingElements = document.querySelectorAll('.floating-element');
+         const mouseX = e.clientX / window.innerWidth;
+         const mouseY = e.clientY / window.innerHeight;
+
+         floatingElements.forEach((element, index) => {
+            const speed = (index + 1) * 0.02;
+            const x = (mouseX - 0.5) * speed * 100;
+            const y = (mouseY - 0.5) * speed * 100;
+            element.style.transform = `translate(${x}px, ${y}px)`;
+         });
+      });
+
+      // 添加按钮点击波纹效果
+      document.querySelector('.back-button').addEventListener('click', function (e) {
+         const ripple = document.createElement('span');
+         const rect = this.getBoundingClientRect();
+         const size = Math.max(rect.width, rect.height);
+         const x = e.clientX - rect.left - size / 2;
+         const y = e.clientY - rect.top - size / 2;
+
+         ripple.style.cssText = `
+          position: absolute;
+          width: ${size}px;
+          height: ${size}px;
+          left: ${x}px;
+          top: ${y}px;
+          background: rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          transform: scale(0);
+          animation: ripple 0.6s linear;
+          pointer-events: none;
+        `;
+
+         this.style.position = 'relative';
+         this.appendChild(ripple);
+
+         setTimeout(() => {
+            ripple.remove();
+         }, 600);
+      });
+
+      // 添加CSS动画关键帧
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes ripple {
+          to {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+      `;
+      document.head.appendChild(style);
+   </script>
+</body>
+
+</html>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基于Python微博舆情分析系统 - Slide 1 (Light Mode - Blue Animated)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap"
+          rel="stylesheet">
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            /* Gradient for text animation (Blue -> Cyan -> Blue) */
+            /* 这就是你描述的“平面颜色渐变块” */
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-border-color: #E5E7EB; /* gray-200 */
+        }
+
+        /* --- Base Body Styles --- */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color-base); /* Default dark text */
+            font-family: 'Noto Sans SC', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* --- Utility Classes (Edge Blue) --- */
+        .text-edge-blue {
+            color: var(--edge-blue);
+        }
+
+        .border-edge-blue {
+            border-color: var(--edge-blue);
+        }
+
+        /* --- Layout Containers --- */
+        .slide-container {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 2rem;
+        }
+
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            max-width: 1200px;
+            width: 90%;
+            z-index: 2;
+        }
+
+        /* --- Initial Animation --- */
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Apply base fade-slide-up to elements */
+        #main-title, #sub-title, .feature-card {
+            opacity: 0; /* Start hidden */
+            animation: fadeSlideUp 0.7s ease-out forwards; /* Base animation */
+        }
+
+        /* Specific delays are set inline via style attribute */
+
+        /* --- Animated Gradient Text --- */
+        /* 这个类实现了你描述的效果：将文字作为“浮动的框架”，显示下方移动的渐变色块 */
+        .animated-gradient-text {
+            /* 1. 定义背景为渐变色 (这就是“颜色渐变块”) */
+            background: var(--edge-style-gradient);
+            /* 2. 让背景宽度是文字宽度的两倍，这样才有移动的空间 */
+            background-size: 200% auto;
+            /* 3. 将背景裁剪成文字的形状 (这就是“框取一部分”) */
+            background-clip: text;
+            -webkit-background-clip: text; /* 兼容 Webkit 内核浏览器 */
+            /* 4. 将文字本身的颜色设为透明，这样才能透过文字看到背景的渐变色 */
+            -webkit-text-fill-color: transparent;
+            color: transparent; /* Fallback */
+            /* 5. 应用两个动画： */
+            /* gradient-animation: 让背景渐变动起来 (这就是“移动色块”) */
+            /* fadeSlideUp:      让元素渐入并上滑出现 */
+            animation: gradient-animation 4s linear infinite, fadeSlideUp 0.7s ease-out forwards;
+        }
+
+        /* 定义渐变动画：改变背景的位置 */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            /* 渐变背景在最左边 */
+            50% {
+                background-position: 100% 50%;
+            }
+            /* 渐变背景移动到最右边 */
+            100% {
+                background-position: 0% 50%;
+            }
+            /* 渐变背景回到最左边，形成循环 */
+        }
+
+        /* --- Feature Cards (Light Mode) --- */
+        .feature-card {
+            background-color: var(--card-bg-color);
+            border: 1px solid var(--card-border-color);
+            border-radius: 0.75rem;
+            padding: 1.75rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+            min-width: 160px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow for light */
+            /* Delay is set inline via style attribute */
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--edge-blue); /* Highlight border */
+            /* Updated shadow for blue accent */
+            box-shadow: 0 10px 15px -3px rgba(0, 161, 241, 0.1), 0 4px 6px -2px rgba(0, 161, 241, 0.05);
+        }
+
+        /* Feature card text colors adjusted for light mode */
+        .feature-card .text-lg {
+            color: var(--text-color-base);
+        }
+
+        /* Darker text */
+        .feature-card .text-sm {
+            color: var(--text-color-caption);
+        }
+
+        /* Muted caption */
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
+        .slide-navigation {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue); /* Use solid blue */
+            color: white; /* Text on blue */
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Subtle blue shadow */
+        }
+
+        .nav-button:hover {
+            background-color: var(--edge-blue-dark); /* Darker blue on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3);
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd; /* Lighter gray for disabled */
+            color: #6c757d; /* Darker gray text for disabled */
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+    </style>
+</head>
+
+<body>
+<div class="slide-container">
+    <div class="content-wrapper">
+
+        <h1 id="main-title"
+            class="animated-gradient-text text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-3 md:mb-4 tracking-tight whitespace-nowrap"
+            style="animation-delay: 0.2s;">
+            基于Python微博舆情分析系统
+        </h1>
+
+        <p id="sub-title"
+           class="animated-gradient-text text-lg md:text-xl lg:text-2xl font-light mb-8 md:mb-12"
+           style="animation-delay: 0.4s;">
+            Python-based Weibo Public Opinion Analysis System
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-8 md:gap-10 lg:gap-12">
+            <div class="feature-card" style="animation-delay: 0.6s;">
+                <i class="fa-solid fa-chart-line text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">舆情分析</div>
+                <span class="text-sm text-color-caption">Analysis</span></div>
+            <div class="feature-card" style="animation-delay: 0.75s;">
+                <i class="fa-brands fa-python text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">Python技术</div>
+                <span class="text-sm text-color-caption">Technology</span></div>
+            <div class="feature-card" style="animation-delay: 0.9s;">
+                <i class="fa-solid fa-database text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">数据处理</div>
+                <span class="text-sm text-color-caption">Processing</span></div>
+            <div class="feature-card" style="animation-delay: 1.05s;">
+                <i class="fa-solid fa-chart-pie text-5xl text-edge-blue"></i>
+                <div class="text-lg font-semibold">可视化展示</div>
+                <span class="text-sm text-color-caption">Visualization</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-navigation">
+    <a href="index.html" class="nav-button prev-button">返回首页</a>
+    <a href="2.html" class="nav-button next-button">下一页</a>
+</div>
+
+<script>
+    // --- Initial animation logic is handled purely by CSS ---
+
+    // --- Navigation Script ---
+    const prevSlideURL = 'index.html'; // Update if needed - Link to previous page or null
+    const nextSlideURL = '2.html'; // Update if needed - Link to next page or null
+
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
+        }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+            navigateTo(nextSlideURL);
+        }
+    });
+
+    // Button click navigation and disabling
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+
+    if (prevButton) {
+        if (prevSlideURL) {
+            prevButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(prevSlideURL);
+            });
+        } else {
+            // If no previous URL, disable the button
+            prevButton.classList.add('disabled');
+            prevButton.removeAttribute('href'); // Remove link for disabled state
+            prevButton.style.cursor = 'not-allowed';
+        }
+    }
+
+    if (nextButton) {
+        if (nextSlideURL) {
+            nextButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(nextSlideURL);
+            });
+        } else {
+            // If no next URL, disable the button
+            nextButton.classList.add('disabled');
+            nextButton.removeAttribute('href'); // Remove link for disabled state
+            nextButton.style.cursor = 'not-allowed';
+        }
+    }
+</script>
+</body>
+</html>

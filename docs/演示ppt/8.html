@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统性能与测试 - Slide 8 (Themed - Split Title)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-bg-color: #F9FAFB; /* gray-50 */
+            --card-border-color: #E5E7EB; /* gray-200 */
+            --section-border-color: #D1D5DB; /* gray-300 for title border */
+
+            /* Chrome Dark Gray */
+            --chrome-dark-gray: #303134;
+
+            /* Chart Colors */
+            --chart-grid-color: rgba(0, 0, 0, 0.05);
+            --chart-label-color: var(--text-color-muted);
+            --chart-tick-color: var(--text-color-caption);
+            --chart-title-color: var(--text-color-base);
+            --chart-tooltip-bg: rgba(0, 0, 0, 0.8);
+            --chart-tooltip-text: #ffffff;
+        }
+
+        /* --- Base Body Styles --- */
+        body {
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: var(--bg-color); /* Light background */
+            color: var(--text-color-base); /* Default dark text */
+            overflow-x: hidden;
+        }
+
+        /* Remove dark mode text color utility if not needed elsewhere */
+        /* .text-tesla-red { color: var(--tesla-red); } */
+        .text-edge-blue {
+            color: var(--edge-blue);
+        }
+
+        /* Added blue utility */
+
+        /* --- Main Title Styles (Split Effect) --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2rem, 5vw, 4rem);
+            text-align: center;
+            border-bottom: 2px solid var(--section-border-color); /* Lighter border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            /* text-shadow: none; Remove shadow for light mode */
+            color: inherit; /* Let spans control color */
+        }
+
+        .en-label-small {
+            font-family: 'Roboto', sans-serif;
+            font-weight: 300;
+            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+            color: var(--text-color-caption); /* Adjusted color */
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 3px;
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
+            display: block;
+        }
+
+        /* Gradient Animation */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Split Title Parts */
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Dark gray for first part */
+        }
+
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            animation: gradient-animation 4s linear infinite;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        /* --- END Title Styles --- */
+
+
+        /* Initial Fade Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            opacity: 0;
+            animation: fadeInUp 0.7s ease-out forwards;
+        }
+
+        /* Progress Bar Animation */
+        @keyframes progress-fill {
+            from {
+                width: 0%;
+            }
+        }
+
+        /* --- Section Cards (Light Mode) --- */
+        .section-card {
+            background-color: var(--card-bg-color);
+            border-radius: 1rem;
+            transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--card-border-color); /* Add subtle border */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02); /* Softer shadow */
+        }
+
+        .section-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--edge-blue); /* Highlight with blue */
+            box-shadow: 0 10px 25px rgba(0, 161, 241, 0.15), 0 5px 10px rgba(0, 161, 241, 0.08); /* Blue glow */
+        }
+
+        /* Section Title (Light Mode) */
+        .section-title-icon {
+            color: var(--edge-blue); /* Use Edge Blue */
+        }
+
+        .section-title-text {
+            color: var(--text-color-base); /* Standard dark text */
+        }
+
+        /* Performance Section (Light Mode) */
+        .metric-icon {
+            background-color: #eef2ff; /* Lighter background e.g. indigo-50 */
+            border-radius: 9999px;
+        }
+
+        .metric-icon i {
+            color: var(--edge-blue); /* Use Edge Blue */
+        }
+
+        .metric-title {
+            color: var(--text-color-base);
+        }
+
+        .metric-desc {
+            color: var(--text-color-muted);
+            line-height: 1.6;
+        }
+
+        .key-value .key {
+            color: var(--text-color-caption);
+        }
+
+        .key-value .value {
+            color: var(--text-color-base);
+            font-weight: 600;
+        }
+
+        .progress-container {
+            background-color: var(--card-border-color); /* Light gray track */
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 9999px;
+            animation: progress-fill 1.2s 0.5s ease-out forwards;
+        }
+
+        /* Test Case Section (Light Mode) */
+        .test-card {
+            background-color: #ffffff; /* Slightly different bg or same as section */
+            border-radius: 0.75rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--card-border-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+        }
+
+        .test-card:hover {
+            background-color: #ffffff;
+            transform: translateY(-5px);
+            border-color: var(--edge-blue); /* Use Edge Blue */
+            box-shadow: 0 6px 12px rgba(0, 161, 241, 0.1); /* Blue hover shadow */
+        }
+
+        .test-icon {
+            background-color: #e0f2fe; /* e.g., sky-100 */
+            border-radius: 0.5rem;
+        }
+
+        .test-icon i {
+            color: var(--edge-blue); /* Use Edge Blue */
+        }
+
+        .test-name {
+            color: var(--text-color-base);
+        }
+
+        .test-desc {
+            color: var(--text-color-muted);
+            line-height: 1.6;
+            flex-grow: 1;
+        }
+
+        .test-result {
+            margin-top: auto;
+        }
+
+        .test-status {
+            border-radius: 9999px;
+            font-weight: 500;
+            background-color: #d1fae5; /* e.g., green-100 */
+            color: #057a55; /* e.g., green-700 */
+        }
+
+        .test-score {
+            background-color: var(--card-border-color); /* Light gray */
+            border-radius: 9999px;
+            font-weight: 600;
+            color: var(--text-color-base);
+        }
+
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
+        .slide-navigation {
+        }
+
+        /* Positioning handled by Tailwind */
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue); /* Use Edge Blue */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Blue shadow */
+        }
+
+        .nav-button:hover {
+            background-color: var(--edge-blue-dark); /* Darker Blue */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3); /* Stronger blue shadow */
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd;
+            color: #6c757d;
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+
+    </style>
+</head>
+
+<body class="bg-white">
+<div class="slide min-h-screen flex items-center justify-center p-6 md:p-12">
+    <div class="content w-full max-w-7xl mx-auto">
+
+        <h1 class="main-title animate-fadeInUp">
+            <span class="title-black-part">系统性能</span><span class="title-gradient-part">与测试</span>
+            <span class="en-label-small mt-2">System Performance & Testing</span>
+        </h1>
+
+        <div class="sections-container flex flex-col lg:flex-row gap-8 md:gap-10">
+
+            <div class="section section-card flex-1 p-6 md:p-8 animate-fadeInUp" style="animation-delay: 0.2s;">
+                <div class="section-title text-2xl md:text-3xl font-bold mb-5 flex items-center">
+                    <i class="fas fa-tachometer-alt section-title-icon text-2xl md:text-3xl mr-4"></i>
+                    <span class="section-title-text">性能评估</span>
+                </div>
+                <div class="chart-container mb-6 md:mb-8 min-h-[250px] md:min-h-[300px]">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                <div class="space-y-5 md:space-y-6">
+                    <div class="metric-item flex items-start gap-4">
+                        <div class="metric-icon w-9 h-9 flex items-center justify-center text-lg mt-1"><i
+                                class="fas fa-clock"></i></div>
+                        <div class="metric-content flex-1">
+                            <div class="metric-title text-lg font-semibold mb-1">响应时间</div>
+                            <div class="metric-desc text-base">数据处理与查询响应速度，优化后平均响应时间低于200ms。</div>
+                            <div class="key-value text-sm mt-2">
+                                <div class="key">优化前均值</div>
+                                <div class="value">~550ms</div>
+                            </div>
+                            <div class="key-value text-sm">
+                                <div class="key">优化后均值</div>
+                                <div class="value">&lt;200ms</div>
+                            </div>
+                            <div class="progress-container mt-2 h-2.5">
+                                <div class="progress-bar" style="width: 85%; background-color: var(--edge-blue);"
+                                     title="优化后提升约65%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="metric-item flex items-start gap-4">
+                        <div class="metric-icon w-9 h-9 flex items-center justify-center text-lg mt-1"><i
+                                class="fas fa-database"></i></div>
+                        <div class="metric-content flex-1">
+                            <div class="metric-title text-lg font-semibold mb-1">吞吐量</div>
+                            <div class="metric-desc text-base">系统能处理的最大数据量，单节点可处理50+条/秒。</div>
+                            <div class="key-value text-sm mt-2">
+                                <div class="key">单节点处理</div>
+                                <div class="value">50+条/秒</div>
+                            </div>
+                            <div class="key-value text-sm">
+                                <div class="key">分布式扩展</div>
+                                <div class="value">线性可扩展</div>
+                            </div>
+                            <div class="progress-container mt-2 h-2.5">
+                                <div class="progress-bar"
+                                     style="width: 78%; background-color: var(--edge-blue-dark);"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section section-card flex-1 p-6 md:p-8 animate-fadeInUp" style="animation-delay: 0.4s;">
+                <div class="section-title text-2xl md:text-3xl font-bold mb-5 flex items-center">
+                    <i class="fas fa-vial section-title-icon text-2xl md:text-3xl mr-4"></i>
+                    <span class="section-title-text">测试用例</span>
+                </div>
+                <div class="test-results grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-6">
+                    <div class="test-card p-4 md:p-5">
+                        <div class="test-icon w-10 h-10 flex items-center justify-center mb-3"><i
+                                class="fas fa-server text-xl"></i></div>
+                        <div class="test-name text-lg font-semibold mb-2">系统稳定性测试</div>
+                        <div class="test-desc text-sm mb-3">高负载持续运行72小时，监测资源占用与响应时间。</div>
+                        <div class="key-value text-xs">
+                            <div class="key">CPU峰值</div>
+                            <div class="value">~65%</div>
+                        </div>
+                        <div class="key-value text-xs mb-3">
+                            <div class="key">内存峰值</div>
+                            <div class="value">~72%</div>
+                        </div>
+                        <div class="test-result flex items-center gap-3">
+                            <div class="test-status px-3 py-0.5 text-xs">通过</div>
+                            <div class="test-score px-3 py-0.5 text-sm">92/100</div>
+                        </div>
+                    </div>
+                    <div class="test-card p-4 md:p-5">
+                        <div class="test-icon w-10 h-10 flex items-center justify-center mb-3"><i
+                                class="fas fa-eye text-xl"></i></div>
+                        <div class="test-name text-lg font-semibold mb-2">可视化效果测试</div>
+                        <div class="test-desc text-sm mb-3">验证可视化展示准确性与交互性，数据一致性及用户响应度。</div>
+                        <div class="key-value text-xs">
+                            <div class="key">数据准确率</div>
+                            <div class="value">99.7%</div>
+                        </div>
+                        <div class="key-value text-xs mb-3">
+                            <div class="key">交互响应</div>
+                            <div class="value">&lt;100ms</div>
+                        </div>
+                        <div class="test-result flex items-center gap-3">
+                            <div class="test-status px-3 py-0.5 text-xs">通过</div>
+                            <div class="test-score px-3 py-0.5 text-sm">95/100</div>
+                        </div>
+                    </div>
+                    <div class="test-card p-4 md:p-5">
+                        <div class="test-icon w-10 h-10 flex items-center justify-center mb-3"><i
+                                class="fas fa-project-diagram text-xl"></i></div>
+                        <div class="test-name text-lg font-semibold mb-2">情感分析准确度</div>
+                        <div class="test-desc text-sm mb-3">使用标准测试集评估情感分析算法的准确度与召回率。</div>
+                        <div class="key-value text-xs">
+                            <div class="key">准确率(Acc)</div>
+                            <div class="value">87.5%</div>
+                        </div>
+                        <div class="key-value text-xs mb-3">
+                            <div class="key">F1得分</div>
+                            <div class="value">85.8%</div>
+                        </div>
+                        <div class="test-result flex items-center gap-3">
+                            <div class="test-status px-3 py-0.5 text-xs">通过</div>
+                            <div class="test-score px-3 py-0.5 text-sm">86/100</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
+    <a href="7.html" class="nav-button prev-button">上一页</a>
+    <a href="9.html" class="nav-button next-button">下一页</a>
+</div>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        // --- Performance Comparison Chart (Light Mode Colors) ---
+        const performanceCtx = document.getElementById('performanceChart')?.getContext('2d');
+        if (performanceCtx) {
+            // Using CSS Variables defined in :root
+            const edgeBlue = getComputedStyle(document.documentElement).getPropertyValue('--edge-blue').trim() || '#00A1F1';
+            const textColorBase = getComputedStyle(document.documentElement).getPropertyValue('--text-color-base').trim() || '#1F2937';
+            const textColorMuted = getComputedStyle(document.documentElement).getPropertyValue('--text-color-muted').trim() || '#4B5563';
+            const textColorCaption = getComputedStyle(document.documentElement).getPropertyValue('--text-color-caption').trim() || '#6B7280';
+            const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--chart-grid-color').trim() || 'rgba(0, 0, 0, 0.05)';
+            const tooltipBg = getComputedStyle(document.documentElement).getPropertyValue('--chart-tooltip-bg').trim() || 'rgba(0, 0, 0, 0.8)';
+            const tooltipText = getComputedStyle(document.documentElement).getPropertyValue('--chart-tooltip-text').trim() || '#ffffff';
+
+            new Chart(performanceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['小规模数据', '中规模数据', '大规模数据', '超大规模数据'],
+                    datasets: [
+                        {
+                            label: '优化前响应时间(ms)',
+                            data: [120, 350, 780, 1450],
+                            backgroundColor: 'rgba(129, 140, 248, 0.7)',
+                            borderWidth: 0
+                        }, // Example: Indigo-400 alpha
+                        {
+                            label: '优化后响应时间(ms)',
+                            data: [50, 120, 280, 520],
+                            backgroundColor: edgeBlue + 'B3',
+                            borderWidth: 0
+                        }  // Edge Blue with alpha (B3 = 70%)
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {display: true, text: '响应时间(ms)', color: textColorMuted, font: {size: 12}},
+                            grid: {color: gridColor, drawBorder: false},
+                            ticks: {color: textColorCaption, font: {size: 11}}
+                        },
+                        x: {
+                            grid: {color: gridColor, drawBorder: false},
+                            ticks: {color: textColorCaption, font: {size: 11}}
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {color: textColorMuted, font: {size: 11}, boxWidth: 15, padding: 15}
+                        },
+                        title: {
+                            display: true,
+                            text: '系统性能优化效果对比',
+                            color: textColorBase,
+                            font: {size: 14, weight: 'bold'},
+                            padding: {bottom: 15}
+                        },
+                        tooltip: {
+                            backgroundColor: tooltipBg,
+                            titleColor: tooltipText,
+                            bodyColor: tooltipText,
+                            padding: 10,
+                            cornerRadius: 4,
+                            titleFont: {weight: 'bold'},
+                            bodyFont: {size: 11}
+                        }
+                    }
+                }
+            });
+        } else {
+            console.error("Canvas element #performanceChart not found.");
+        }
+    });
+</script>
+
+<script>
+    // Navigation Script (Unchanged)
+    const prevSlideURL = '7.html';
+    const nextSlideURL = '9.html';
+
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
+            navigateTo(nextSlideURL);
+        }
+    });
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+    if (prevButton) {
+        prevButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(prevSlideURL);
+        });
+    }
+    if (nextButton) {
+        if (nextSlideURL) {
+            nextButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(nextSlideURL);
+            });
+        } else {
+            nextButton.classList.add('disabled');
+            nextButton.href = '#';
+        }
+    }
+</script>
+</body>
+
+</html>

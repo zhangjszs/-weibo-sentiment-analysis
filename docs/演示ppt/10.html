@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>致谢 - Slide 10 (Themed & Split Title)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+          integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+    <style>
+        /* --- Theme Variables --- */
+        :root {
+            /* Edge Blue Palette */
+            --edge-blue: #00A1F1;
+            --edge-blue-dark: #007CDD;
+            --edge-gradient-end: #00D1ED;
+            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+            /* Light Mode Base Colors */
+            --bg-color: #FFFFFF;
+            --text-color-base: #1F2937; /* gray-800 */
+            --text-color-muted: #4B5563; /* gray-600 */
+            --text-color-caption: #6B7280; /* gray-500 */
+            --card-border-color: #E5E7EB; /* gray-200 - Used for title border */
+
+            /* Chrome Dark Gray for Title Split */
+            --chrome-dark-gray: #303134;
+        }
+
+        /* Base styling */
+        body {
+            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            background-color: var(--bg-color); /* Light background */
+            color: var(--text-color-base); /* Default dark text */
+            overflow-x: hidden;
+        }
+
+        /* --- Main Title Styles --- */
+        .main-title {
+            font-family: 'Noto Sans SC', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.8rem, 6vw, 4.5rem);
+            line-height: 1.15;
+            margin-bottom: clamp(2rem, 5vw, 4rem);
+            text-align: center;
+            border-bottom: 2px solid var(--card-border-color); /* Lighter border */
+            padding-bottom: clamp(1rem, 2.5vw, 2rem);
+            /* text-shadow: 0 1px 2px rgba(0,0,0,0.1); Optional subtle shadow for light mode */
+            color: inherit; /* Let spans control color */
+        }
+
+        /* --- Gradient Animation --- */
+        @keyframes gradient-animation {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* --- Title Split Styling --- */
+        .title-black-part {
+            color: var(--chrome-dark-gray); /* Use specific dark gray */
+        }
+
+        .title-gradient-part {
+            background: var(--edge-style-gradient);
+            background-size: 200% auto;
+            animation: gradient-animation 4s linear infinite;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: transparent;
+        }
+
+        /* --- General Animation --- */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeInUp {
+            opacity: 0;
+            animation: fadeInUp 0.8s ease-out forwards;
+        }
+
+        /* --- Acknowledgement Item Styling (Light Mode) --- */
+        .ack-item {
+            color: var(--text-color-muted); /* Darker muted text */
+            line-height: 1.8;
+        }
+
+        .ack-item i {
+            color: var(--edge-blue); /* Use Edge Blue Icon */
+            width: 1.5em;
+            text-align: center;
+            margin-right: 0.5rem;
+        }
+
+        .ack-item strong {
+            color: var(--text-color-base); /* Dark text for names */
+            font-weight: 600;
+        }
+
+        /* --- Project Link --- */
+        .project-link-label {
+            color: var(--text-color-caption); /* Muted caption color */
+        }
+
+        /* Project button uses .nav-button styles */
+
+
+        /* --- Navigation Styles (Light Mode - Blue) --- */
+        .slide-navigation {
+        }
+
+        /* Positioning handled by Tailwind */
+        .nav-button {
+            display: inline-block;
+            padding: 10px 25px;
+            background-color: var(--edge-blue); /* Edge Blue background */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Blue shadow */
+        }
+
+        .nav-button:hover:not(.disabled) {
+            background-color: var(--edge-blue-dark); /* Darker blue hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3); /* Stronger blue shadow */
+        }
+
+        .nav-button.disabled {
+            background-color: #adb5bd; /* Lighter gray disabled */
+            color: #6c757d; /* Darker text disabled */
+            opacity: 0.7;
+            cursor: not-allowed;
+            pointer-events: none;
+            box-shadow: none;
+            transform: none;
+        }
+    </style>
+</head>
+
+<body class="bg-white">
+<div class="slide min-h-screen flex items-center justify-center p-6 md:p-12">
+
+    <div class="content w-full max-w-4xl mx-auto text-center">
+        <h1 class="main-title animate-fadeInUp">
+            <span class="title-black-part">致</span><span class="title-gradient-part">谢</span>
+        </h1>
+
+        <div class="acknowledgements space-y-5 md:space-y-6 animate-fadeInUp" style="animation-delay: 0.2s;">
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-user-tie fa-fw"></i>衷心感谢我们的两位指导老师 <strong>田俐</strong>老师和<strong>梅宇</strong>老师
+                ，在项目研究和系统开发过程中给予的悉心指导和宝贵建议。
+            </p>
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-users fa-fw"></i>感谢团队成员 <strong>章崇文、赵子越、廖海清、谢成扬等</strong>
+                的共同努力和协作，你们的支持是项目顺利完成的关键。
+            </p>
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-hands-helping fa-fw"></i>感谢 <strong>比赛主办方</strong> 提供宝贵的平台
+            </p>
+            <p class="ack-item text-lg md:text-xl">
+                <i class="fas fa-heart fa-fw"></i>同时感谢所有关注、支持和参与测试的朋友们！
+            </p>
+        </div>
+
+        <div class="project-link-container mt-12 md:mt-16 animate-fadeInUp" style="animation-delay: 0.4s;">
+            <p class="project-link-label text-base text-gray-500 mb-4">项目地址与更多信息，请访问：</p> <a
+                href="https://github.com/zhangjszs/A-_public_opinion_development_system_based_on_Python." target="_blank"
+                class="project-link-button nav-button inline-flex items-center px-8 py-3 text-lg">
+            <i class="fab fa-github mr-2"></i> 查看项目
+        </a>
+        </div>
+
+    </div>
+</div>
+
+<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
+    <a href="9.html" class="nav-button prev-button">上一页</a>
+    <a href="#" class="nav-button next-button disabled">结束</a></div>
+
+<script>
+    // Navigation Script (Final Slide Logic - unchanged)
+    const prevSlideURL = '9.html';
+    const nextSlideURL = null;
+
+    function navigateTo(url) {
+        if (url) {
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
+            navigateTo(prevSlideURL);
+        }
+    });
+    const prevButton = document.querySelector('.prev-button');
+    const nextButton = document.querySelector('.next-button');
+    if (prevButton) {
+        prevButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(prevSlideURL);
+        });
+    }
+    if (nextButton) {
+        nextButton.classList.add('disabled');
+        nextButton.href = '#';
+        nextButton.onclick = (e) => e.preventDefault();
+    }
+</script>
+</body>
+</html>
