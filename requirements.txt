@@ -16,8 +16,8 @@ bcrypt~=4.2.0
 PyJWT~=2.11.0
 Flask-WTF~=1.2.1
 # 异步任务队列 - Celery和Redis
-celery[redis]~=5.6.2
-redis~=7.2.0
+celery[redis]>=5.6.0,<5.7.0
+redis>=7.2.0,<8.0.0
 # 数据校验和熔断器
 pydantic~=2.5.3
 circuitbreaker~=2.0.0
