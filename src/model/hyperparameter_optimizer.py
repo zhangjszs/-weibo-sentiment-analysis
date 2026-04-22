@@ -107,8 +107,14 @@ class HyperparameterOptimizer:
 
     def build_pipeline(self, model_name: str) -> Pipeline:
         """构建模型流水线"""
+        try:
+            from social_media_preprocessor import SocialMediaPreprocessor
+        except ImportError:
+            from .social_media_preprocessor import SocialMediaPreprocessor
+        
         return Pipeline(
             steps=[
+                ("preprocess", SocialMediaPreprocessor()),
                 ("tfidf", TfidfVectorizer()),
                 ("clf", self.base_models[model_name]),
             ]

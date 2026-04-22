@@ -13,9 +13,13 @@ except ImportError:  # pragma: no cover - package mode fallback
 from app.tasks import (
     analyze_batch_sync,
     analyze_text_sync,
+    analyze_sequence_sync,
     analyze_text_task,
+    analyze_sequence_task,
     build_task_response,
     retrain_model_task,
+    update_dictionary,
+    get_dictionary_stats,
 )
 
 app = Flask(__name__)
@@ -113,6 +117,77 @@ def submit_retrain_task():
             "status": "PENDING",
         }
     )
+
+
+@app.post("/api/nlp/analyze/sequence")
+def analyze_sequence():
+    payload = request.get_json(silent=True) or {}
+    texts = payload.get("texts", [])
+    mode = str(payload.get("mode", "custom")).strip() or "custom"
+    if not isinstance(texts, list) or not texts:
+        return _error("texts 必须是非空数组", 400)
+    if len(texts) > 50:
+        return _error("单次最多分析50条文本序列", 400)
+
+    try:
+        result = analyze_sequence_sync([str(item) for item in texts], mode=mode)
+        return _ok(result)
+    except Exception as exc:
+        return _error(str(exc), 500)
+
+
+@app.post("/api/nlp/tasks/analyze/sequence")
+def submit_analyze_sequence_task():
+    payload = request.get_json(silent=True) or {}
+    texts = payload.get("texts", [])
+    mode = str(payload.get("mode", "custom")).strip() or "custom"
+    if not isinstance(texts, list) or not texts:
+        return _error("texts 必须是非空数组", 400)
+    if len(texts) > 100:
+        return _error("单次最多分析100条文本序列", 400)
+
+    task = analyze_sequence_task.delay(texts=texts, mode=mode)
+    return _ok(
+        {
+            "task_id": task.id,
+            "task_label": "序列情感分析",
+            "mode": mode,
+            "status": "PENDING",
+        }
+    )
+
+
+@app.get("/api/nlp/dictionary/stats")
+def get_dictionary_statistics():
+    """
+    获取词典统计信息
+    """
+    try:
+        stats = get_dictionary_stats()
+        return _ok(stats)
+    except Exception as exc:
+        return _error(str(exc), 500)
+
+
+@app.post("/api/nlp/dictionary/update")
+def update_dictionary_api():
+    """
+    更新情感词典
+    """
+    payload = request.get_json(silent=True) or {}
+    positive_words = payload.get("positive_words", [])
+    negative_words = payload.get("negative_words", [])
+    
+    if not isinstance(positive_words, list):
+        positive_words = []
+    if not isinstance(negative_words, list):
+        negative_words = []
+    
+    try:
+        stats = update_dictionary(positive_words, negative_words)
+        return _ok(stats)
+    except Exception as exc:
+        return _error(str(exc), 500)
 
 
 @app.get("/api/nlp/tasks/<task_id>/status")

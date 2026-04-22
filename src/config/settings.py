@@ -104,8 +104,8 @@ class Config:
 
     # LLM Settings
     LLM_API_KEY = os.getenv("LLM_API_KEY", "")
-    LLM_API_URL = os.getenv("LLM_API_URL", "https://api.openai.com/v1/chat/completions")
-    LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    LLM_API_URL = os.getenv("LLM_API_URL", "https://api.deepseek.com/v1/chat/completions")
+    LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
     LLM_TIMEOUT = int(os.getenv("LLM_TIMEOUT", 30))
     LLM_CACHE_TTL = int(os.getenv("LLM_CACHE_TTL", 3600))
 
