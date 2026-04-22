@@ -48,7 +48,7 @@
     >
       <el-col
         :xs="24"
-        :lg="12"
+        :lg="8"
       >
         <el-card class="chart-card">
           <template #header>
@@ -57,7 +57,7 @@
           <BaseChart
             ref="sentimentPieRef"
             :options="sentimentPieOptions"
-            height="350px"
+            height="300px"
             @click="handlePieClick"
           />
         </el-card>
@@ -65,8 +65,42 @@
 
       <el-col
         :xs="24"
-        :lg="12"
+        :lg="8"
       >
+        <el-card class="chart-card">
+          <template #header>
+            <span class="header-title">情感类型分布</span>
+          </template>
+          <BaseChart
+            ref="emotionBarRef"
+            :options="emotionBarOptions"
+            height="300px"
+          />
+        </el-card>
+      </el-col>
+
+      <el-col
+        :xs="24"
+        :lg="8"
+      >
+        <el-card class="chart-card">
+          <template #header>
+            <span class="header-title">情感得分分布</span>
+          </template>
+          <BaseChart
+            ref="scoreDistRef"
+            :options="scoreDistOptions"
+            height="300px"
+          />
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <el-row
+      :gutter="24"
+      class="mb-4"
+    >
+      <el-col :span="24">
         <el-card class="chart-card">
           <template #header>
             <span class="header-title">舆情趋势变化</span>
@@ -214,14 +248,83 @@
               </template>
             </el-table-column>
             <el-table-column
-              prop="source"
-              label="来源"
-              width="150"
+              prop="emotion"
+              label="情感类型"
+              width="120"
+              align="center"
+            >
+              <template #default="{ row }">
+                <el-tag
+                  :type="getEmotionType(row.emotion)"
+                  effect="plain"
+                  round
+                  size="small"
+                >
+                  {{ row.emotion || '无感' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="keywords"
+              label="关键词"
+              width="180"
+              align="center"
+            >
+              <template #default="{ row }">
+                <div class="keywords-list">
+                  <el-tag
+                    v-for="(keyword, index) in row.keywords.slice(0, 3)"
+                    :key="index"
+                    size="small"
+                    effect="light"
+                    class="keyword-tag"
+                  >
+                    {{ keyword }}
+                  </el-tag>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="reasoning"
+              label="分析理由"
+              min-width="300"
+            >
+              <template #default="{ row }">
+                <el-tooltip
+                  :content="row.reasoning"
+                  placement="top"
+                  :disabled="!row.reasoning"
+                >
+                  <div class="reasoning-text">
+                    {{ row.reasoning ? row.reasoning.substring(0, 50) + (row.reasoning.length > 50 ? '...' : '') : '无' }}
+                  </div>
+                </el-tooltip>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="analysis_source"
+              label="分析来源"
+              width="120"
               align="center"
             >
               <template #default="{ row }">
                 <el-tag
                   type="info"
+                  size="small"
+                >
+                  {{ row.analysis_source || 'unknown' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="source"
+              label="数据来源"
+              width="100"
+              align="center"
+            >
+              <template #default="{ row }">
+                <el-tag
+                  type="success"
                   size="small"
                 >
                   {{ row.source }}
@@ -279,6 +382,8 @@
 
   const sentimentPieRef = ref(null)
   const trendChartRef = ref(null)
+  const emotionBarRef = ref(null)
+  const scoreDistRef = ref(null)
 
   const sentimentPieOptions = computed(() => ({
     tooltip: { trigger: 'item' },
@@ -400,6 +505,188 @@
     ],
   }))
 
+  const emotionBarOptions = computed(() => {
+    // 计算情感类型分布
+    const emotionCounts = {}
+    rawList.value.forEach(item => {
+      const emotion = item.emotion || '无感'
+      emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1
+    })
+    
+    const emotions = Object.keys(emotionCounts)
+    const counts = Object.values(emotionCounts)
+    
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: emotions,
+        axisLabel: {
+          rotate: 45,
+          color: '#666666'
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#eaeaea'
+          }
+        }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          color: '#666666'
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#f5f5f5',
+            type: 'dashed'
+          }
+        }
+      },
+      series: [
+        {
+          name: '情感类型',
+          type: 'bar',
+          data: counts,
+          itemStyle: {
+            color: function(params) {
+              const colorMap = {
+                '喜悦': '#10B981',
+                '感动': '#34D399',
+                '兴奋': '#6EE7B7',
+                '期待': '#A7F3D0',
+                '愤怒': '#EF4444',
+                '悲伤': '#FCA5A5',
+                '失望': '#F87171',
+                '厌恶': '#DC2626',
+                '焦虑': '#F59E0B',
+                '恐惧': '#FBBF24',
+                '惊讶': '#FCD34D',
+                '无奈': '#60A5FA',
+                '讽刺': '#93C5FD',
+                '平静': '#BFDBFE',
+                '无感': '#9CA3AF'
+              }
+              return colorMap[params.name] || '#9CA3AF'
+            }
+          },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          }
+        }
+      ]
+    }
+  })
+
+  const scoreDistOptions = computed(() => {
+    // 计算情感得分分布
+    const scoreRanges = {
+      '0.0-0.2': 0,
+      '0.2-0.4': 0,
+      '0.4-0.6': 0,
+      '0.6-0.8': 0,
+      '0.8-1.0': 0
+    }
+    
+    rawList.value.forEach(item => {
+      const score = item.score || 0.5
+      if (score < 0.2) {
+        scoreRanges['0.0-0.2']++
+      } else if (score < 0.4) {
+        scoreRanges['0.2-0.4']++
+      } else if (score < 0.6) {
+        scoreRanges['0.4-0.6']++
+      } else if (score < 0.8) {
+        scoreRanges['0.6-0.8']++
+      } else {
+        scoreRanges['0.8-1.0']++
+      }
+    })
+    
+    const ranges = Object.keys(scoreRanges)
+    const counts = Object.values(scoreRanges)
+    
+    return {
+      tooltip: {
+        trigger: 'axis',
+        axisPointer: {
+          type: 'shadow'
+        }
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        data: ranges,
+        axisLabel: {
+          color: '#666666'
+        },
+        axisLine: {
+          lineStyle: {
+            color: '#eaeaea'
+          }
+        }
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          color: '#666666'
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#f5f5f5',
+            type: 'dashed'
+          }
+        }
+      },
+      series: [
+        {
+          name: '得分分布',
+          type: 'bar',
+          data: counts,
+          itemStyle: {
+            color: function(params) {
+              const colorMap = {
+                '0.0-0.2': '#EF4444',
+                '0.2-0.4': '#F87171',
+                '0.4-0.6': '#64748B',
+                '0.6-0.8': '#34D399',
+                '0.8-1.0': '#10B981'
+              }
+              return colorMap[params.name] || '#64748B'
+            }
+          },
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)'
+            }
+          }
+        }
+      ]
+    }
+  })
+
   const getSentimentType = (sentiment) => {
     if (!sentiment) return 'info'
     const lower = sentiment.toLowerCase()
@@ -412,6 +699,27 @@
     if (score > 0.6) return 'text-success'
     if (score < 0.4) return 'text-danger'
     return 'text-muted'
+  }
+
+  const getEmotionType = (emotion) => {
+    const emotionMap = {
+      '喜悦': 'success',
+      '感动': 'success',
+      '兴奋': 'success',
+      '期待': 'success',
+      '愤怒': 'danger',
+      '悲伤': 'danger',
+      '失望': 'danger',
+      '厌恶': 'danger',
+      '焦虑': 'warning',
+      '恐惧': 'warning',
+      '惊讶': 'warning',
+      '无奈': 'info',
+      '讽刺': 'info',
+      '平静': 'info',
+      '无感': 'info'
+    }
+    return emotionMap[emotion] || 'info'
   }
 
   const filteredList = computed(() => {
@@ -567,6 +875,29 @@
     }
     .text-muted {
       color: $text-secondary;
+    }
+
+    .keywords-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .keyword-tag {
+      margin: 2px 0;
+    }
+
+    .reasoning-text {
+      font-size: 13px;
+      line-height: 1.4;
+      color: $text-secondary;
+      cursor: help;
+      transition: color 0.3s;
+
+      &:hover {
+        color: $primary-color;
+      }
     }
 
     .pagination-wrapper {

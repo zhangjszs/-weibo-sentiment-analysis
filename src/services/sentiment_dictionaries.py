@@ -157,8 +157,9 @@ class SentimentDictionary:
         # 计算情感得分
         score = 0.0
         if positive_matches or negative_matches:
+            # 增加负向词的权重，使其对情感得分的影响更大
             pos_score = sum(self.positive_scores.get(word, 1.0) for word in positive_matches)
-            neg_score = sum(self.negative_scores.get(word, -1.0) for word in negative_matches)
+            neg_score = sum(self.negative_scores.get(word, -1.0) for word in negative_matches) * 1.5  # 增加负向词权重
             total = len(positive_matches) + len(negative_matches)
             score = (pos_score + neg_score) / total if total > 0 else 0.0
             # 归一化到0-1范围

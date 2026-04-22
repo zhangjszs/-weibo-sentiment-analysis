@@ -735,3 +735,33 @@ def get_today_stats():
     except Exception as e:
         logger.error(f"获取今日统计失败: {e}")
         return error(str(e), code=500), 500
+
+
+@bp.route("/sentiment/strategy/stats", methods=["GET"])
+def get_strategy_stats():
+    """
+    获取情感分析策略性能统计
+    """
+    try:
+        from services.sentiment_strategy_selector import AdaptiveStrategyManager
+        manager = AdaptiveStrategyManager()
+        stats = manager.get_performance_stats()
+        return ok(stats), 200
+    except Exception as e:
+        logger.error(f"获取策略统计失败: {e}")
+        return error("服务器内部错误", code=500), 500
+
+
+@bp.route("/sentiment/strategy/health", methods=["GET"])
+def get_strategy_health():
+    """
+    获取情感分析策略健康状态
+    """
+    try:
+        from services.sentiment_strategy_selector import AdaptiveStrategyManager
+        manager = AdaptiveStrategyManager()
+        health = manager.get_health_status()
+        return ok(health), 200
+    except Exception as e:
+        logger.error(f"获取策略健康状态失败: {e}")
+        return error("服务器内部错误", code=500), 500

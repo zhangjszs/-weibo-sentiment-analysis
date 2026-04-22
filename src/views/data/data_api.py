@@ -631,16 +631,24 @@ def get_yuqing_data():
             for idx, (comment, result) in enumerate(zip(comments, analysis_results), start=1):
                 label = (result or {}).get("label", "neutral")
                 score = float((result or {}).get("score", 0.5))
+                reasoning = (result or {}).get("reasoning", "")
+                emotion = (result or {}).get("emotion", "无感")
+                keywords = (result or {}).get("keywords", [])
+                analysis_source = (result or {}).get("source", "unknown")
                 comment_time = comment[0] if len(comment) > 0 else ""
                 comment_date = str(comment_time).split(" ")[0] if comment_time else ""
 
-                if idx <= 10:
+                if idx <= 100:  # 增加返回的情感分析结果数量
                     sentiment_list.append(
                         {
                             "id": idx,
                             "content": comment[1] if len(comment) > 1 else "",
                             "sentiment": zh_label_map.get(label, "中性"),
                             "score": score,
+                            "reasoning": reasoning,
+                            "emotion": emotion,
+                            "keywords": keywords,
+                            "analysis_source": analysis_source,
                             "source": "微博评论",
                             "time": comment_time,
                         }

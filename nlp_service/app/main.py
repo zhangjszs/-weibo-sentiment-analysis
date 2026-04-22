@@ -62,7 +62,12 @@ def analyze_text():
         return _error("text is required", 400)
 
     try:
-        result = analyze_text_sync(text=text, mode=mode)
+        if mode == "auto":
+            from app.sentiment_strategy_selector import AdaptiveStrategyManager
+            manager = AdaptiveStrategyManager()
+            result = manager.analyze(text)
+        else:
+            result = analyze_text_sync(text=text, mode=mode)
         return _ok(result)
     except Exception as exc:
         return _error(str(exc), 500)
@@ -79,7 +84,12 @@ def analyze_batch():
         return _error("单次最多预测100条文本", 400)
 
     try:
-        results = analyze_batch_sync([str(item) for item in texts], mode=mode)
+        if mode == "auto":
+            from app.sentiment_strategy_selector import AdaptiveStrategyManager
+            manager = AdaptiveStrategyManager()
+            results = manager.analyze_batch([str(item) for item in texts])
+        else:
+            results = analyze_batch_sync([str(item) for item in texts], mode=mode)
         return _ok({"total": len(results), "results": results})
     except Exception as exc:
         return _error(str(exc), 500)
