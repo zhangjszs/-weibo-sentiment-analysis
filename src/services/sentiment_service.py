@@ -142,24 +142,23 @@ class SnowNLPStrategy(SentimentStrategy):
             # 对于否定句，反转情感倾向
             snownlp_score = 1.0 - snownlp_score
             dict_score = 1.0 - dict_score
-            # 否定强度调整
-            negation_strength = min(negation_count * 0.2, 0.5)
+            # 否定强度调整（降低调整幅度，避免过度调整）
+            negation_strength = min(negation_count * 0.1, 0.3)
             snownlp_score = max(0.0, min(1.0, snownlp_score - negation_strength))
             dict_score = max(0.0, min(1.0, dict_score - negation_strength))
         
         # 处理讽刺和反语
         if is_sarcastic:
-            # 对于讽刺和反语，反转情感倾向并增强效果
-            snownlp_score = 1.0 - snownlp_score
-            dict_score = 1.0 - dict_score
-            # 讽刺强度调整
-            sarcasm_strength = 0.3
-            if any(word in text for word in ['好', '棒', '开心', '高兴', '喜欢']):
-                snownlp_score = max(0.0, snownlp_score - sarcasm_strength)
-                dict_score = max(0.0, dict_score - sarcasm_strength)
-            elif any(word in text for word in ['不生气', '没关系', '还好']):
-                snownlp_score = max(0.0, snownlp_score - sarcasm_strength)
-                dict_score = max(0.0, dict_score - sarcasm_strength)
+            # 检测是否真的是讽刺（需要同时包含正面词汇和讽刺标记）
+            has_positive_words = any(word in text for word in ['好', '棒', '开心', '高兴', '喜欢', '优秀', '厉害'])
+            if has_positive_words:
+                # 对于真正的讽刺，反转情感倾向并适当调整
+                snownlp_score = 1.0 - snownlp_score
+                dict_score = 1.0 - dict_score
+                # 讽刺强度调整（降低调整幅度）
+                sarcasm_strength = 0.2
+                snownlp_score = max(0.0, min(1.0, snownlp_score - sarcasm_strength))
+                dict_score = max(0.0, min(1.0, dict_score - sarcasm_strength))
         
         # 应用程度副词调整
         if degree_factor != 1.0:
@@ -656,6 +655,8 @@ class CustomModelStrategy(SentimentStrategy):
 
         # 处理结果
         results = []
+        snow_strategy = SnowNLPStrategy()
+        
         for i, (text, prediction, score) in enumerate(zip(texts, predictions, scores)):
             # 映射标签
             label_map = {0: "negative", 1: "neutral", 2: "positive"}
@@ -694,10 +695,30 @@ class CustomModelStrategy(SentimentStrategy):
             except Exception as e:
                 logger.debug(f"记录预测监控失败: {e}")
 
+            # 如果模型预测为中性且置信度低，或者模型预测不准确，使用SnowNLP策略作为补充
+            if label == "neutral" and score < 0.7:
+                snow_result = snow_strategy.analyze(text)
+                # 结合模型预测和SnowNLP结果
+                if snow_result.label != "neutral":
+                    label = snow_result.label
+                    score = (score + snow_result.score) / 2
+                    reasoning += f"，结合SnowNLP分析: {snow_result.reasoning}"
+                    keywords = snow_result.keywords
+
+            # 获取情感类型
+            emotion = None
+            try:
+                # 使用SnowNLP的情感识别功能
+                snow_result = snow_strategy.analyze(text)
+                emotion = snow_result.emotion
+            except Exception as e:
+                logger.debug(f"获取情感类型失败: {e}")
+
             results.append(SentimentResult(
                 score=score,
                 label=label,
                 reasoning=reasoning,
+                emotion=emotion,
                 keywords=keywords,
                 source="custom_model",
             ))

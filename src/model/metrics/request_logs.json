@@ -1720,5 +1720,740 @@
     "prediction": "neutral",
     "score": 0.3782878824615094,
     "latency": 7.357358932495117e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:09.944842",
+    "text": "今天早上天气很好，心情不错",
+    "prediction": "neutral",
+    "score": 0.4903733641357035,
+    "latency": 0.7616543769836426
+  },
+  {
+    "timestamp": "2026-04-22T08:56:09.978959",
+    "text": "但是上班路上遇到了堵车，有点烦躁",
+    "prediction": "neutral",
+    "score": 0.3897525376849843,
+    "latency": 0.0015366077423095703
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.014380",
+    "text": "到了公司发现项目出了问题，很焦虑",
+    "prediction": "neutral",
+    "score": 0.6278870239036248,
+    "latency": 0.0014832019805908203
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.049179",
+    "text": "不过同事们都很帮忙，很感动",
+    "prediction": "neutral",
+    "score": 0.46940775949392727,
+    "latency": 0.0013723373413085938
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.081816",
+    "text": "最后问题解决了，很开心",
+    "prediction": "neutral",
+    "score": 0.4618001376805583,
+    "latency": 0.0013318061828613281
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.118850",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.125402",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.131884",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.136055",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.142500",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.148922",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.155429",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.164863",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.169205",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.175770",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.182297",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.188740",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.195157",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.199418",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.205777",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.212247",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.218719",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.225210",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.229488",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.235874",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.242393",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.248862",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.255312",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.259686",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.266179",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.272659",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.279198",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.285809",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.290139",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.296749",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.304049",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.310963",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.317583",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.321966",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.328540",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.335230",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.341935",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.348612",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.353080",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.359714",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.366363",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.373017",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.379596",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.384046",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.390631",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.397311",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.403933",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.410648",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.415153",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.421987",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.428619",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.435188",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.441847",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.446291",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.453007",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.459759",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.466751",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.476579",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.481318",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.488251",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.495063",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.501881",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.508643",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.513276",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.520006",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.526782",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.533544",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.540325",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.544927",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.551689",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.558514",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.565671",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.572667",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.577332",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.584159",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.591113",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.598023",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.605133",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.610081",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.617056",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.623990",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.630939",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.641544",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.646353",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.653322",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.660299",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.669896",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.677074",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.681972",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.688978",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.696063",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.703132",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.710192",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.715025",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.721996",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.729202",
+    "text": "这个产品很好",
+    "prediction": "neutral",
+    "score": 0.5536133219979342,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.736302",
+    "text": "服务态度很差",
+    "prediction": "neutral",
+    "score": 0.3333333333333483,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.743393",
+    "text": "yyds，太棒了",
+    "prediction": "neutral",
+    "score": 0.41251533550443054,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.748328",
+    "text": "今天心情不错",
+    "prediction": "neutral",
+    "score": 0.6231506093084834,
+    "latency": 7.3089599609375e-05
+  },
+  {
+    "timestamp": "2026-04-22T08:56:10.755510",
+    "text": "遇到了麻烦事",
+    "prediction": "neutral",
+    "score": 0.3782878824615094,
+    "latency": 7.3089599609375e-05
   }
 ]
