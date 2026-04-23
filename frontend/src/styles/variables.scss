@@ -1,44 +1,82 @@
-// Design Tokens - Modern SaaS Style
-// Colors - Based on Slate & Royal Blue
+// Design Tokens - Modern Artistic Style
+// Colors - Based on Deep Blue & Teal Accents
 
-// Primary Brand Color
-$primary-color: #4f46e5; // Indigo 600
-$primary-hover: #4338ca; // Indigo 700
-$primary-active: #3730a3; // Indigo 800
-$primary-light: #eef2ff; // Indigo 50
+// Primary Brand Color - Deep Blue with Artistic Depth
+$primary-color: #2563eb; // Blue 600 - Professional and trustworthy
+$primary-hover: #1d4ed8; // Blue 700
+$primary-active: #1e40af; // Blue 800
+$primary-light: #dbeafe; // Blue 50
+$primary-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
 
-// Functional Colors
-$success-color: #10b981; // Emerald 500
-$warning-color: #f59e0b; // Amber 500
-$danger-color: #ef4444; // Red 500
-$info-color: #3b82f6; // Blue 500
+// Secondary Brand Color - Teal Accent for Artistic Contrast
+$secondary-color: #0d9488; // Teal 600
+$secondary-hover: #0f766e; // Teal 700
+$secondary-active: #0e5e54; // Teal 800
+$secondary-light: #ccfbf1; // Teal 50
+$secondary-gradient: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
 
-// Neutral / Gray Scale (Slate)
-$text-primary: #171717; // Vercel dark
-$text-regular: #666666; // Gray 600
-$text-secondary: #888888; // Gray 500
-$text-placeholder: #a1a1aa; // Gray 400
+// Functional Colors with Artistic Tones
+$success-color: #10b981; // Emerald 500 - Vibrant and fresh
+$warning-color: #f59e0b; // Amber 500 - Warm and energetic
+$danger-color: #ef4444; // Red 500 - Bold and impactful
+$info-color: #8b5cf6; // Purple 500 - Creative and modern
 
-$border-color-dark: #cccccc;
-$border-color: #eaeaea;
-$border-color-light: #f5f5f5;
+// Neutral / Gray Scale - Enhanced for Depth
+$text-primary: #111827; // Slate 900 - Rich and deep
+$text-regular: #4b5563; // Slate 600 - Balanced readability
+$text-secondary: #6b7280; // Slate 500 - Subtle support
+$text-placeholder: #9ca3af; // Slate 400 - Light hint
 
-$background-color: #fafafa; // Page Background
-$background-color-base: #fafafa;
-$surface-color: #ffffff; // Card/Modal Background
+$border-color-dark: #d1d5db; // Slate 300
+$border-color: #e5e7eb; // Slate 200
+$border-color-light: #f3f4f6; // Slate 100
 
-// Typography
-$font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC',
+// Backgrounds with Artistic Texture
+$background-color: #f9fafb; // Slate 50 - Clean base
+$background-color-base: #f9fafb;
+$surface-color: #ffffff; // Pure white for contrast
+$surface-gradient: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+
+// Typography - Artistic and Modern
+// Font Family - Inter for modern sans-serif with personality
+$font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'PingFang SC',
   'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-$font-size-base: 14px;
-$font-size-small: 12px;
-$font-size-large: 16px;
-$font-size-xl: 20px;
-$font-size-xxl: 24px;
+$font-family-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+$font-family-mono: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', Consolas, 'Courier New', monospace;
 
+// Font Sizes - Modern Scale
+$font-size-xs: 10px;
+$font-size-sm: 12px;
+$font-size-base: 14px;
+$font-size-lg: 16px;
+$font-size-xl: 20px;
+$font-size-2xl: 24px;
+$font-size-3xl: 30px;
+$font-size-4xl: 36px;
+$font-size-5xl: 48px;
+
+// Font Weights - Enhanced Range
+$font-weight-light: 300;
 $font-weight-regular: 400;
 $font-weight-medium: 500;
-$font-weight-bold: 600;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+
+// Line Heights - Artistic Rhythm
+$line-height-tight: 1.25;
+$line-height-snug: 1.375;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.625;
+$line-height-loose: 2;
+
+// Letter Spacing - Artistic Touch
+$letter-spacing-tighter: -0.05em;
+$letter-spacing-tight: -0.025em;
+$letter-spacing-normal: 0;
+$letter-spacing-wide: 0.025em;
+$letter-spacing-wider: 0.05em;
+$letter-spacing-widest: 0.1em;
 
 // Spacing System (8px grid)
 $spacing-xs: 4px;

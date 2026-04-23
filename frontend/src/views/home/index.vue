@@ -477,82 +477,201 @@
 
 <style lang="scss" scoped>
   .home-container {
+    position: relative;
+    min-height: 100%;
+    padding: 0;
+
+    // Artistic background elements
+    &::before {
+      content: '';
+      position: fixed;
+      top: 10%;
+      right: 5%;
+      width: 400px;
+      height: 400px;
+      background: var(--el-gradient-primary);
+      opacity: 0.05;
+      border-radius: 50%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    &::after {
+      content: '';
+      position: fixed;
+      bottom: 10%;
+      left: 5%;
+      width: 300px;
+      height: 300px;
+      background: var(--el-gradient-secondary);
+      opacity: 0.05;
+      border-radius: 50%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
     .dashboard-toolbar {
       display: flex;
       justify-content: flex-end;
-      margin-bottom: 12px;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 2;
+
+      .el-button {
+        border-radius: var(--el-border-radius-base);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        background: var(--el-gradient-surface);
+        box-shadow: var(--el-box-shadow-light);
+
+        &:hover {
+          transform: scale(1.05);
+          box-shadow: var(--el-box-shadow-dark);
+        }
+      }
     }
 
     .widget-settings {
+      background: var(--el-gradient-surface);
+      border-radius: var(--el-border-radius-base);
+      padding: 24px;
+      box-shadow: var(--el-box-shadow-light);
+
       .settings-tip {
         color: $text-secondary;
         font-size: 13px;
         margin: 0 0 16px;
+        font-weight: 500;
+        letter-spacing: 0.5px;
       }
 
       .widget-item {
         display: flex;
         align-items: center;
-        gap: 10px;
-        padding: 10px 0;
-        border-bottom: 1px solid $border-color-light;
+        gap: 12px;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        border-radius: var(--el-border-radius-base);
+        transition: all 0.3s ease;
         cursor: default;
+        background: var(--el-bg-color);
+
+        &:hover {
+          background: var(--el-color-primary-light-9);
+          transform: translateX(4px);
+        }
 
         .drag-handle {
           cursor: grab;
-          color: $text-secondary;
-          font-size: 16px;
+          color: var(--el-color-primary);
+          font-size: 18px;
           flex-shrink: 0;
+          transition: all 0.3s ease;
+
           &:active {
             cursor: grabbing;
+            transform: scale(1.1);
           }
         }
 
         .widget-label {
-          font-size: 13px;
+          font-size: 14px;
           color: $text-primary;
           flex: 1;
+          font-weight: 500;
         }
 
         .span-btn {
           flex-shrink: 0;
+          border-radius: var(--el-border-radius-small);
+          transition: all 0.3s ease;
+
+          &:hover {
+            background: var(--el-color-primary-light-9);
+            color: var(--el-color-primary);
+          }
+        }
+      }
+
+      .el-divider {
+        margin: 20px 0;
+        background: var(--el-border-color-light);
+      }
+
+      .el-button {
+        border-radius: var(--el-border-radius-base);
+        transition: all 0.3s ease;
+
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--el-box-shadow-light);
         }
       }
     }
 
     .stat-row {
-      margin-bottom: 24px;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 2;
     }
 
     .chart-card {
       height: 100%;
-      // el-card styles transferred to BaseCard, keeping custom overrides
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      &:hover {
+        transform: translateY(-4px);
+      }
     }
 
     .top-comments {
       .comment-item {
         display: flex;
         align-items: flex-start;
-        padding: 16px 0;
-        border-bottom: 1px solid $border-color-light;
+        padding: 20px;
+        margin-bottom: 12px;
+        border-radius: var(--el-border-radius-base);
+        background: var(--el-bg-color);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
 
-        &:last-child {
-          border-bottom: none;
+        &::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 4px;
+          height: 100%;
+          background: var(--el-gradient-primary);
+          border-radius: var(--el-border-radius-small) 0 0 var(--el-border-radius-small);
+        }
+
+        &:hover {
+          transform: translateX(8px);
+          box-shadow: var(--el-box-shadow-light);
         }
 
         .comment-avatar {
-          width: 36px;
-          height: 36px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
-          background-color: $primary-light;
-          color: $primary-color;
+          background: var(--el-gradient-primary);
+          color: white;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: bold;
-          margin-right: 12px;
+          font-weight: 600;
+          margin-right: 16px;
           flex-shrink: 0;
-          font-size: 14px;
+          font-size: 16px;
+          box-shadow: var(--el-box-shadow-light);
+          transition: all 0.3s ease;
+
+          &:hover {
+            transform: scale(1.1);
+          }
         }
 
         .comment-info {
@@ -563,32 +682,123 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
 
             .comment-user {
               font-weight: 600;
               color: $text-primary;
-              font-size: 14px;
+              font-size: 15px;
+              transition: color 0.3s ease;
+
+              &:hover {
+                color: var(--el-color-primary);
+              }
             }
 
             .comment-likes {
               color: $warning-color;
               font-weight: 600;
-              font-size: 12px;
+              font-size: 13px;
               display: flex;
               align-items: center;
-              gap: 2px;
+              gap: 4px;
+              background: rgba($warning-color, 0.1);
+              padding: 4px 8px;
+              border-radius: var(--el-border-radius-small);
+              transition: all 0.3s ease;
+
+              &:hover {
+                background: rgba($warning-color, 0.2);
+                transform: scale(1.05);
+              }
             }
           }
 
           .comment-content {
             color: $text-secondary;
-            font-size: 13px;
-            line-height: 1.5;
+            font-size: 14px;
+            line-height: 1.6;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            transition: color 0.3s ease;
+
+            &:hover {
+              color: $text-primary;
+            }
+          }
+        }
+      }
+    }
+
+    // Animation classes
+    .fade-enter-active,
+    .fade-leave-active {
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .fade-enter-from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    .fade-leave-to {
+      opacity: 0;
+      transform: translateY(-30px);
+    }
+  }
+
+  /* Dark mode overrides */
+  .dark .home-container {
+    &::before,
+    &::after {
+      opacity: 0.1;
+    }
+
+    .widget-settings {
+      background: var(--el-gradient-surface);
+
+      .widget-item {
+        background: #1e293b;
+
+        &:hover {
+          background: #334155;
+        }
+      }
+    }
+
+    .top-comments {
+      .comment-item {
+        background: #1e293b;
+
+        &:hover {
+          box-shadow: var(--el-box-shadow-dark);
+        }
+
+        .comment-avatar {
+          background: var(--el-gradient-primary);
+        }
+
+        .comment-info {
+          .comment-user {
+            &:hover {
+              color: var(--el-color-primary);
+            }
+          }
+
+          .comment-likes {
+            background: rgba($warning-color, 0.2);
+
+            &:hover {
+              background: rgba($warning-color, 0.3);
+            }
+          }
+
+          .comment-content {
+            &:hover {
+              color: var(--el-text-color-primary);
+            }
           }
         }
       }

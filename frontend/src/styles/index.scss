@@ -1,5 +1,11 @@
 @use 'sass:color';
 
+// Google Fonts - Inter for Modern Typography
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+// Animations and Interactions
+@import './animations.scss';
+
 // Global Reset & Base Styles
 * {
   margin: 0;
@@ -16,9 +22,64 @@ body {
   font-size: $font-size-base;
   color: $text-primary;
   background-color: $background-color;
-  line-height: 1.5;
+  line-height: $line-height-normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+// Typography Utility Classes
+.text-xs {
+  font-size: $font-size-xs;
+  line-height: $line-height-tight;
+}
+
+.text-sm {
+  font-size: $font-size-sm;
+  line-height: $line-height-snug;
+}
+
+.text-base {
+  font-size: $font-size-base;
+  line-height: $line-height-normal;
+}
+
+.text-lg {
+  font-size: $font-size-lg;
+  line-height: $line-height-relaxed;
+}
+
+.text-xl {
+  font-size: $font-size-xl;
+  line-height: $line-height-tight;
+  font-weight: $font-weight-semibold;
+}
+
+.text-2xl {
+  font-size: $font-size-2xl;
+  line-height: $line-height-tight;
+  font-weight: $font-weight-bold;
+}
+
+.text-3xl {
+  font-size: $font-size-3xl;
+  line-height: $line-height-tight;
+  font-weight: $font-weight-bold;
+  letter-spacing: $letter-spacing-tight;
+}
+
+.text-4xl {
+  font-size: $font-size-4xl;
+  line-height: $line-height-tight;
+  font-weight: $font-weight-extrabold;
+  letter-spacing: $letter-spacing-tight;
+}
+
+.text-5xl {
+  font-size: $font-size-5xl;
+  line-height: $line-height-tight;
+  font-weight: $font-weight-extrabold;
+  letter-spacing: $letter-spacing-tighter;
 }
 
 #app {

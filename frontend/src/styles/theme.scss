@@ -1,49 +1,63 @@
 :root {
-  /* Brand Color - Indigo */
-  --el-color-primary: #4f46e5;
-  --el-color-primary-light-1: #6366f1;
-  --el-color-primary-light-3: #818cf8;
-  --el-color-primary-light-5: #a5b4fc;
-  --el-color-primary-light-7: #c7d2fe;
-  --el-color-primary-light-8: #e0e7ff;
-  --el-color-primary-light-9: #eef2ff;
-  --el-color-primary-dark-2: #3730a3;
+  /* Brand Color - Deep Blue with Artistic Depth */
+  --el-color-primary: #2563eb;
+  --el-color-primary-light-1: #3b82f6;
+  --el-color-primary-light-3: #60a5fa;
+  --el-color-primary-light-5: #93c5fd;
+  --el-color-primary-light-7: #bfdbfe;
+  --el-color-primary-light-8: #dbeafe;
+  --el-color-primary-light-9: #eff6ff;
+  --el-color-primary-dark-2: #1e40af;
 
-  /* Backgrounds & Surfaces */
-  --el-bg-color-page: #fafafa;
-  /* Vercel uses ultra light gray/white for background */
+  /* Secondary Brand Color - Teal Accent */
+  --el-color-secondary: #0d9488;
+  --el-color-secondary-light-1: #14b8a6;
+  --el-color-secondary-light-3: #2dd4bf;
+  --el-color-secondary-light-5: #5eead4;
+  --el-color-secondary-light-7: #99f6e4;
+  --el-color-secondary-light-9: #ccfbf1;
+
+  /* Backgrounds & Surfaces with Artistic Touch */
+  --el-bg-color-page: #f9fafb;
+  /* Clean base with subtle texture */
   --el-bg-color: #ffffff;
   --el-fill-color-blank: #ffffff;
-  /* pure white cards */
   --el-bg-color-overlay: #ffffff;
 
-  /* Text Colors */
-  --el-text-color-primary: #171717;
-  /* Vercel dark slate text */
-  --el-text-color-regular: #666666;
-  /* Subtitle color */
-  --el-text-color-secondary: #888888;
-  --el-text-color-placeholder: #a1a1aa;
+  /* Text Colors - Enhanced for Depth */
+  --el-text-color-primary: #111827;
+  /* Rich deep text */
+  --el-text-color-regular: #4b5563;
+  /* Balanced readability */
+  --el-text-color-secondary: #6b7280;
+  --el-text-color-placeholder: #9ca3af;
 
-  /* Borders & Dividers */
-  --el-border-color: #eaeaea;
-  /* Vercel ultra light border */
-  --el-border-color-light: #eaeaea;
-  --el-border-color-lighter: #f5f5f5;
-  --el-border-color-extra-light: #fafafa;
+  /* Borders & Dividers - Refined */
+  --el-border-color: #e5e7eb;
+  /* Subtle border */
+  --el-border-color-light: #f3f4f6;
+  --el-border-color-lighter: #f9fafb;
+  --el-border-color-extra-light: #ffffff;
 
-  /* Border Radius */
-  --el-border-radius-base: 12px;
-  /* Bigger modern radius */
-  --el-border-radius-small: 6px;
-  --el-border-radius-round: 24px;
+  /* Border Radius - Modern and Artistic */
+  --el-border-radius-base: 16px;
+  /* Larger, more modern radius */
+  --el-border-radius-small: 8px;
+  --el-border-radius-round: 32px;
+  --el-border-radius-extra-large: 24px;
 
-  /* Shadows - Light and elegant */
-  --el-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  /* Extremely subtle */
-  --el-box-shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.04), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --el-box-shadow-lighter: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --el-box-shadow-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
+  /* Shadows - Artistic Depth */
+  --el-box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08);
+  /* Subtle depth */
+  --el-box-shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --el-box-shadow-lighter: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+  --el-box-shadow-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --el-box-shadow-artistic: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  /* Gradients - Artistic Elements */
+  --el-gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+  --el-gradient-secondary: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%);
+  --el-gradient-surface: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
 
   /* Overrides for specific components */
   --el-menu-active-color: var(--el-color-primary);
@@ -51,28 +65,43 @@
 }
 
 html.dark {
-  /* Dark Mode Adjustments */
-  --el-color-primary: #6366f1;
-  /* Slightly lighter indigo for dark mode */
-  --el-color-primary-light-3: #818cf8;
-  --el-color-primary-light-5: #a5b4fc;
-  --el-color-primary-light-7: #c7d2fe;
-  --el-color-primary-light-8: #e0e7ff;
-  --el-color-primary-light-9: #eef2ff;
-  --el-color-primary-dark-2: #4f46e5;
+  /* Dark Mode Adjustments - Artistic */
+  --el-color-primary: #3b82f6;
+  /* Vibrant blue for dark mode */
+  --el-color-primary-light-3: #60a5fa;
+  --el-color-primary-light-5: #93c5fd;
+  --el-color-primary-light-7: #bfdbfe;
+  --el-color-primary-light-8: #dbeafe;
+  --el-color-primary-light-9: #eff6ff;
+  --el-color-primary-dark-2: #1e40af;
 
+  /* Secondary Color in Dark Mode */
+  --el-color-secondary: #14b8a6;
+  --el-color-secondary-light-3: #2dd4bf;
+  --el-color-secondary-light-5: #5eead4;
+
+  /* Backgrounds - Deep and Artistic */
   --el-bg-color-page: #0f172a;
-  /* Slate 900 */
+  /* Slate 900 - Deep base */
   --el-bg-color: #1e293b;
-  /* Slate 800 */
+  /* Slate 800 - Surface */
   --el-bg-color-overlay: #1e293b;
 
+  /* Text Colors - Enhanced Contrast */
   --el-text-color-primary: #f8fafc;
+  /* Bright white for readability */
   --el-text-color-regular: #e2e8f0;
   --el-text-color-secondary: #94a3b8;
   --el-text-color-placeholder: #64748b;
 
+  /* Borders - Subtle Definition */
   --el-border-color: #334155;
+  /* Slate 700 */
   --el-border-color-light: #1e293b;
   --el-border-color-lighter: #0f172a;
+
+  /* Gradients - Dark Mode Artistic */
+  --el-gradient-primary: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+  --el-gradient-secondary: linear-gradient(135deg, #14b8a6 0%, #2dd4bf 100%);
+  --el-gradient-surface: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
 }
