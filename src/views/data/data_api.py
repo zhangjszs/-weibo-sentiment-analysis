@@ -615,7 +615,7 @@ def get_yuqing_data():
             comment_texts = [
                 str(comment[1]) for comment in comments if len(comment) > 1 and comment[1]
             ]
-            analysis_results = SentimentService.analyze_batch(comment_texts, mode="simple")
+            analysis_results = SentimentService.analyze_batch(comment_texts, mode="contextual")
 
             zh_label_map = {
                 "positive": "正面",
