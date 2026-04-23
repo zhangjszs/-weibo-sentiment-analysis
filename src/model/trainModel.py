@@ -29,6 +29,7 @@ from sklearn.metrics import (
     RocCurveDisplay,
     classification_report,
     confusion_matrix,
+    f1_score,
 )
 from sklearn.model_selection import (
     StratifiedKFold,
@@ -74,10 +75,16 @@ MODELS = {
 }
 
 
+try:
+    from social_media_preprocessor import SocialMediaPreprocessor
+except ImportError:
+    from .social_media_preprocessor import SocialMediaPreprocessor
+
 def build_pipeline(estimator):
     """统一的 TF‑IDF + 分类器流水线"""
     return Pipeline(
         steps=[
+            ("preprocess", SocialMediaPreprocessor()),
             ("tfidf", TfidfVectorizer(max_features=5000, ngram_range=(1, 2))),
             ("clf", estimator),
         ]
@@ -211,15 +218,31 @@ def evaluate_models(
 # 训练最终模型 + 混淆矩阵 / ROC
 # -------------------------------------------------------------------
 def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
+    # 数据增强
+    try:
+        from social_media_augmenter import augment_data
+    except ImportError:
+        from .social_media_augmenter import augment_data
+    
+    # 对训练数据进行增强
+    X = df["text"].tolist()
+    y = df["label"].tolist()
+    
+    # 只对训练集进行增强
     X_train, X_test, y_train, y_test = train_test_split(
-        df["text"],
-        df["label"],
+        X,
+        y,
         test_size=0.2,
-        stratify=df["label"],
+        stratify=y,
         random_state=42,
     )
+    
+    # 数据增强
+    X_train_augmented, y_train_augmented = augment_data(X_train, y_train, num_augmentations=2)
+    
+    # 构建模型
     pipe = build_pipeline(MODELS[model_name])
-    pipe.fit(X_train, y_train)
+    pipe.fit(X_train_augmented, y_train_augmented)
     y_pred = pipe.predict(X_test)
 
     print("\n🎯 Classification Report")
@@ -245,6 +268,27 @@ def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
     output_path = Path(__file__).parent / "best_sentiment_model.pkl"
     joblib.dump(pipe, output_path)
     print(f"✅ 模型已保存为 {output_path}")
+    
+    # 集成版本管理
+    try:
+        from model_version_manager import ModelVersionManager
+    except ImportError:
+        from .model_version_manager import ModelVersionManager
+    
+    # 计算性能指标
+    performance = {
+        "f1_macro": f1_score(y_test, y_pred, average="macro"),
+        "accuracy": (y_pred == y_test).mean(),
+        "sample_count": len(y_test),
+    }
+    
+    mvm = ModelVersionManager()
+    version_name = mvm.save_model_version(pipe, performance, {
+        "model_name": model_name,
+        "test_size": 0.2,
+    })
+    mvm.set_current_version(version_name)
+    
     return pipe
 
 

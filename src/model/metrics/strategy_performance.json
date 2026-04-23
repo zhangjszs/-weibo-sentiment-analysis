@@ -1,0 +1,159 @@
+{
+  "strategies": {
+    "snownlp": {
+      "total_calls": 18,
+      "total_time": 0.08118939399719238,
+      "success_rate": 1.0,
+      "accuracy": 0.8000000000000003,
+      "total_accuracy": 14.400000000000004
+    },
+    "llm": {
+      "total_calls": 1,
+      "total_time": 0.006083250045776367,
+      "success_rate": 1.0,
+      "accuracy": 0.8,
+      "total_accuracy": 0.8
+    },
+    "custom_model": {
+      "total_calls": 0,
+      "total_time": 0,
+      "success_rate": 0.95,
+      "accuracy": 0.9
+    }
+  },
+  "history": [
+    {
+      "timestamp": "2026-04-22T09:11:24.776156",
+      "strategy": "llm",
+      "latency": 0.006083250045776367,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.781589",
+      "strategy": "snownlp",
+      "latency": 0.0041043758392333984,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.786888",
+      "strategy": "snownlp",
+      "latency": 0.004034996032714844,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.790571",
+      "strategy": "snownlp",
+      "latency": 0.0024209022521972656,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.803319",
+      "strategy": "snownlp",
+      "latency": 0.011402368545532227,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.805734",
+      "strategy": "snownlp",
+      "latency": 0.0010879039764404297,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.808470",
+      "strategy": "snownlp",
+      "latency": 0.0014510154724121094,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.812661",
+      "strategy": "snownlp",
+      "latency": 0.002816438674926758,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.820621",
+      "strategy": "snownlp",
+      "latency": 0.006333351135253906,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.825934",
+      "strategy": "snownlp",
+      "latency": 0.0038471221923828125,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.831184",
+      "strategy": "snownlp",
+      "latency": 0.0038461685180664062,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.834886",
+      "strategy": "snownlp",
+      "latency": 0.0023148059844970703,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.847181",
+      "strategy": "snownlp",
+      "latency": 0.010887622833251953,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.849652",
+      "strategy": "snownlp",
+      "latency": 0.0010535717010498047,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.852453",
+      "strategy": "snownlp",
+      "latency": 0.0014166831970214844,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.856441",
+      "strategy": "snownlp",
+      "latency": 0.0025801658630371094,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.864233",
+      "strategy": "snownlp",
+      "latency": 0.004985332489013672,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.877666",
+      "strategy": "snownlp",
+      "latency": 0.010512351989746094,
+      "success": true,
+      "accuracy": 0.8
+    },
+    {
+      "timestamp": "2026-04-22T09:11:24.888822",
+      "strategy": "snownlp",
+      "latency": 0.006094217300415039,
+      "success": true,
+      "accuracy": 0.8
+    }
+  ]
+}
