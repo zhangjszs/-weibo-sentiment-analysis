@@ -1150,6 +1150,10 @@ class SentimentService:
             from .sentiment_strategy_selector import AdaptiveStrategyManager
             manager = AdaptiveStrategyManager()
             return manager.analyze(text)
+        elif mode == "contextual":
+            from .contextual_sentiment import contextual_analyzer
+            result = contextual_analyzer.analyze(text)
+            return result.to_dict()
         else:
             strategy = SnowNLPStrategy()
 
@@ -1178,6 +1182,30 @@ class SentimentService:
                 return manager.analyze_batch(texts)
             except Exception as e:
                 logger.error(f"智能批量分析失败，降级到逐个分析: {e}")
+        # 对于上下文感知模式
+        elif mode == "contextual":
+            try:
+                from .contextual_sentiment import contextual_analyzer
+                results = []
+                for text in texts:
+                    try:
+                        result = contextual_analyzer.analyze(text)
+                        results.append(result.to_dict())
+                    except Exception as e:
+                        logger.error(f"上下文分析失败: {e}")
+                        results.append(
+                            {
+                                "score": 0.5,
+                                "label": "neutral",
+                                "reasoning": "分析失败",
+                                "emotion": "未知",
+                                "keywords": [],
+                                "error": True,
+                            }
+                        )
+                return results
+            except Exception as e:
+                logger.error(f"上下文批量分析失败: {e}")
         # 对于自定义模型，使用批处理
         elif mode == "custom":
             try:
