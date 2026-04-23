@@ -21,12 +21,40 @@ import requests
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from config import (
+from .config import (
     DEFAULT_DELAY,
     get_random_headers,
     get_working_proxy,
 )
 from utils.deduplicator import article_deduplicator
+
+# 导入监控系统
+try:
+    from monitor import log_request, log_error, log_crawled_item, log_proxy_usage
+    MONITOR_AVAILABLE = True
+except ImportError:
+    MONITOR_AVAILABLE = False
+    logging.warning("监控系统未加载")
+
+# 导入浏览器管理器
+try:
+    from browser_manager import navigate, get_content, wait_for_selector, scroll
+    BROWSER_AVAILABLE = True
+except ImportError:
+    BROWSER_AVAILABLE = False
+    logging.warning("浏览器管理器未加载")
+
+# 导入智能调度系统
+try:
+    from intelligent_scheduler import (
+        get_scheduler, adjust_crawl_strategy, 
+        get_optimal_delay, should_use_browser, 
+        get_optimal_proxy
+    )
+    SCHEDULER_AVAILABLE = True
+except ImportError:
+    SCHEDULER_AVAILABLE = False
+    logging.warning("智能调度系统未加载")
 
 # 配置日志
 logger = logging.getLogger("spider.content")
@@ -185,9 +213,17 @@ def get_json(
         JSON数据或None
     """
     headers = get_random_headers()
-    proxy = get_working_proxy()
+    
+    # 使用智能调度系统获取代理
+    if SCHEDULER_AVAILABLE:
+        proxy = get_optimal_proxy()
+    else:
+        proxy = get_working_proxy()
+    
+    proxy_str = str(proxy) if proxy else "no_proxy"
 
     for attempt in range(retries):
+        start_time = time.time()
         try:
             response = requests.get(
                 url,
@@ -197,43 +233,112 @@ def get_json(
                 timeout=REQUEST_TIMEOUT,
             )
 
+            response_time = time.time() - start_time
+
             if response.status_code == 200:
                 try:
-                    return response.json()
+                    json_data = response.json()
+                    # 记录成功请求
+                    if MONITOR_AVAILABLE:
+                        log_request(True, url)
+                        if proxy:
+                            log_proxy_usage(proxy_str, True)
+                    # 智能调度系统更新
+                    if SCHEDULER_AVAILABLE:
+                        adjust_crawl_strategy(True, response_time)
+                    return json_data
                 except ValueError as e:
                     logger.error(f"JSON解析失败: {e}")
                     logger.debug(f"响应内容: {response.text[:200]}...")
+                    if MONITOR_AVAILABLE:
+                        log_request(False, url)
+                        log_error(f"JSON解析失败: {e}")
+                    # 智能调度系统更新
+                    if SCHEDULER_AVAILABLE:
+                        adjust_crawl_strategy(False, response_time, "parse_error")
                     return None
 
             elif response.status_code == 403:
                 logger.warning("请求被拒绝(403)，可能Cookie已过期")
+                if MONITOR_AVAILABLE:
+                    log_request(False, url)
+                    log_error("请求被拒绝(403)，可能Cookie已过期")
+                # 智能调度系统更新
+                if SCHEDULER_AVAILABLE:
+                    adjust_crawl_strategy(False, response_time, "cookie_expired")
                 # 403错误不重试，直接返回
                 return None
 
             elif response.status_code == 429:
                 logger.warning("请求频率过高(429)，等待后重试")
-                time.sleep(RETRY_DELAY_BASE * (attempt + 2))
+                if MONITOR_AVAILABLE:
+                    log_request(False, url)
+                    log_error("请求频率过高(429)")
+                # 智能调度系统更新
+                if SCHEDULER_AVAILABLE:
+                    adjust_crawl_strategy(False, response_time, "rate_limit")
+                    # 使用智能调度系统的延迟
+                    sleep_time = get_optimal_delay()
+                else:
+                    sleep_time = RETRY_DELAY_BASE * (attempt + 2)
+                logger.info(f"等待 {sleep_time:.2f} 秒后重试")
+                time.sleep(sleep_time)
 
             else:
                 logger.warning(f"请求失败，状态码: {response.status_code}")
+                if MONITOR_AVAILABLE:
+                    log_request(False, url)
+                    log_error(f"请求失败，状态码: {response.status_code}")
+                # 智能调度系统更新
+                if SCHEDULER_AVAILABLE:
+                    adjust_crawl_strategy(False, response_time, "http_error")
                 if attempt < retries - 1:
-                    time.sleep(RETRY_DELAY_BASE * (attempt + 1))
+                    if SCHEDULER_AVAILABLE:
+                        sleep_time = get_optimal_delay()
+                    else:
+                        sleep_time = RETRY_DELAY_BASE * (attempt + 1)
+                    time.sleep(sleep_time)
 
         except requests.exceptions.Timeout:
+            response_time = time.time() - start_time
             logger.warning(f"请求超时 (尝试 {attempt + 1}/{retries})")
+            if MONITOR_AVAILABLE:
+                log_request(False, url)
+                log_error("请求超时")
+            # 智能调度系统更新
+            if SCHEDULER_AVAILABLE:
+                adjust_crawl_strategy(False, response_time, "timeout")
             if attempt < retries - 1:
-                time.sleep(RETRY_DELAY_BASE * (attempt + 1))
+                if SCHEDULER_AVAILABLE:
+                    sleep_time = get_optimal_delay()
+                else:
+                    sleep_time = RETRY_DELAY_BASE * (attempt + 1)
+                time.sleep(sleep_time)
 
         except requests.exceptions.RequestException as e:
+            response_time = time.time() - start_time
             logger.error(f"请求异常: {e}")
+            if MONITOR_AVAILABLE:
+                log_request(False, url)
+                log_error(f"请求异常: {e}")
+            # 智能调度系统更新
+            if SCHEDULER_AVAILABLE:
+                adjust_crawl_strategy(False, response_time, "request_error")
             if attempt < retries - 1:
-                time.sleep(RETRY_DELAY_BASE * (attempt + 1))
+                if SCHEDULER_AVAILABLE:
+                    sleep_time = get_optimal_delay()
+                else:
+                    sleep_time = RETRY_DELAY_BASE * (attempt + 1)
+                time.sleep(sleep_time)
 
     # 安全地记录 URL，隐藏可能的敏感参数
     safe_url = url[:100] + "..." if len(url) > 100 else url
     if "?" in safe_url:
         safe_url = safe_url.split("?")[0] + "?[params_hidden]"
     logger.error(f"请求最终失败: {safe_url}")
+    if MONITOR_AVAILABLE:
+        log_request(False, url)
+        log_error(f"请求最终失败: {safe_url}")
     return None
 
 
@@ -475,8 +580,11 @@ def search_weibo(keyword: str, pageNum: int = 10) -> int:
     logger.info(f"开始搜索关键词: {keyword}，计划爬取 {pageNum} 页")
 
     for page in range(1, pageNum + 1):
-        # 延时防爬
-        if isinstance(DEFAULT_DELAY, tuple):
+        # 使用智能调度系统获取延迟时间
+        if SCHEDULER_AVAILABLE:
+            delay = get_optimal_delay()
+            logger.info(f"使用智能调度系统的延迟: {delay:.2f}秒")
+        elif isinstance(DEFAULT_DELAY, tuple):
             delay = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
         else:
             delay = DEFAULT_DELAY
@@ -494,7 +602,67 @@ def search_weibo(keyword: str, pageNum: int = 10) -> int:
             "count": 25,
         }
 
-        response = get_json(search_url, params)
+        # 尝试使用浏览器模拟（基于智能调度系统的决策）
+        response = None
+        use_browser = False
+        if SCHEDULER_AVAILABLE:
+            use_browser = should_use_browser()
+        else:
+            use_browser = BROWSER_AVAILABLE
+
+        if use_browser and BROWSER_AVAILABLE:
+            logger.info("使用浏览器模拟获取搜索数据")
+            try:
+                # 构建完整URL
+                full_url = search_url + "?" + "&".join([f"{k}={v}" for k, v in params.items()])
+                if navigate(full_url):
+                    # 等待页面加载
+                    if wait_for_selector("body", timeout=10000):
+                        # 滚动页面以加载更多数据
+                        for _ in range(3):
+                            scroll(500)
+                            time.sleep(1)
+                        # 获取页面内容
+                        content = get_content()
+                        if content:
+                            # 尝试从HTML中提取JSON数据
+                            import re
+                            json_match = re.search(r'\{"ok":1,"data":.*?\}\s*<\/script>', content, re.DOTALL)
+                            if json_match:
+                                json_str = json_match.group(0).replace('</script>', '')
+                                try:
+                                    import json
+                                    response = json.loads(json_str)
+                                    logger.info("从浏览器模拟中成功提取搜索JSON数据")
+                                    # 智能调度系统更新
+                                    if SCHEDULER_AVAILABLE:
+                                        adjust_crawl_strategy(True, 0)
+                                except json.JSONDecodeError:
+                                    logger.warning("浏览器模拟提取JSON失败，回退到API方式")
+                                    response = get_json(search_url, params)
+                            else:
+                                logger.warning("未找到JSON数据，回退到API方式")
+                                response = get_json(search_url, params)
+                        else:
+                            logger.warning("浏览器内容为空，回退到API方式")
+                            response = get_json(search_url, params)
+                    else:
+                        logger.warning("页面加载超时，回退到API方式")
+                        response = get_json(search_url, params)
+                else:
+                    logger.warning("浏览器导航失败，回退到API方式")
+                    response = get_json(search_url, params)
+            except Exception as e:
+                logger.error(f"浏览器模拟失败: {e}")
+                # 回退到传统API方式
+                response = get_json(search_url, params)
+                # 智能调度系统更新
+                if SCHEDULER_AVAILABLE:
+                    adjust_crawl_strategy(False, 0, "browser_error")
+        else:
+            # 使用传统API方式
+            response = get_json(search_url, params)
+
         if response is None:
             logger.warning(f"请求失败，跳过第 {page} 页")
             continue
@@ -557,66 +725,161 @@ def start(
     base_dir = os.path.dirname(os.path.dirname(__file__))
     nav_path = os.path.join(base_dir, "data", "navData.csv")
 
-    if not os.path.exists(nav_path):
-        logger.error(f"导航文件不存在: {nav_path}")
-        return 0
+    # 内置导航数据（当导航文件不存在时使用）
+    default_nav_data = [
+        ["推荐", "102803", "102803"],
+        ["热搜", "102803", "102803&page_type=searchtab"],
+        ["娱乐", "102803", "102803&category=entertainment"],
+        ["体育", "102803", "102803&category=sports"],
+        ["财经", "102803", "102803&category=finance"],
+        ["科技", "102803", "102803&category=technology"],
+        ["教育", "102803", "102803&category=education"],
+        ["健康", "102803", "102803&category=health"],
+        ["汽车", "102803", "102803&category=auto"],
+        ["旅游", "102803", "102803&category=travel"],
+    ]
+
+    nav_data = []
+
+    # 尝试从文件加载导航数据
+    if os.path.exists(nav_path):
+        try:
+            with open(nav_path, encoding="utf8") as readerFile:
+                reader = csv.reader(readerFile)
+                try:
+                    next(reader)  # 跳过标题行
+                except StopIteration:
+                    logger.warning("导航文件为空，使用默认导航数据")
+                    nav_data = default_nav_data
+                else:
+                    for nav in reader:
+                        if len(nav) >= 3:
+                            nav_data.append(nav)
+                        else:
+                            logger.warning(f"跳过无效导航行: {nav}")
+                    if not nav_data:
+                        logger.warning("导航文件无有效数据，使用默认导航数据")
+                        nav_data = default_nav_data
+        except Exception as e:
+            logger.error(f"读取导航文件失败: {e}")
+            nav_data = default_nav_data
+    else:
+        logger.warning(f"导航文件不存在: {nav_path}，使用默认导航数据")
+        nav_data = default_nav_data
+
+    # 限制导航数据数量
+    nav_data = nav_data[:typeNum]
 
     try:
-        with open(nav_path, encoding="utf8") as readerFile:
-            reader = csv.reader(readerFile)
-            try:
-                next(reader)  # 跳过标题行
-            except StopIteration:
-                logger.error("导航文件为空")
-                return 0
+        for nav in nav_data:
+            if typeNumCount >= typeNum:
+                break
 
-            for nav in reader:
-                if typeNumCount >= typeNum:
-                    break
+            if len(nav) < 3:
+                logger.warning(f"跳过无效导航行: {nav}")
+                continue
 
-                if len(nav) < 3:
-                    logger.warning(f"跳过无效导航行: {nav}")
+            for page in range(pageNum):
+                # 使用智能调度系统获取延迟时间
+                if SCHEDULER_AVAILABLE:
+                    delay = get_optimal_delay()
+                    logger.info(f"使用智能调度系统的延迟: {delay:.2f}秒")
+                elif isinstance(DEFAULT_DELAY, tuple):
+                    delay = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
+                else:
+                    delay = DEFAULT_DELAY
+                time.sleep(delay)
+
+                logger.info(f"正在爬取类型：{nav[0]} 第 {page + 1}/{pageNum} 页")
+
+                params = {
+                    "group_id": nav[1],
+                    "containerid": nav[2],
+                    "max_id": page,
+                    "count": 25,
+                    "extparam": "discover|new_feed",
+                }
+
+                if page == 0:
+                    params["since_id"] = "0"
+                    params["refresh"] = "0"
+                else:
+                    params["refresh"] = "2"
+
+                # 尝试使用浏览器模拟（基于智能调度系统的决策）
+                use_browser = False
+                if SCHEDULER_AVAILABLE:
+                    use_browser = should_use_browser()
+                else:
+                    use_browser = BROWSER_AVAILABLE
+
+                if use_browser and BROWSER_AVAILABLE:
+                    logger.info("使用浏览器模拟获取数据")
+                    try:
+                        # 构建完整URL
+                        full_url = articleUrl + "?" + "&".join([f"{k}={v}" for k, v in params.items()])
+                        if navigate(full_url):
+                            # 等待页面加载
+                            if wait_for_selector("body", timeout=10000):
+                                # 滚动页面以加载更多数据
+                                for _ in range(3):
+                                    scroll(500)
+                                    time.sleep(1)
+                                # 获取页面内容
+                                content = get_content()
+                                if content:
+                                    # 尝试从HTML中提取JSON数据
+                                    import re
+                                    json_match = re.search(r'\{"ok":1,"data":.*?\}\s*<\/script>', content, re.DOTALL)
+                                    if json_match:
+                                        json_str = json_match.group(0).replace('</script>', '')
+                                        try:
+                                            import json
+                                            response = json.loads(json_str)
+                                            logger.info("从浏览器模拟中成功提取JSON数据")
+                                            # 智能调度系统更新
+                                            if SCHEDULER_AVAILABLE:
+                                                adjust_crawl_strategy(True, 0)
+                                        except json.JSONDecodeError:
+                                            logger.warning("浏览器模拟提取JSON失败，回退到API方式")
+                                            response = get_json(articleUrl, params)
+                                    else:
+                                        logger.warning("未找到JSON数据，回退到API方式")
+                                        response = get_json(articleUrl, params)
+                                else:
+                                    logger.warning("浏览器内容为空，回退到API方式")
+                                    response = get_json(articleUrl, params)
+                            else:
+                                logger.warning("页面加载超时，回退到API方式")
+                                response = get_json(articleUrl, params)
+                        else:
+                            logger.warning("浏览器导航失败，回退到API方式")
+                            response = get_json(articleUrl, params)
+                    except Exception as e:
+                        logger.error(f"浏览器模拟失败: {e}")
+                        # 回退到传统API方式
+                        response = get_json(articleUrl, params)
+                        # 智能调度系统更新
+                        if SCHEDULER_AVAILABLE:
+                            adjust_crawl_strategy(False, 0, "browser_error")
+                else:
+                    # 使用传统API方式
+                    response = get_json(articleUrl, params)
+
+                if response is None:
+                    logger.warning(f"请求失败，跳过类型：{nav[0]} 第{page + 1}页")
                     continue
 
-                for page in range(pageNum):
-                    # 处理延时
-                    if isinstance(DEFAULT_DELAY, tuple):
-                        delay = random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1])
-                    else:
-                        delay = DEFAULT_DELAY
-                    time.sleep(delay)
+                if "statuses" not in response:
+                    logger.warning(
+                        f"响应格式异常，跳过类型：{nav[0]} 第{page + 1}页"
+                    )
+                    continue
 
-                    logger.info(f"正在爬取类型：{nav[0]} 第 {page + 1}/{pageNum} 页")
+                count = parse_json(response["statuses"], nav[0])
+                total_processed += count
 
-                    params = {
-                        "group_id": nav[1],
-                        "containerid": nav[2],
-                        "max_id": page,
-                        "count": 25,
-                        "extparam": "discover|new_feed",
-                    }
-
-                    if page == 0:
-                        params["since_id"] = "0"
-                        params["refresh"] = "0"
-                    else:
-                        params["refresh"] = "2"
-
-                    response = get_json(articleUrl, params)
-                    if response is None:
-                        logger.warning(f"请求失败，跳过类型：{nav[0]} 第{page + 1}页")
-                        continue
-
-                    if "statuses" not in response:
-                        logger.warning(
-                            f"响应格式异常，跳过类型：{nav[0]} 第{page + 1}页"
-                        )
-                        continue
-
-                    count = parse_json(response["statuses"], nav[0])
-                    total_processed += count
-
-                typeNumCount += 1
+            typeNumCount += 1
 
     except Exception as e:
         logger.error(f"爬取过程发生错误: {e}", exc_info=True)

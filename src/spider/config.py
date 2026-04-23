@@ -130,12 +130,20 @@ class SpiderConfigManager:
     def __init__(self):
         """初始化配置管理器"""
 
+        # 导入Cookie管理器
+        try:
+            from cookie_manager import get_cookie_string, is_cookie_valid
+            self.use_cookie_manager = True
+        except ImportError:
+            self.use_cookie_manager = False
+            logger.warning("Cookie管理器未加载，将使用配置文件中的Cookie")
+
         # ===== 核心请求头配置 =====
         self.BASE_HEADERS = {
             "User-Agent": Config.WEIBO_USER_AGENT
             if Config
             else "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Cookie": Config.WEIBO_COOKIE if Config else "",
+            "Cookie": "",  # 会在get_random_headers中动态更新
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
             "Accept-Encoding": "gzip, deflate, br",
@@ -285,6 +293,25 @@ class SpiderConfigManager:
         # 随机User-Agent
         headers["User-Agent"] = self.get_random_user_agent()
 
+        # 动态更新Cookie
+        if self.use_cookie_manager:
+            try:
+                from cookie_manager import get_cookie_string, is_cookie_valid
+                cookie_str = get_cookie_string()
+                if cookie_str:
+                    headers["Cookie"] = cookie_str
+                    logger.debug("使用Cookie管理器提供的Cookie")
+                else:
+                    # 使用配置文件中的Cookie作为后备
+                    headers["Cookie"] = Config.WEIBO_COOKIE if Config else ""
+                    logger.debug("使用配置文件中的Cookie")
+            except Exception as e:
+                logger.error(f"获取Cookie失败: {e}")
+                headers["Cookie"] = Config.WEIBO_COOKIE if Config else ""
+        else:
+            # 使用配置文件中的Cookie
+            headers["Cookie"] = Config.WEIBO_COOKIE if Config else ""
+
         # 随机添加可选的反指纹识别头部
         for field, values in self.RANDOM_HEADER_FIELDS.items():
             if random.random() > 0.3:  # 70%概率添加
@@ -366,7 +393,19 @@ class SpiderConfigManager:
         if not self.USE_PROXY:
             return None
 
-        # 尝试从本地已验证的代理获取
+        # 尝试使用新的代理管理器
+        try:
+            from proxy_manager import get_working_proxy as get_proxy
+            proxy = get_proxy(verify)
+            if proxy:
+                logger.debug(f"使用代理管理器提供的代理: {proxy.get('http', '')}")
+                return proxy
+        except ImportError:
+            logger.debug("代理管理器未加载，使用内置代理管理")
+        except Exception as e:
+            logger.error(f"从代理管理器获取代理失败: {e}")
+
+        # 回退到内置代理管理
         with self.proxy_lock:
             if self.working_proxies:
                 # 随机选择一个代理
@@ -388,20 +427,6 @@ class SpiderConfigManager:
 
                 # 直接返回（不验证以提高效率）
                 return {"http": f"http://{proxy_ip}", "https": f"http://{proxy_ip}"}
-
-        # 本地代理不足，尝试从代理池获取
-        try:
-            from proxy_pool import get_proxy_pool
-
-            pool = get_proxy_pool()
-            proxy_dict = pool.get_proxy_dict()
-            if proxy_dict:
-                logger.info(f"从代理池获取代理: {proxy_dict.get('http', '')}")
-                return proxy_dict
-        except ImportError:
-            logger.debug("代理池模块未加载")
-        except Exception as e:
-            logger.warning(f"从代理池获取代理失败: {e}")
 
         logger.warning("未找到可用代理，将使用直连")
         return None

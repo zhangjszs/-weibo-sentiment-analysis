@@ -22,6 +22,27 @@ from spiderComments import start as start_comments
 from spiderContent import start as start_content
 from spiderUserInfo import start_user_spider
 
+# 导入浏览器管理器
+try:
+    from browser_manager import get_browser_manager, close_browser
+    browser_manager = get_browser_manager()
+    BROWSER_AVAILABLE = True
+    logging.info("浏览器管理器加载成功")
+except ImportError:
+    BROWSER_AVAILABLE = False
+    logging.warning("浏览器管理器未加载，将使用传统请求方式")
+
+# 导入监控系统
+try:
+    from monitor import start_monitor_thread, log_crawled_item, log_error, log_request
+    MONITOR_AVAILABLE = True
+    # 启动监控线程
+    start_monitor_thread(interval=30)
+    logging.info("监控系统加载成功")
+except ImportError:
+    MONITOR_AVAILABLE = False
+    logging.warning("监控系统未加载")
+
 # ========== 配置常量 ==========
 MAX_REQUESTS = 3  # 每个模块最多请求次数
 REQUEST_INTERVAL_MIN = 1.5  # 最小请求间隔（秒）
@@ -118,18 +139,25 @@ class WeiboSpiderController:
         try:
             if self.search_mode and self.search_keyword:
                 logger.info(f"[{thread_name}] 执行关键词搜索: {self.search_keyword}")
-                start_content(
+                result = start_content(
                     typeNum=1, pageNum=10, mode="search", keyword=self.search_keyword
                 )
             else:
                 logger.info(f"[{thread_name}] 执行分类爬取")
-                start_content(typeNum=10, pageNum=5, mode="category")
+                result = start_content(typeNum=10, pageNum=5, mode="category")
+
+            # 记录爬取结果
+            if MONITOR_AVAILABLE and result > 0:
+                for _ in range(result):
+                    log_crawled_item()
 
             self.content_completed.set()
-            logger.info(f"[{thread_name}] 文章爬取任务完成")
+            logger.info(f"[{thread_name}] 文章爬取任务完成，爬取了 {result} 条数据")
 
         except Exception as e:
             logger.error(f"[{thread_name}] 文章爬取线程异常: {e}", exc_info=True)
+            if MONITOR_AVAILABLE:
+                log_error(str(e))
             self._error_count += 1
             self.content_completed.set()  # 即使失败也标记完成，避免阻塞
 
@@ -141,6 +169,8 @@ class WeiboSpiderController:
         # 等待文章爬取完成（带超时）
         if not self.content_completed.wait(timeout=300):  # 5分钟超时
             logger.error(f"[{thread_name}] 等待文章爬取超时")
+            if MONITOR_AVAILABLE:
+                log_error("等待文章爬取超时")
             self.comments_completed.set()
             return
 
@@ -155,12 +185,18 @@ class WeiboSpiderController:
 
         try:
             logger.info(f"[{thread_name}] 开始执行评论爬取任务")
-            start_comments()
+            result = start_comments()
+            # 记录爬取结果
+            if MONITOR_AVAILABLE and result > 0:
+                for _ in range(result):
+                    log_crawled_item()
             self.comments_completed.set()
-            logger.info(f"[{thread_name}] 评论爬取任务完成")
+            logger.info(f"[{thread_name}] 评论爬取任务完成，爬取了 {result} 篇文章的评论")
 
         except Exception as e:
             logger.error(f"[{thread_name}] 评论爬取线程异常: {e}", exc_info=True)
+            if MONITOR_AVAILABLE:
+                log_error(str(e))
             self._error_count += 1
             self.comments_completed.set()
 
@@ -172,6 +208,8 @@ class WeiboSpiderController:
         # 等待评论爬取完成（带超时）
         if not self.comments_completed.wait(timeout=300):  # 5分钟超时
             logger.error(f"[{thread_name}] 等待评论爬取超时")
+            if MONITOR_AVAILABLE:
+                log_error("等待评论爬取超时")
             self.user_completed.set()
             return
 
@@ -180,12 +218,17 @@ class WeiboSpiderController:
 
         try:
             logger.info(f"[{thread_name}] 开始执行用户信息爬取任务")
+            # 注意：start_user_spider 没有返回值，所以这里不记录具体数量
             start_user_spider(max_users=50)
+            if MONITOR_AVAILABLE:
+                log_crawled_item()  # 记录用户爬取任务
             self.user_completed.set()
             logger.info(f"[{thread_name}] 用户信息爬取任务完成")
 
         except Exception as e:
             logger.error(f"[{thread_name}] 用户信息爬取线程异常: {e}", exc_info=True)
+            if MONITOR_AVAILABLE:
+                log_error(str(e))
             self._error_count += 1
             self.user_completed.set()
 
@@ -450,7 +493,14 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n\n用户中断，程序退出")
-        sys.exit(0)
     except Exception as e:
         logger.critical(f"程序异常退出: {e}", exc_info=True)
-        sys.exit(1)
+    finally:
+        # 关闭浏览器
+        if BROWSER_AVAILABLE:
+            try:
+                close_browser()
+                logger.info("浏览器已关闭")
+            except Exception as e:
+                logger.error(f"关闭浏览器失败: {e}")
+        sys.exit(0)
