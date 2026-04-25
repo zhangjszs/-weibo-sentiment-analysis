@@ -40,7 +40,20 @@ PyJWT>=2.0
 
 # 安全与密码
 bcrypt>=4.0
+cryptography>=40.0
 urllib3==1.26.18
+
+# Flask扩展
+flask-compress>=1.0
+flask-wtf>=1.0
+
+# 数据科学与可视化
+joblib>=1.0
+seaborn>=0.12
+emoji>=2.0
+
+# 其他工具
+jsonpath>=0.82
 werkzeug==2.0.3
 wheel==0.46.3
 setuptools==65.0.0
