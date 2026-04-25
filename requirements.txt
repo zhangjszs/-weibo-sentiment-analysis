@@ -47,6 +47,10 @@ urllib3==1.26.18
 flask-compress>=1.0
 flask-wtf>=1.0
 
+# 报告生成
+reportlab>=3.6
+python-pptx>=0.6
+
 # 数据科学与可视化
 joblib>=1.0
 seaborn>=0.12
