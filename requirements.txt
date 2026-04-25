@@ -38,7 +38,8 @@ python-socketio==5.8.0
 python-engineio>=4.7.1
 PyJWT>=2.0
 
-# 安全更新
+# 安全与密码
+bcrypt>=4.0
 urllib3==1.26.18
 werkzeug==2.0.3
 wheel==0.46.3

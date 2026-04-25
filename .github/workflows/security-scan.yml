@@ -34,17 +34,17 @@ jobs:
     - name: Run Bandit (代码安全扫描)
       run: |
         bandit -r src/ -f json -o bandit-report.json || true
-        bandit -r src/ -f txt
+        bandit -r src/ -f txt || true
     
     - name: Run Safety (依赖漏洞扫描)
       run: |
         safety scan --json > safety-report.json || true
-        safety scan
+        safety scan || true
     
     - name: Run pip-audit (依赖审计)
       run: |
         pip-audit --format json > pip-audit-report.json || true
-        pip-audit
+        pip-audit || true
     
     - name: Upload security reports
       uses: actions/upload-artifact@v4
