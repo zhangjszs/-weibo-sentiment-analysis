@@ -45,8 +45,8 @@ jobs:
         DB_USER: root
         DB_PASSWORD: root
         DB_NAME: weibo_test
-        SECRET_KEY: ci-test-secret-key
-        JWT_SECRET_KEY: ci-test-jwt-secret-key
+        SECRET_KEY: ci-test-secret-key-must-be-at-least-32-characters-long
+        JWT_SECRET_KEY: ci-test-jwt-secret-key-must-be-at-least-32-characters-long
         REDIS_URL: redis://localhost:6379/0
         PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
       run: |
