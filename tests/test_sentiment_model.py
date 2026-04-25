@@ -69,7 +69,7 @@ class TestSentimentModel:
             pipeline = build_pipeline(estimator)
             assert pipeline is not None
             assert hasattr(pipeline, "steps")
-            assert len(pipeline.steps) == 2
+            assert len(pipeline.steps) == 3
 
     def test_model_training(self, sample_csv):
         """测试模型训练"""

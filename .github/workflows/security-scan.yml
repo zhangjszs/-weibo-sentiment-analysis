@@ -23,7 +23,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.12'
+        python-version: '3.9'
     
     - name: Install dependencies
       run: |
@@ -38,8 +38,8 @@ jobs:
     
     - name: Run Safety (依赖漏洞扫描)
       run: |
-        safety check -r requirements.txt --json > safety-report.json || true
-        safety check -r requirements.txt
+        safety scan --json > safety-report.json || true
+        safety scan
     
     - name: Run pip-audit (依赖审计)
       run: |
