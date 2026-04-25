@@ -80,11 +80,24 @@ def client(app):
     return app.test_client()
 
 
+def set_auth_cookie(client, token):
+    """兼容 Werkzeug 2.x 和 3.x 的 Cookie 设置辅助函数"""
+    import inspect
+
+    sig = inspect.signature(client.set_cookie)
+    if "server_name" in sig.parameters:
+        # Werkzeug 2.x: set_cookie(server_name, key, value, ...)
+        client.set_cookie("localhost", "weibo_access_token", token)
+    else:
+        # Werkzeug 3.x: set_cookie(key, value, *, domain="localhost", ...)
+        client.set_cookie("weibo_access_token", token)
+
+
 @pytest.fixture
 def authed_client(client):
     """带认证的Flask测试客户端fixture"""
     from utils.jwt_handler import create_token
 
     token = create_token(1, "tester")
-    client.set_cookie("weibo_access_token", token)
+    set_auth_cookie(client, token)
     return client

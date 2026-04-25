@@ -150,7 +150,8 @@ class TestLoginAPI:
         from utils.jwt_handler import create_token
 
         token = create_token(8, "renew-user")
-        client.set_cookie("weibo_access_token", token)
+        from conftest import set_auth_cookie
+        set_auth_cookie(client, token)
 
         response = client.post("/api/session/extend")
 
@@ -207,7 +208,8 @@ class TestLoginAPI:
         from utils.jwt_handler import create_token
 
         token = create_token(1, "cookie_user")
-        client.set_cookie("weibo_access_token", token)
+        from conftest import set_auth_cookie
+        set_auth_cookie(client, token)
 
         response = client.get("/api/session/check")
 

@@ -35,9 +35,10 @@ def client(app):
 @pytest.fixture
 def authed_client(client):
     from utils.jwt_handler import create_token
+    from conftest import set_auth_cookie
 
     token = create_token(1, "tester")
-    client.set_cookie("weibo_access_token", token)
+    set_auth_cookie(client, token)
     return client
 
 
