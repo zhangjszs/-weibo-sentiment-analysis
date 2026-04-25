@@ -34,12 +34,20 @@ jobs:
         pip install -r requirements.txt
         pip install pytest pytest-cov
 
+    - name: Initialize test database
+      run: |
+        sed 's/`wb`/`weibo_test`/g' database/init_database.sql | mysql -h 127.0.0.1 -u root -proot
+
     - name: Run Unit Tests
       env:
         DB_HOST: 127.0.0.1
+        DB_PORT: 3306
         DB_USER: root
         DB_PASSWORD: root
         DB_NAME: weibo_test
+        SECRET_KEY: ci-test-secret-key
+        JWT_SECRET_KEY: ci-test-jwt-secret-key
+        REDIS_URL: redis://localhost:6379/0
         PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
       run: |
         pytest tests/ --cov=src --cov-report=xml
