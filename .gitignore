@@ -223,3 +223,28 @@ environment.yml
 .DS_Store
 
 .omc/
+
+# Trae IDE
+.trae/
+
+# Model generated files (runtime artifacts)
+src/model/*.pkl
+src/model/*.json
+src/model/comment_1_fenci_qutingyongci_cipin.csv
+src/model/comment_1_fenci.txt
+src/model/metrics/
+src/model/versions/
+
+# Temporary manual directory
+tmp_manual/
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Merge / backup artifacts
+*.orig
+*.rej
+*.bak
+
