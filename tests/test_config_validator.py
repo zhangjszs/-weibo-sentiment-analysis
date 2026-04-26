@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 
-from src.utils.config_validator import ConfigValidator
+from utils.config_validator import ConfigValidator
 
 
 class TestConfigValidator:

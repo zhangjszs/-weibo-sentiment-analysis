@@ -8,10 +8,10 @@ import time
 from pathlib import Path
 
 import pandas as pd
-from src.model.trainModel import train_best_model, load_data
-from src.model.model_version_manager import ModelVersionManager
-from src.model.model_monitor import ModelMonitor
-from src.services.sentiment_service import SentimentService
+from model.trainModel import train_best_model, load_data
+from model.model_version_manager import ModelVersionManager
+from model.model_monitor import ModelMonitor
+from services.sentiment_service import SentimentService
 
 
 def test_model_training():
@@ -124,7 +124,7 @@ def test_social_media_features():
     """测试社交媒体特征提取"""
     print("\n=== 测试社交媒体特征提取 ===")
     try:
-        from src.model.social_media_preprocessor import SocialMediaPreprocessor
+        from model.social_media_preprocessor import SocialMediaPreprocessor
         preprocessor = SocialMediaPreprocessor()
         
         test_text = "#情感分析# 这个产品真的很棒！👍 @用户 推荐给大家"
@@ -144,7 +144,7 @@ def test_data_augmentation():
     """测试数据增强"""
     print("\n=== 测试数据增强 ===")
     try:
-        from src.model.social_media_augmenter import SocialMediaAugmenter
+        from model.social_media_augmenter import SocialMediaAugmenter
         augmenter = SocialMediaAugmenter()
         
         test_text = "这个产品真的很棒！"

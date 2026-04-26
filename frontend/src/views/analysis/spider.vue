@@ -254,6 +254,33 @@
                 </el-button>
               </div>
             </div>
+
+            <!-- 清空缓存 -->
+            <div class="action-card">
+              <div class="action-header">
+                <el-icon
+                  :size="20"
+                  color="#EF4444"
+                >
+                  <Delete />
+                </el-icon>
+                <span>清空系统缓存</span>
+              </div>
+              <p class="action-desc">
+                清除内存与文件缓存，强制刷新数据
+              </p>
+              <div class="action-controls">
+                <el-button
+                  type="danger"
+                  :icon="Delete"
+                  size="small"
+                  :loading="clearingCache"
+                  @click="handleClearCache"
+                >
+                  清空缓存
+                </el-button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -340,14 +367,33 @@
             <h3>
               <el-icon><Notebook /></el-icon> 运行日志
             </h3>
-            <el-button
-              size="small"
-              text
-              :loading="logsLoading"
-              @click="loadLogs"
-            >
-              <el-icon><Refresh /></el-icon> 刷新
-            </el-button>
+            <div class="header-actions">
+              <el-radio-group
+                v-model="logFilter"
+                size="small"
+              >
+                <el-radio-button label="all">
+                  全部
+                </el-radio-button>
+                <el-radio-button label="error">
+                  错误
+                </el-radio-button>
+                <el-radio-button label="warn">
+                  警告
+                </el-radio-button>
+                <el-radio-button label="info">
+                  信息
+                </el-radio-button>
+              </el-radio-group>
+              <el-button
+                size="small"
+                text
+                :loading="logsLoading"
+                @click="loadLogs"
+              >
+                <el-icon><Refresh /></el-icon> 刷新
+              </el-button>
+            </div>
           </div>
           <div class="panel-body">
             <div
@@ -355,7 +401,7 @@
               class="log-container"
             >
               <div
-                v-if="logs.length === 0"
+                v-if="filteredLogs.length === 0"
                 class="empty-state"
               >
                 <el-empty
@@ -365,7 +411,7 @@
               </div>
               <div v-else>
                 <div
-                  v-for="(line, idx) in logs"
+                  v-for="(line, idx) in filteredLogs"
                   :key="idx"
                   class="log-line"
                   :class="getLogLevel(line)"
@@ -382,7 +428,7 @@
 </template>
 
 <script setup>
-  import { ref, reactive, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+  import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
   import { ElMessage } from 'element-plus'
   import {
     Document,
@@ -402,8 +448,9 @@
     TrendCharts,
     Notebook,
     Opportunity,
+    Delete,
   } from '@element-plus/icons-vue'
-  import { getSpiderOverview, startCrawl, getSpiderStatus, getSpiderLogs } from '@/api/spider'
+  import { getSpiderOverview, startCrawl, getSpiderStatus, getSpiderLogs, clearCache } from '@/api/spider'
   import echarts from '@/utils/echarts'
 
   // 概览 data
@@ -427,10 +474,12 @@
   const searchKeyword = ref('')
   const searchPageNum = ref(3)
   const refreshing = ref(false)
+  const clearingCache = ref(false)
 
   // 日志
   const logs = ref([])
   const logsLoading = ref(false)
+  const logFilter = ref('all')
   const logContainerRef = ref(null)
 
   // 图表
@@ -486,6 +535,35 @@
     refreshing.value = true
     await Promise.all([loadOverview(), loadLogs()])
     refreshing.value = false
+  }
+
+  // 日志过滤
+  const filteredLogs = computed(() => {
+    if (logFilter.value === 'all') return logs.value
+    return logs.value.filter(line => {
+      const level = getLogLevel(line)
+      if (logFilter.value === 'error') return level === 'log-error'
+      if (logFilter.value === 'warn') return level === 'log-warn'
+      if (logFilter.value === 'info') return level === 'log-info'
+      return true
+    })
+  })
+
+  // ===== 缓存操作 =====
+  async function handleClearCache() {
+    clearingCache.value = true
+    try {
+      const res = await clearCache()
+      if (res.code === 200) {
+        ElMessage.success('缓存已清空')
+      } else {
+        ElMessage.warning(res.msg || '清空失败')
+      }
+    } catch (e) {
+      ElMessage.error('请求失败: ' + (e.message || e))
+    } finally {
+      clearingCache.value = false
+    }
   }
 
   // ===== 爬取操作 =====
@@ -880,6 +958,12 @@
   .control-label {
     color: #64748b;
     font-size: 13px;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   /* 历史记录 */

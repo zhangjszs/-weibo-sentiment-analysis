@@ -6,8 +6,8 @@
 
 import time
 import json
-from src.services.sentiment_service import SentimentService
-from src.services.sentiment_dictionaries import sentiment_dict
+from services.sentiment_service import SentimentService
+from services.sentiment_dictionaries import sentiment_dict
 
 
 def test_basic_sentiment():

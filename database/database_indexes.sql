@@ -6,46 +6,46 @@
 -- ===== 文章表索引 =====
 
 -- 为created_at字段添加索引（用于时间排序和筛选）
-CREATE INDEX IF NOT EXISTS idx_article_created_at ON article(created_at);
+CREATE INDEX idx_article_created_at ON article(created_at);
 
 -- 为likeNum字段添加索引（用于按点赞数排序）
-CREATE INDEX IF NOT EXISTS idx_article_like_num ON article(likeNum);
+CREATE INDEX idx_article_like_num ON article(likeNum);
 
 -- 为type字段添加索引（用于类型筛选）
-CREATE INDEX IF NOT EXISTS idx_article_type ON article(type);
+CREATE INDEX idx_article_type ON article(type);
 
 -- 为content字段添加前缀索引（用于内容搜索）
-CREATE INDEX IF NOT EXISTS idx_article_content ON article(content(255));
+CREATE INDEX idx_article_content ON article(content(255));
 
 -- ===== 评论表索引 =====
 
 -- 为created_at字段添加索引（用于时间排序和筛选）
-CREATE INDEX IF NOT EXISTS idx_comments_created_at ON comments(created_at);
+CREATE INDEX idx_comments_created_at ON comments(created_at);
 
 -- 为like_counts字段添加索引（用于按点赞数排序）
-CREATE INDEX IF NOT EXISTS idx_comments_like_counts ON comments(like_counts);
+CREATE INDEX idx_comments_like_counts ON comments(like_counts);
 
 -- 为articleId字段添加索引（用于关联查询）
-CREATE INDEX IF NOT EXISTS idx_comments_article_id ON comments(articleId);
+CREATE INDEX idx_comments_article_id ON comments(articleId);
 
 -- 为content字段添加前缀索引（用于内容搜索）
-CREATE INDEX IF NOT EXISTS idx_comments_content ON comments(content(255));
+CREATE INDEX idx_comments_content ON comments(content(255));
 
 -- 为authorName字段添加索引（用于作者查询）
-CREATE INDEX IF NOT EXISTS idx_comments_author_name ON comments(authorName);
+CREATE INDEX idx_comments_author_name ON comments(authorName);
 
 -- ===== 用户表索引 =====
 
 -- 为username字段添加唯一索引（用于登录查询）
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_username ON user(username);
+CREATE UNIQUE INDEX idx_user_username ON user(username);
 
 -- ===== 复合索引 =====
 
 -- 文章表复合索引：类型+创建时间
-CREATE INDEX IF NOT EXISTS idx_article_type_created ON article(type, created_at);
+CREATE INDEX idx_article_type_created ON article(type, created_at);
 
 -- 评论表复合索引：文章ID+创建时间
-CREATE INDEX IF NOT EXISTS idx_comments_article_created ON comments(articleId, created_at);
+CREATE INDEX idx_comments_article_created ON comments(articleId, created_at);
 
 -- ===== 查看索引 =====
 

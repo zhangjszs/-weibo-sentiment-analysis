@@ -28,6 +28,25 @@ export function getSpiderStatus() {
   })
 }
 
+// 快速爬取（普通用户可用）
+export function quickCrawl(data = {}) {
+  return request({
+    url: '/api/spider/quick-crawl',
+    method: 'post',
+    data,
+    loadingOptions: false,
+  })
+}
+
+// 清空缓存
+export function clearCache() {
+  return request({
+    url: '/getAllData/clearCache',
+    method: 'post',
+    loadingOptions: { text: '正在清空缓存...' },
+  })
+}
+
 // 获取爬虫日志
 export function getSpiderLogs(lines = 100) {
   return request({

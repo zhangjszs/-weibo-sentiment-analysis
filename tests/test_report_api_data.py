@@ -14,26 +14,6 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from utils.jwt_handler import create_token
 
 
-@pytest.fixture
-def app(monkeypatch):
-    monkeypatch.setenv("AUTO_CREATE_DEMO_ADMIN", "False")
-    monkeypatch.setenv("DEMO_ADMIN_RESET_PASSWORD", "False")
-
-    sys.modules.pop("app", None)
-    sys.modules.pop("config.settings", None)
-    sys.modules.pop("services.startup_service", None)
-    app_module = importlib.import_module("app")
-    app = app_module.app
-
-    app.config["TESTING"] = True
-    return app
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-
 def _auth_headers():
     token = create_token(1, "report_tester")
     return {"Authorization": f"Bearer {token}"}

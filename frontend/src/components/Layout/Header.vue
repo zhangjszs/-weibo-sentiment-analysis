@@ -25,6 +25,14 @@
       </el-breadcrumb>
     </div>
     <div class="header-right">
+      <el-tooltip content="快速爬取" placement="bottom">
+        <el-button
+          circle
+          :icon="Download"
+          class="quick-crawl-btn"
+          @click="showCrawlDialog = true"
+        />
+      </el-tooltip>
       <el-dropdown
         trigger="click"
         @command="handleCommand"
@@ -69,17 +77,83 @@
         </template>
       </el-dropdown>
     </div>
+    <!-- 快速爬取弹窗 -->
+    <el-dialog
+      v-model="showCrawlDialog"
+      title="快速爬取"
+      width="420px"
+      :close-on-click-modal="false"
+      destroy-on-close
+      @closed="stopCrawlPolling"
+    >
+      <el-form
+        :model="crawlForm"
+        label-position="top"
+        class="crawl-form"
+      >
+        <el-form-item label="爬取类型">
+          <el-radio-group v-model="crawlForm.type">
+            <el-radio-button label="hot">
+              <el-icon><Sunny /></el-icon> 热门微博
+            </el-radio-button>
+            <el-radio-button label="search">
+              <el-icon><Search /></el-icon> 关键词搜索
+            </el-radio-button>
+            <el-radio-button label="comments">
+              <el-icon><ChatLineRound /></el-icon> 评论数据
+            </el-radio-button>
+          </el-radio-group>
+        </el-form-item>
+
+        <el-form-item
+          v-if="crawlForm.type === 'search'"
+          label="关键词"
+        >
+          <el-input
+            v-model="crawlForm.keyword"
+            placeholder="输入搜索关键词"
+            clearable
+          />
+        </el-form-item>
+
+        <el-form-item label="爬取页数">
+          <el-input-number
+            v-model="crawlForm.pageNum"
+            :min="1"
+            :max="10"
+            style="width: 120px"
+          />
+          <span class="form-hint">页数越多，数据越全，耗时越长</span>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showCrawlDialog = false">
+          取消
+        </el-button>
+        <el-button
+          type="primary"
+          :loading="crawlLoading"
+          @click="handleQuickCrawl"
+        >
+          开始爬取
+        </el-button>
+      </template>
+    </el-dialog>
   </el-header>
 </template>
 
 <script setup>
-  import { computed } from 'vue'
+  import { computed, ref, reactive, onBeforeUnmount } from 'vue'
   import {
     ArrowDown,
+    ChatLineRound,
+    Download,
     Expand,
     Fold,
     Moon,
     QuestionFilled,
+    Search,
     Star,
     Sunny,
     SwitchButton,
@@ -88,7 +162,8 @@
   import { useRoute, useRouter } from 'vue-router'
   import { useUserStore } from '@/stores/user'
   import { useAppStore } from '@/stores/app'
-  import { ElMessageBox } from 'element-plus'
+  import { ElMessage, ElMessageBox } from 'element-plus'
+  import { quickCrawl, getSpiderStatus } from '@/api/spider'
 
   defineEmits(['toggle'])
 
@@ -102,6 +177,71 @@
   const userInfo = computed(() => userStore.userInfo)
   const isDark = computed(() => appStore.theme === 'dark')
   const themeIcon = computed(() => (isDark.value ? Sunny : Moon))
+
+  // 快速爬取弹窗
+  const showCrawlDialog = ref(false)
+  const crawlForm = reactive({
+    type: 'hot',
+    keyword: '',
+    pageNum: 3,
+  })
+  const crawlLoading = ref(false)
+  const crawlPollingTimer = ref(null)
+
+  const stopCrawlPolling = () => {
+    if (crawlPollingTimer.value) {
+      clearInterval(crawlPollingTimer.value)
+      crawlPollingTimer.value = null
+    }
+  }
+
+  const startCrawlPolling = () => {
+    stopCrawlPolling()
+    crawlPollingTimer.value = setInterval(async () => {
+      try {
+        const res = await getSpiderStatus()
+        if (res.code === 200 && res.data && !res.data.isRunning) {
+          stopCrawlPolling()
+          ElMessage.success('爬取任务已完成')
+        }
+      } catch (e) {
+        console.error('轮询爬取状态失败:', e)
+      }
+    }, 3000)
+  }
+
+  const handleQuickCrawl = async () => {
+    if (crawlForm.type === 'search' && !crawlForm.keyword.trim()) {
+      ElMessage.warning('请输入搜索关键词')
+      return
+    }
+    crawlLoading.value = true
+    try {
+      const params = {
+        type: crawlForm.type,
+        pageNum: crawlForm.pageNum,
+      }
+      if (crawlForm.type === 'search') {
+        params.keyword = crawlForm.keyword.trim()
+      }
+      const res = await quickCrawl(params)
+      if (res.code === 200) {
+        ElMessage.success(res.msg || '爬取任务已启动')
+        showCrawlDialog.value = false
+        startCrawlPolling()
+      } else {
+        ElMessage.warning(res.msg || '启动失败')
+      }
+    } catch (e) {
+      ElMessage.error('请求失败: ' + (e.message || e))
+    } finally {
+      crawlLoading.value = false
+    }
+  }
+
+  onBeforeUnmount(() => {
+    stopCrawlPolling()
+  })
 
   const handleCommand = (command) => {
     switch (command) {
@@ -247,6 +387,25 @@
       &:hover .el-icon--right {
         transform: rotate(180deg);
       }
+    }
+  }
+
+  .quick-crawl-btn {
+    margin-right: 12px;
+    font-size: 16px;
+  }
+
+  .crawl-form {
+    .el-radio-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .form-hint {
+      margin-left: 8px;
+      color: var(--el-text-color-secondary);
+      font-size: 12px;
     }
   }
 

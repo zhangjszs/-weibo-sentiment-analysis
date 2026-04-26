@@ -53,7 +53,7 @@
                  │
 ┌────────────────▼────────────────────────┐
 │            Database                      │
-│  MySQL  (via SQLAlchemy 2.0 引擎)        │
+│  MySQL  (via SQLAlchemy 1.4 引擎)        │
 └─────────────────────────────────────────┘
 
 异步任务链路：
@@ -65,7 +65,7 @@ Views → Spider/NLP Task Service（本地 Celery / 独立服务）→ Queue (Re
 | 层次 | 技术 | 版本 |
 | ---- | ---- | ---- |
 | Web 框架 | Flask | 3.1 |
-| ORM | SQLAlchemy | 2.0 |
+| ORM | SQLAlchemy | 1.4 |
 | 异步任务 | Celery + Redis | — |
 | 前端 | Vue 3 + Vite | — |
 | 容器化 | Docker + Docker Compose | — |
@@ -85,7 +85,7 @@ Views → Spider/NLP Task Service（本地 Celery / 独立服务）→ Queue (Re
 - [x] 配置 CI/CD 流水线 (`.github/workflows`)。
 
 ### Phase 3: 深度 DDD 重构 (已完成)
-- [x] 统一数据访问层：使用 SQLAlchemy 2.0 替换自定义 pymysql 连接池。
+- [x] 统一数据访问层：使用 SQLAlchemy 1.4 替换自定义 pymysql 连接池。
 - [x] 定义 `User`、`Article` 等领域实体。
 - [x] 引入 `Domain Event` 解耦业务副作用（已接入 Spider 入库后缓存清理流程）。
 
@@ -97,7 +97,7 @@ Views → Spider/NLP Task Service（本地 Celery / 独立服务）→ Queue (Re
 
 ## 4. 数据访问层说明
 
-数据访问层统一使用 SQLAlchemy 2.0（`src/utils/query.py`）。`engine`（连接池）和 `db_session`（scoped_session）是唯一的数据库访问入口。`querys()` 和 `query_dataframe()` 提供向后兼容的函数接口，内部均通过 SQLAlchemy engine 执行。
+数据访问层统一使用 SQLAlchemy 1.4（`src/utils/query.py`），未来计划升级至 2.0。`engine`（连接池）和 `db_session`（scoped_session）是唯一的数据库访问入口。`querys()` 和 `query_dataframe()` 提供向后兼容的函数接口，内部均通过 SQLAlchemy engine 执行。
 
 自定义 `DatabasePool`（pymysql）和备用连接机制已于 S10 整改中删除。
 

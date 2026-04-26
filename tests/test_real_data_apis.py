@@ -13,35 +13,6 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
-@pytest.fixture
-def app(monkeypatch):
-    monkeypatch.setenv("AUTO_CREATE_DEMO_ADMIN", "False")
-    monkeypatch.setenv("DEMO_ADMIN_RESET_PASSWORD", "False")
-
-    sys.modules.pop("app", None)
-    sys.modules.pop("config.settings", None)
-    sys.modules.pop("services.startup_service", None)
-    app_module = importlib.import_module("app")
-    flask_app = app_module.app
-    flask_app.config["TESTING"] = True
-    return flask_app
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-
-@pytest.fixture
-def authed_client(client):
-    from utils.jwt_handler import create_token
-    from conftest import set_auth_cookie
-
-    token = create_token(1, "tester")
-    set_auth_cookie(client, token)
-    return client
-
-
 def test_platform_data_does_not_silent_demo_fallback(authed_client, monkeypatch):
     import views.api.platform_api as platform_api
 

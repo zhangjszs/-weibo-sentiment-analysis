@@ -14,19 +14,6 @@ from config.settings import Config
 from utils.jwt_handler import create_token
 
 
-@pytest.fixture
-def app():
-    from app import app
-
-    app.config["TESTING"] = True
-    return app
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-
 def test_startup_status_requires_admin(client, monkeypatch):
     monkeypatch.setattr(Config, "ADMIN_USERS", {"admin"})
     token = create_token(1, "user")

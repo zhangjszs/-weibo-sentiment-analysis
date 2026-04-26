@@ -138,10 +138,10 @@
 # 2. 确保在 `.env` 中按 `.env.example` 填好了数据库密码。
 
 # 3. 直接在项目根目录运行
-.\start.bat
+.\scripts\start.bat
 ```
 
-`start.bat` 会自动为你同时拉起 Flask 后端（5000 端口）和 Vite 前端（3000 端口）。要停止服务，只需运行：`.\start.bat stop`。
+`scripts\start.bat` 会自动为你同时拉起 Flask 后端（5000 端口）和 Vite 前端（3000 端口）。要停止服务，只需运行：`.\scripts\start.bat stop`。
 
 ### 🛠️ 手动分步启动
 

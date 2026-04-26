@@ -7,7 +7,6 @@
 import logging
 import os
 import threading
-import time
 from datetime import datetime
 
 from flask import Blueprint, request
@@ -356,6 +355,57 @@ def spider_crawl():
     ), 200
 
 
+@spider_bp.route("/quick-crawl", methods=["POST"])
+def spider_quick_crawl():
+    """
+    快速爬取接口（所有已登录用户可用）
+    Body:
+        type: 'hot' | 'search' | 'comments'
+        keyword: 搜索关键词（type=search 时必填）
+        pageNum: 爬取页数（默认 3）
+    """
+    _refresh_task_state()
+
+    with _spider_lock:
+        if _spider_state["running"]:
+            return ok(
+                {
+                    "currentTask": _spider_state["current_task"],
+                    "progress": _spider_state["progress"],
+                },
+                msg="已有爬虫任务正在运行，请等待完成",
+                code=409,
+            ), 409
+
+    data = request.json or {}
+    crawl_type = data.get("type", "hot")
+    keyword = data.get("keyword", "")
+    page_num = data.get("pageNum", 3)
+
+    try:
+        dispatch_result = dispatch_spider_task(
+            crawl_type=crawl_type,
+            keyword=keyword,
+            page_num=page_num,
+        )
+    except ValueError as ve:
+        return error(str(ve), code=400), 400
+    except Exception as e:
+        logger.error(f"提交快速爬虫任务失败: {e}")
+        return error("任务提交失败", code=500), 500
+
+    register_submitted_task(dispatch_result)
+
+    return ok(
+        {
+            "type": dispatch_result["crawl_type"],
+            "keyword": dispatch_result.get("keyword", ""),
+            "task_id": dispatch_result["task_id"],
+        },
+        msg=f"爬虫任务已提交: {dispatch_result['task_label']}",
+    ), 200
+
+
 @spider_bp.route("/logs", methods=["GET"])
 @admin_required
 def spider_logs():
@@ -404,310 +454,4 @@ def spider_status():
     ), 200
 
 
-# ========== 爬取实现函数 ==========
 
-
-def _crawl_hot(page_num=3):
-    """同步爬取热门微博并导入数据库"""
-    import random
-
-    import requests as req
-
-    from utils.query import querys
-
-    cookie = os.getenv("WEIBO_COOKIE", "")
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Cookie": cookie,
-        "Accept": "application/json, text/plain, */*",
-        "Referer": "https://weibo.com/",
-    }
-
-    articles = []
-    for page in range(page_num):
-        _spider_state["progress"] = int((page / page_num) * 80)
-        _spider_state["message"] = f"正在爬取第 {page + 1}/{page_num} 页..."
-
-        url = "https://weibo.com/ajax/feed/hottimeline"
-        params = {"group_id": 102803, "max_id": 0, "count": 20, "refresh_type": 1}
-
-        try:
-            response = req.get(url, headers=headers, params=params, timeout=15)
-            if response.status_code == 200:
-                result = response.json()
-                if "statuses" in result:
-                    for item in result["statuses"]:
-                        user = item.get("user", {}) or {}
-                        articles.append(
-                            {
-                                "id": item.get("id", ""),
-                                "likeNum": item.get("attitudes_count", 0),
-                                "commentsLen": item.get("comments_count", 0),
-                                "reposts_count": item.get("reposts_count", 0),
-                                "region": (item.get("region_name", "") or "无").replace(
-                                    "发布于 ", ""
-                                )[:50],
-                                "content": item.get("text_raw", "")[:2000],
-                                "contentLen": item.get("textLength", 0),
-                                "created_at": datetime.now().strftime("%Y-%m-%d"),
-                                "type": "热门",
-                                "detailUrl": f"https://weibo.com/{user.get('id', '')}/{item.get('mblogid', '')}",
-                                "authorAvatar": user.get("avatar_large", "")[:500],
-                                "authorName": user.get("screen_name", "")[:100],
-                                "authorDetail": f"https://weibo.com/u/{user.get('id', '')}",
-                                "isVip": user.get("v_plus", 0),
-                            }
-                        )
-        except Exception as e:
-            logger.warning(f"爬取第{page + 1}页失败: {e}")
-        time.sleep(random.uniform(0.5, 1))
-
-    _spider_state["progress"] = 85
-    _spider_state["message"] = "正在导入数据库..."
-
-    imported = 0
-    for a in articles:
-        try:
-            sql = """INSERT INTO article
-                (id, likeNum, commentsLen, reposts_count, region, content,
-                 contentLen, created_at, type, detailUrl, authorAvatar,
-                 authorName, authorDetail, isVip)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                likeNum=VALUES(likeNum), commentsLen=VALUES(commentsLen)"""
-            querys(
-                sql,
-                [
-                    a["id"],
-                    a["likeNum"],
-                    a["commentsLen"],
-                    a["reposts_count"],
-                    a["region"],
-                    a["content"],
-                    a["contentLen"],
-                    a["created_at"],
-                    a["type"],
-                    a["detailUrl"],
-                    a["authorAvatar"],
-                    a["authorName"],
-                    a["authorDetail"],
-                    a["isVip"],
-                ],
-            )
-            imported += 1
-        except Exception as e:
-            logger.warning(f"导入文章失败: {e}")
-
-    # 清除缓存
-    try:
-        from utils.cache import clear_cache
-
-        clear_cache()
-    except Exception as e:
-        logger.debug("清除缓存失败: %s", e)
-
-    logger.info(f"热门微博刷新完成: 爬取{len(articles)}条, 导入{imported}条")
-    return imported
-
-
-def _crawl_search(keyword, page_num=3):
-    """同步关键词搜索爬取"""
-    import random
-
-    import requests as req
-
-    from utils.query import querys
-
-    cookie = os.getenv("WEIBO_COOKIE", "")
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-        "Cookie": cookie,
-        "Accept": "application/json, text/plain, */*",
-        "Referer": "https://weibo.com/",
-    }
-
-    articles = []
-    for page in range(1, page_num + 1):
-        _spider_state["progress"] = int((page / page_num) * 80)
-        _spider_state["message"] = f'正在搜索 "{keyword}" 第 {page}/{page_num} 页...'
-
-        # 搜索 API
-        search_url = "https://weibo.com/ajax/statuses/searchResult"
-        params = {"q": keyword, "page": page, "count": 20}
-
-        try:
-            response = req.get(search_url, headers=headers, params=params, timeout=15)
-            if response.status_code == 200:
-                result = response.json()
-                statuses = (
-                    result.get("data", {}).get("statuses", [])
-                    if isinstance(result.get("data"), dict)
-                    else []
-                )
-                for item in statuses:
-                    user = item.get("user", {}) or {}
-                    articles.append(
-                        {
-                            "id": item.get("id", ""),
-                            "likeNum": item.get("attitudes_count", 0),
-                            "commentsLen": item.get("comments_count", 0),
-                            "reposts_count": item.get("reposts_count", 0),
-                            "region": (item.get("region_name", "") or "无").replace(
-                                "发布于 ", ""
-                            )[:50],
-                            "content": item.get("text_raw", "")[:2000],
-                            "contentLen": item.get("textLength", 0),
-                            "created_at": datetime.now().strftime("%Y-%m-%d"),
-                            "type": f"搜索:{keyword}",
-                            "detailUrl": f"https://weibo.com/{user.get('id', '')}/{item.get('mblogid', '')}",
-                            "authorAvatar": user.get("avatar_large", "")[:500],
-                            "authorName": user.get("screen_name", "")[:100],
-                            "authorDetail": f"https://weibo.com/u/{user.get('id', '')}",
-                            "isVip": user.get("v_plus", 0),
-                        }
-                    )
-        except Exception as e:
-            logger.warning(f"搜索第{page}页失败: {e}")
-        time.sleep(random.uniform(1, 2))
-
-    _spider_state["progress"] = 85
-    _spider_state["message"] = "正在导入数据库..."
-
-    imported = 0
-    for a in articles:
-        try:
-            sql = """INSERT INTO article
-                (id, likeNum, commentsLen, reposts_count, region, content,
-                 contentLen, created_at, type, detailUrl, authorAvatar,
-                 authorName, authorDetail, isVip)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE
-                likeNum=VALUES(likeNum), commentsLen=VALUES(commentsLen)"""
-            querys(
-                sql,
-                [
-                    a["id"],
-                    a["likeNum"],
-                    a["commentsLen"],
-                    a["reposts_count"],
-                    a["region"],
-                    a["content"],
-                    a["contentLen"],
-                    a["created_at"],
-                    a["type"],
-                    a["detailUrl"],
-                    a["authorAvatar"],
-                    a["authorName"],
-                    a["authorDetail"],
-                    a["isVip"],
-                ],
-            )
-            imported += 1
-        except Exception as e:
-            logger.warning(f"导入搜索文章失败: {e}")
-
-    try:
-        from utils.cache import clear_cache
-
-        clear_cache()
-    except Exception as e:
-        logger.debug("清除缓存失败: %s", e)
-
-    logger.info(f"关键词搜索完成 [{keyword}]: 爬取{len(articles)}条, 导入{imported}条")
-    return imported
-
-
-def _crawl_comments():
-    """同步爬取评论"""
-    _spider_state["progress"] = 10
-    _spider_state["message"] = "正在获取待爬取文章列表..."
-
-    try:
-        from utils.query import querys
-
-        # 获取最近的文章 ID
-        articles = querys(
-            "SELECT id FROM article ORDER BY created_at DESC LIMIT 20", [], "select"
-        )
-        if not articles:
-            logger.warning("没有文章可爬取评论")
-            return 0
-
-        import random
-
-        import requests as req
-
-        cookie = os.getenv("WEIBO_COOKIE", "")
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-            "Cookie": cookie,
-            "Accept": "application/json, text/plain, */*",
-            "Referer": "https://weibo.com/",
-        }
-
-        total_imported = 0
-        for idx, article in enumerate(articles):
-            aid = (
-                article[0]
-                if isinstance(article, (list, tuple))
-                else article.get("id", "")
-            )
-            _spider_state["progress"] = int(10 + (idx / len(articles)) * 70)
-            _spider_state["message"] = (
-                f"正在爬取文章 {idx + 1}/{len(articles)} 的评论..."
-            )
-
-            url = "https://weibo.com/ajax/statuses/buildComments"
-            params = {"id": aid, "is_show_bulletin": 2, "count": 20}
-
-            try:
-                response = req.get(url, headers=headers, params=params, timeout=15)
-                if response.status_code == 200:
-                    result = response.json()
-                    comments = (
-                        result.get("data", [])
-                        if isinstance(result.get("data"), list)
-                        else []
-                    )
-                    for c in comments:
-                        c_user = c.get("user", {}) or {}
-                        try:
-                            sql = """INSERT IGNORE INTO comments
-                                (articleId, created_at, like_counts, region, content,
-                                 authorName, authorGender, authorAddress, authorAvatar)
-                                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                            querys(
-                                sql,
-                                [
-                                    str(aid),
-                                    c.get("created_at", "")[:50],
-                                    c.get("like_counts", 0),
-                                    (c.get("source", "") or "无")[:50],
-                                    (c.get("text_raw", "") or "")[:2000],
-                                    c_user.get("screen_name", "")[:100],
-                                    c_user.get("gender", "unknown")[:10],
-                                    (c_user.get("location", "") or "")[:200],
-                                    c_user.get("avatar_large", "")[:500],
-                                ],
-                            )
-                            total_imported += 1
-                        except Exception as e:
-                            logger.warning(f"导入评论失败: {e}")
-            except Exception as e:
-                logger.warning(f"爬取文章 {aid} 评论失败: {e}")
-
-            time.sleep(random.uniform(0.5, 1.5))
-
-        try:
-            from utils.cache import clear_cache
-
-            clear_cache()
-        except Exception as e:
-            logger.debug("清除缓存失败: %s", e)
-
-        logger.info(f"评论爬取完成: 导入{total_imported}条")
-        return total_imported
-
-    except Exception as e:
-        logger.error(f"评论爬取失败: {e}")
-        raise

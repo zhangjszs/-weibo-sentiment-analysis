@@ -191,11 +191,6 @@ class Config:
                 raise RuntimeError("ADMIN_USERS must be set in production")
 
 
-# Late binding for properties that depend on class variables
-Config.SQLALCHEMY_DATABASE_URI = Config.get_database_url()
-Config.SQLALCHEMY_TRACK_MODIFICATIONS = False
-Config.SQLALCHEMY_ECHO = Config.IS_DEVELOPMENT
-
 # Backward compatibility aliases
 BASE_DIR = Config.BASE_DIR
 LOG_DIR = Config.LOG_DIR

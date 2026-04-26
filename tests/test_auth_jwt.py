@@ -56,26 +56,6 @@ class TestJWTHandler:
 class TestLoginAPI:
     """测试登录 API"""
 
-    @pytest.fixture
-    def app(self, monkeypatch):
-        """创建测试 Flask 应用"""
-        monkeypatch.setenv("AUTO_CREATE_DEMO_ADMIN", "False")
-        monkeypatch.setenv("DEMO_ADMIN_RESET_PASSWORD", "False")
-
-        sys.modules.pop("app", None)
-        sys.modules.pop("config.settings", None)
-        sys.modules.pop("services.startup_service", None)
-        app_module = importlib.import_module("app")
-        app = app_module.app
-
-        app.config["TESTING"] = True
-        return app
-
-    @pytest.fixture
-    def client(self, app):
-        """创建测试客户端"""
-        return app.test_client()
-
     def test_login_requires_credentials(self, client):
         """测试登录需要凭据"""
         response = client.post(
@@ -221,19 +201,6 @@ class TestLoginAPI:
 
 class TestRegisterAPI:
     """测试注册 API"""
-
-    @pytest.fixture
-    def app(self):
-        """创建测试 Flask 应用"""
-        from app import app
-
-        app.config["TESTING"] = True
-        return app
-
-    @pytest.fixture
-    def client(self, app):
-        """创建测试客户端"""
-        return app.test_client()
 
     def test_register_accepts_confirm_password(self, client):
         """测试注册接口接受 confirmPassword 字段"""

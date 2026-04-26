@@ -15,7 +15,7 @@
 
 ## ⚡ 快速开始 (本地开发)
 
-### 推荐环境 (Windows) 使用 `start.bat` 一键部署
+### 推荐环境 (Windows) 使用 `scripts/start.bat` 一键部署
 
 这是目前系统最推荐的无缝拉起体验方式（本地默认**无需配置 Redis 和 Celery**）。
 
@@ -25,9 +25,9 @@
 cp .env.example .env
 
 # 2. 从项目根目录直接启动一键脚本
-.\start.bat
+.\scripts\start.bat
 ```
-这将在独立窗口分别拉起 Flask和Vite，当你开发完毕时，使用 `.\start.bat stop` 安全停止所有服务。
+这将在独立窗口分别拉起 Flask和Vite，当你开发完毕时，使用 `.\scripts\start.bat stop` 安全停止所有服务。
 
 ### 手动部署 (跨平台 Linux/macOS)
 

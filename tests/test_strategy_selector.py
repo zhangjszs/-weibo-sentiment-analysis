@@ -9,8 +9,8 @@ import os
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from src.services.sentiment_strategy_selector import AdaptiveStrategyManager
-from src.services.sentiment_service import SentimentService
+from services.sentiment_strategy_selector import AdaptiveStrategyManager
+from services.sentiment_service import SentimentService
 
 def test_smart_strategy_selector():
     """测试智能策略选择器"""

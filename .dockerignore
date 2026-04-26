@@ -6,6 +6,7 @@
 .ruff_cache
 .trae
 .claude
+.omc
 
 __pycache__
 *.pyc

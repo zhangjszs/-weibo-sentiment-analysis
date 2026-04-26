@@ -15,6 +15,7 @@
 import logging
 import os
 import re
+import sys
 import time
 import uuid
 from datetime import datetime
@@ -42,12 +43,23 @@ from utils.config_validator import ConfigValidator
 # 确保日志目录存在
 os.makedirs(Config.LOG_DIR, exist_ok=True)
 
-# 配置日志系统
+# 配置日志系统（按天轮转，保留 30 天）
+from logging.handlers import TimedRotatingFileHandler
+
+file_handler = TimedRotatingFileHandler(
+    os.path.join(Config.LOG_DIR, "app.log"),
+    when="midnight",
+    interval=1,
+    backupCount=30,
+    encoding="utf-8",
+)
+file_handler.suffix = "%Y-%m-%d"
+
 logging.basicConfig(
     level=getattr(logging, Config.LOG_LEVEL, logging.INFO),
     format=Config.LOG_FORMAT,
     handlers=[
-        logging.FileHandler(os.path.join(Config.LOG_DIR, "app.log"), encoding="utf-8"),
+        file_handler,
         logging.StreamHandler(),
     ],
 )
@@ -726,7 +738,7 @@ def initialize_app():
     logger.info("微博舆情分析系统启动")
     logger.info(f"启动时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     logger.info(f"调试模式: {'开启' if app.debug else '关闭'}")
-    logger.info(f"Python版本: {os.sys.version}")
+    logger.info(f"Python版本: {sys.version}")
     logger.info("=" * 50)
 
 

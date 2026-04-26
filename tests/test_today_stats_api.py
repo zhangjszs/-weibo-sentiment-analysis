@@ -14,19 +14,6 @@ from utils.jwt_handler import create_token  # noqa: E402
 from views.api import api as api_module  # noqa: E402
 
 
-@pytest.fixture
-def app():
-    from app import app
-
-    app.config["TESTING"] = True
-    return app
-
-
-@pytest.fixture
-def client(app):
-    return app.test_client()
-
-
 def test_get_today_stats_success(client, monkeypatch):
     monkeypatch.setattr(
         api_module.article_service,

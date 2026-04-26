@@ -5,8 +5,8 @@
 
 import time
 import json
-from src.services.sentiment_service import SentimentService
-from src.services.contextual_sentiment import contextual_analyzer
+from services.sentiment_service import SentimentService
+from services.contextual_sentiment import contextual_analyzer
 
 
 def test_basic_sentiment():

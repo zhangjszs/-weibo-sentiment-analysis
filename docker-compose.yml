@@ -47,10 +47,10 @@ services:
     container_name: weibo-backend
     environment:
       # Flask 配置
-      FLASK_ENV: ${FLASK_ENV:-production}
+      FLASK_ENV: ${FLASK_ENV:-development}
       DEBUG: ${DEBUG:-False}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-me}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-jwt-secret-key-change-me}
+      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       

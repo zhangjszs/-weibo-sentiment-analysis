@@ -1,6 +1,6 @@
 """
 数据库访问模块
-唯一数据访问层：SQLAlchemy engine + scoped_session
+唯一数据访问层：复用 database.py 的 SQLAlchemy engine
 """
 
 from __future__ import annotations
@@ -10,25 +10,11 @@ import time
 from typing import Any
 
 import pandas as pd
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import scoped_session, sessionmaker
+from sqlalchemy import text
 
-from config.settings import Config
+from database import engine
 
 logger = logging.getLogger(__name__)
-
-# ── 唯一连接池：SQLAlchemy engine ──────────────────────────────────────────
-engine = create_engine(
-    Config.get_database_url(),
-    pool_size=Config.DB_POOL_SIZE,
-    max_overflow=20,
-    pool_recycle=Config.DB_POOL_RECYCLE,
-    pool_pre_ping=True,
-    pool_timeout=Config.DB_POOL_TIMEOUT,
-    echo=Config.IS_DEVELOPMENT,
-)
-
-db_session = scoped_session(sessionmaker(bind=engine))
 
 
 # ── 兼容旧调用的查询函数 ───────────────────────────────────────────────────
@@ -42,9 +28,24 @@ def _build_named_params(sql: str, params: list) -> tuple[str, dict[str, Any]]:
         SELECT * FROM t WHERE a=%s AND b=%s
     转换为：
         SELECT * FROM t WHERE a=:p0 AND b=:p1
+
+    安全校验：
+        - 统计字符串字面量外的 %s 数量，必须与参数列表长度一致
+        - 防止 SQL 字面量（如 LIKE '%s%'）中的 %s 被误替换
     """
     if not params:
         return sql, {}
+
+    # 按单引号分割，统计字符串字面量外的 %s 数量
+    parts = sql.split("'")
+    placeholders_outside_strings = sum(part.count("%s") for i, part in enumerate(parts) if i % 2 == 0)
+
+    if placeholders_outside_strings != len(params):
+        raise ValueError(
+            f"SQL 占位符数量不匹配：期望 {len(params)} 个参数，"
+            f"在字符串字面量外找到 {placeholders_outside_strings} 个 %s。"
+            f"请确保 LIKE 等子句中的 % 使用 %% 转义，且参数占位符与参数数量一致。"
+        )
 
     named_sql = sql
     named_params: dict[str, Any] = {}
