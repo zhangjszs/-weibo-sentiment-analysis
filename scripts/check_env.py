@@ -27,7 +27,7 @@ def check_python_version():
 def check_dependencies():
     print("Checking dependencies from requirements.txt...")
     req_file = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "requirements.txt"
+        os.path.dirname(os.path.dirname(__file__)), "requirements", "requirements.txt"
     )
     if not os.path.exists(req_file):
         print(f"⚠️ {req_file} not found. Skipping dependency check.")
@@ -59,7 +59,7 @@ def check_dependencies():
 
     if missing:
         print(f"❌ Missing dependencies: {', '.join(missing)}")
-        print("Run: pip install -r requirements.txt")
+        print("Run: pip install -r requirements/requirements.txt")
         return False
 
     print("✅ All dependencies installed")

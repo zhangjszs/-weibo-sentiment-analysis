@@ -6,7 +6,7 @@ WORKDIR /app
 RUN apk add --no-cache gcc musl-dev linux-headers
 
 # Install Python dependencies
-COPY requirements.txt .
+COPY requirements/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code

@@ -197,7 +197,7 @@ def _create_task_queues(self) -> List[str]:
 ✅ src/app.py 存在
 ✅ src/database.py 存在
 ✅ run.py 存在
-✅ requirements.txt 存在
+✅ requirements/requirements.txt 存在
 ✅ .env 存在
 ```
 

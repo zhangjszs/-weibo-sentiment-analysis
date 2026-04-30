@@ -16,7 +16,7 @@ npm install
 
 ### 2. 安装后端依赖
 ```bash
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 ```
 
 ## 启动项目

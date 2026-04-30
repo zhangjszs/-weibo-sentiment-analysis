@@ -336,7 +336,7 @@ except Exception as e:
 #### 2.13 依赖版本不一致
 | 项目 | 详情 |
 |------|------|
-| **位置** | `pyproject.toml` vs `requirements.txt` |
+| **位置** | `pyproject.toml` vs `requirements/requirements.txt` |
 | **严重程度** | 中 |
 | **问题** | 依赖版本声明不一致，可能导致安装问题 |
 

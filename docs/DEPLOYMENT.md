@@ -37,7 +37,7 @@ python -m venv venv
 source venv/bin/activate  # Linux/Mac
 
 # 2. 安装依赖
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 
 # 3. 数据库初始化
 # 登录本地 mysql 并执行数据库导入指令
@@ -101,7 +101,7 @@ NLP_SERVICE_BASE_URL=http://localhost:8091
 - **Node.js**: 14+ (可选，用于前端构建)
 
 ### Python 依赖包
-主要依赖包已在 `requirements.txt` 中列出：
+主要依赖包已在 `requirements/requirements.txt` 中列出：
 ```
 Flask==3.1.0
 pandas==2.2.3
@@ -202,7 +202,7 @@ source venv/bin/activate
 
 ```bash
 # 安装所有依赖
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 
 # 验证安装
 pip list | grep -E "(Flask|pandas|scikit-learn|jieba)"
@@ -216,7 +216,7 @@ conda create -n weibo_env python=3.10
 conda activate weibo_env
 
 # 安装依赖
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 ```
 
 ## 🕷️ 爬虫配置

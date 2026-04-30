@@ -221,7 +221,7 @@ docker-compose logs -f web
 
 ```bash
 # 1. 安装依赖
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 
 # 2. 配置数据库
 mysql -u root -p < database/init_database.sql

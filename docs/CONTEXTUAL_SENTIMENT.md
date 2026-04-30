@@ -155,7 +155,7 @@ for text, result in zip(texts, results):
 pip install requests snownlp circuitbreaker pydantic python-dotenv
 
 # 安装完整依赖（可选）
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 ```
 
 ### 环境配置

@@ -14,7 +14,7 @@
 ### 安装
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -r requirements/requirements-dev.txt
 pre-commit install
 ```
 

@@ -47,10 +47,10 @@ venv\Scripts\activate
 source venv/bin/activate
 
 # 安装依赖
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 
 # 安装开发依赖
-pip install -r requirements-dev.txt
+pip install -r requirements/requirements-dev.txt
 
 # 验证安装
 python -c "import flask, pandas, sklearn; print('所有依赖安装成功')"

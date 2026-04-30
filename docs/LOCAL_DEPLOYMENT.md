@@ -176,7 +176,7 @@ cd 基于python微博舆情分析可视化系统
 
 # 确认目录结构
 ls
-# 应该看到: src/, frontend/, database/, requirements.txt 等
+# 应该看到: src/, frontend/, database/, requirements/ 等
 ```
 
 ### 3.2 创建Python虚拟环境
@@ -202,7 +202,7 @@ which python  # 应该显示 venv 路径
 python -m pip install --upgrade pip
 
 # 安装依赖
-pip install -r requirements.txt
+pip install -r requirements/requirements.txt
 
 # 验证关键依赖
 python -c "import flask; print(flask.__version__)"
@@ -630,7 +630,7 @@ netstat -an | grep 6379  # 或 ss -tlnp | grep 6379
 # https://visualstudio.microsoft.com/visual-cpp-build-tools/
 
 # 或使用预编译包
-pip install --only-binary :all: -r requirements.txt
+pip install --only-binary :all: -r requirements/requirements.txt
 ```
 
 ### 问题4：端口被占用
@@ -733,8 +733,11 @@ python -O src/app.py
 │   └── init_database.sql
 ├── logs/                      # 日志目录
 ├── .env                       # 环境变量配置
-├── requirements.txt           # Python依赖
-└── REPAIR_PLAN.md            # 修复计划
+├── requirements/              # Python依赖目录
+│   ├── requirements.txt
+│   ├── requirements-dev.txt
+│   └── requirements.audit.txt
+└── docs/REPAIR_PLAN.md       # 修复计划
 ```
 
 ---
