@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 from flask import Flask, jsonify, request
 
 try:
@@ -25,6 +27,22 @@ def _ok(data: dict, code: int = 200):
 
 def _error(message: str, code: int = 400):
     return jsonify({"code": code, "msg": message, "data": {}}), code
+
+
+def _unauthorized_if_needed():
+    token = os.getenv("SPIDER_SERVICE_TOKEN", "").strip()
+    if not token or request.path == "/health":
+        return None
+
+    auth_header = request.headers.get("Authorization", "").strip()
+    if auth_header != f"Bearer {token}":
+        return _error("unauthorized", 401)
+    return None
+
+
+@app.before_request
+def _check_auth():
+    return _unauthorized_if_needed()
 
 
 @app.get("/health")

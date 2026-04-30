@@ -10,7 +10,7 @@ import time
 from typing import List, Dict, Any, Optional, Tuple
 from collections import deque
 
-from src.config.settings import Config
+from config.settings import Config
 from .sentiment_service import SnowNLPStrategy, SentimentResult
 from .sentiment_dictionaries import sentiment_dict
 

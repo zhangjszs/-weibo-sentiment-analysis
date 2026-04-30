@@ -19,7 +19,7 @@ from circuitbreaker import circuit
 from pydantic import BaseModel, Field, field_validator
 from snownlp import SnowNLP
 
-from src.config.settings import Config
+from config.settings import Config
 from .sentiment_dictionaries import sentiment_dict
 
 logger = logging.getLogger(__name__)
@@ -820,7 +820,7 @@ class CustomModelStrategy(SentimentStrategy):
             if os.path.exists(self.model_path):
                 # 使用版本管理加载模型
                 try:
-                    from src.model.model_version_manager import load_model_with_versioning
+                    from model.model_version_manager import load_model_with_versioning
                     self._model, self._model_metadata = load_model_with_versioning(model_dir)
                 except Exception as e:
                     logger.warning(f"使用版本管理加载模型失败，使用普通加载: {e}")
@@ -992,7 +992,7 @@ class CustomModelStrategy(SentimentStrategy):
 
             # 记录预测（使用监控）
             try:
-                from src.model.model_monitor import ModelMonitor
+                from model.model_monitor import ModelMonitor
                 monitor = ModelMonitor()
                 monitor.log_prediction(text, label, score, processing_time / len(texts))
             except Exception as e:

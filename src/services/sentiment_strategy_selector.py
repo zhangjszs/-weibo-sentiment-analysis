@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from src.config.settings import Config
+from config.settings import Config
 from .sentiment_service import SnowNLPStrategy, LLMStrategy, CustomModelStrategy, SentimentResult
 
 logger = logging.getLogger(__name__)
