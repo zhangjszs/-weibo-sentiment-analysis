@@ -14,7 +14,7 @@ Flask==2.3.3
 werkzeug==2.3.7
 SQLAlchemy==1.4.49
 requests==2.31.0
-Flask-DebugToolbar>=1.0
+Flask-DebugToolbar>=0.11
 
 # 异步任务队列
 celery[redis]==5.2.7
