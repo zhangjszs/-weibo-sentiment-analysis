@@ -12,7 +12,7 @@ from typing import Any
 import pandas as pd
 from sqlalchemy import text
 
-from database import engine
+from database import db_session, engine
 
 logger = logging.getLogger(__name__)
 

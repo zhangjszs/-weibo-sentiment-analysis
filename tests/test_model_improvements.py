@@ -17,7 +17,7 @@ from services.sentiment_service import SentimentService
 def test_model_training():
     """测试模型训练"""
     print("\n=== 测试模型训练 ===")
-    base_dir = Path(__file__).parent / "src" / "model"
+    base_dir = Path(__file__).resolve().parent.parent / "src" / "model"
     df = load_data(base_dir / "target.csv")
     print(f"加载数据: {len(df)} 条")
     
