@@ -50,7 +50,7 @@ try:
     from utils.chart_renderer import ChartRenderer as _ChartRenderer
 
     _chart_renderer = _ChartRenderer()
-except Exception:
+except (ImportError, AttributeError):
     _chart_renderer = None
 
 
@@ -110,7 +110,7 @@ class PDFReportGenerator:
                 self.chinese_font = "Chinese"
             else:
                 self.chinese_font = "Helvetica"
-        except Exception:
+        except (OSError, IOError):
             self.chinese_font = "Helvetica"
 
         self.styles.add(
@@ -161,6 +161,143 @@ class PDFReportGenerator:
                 return path
         return None
 
+    def _resolve_sections(self, config: ReportConfig) -> List[str]:
+        """从配置中解析要包含的章节列表"""
+        if config.sections:
+            return config.sections
+        return TEMPLATE_SECTIONS.get(config.template, TEMPLATE_SECTIONS["standard"])
+
+    def _build_header(self, story: list, config: ReportConfig) -> None:
+        """构建报告头部（标题、副标题、日期）"""
+        story.append(Paragraph(config.title, self.styles["ChineseTitle"]))
+        story.append(Paragraph(config.subtitle, self.styles["ChineseBody"]))
+        story.append(
+            Paragraph(
+                f"生成日期: {datetime.now().strftime(config.date_format)}",
+                self.styles["ChineseBody"],
+            )
+        )
+        story.append(Spacer(1, 20))
+
+    def _build_summary_section(
+        self, story: list, data: Dict[str, Any], config: ReportConfig
+    ) -> None:
+        """构建数据概览章节"""
+        story.append(Paragraph("一、数据概览", self.styles["ChineseHeading"]))
+        summary = data["summary"]
+        summary_data = [
+            ["指标", "数值"],
+            ["总文章数", str(summary.get("total_articles", 0))],
+            ["总评论数", str(summary.get("total_comments", 0))],
+            ["正面评价", str(summary.get("positive_count", 0))],
+            ["中性评价", str(summary.get("neutral_count", 0))],
+            ["负面评价", str(summary.get("negative_count", 0))],
+        ]
+        table = Table(summary_data, colWidths=[8 * cm, 6 * cm])
+        table.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, -1), self.chinese_font),
+                    ("FONTSIZE", (0, 0), (-1, -1), 10),
+                    ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("GRID", (0, 0), (-1, -1), 1, colors.black),
+                ]
+            )
+        )
+        story.append(table)
+        story.append(Spacer(1, 12))
+
+        if not (config.include_charts and _chart_renderer):
+            return
+        chart_img = _chart_renderer.render_sentiment_pie(data)
+        if not chart_img:
+            return
+        story.append(Paragraph("情感分布图", self.styles["ChineseBody"]))
+        story.append(_chart_to_image_stream(chart_img))
+        story.append(Spacer(1, 12))
+
+    def _build_topics_section(
+        self, story: list, data: Dict[str, Any], config: ReportConfig
+    ) -> None:
+        """构建热门话题章节"""
+        story.append(Paragraph("二、热门话题", self.styles["ChineseHeading"]))
+        topics_data = [["排名", "话题", "热度"]]
+        for i, topic in enumerate(data["hot_topics"][:10], 1):
+            topics_data.append(
+                [str(i), topic.get("name", "")[:30], str(topic.get("heat", 0))]
+            )
+        table = Table(topics_data, colWidths=[2 * cm, 10 * cm, 3 * cm])
+        table.setStyle(
+            TableStyle(
+                [
+                    ("FONTNAME", (0, 0), (-1, -1), self.chinese_font),
+                    ("FONTSIZE", (0, 0), (-1, -1), 9),
+                    (
+                        "BACKGROUND",
+                        (0, 0),
+                        (-1, 0),
+                        colors.Color(0.2, 0.4, 0.6),
+                    ),
+                    ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                    ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                    ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
+                ]
+            )
+        )
+        story.append(table)
+        story.append(Spacer(1, 12))
+
+        if not (config.include_charts and _chart_renderer):
+            return
+        chart_img = _chart_renderer.render_topics_bar(data)
+        if not chart_img:
+            return
+        story.append(_chart_to_image_stream(chart_img))
+        story.append(Spacer(1, 12))
+
+    def _build_trend_section(
+        self, story: list, data: Dict[str, Any], config: ReportConfig
+    ) -> None:
+        """构建舆情趋势章节"""
+        story.append(Paragraph("三、舆情趋势", self.styles["ChineseHeading"]))
+        chart_img = _chart_renderer.render_trend_line(data)
+        if not chart_img:
+            return
+        story.append(_chart_to_image_stream(chart_img))
+        story.append(Spacer(1, 12))
+
+    def _build_alerts_section(
+        self, story: list, data: Dict[str, Any], config: ReportConfig
+    ) -> None:
+        """构建预警记录章节"""
+        story.append(Paragraph("四、预警记录", self.styles["ChineseHeading"]))
+        for alert in data["alerts"][:10]:
+            story.append(
+                Paragraph(
+                    f"[{alert.get('level', 'info')}] {alert.get('title', '')}: {alert.get('message', '')}",
+                    self.styles["ChineseBody"],
+                )
+            )
+        if not (config.include_charts and _chart_renderer):
+            return
+        chart_img = _chart_renderer.render_alert_bar(data)
+        if not chart_img:
+            return
+        story.append(Spacer(1, 8))
+        story.append(_chart_to_image_stream(chart_img))
+
+    def _build_footer(self, story: list) -> None:
+        """构建报告页脚（生成时间）"""
+        story.append(Spacer(1, 20))
+        story.append(
+            Paragraph(
+                f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                self.styles["ChineseBody"],
+            )
+        )
+
     def generate(
         self, data: Dict[str, Any], output_path: str = None, config: ReportConfig = None
     ) -> Optional[str]:
@@ -180,9 +317,7 @@ class PDFReportGenerator:
             return None
 
         config = config or ReportConfig()
-        sections = config.sections or TEMPLATE_SECTIONS.get(
-            config.template, TEMPLATE_SECTIONS["standard"]
-        )
+        sections = self._resolve_sections(config)
 
         if output_path is None:
             output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
@@ -198,125 +333,27 @@ class PDFReportGenerator:
             )
 
             story = []
-
-            story.append(Paragraph(config.title, self.styles["ChineseTitle"]))
-            story.append(Paragraph(config.subtitle, self.styles["ChineseBody"]))
-            story.append(
-                Paragraph(
-                    f"生成日期: {datetime.now().strftime(config.date_format)}",
-                    self.styles["ChineseBody"],
-                )
-            )
-            story.append(Spacer(1, 20))
+            self._build_header(story, config)
 
             if "summary" in sections and "summary" in data:
-                story.append(Paragraph("一、数据概览", self.styles["ChineseHeading"]))
-                summary = data["summary"]
-                summary_data = [
-                    ["指标", "数值"],
-                    ["总文章数", str(summary.get("total_articles", 0))],
-                    ["总评论数", str(summary.get("total_comments", 0))],
-                    ["正面评价", str(summary.get("positive_count", 0))],
-                    ["中性评价", str(summary.get("neutral_count", 0))],
-                    ["负面评价", str(summary.get("negative_count", 0))],
-                ]
-                table = Table(summary_data, colWidths=[8 * cm, 6 * cm])
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("FONTNAME", (0, 0), (-1, -1), self.chinese_font),
-                            ("FONTSIZE", (0, 0), (-1, -1), 10),
-                            ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
-                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                            ("GRID", (0, 0), (-1, -1), 1, colors.black),
-                        ]
-                    )
-                )
-                story.append(table)
-                story.append(Spacer(1, 12))
-                if config.include_charts and _chart_renderer:
-                    _img = _chart_renderer.render_sentiment_pie(data)
-                    if _img:
-                        story.append(
-                            Paragraph("情感分布图", self.styles["ChineseBody"])
-                        )
-                        story.append(_chart_to_image_stream(_img))
-                        story.append(Spacer(1, 12))
+                self._build_summary_section(story, data, config)
 
             if "topics" in sections and "hot_topics" in data:
-                story.append(Paragraph("二、热门话题", self.styles["ChineseHeading"]))
-                topics_data = [["排名", "话题", "热度"]]
-                for i, topic in enumerate(data["hot_topics"][:10], 1):
-                    topics_data.append(
-                        [str(i), topic.get("name", "")[:30], str(topic.get("heat", 0))]
-                    )
-                table = Table(topics_data, colWidths=[2 * cm, 10 * cm, 3 * cm])
-                table.setStyle(
-                    TableStyle(
-                        [
-                            ("FONTNAME", (0, 0), (-1, -1), self.chinese_font),
-                            ("FONTSIZE", (0, 0), (-1, -1), 9),
-                            (
-                                "BACKGROUND",
-                                (0, 0),
-                                (-1, 0),
-                                colors.Color(0.2, 0.4, 0.6),
-                            ),
-                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
-                            ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
-                        ]
-                    )
-                )
-                story.append(table)
-                story.append(Spacer(1, 12))
-                if config.include_charts and _chart_renderer:
-                    _img = _chart_renderer.render_topics_bar(data)
-                    if _img:
-                        story.append(_chart_to_image_stream(_img))
-                        story.append(Spacer(1, 12))
+                self._build_topics_section(story, data, config)
 
-            if (
-                "trend" in sections
-                and config.include_charts
-                and _chart_renderer
-                and "trend" in data
-            ):
-                story.append(Paragraph("三、舆情趋势", self.styles["ChineseHeading"]))
-                _img = _chart_renderer.render_trend_line(data)
-                if _img:
-                    story.append(_chart_to_image_stream(_img))
-                    story.append(Spacer(1, 12))
+            if "trend" in sections and config.include_charts and _chart_renderer and "trend" in data:
+                self._build_trend_section(story, data, config)
 
             if "alerts" in sections and "alerts" in data:
-                story.append(Paragraph("四、预警记录", self.styles["ChineseHeading"]))
-                for alert in data["alerts"][:10]:
-                    story.append(
-                        Paragraph(
-                            f"[{alert.get('level', 'info')}] {alert.get('title', '')}: {alert.get('message', '')}",
-                            self.styles["ChineseBody"],
-                        )
-                    )
-                if config.include_charts and _chart_renderer:
-                    _img = _chart_renderer.render_alert_bar(data)
-                    if _img:
-                        story.append(Spacer(1, 8))
-                        story.append(_chart_to_image_stream(_img))
+                self._build_alerts_section(story, data, config)
 
-            story.append(Spacer(1, 20))
-            story.append(
-                Paragraph(
-                    f"报告生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-                    self.styles["ChineseBody"],
-                )
-            )
+            self._build_footer(story)
 
             doc.build(story)
             logger.info(f"PDF报告已生成: {output_path}")
             return output_path
 
-        except Exception as e:
+        except (OSError, RuntimeError, ValueError, AttributeError) as e:
             logger.error(f"PDF生成失败: {e}")
             return None
 
@@ -327,75 +364,28 @@ class PPTReportGenerator:
     def __init__(self):
         self.prs = None
 
-    def generate(
-        self, data: Dict[str, Any], output_path: str = None, config: ReportConfig = None
-    ) -> Optional[str]:
-        """
-        生成PPT报告
-        """
-        if not PPTX_AVAILABLE:
-            logger.error("python-pptx未安装")
+    def _render_chart(self, render_func, config: ReportConfig, data: Dict[str, Any]) -> Optional[bytes]:
+        """安全地渲染图表，返回字节数据或None"""
+        if not (config.include_charts and _chart_renderer):
             return None
+        return render_func(data)
 
-        config = config or ReportConfig()
-        sections = config.sections or TEMPLATE_SECTIONS.get(
-            config.template, TEMPLATE_SECTIONS["standard"]
+    def _resolve_sections(self, config: ReportConfig) -> List[str]:
+        """从配置中解析要包含的章节列表"""
+        if config.sections:
+            return config.sections
+        return TEMPLATE_SECTIONS.get(config.template, TEMPLATE_SECTIONS["standard"])
+
+    def _add_slide_title(self, slide, title_text: str) -> None:
+        """为幻灯片添加标题文本框"""
+        title_box = slide.shapes.add_textbox(
+            Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
         )
-
-        if output_path is None:
-            output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pptx"
-
-        try:
-            self.prs = Presentation()
-            self.prs.slide_width = Inches(13.333)
-            self.prs.slide_height = Inches(7.5)
-
-            self._add_title_slide(config)
-
-            if "summary" in sections and "summary" in data:
-                chart = (
-                    _chart_renderer.render_sentiment_pie(data)
-                    if (config.include_charts and _chart_renderer)
-                    else None
-                )
-                self._add_summary_slide(data["summary"], chart)
-
-            if "sentiment" in sections and "sentiment_analysis" in data:
-                self._add_sentiment_slide(data["sentiment_analysis"])
-
-            if "topics" in sections and "hot_topics" in data:
-                chart = (
-                    _chart_renderer.render_topics_bar(data)
-                    if (config.include_charts and _chart_renderer)
-                    else None
-                )
-                self._add_topics_slide(data["hot_topics"], chart)
-
-            if "alerts" in sections and "alerts" in data:
-                chart = (
-                    _chart_renderer.render_alert_bar(data)
-                    if (config.include_charts and _chart_renderer)
-                    else None
-                )
-                self._add_alerts_slide(data["alerts"], chart)
-
-            if "trend" in sections and "trend" in data:
-                chart = (
-                    _chart_renderer.render_trend_line(data)
-                    if (config.include_charts and _chart_renderer)
-                    else None
-                )
-                self._add_trend_slide(data["trend"], chart)
-
-            self._add_end_slide()
-
-            self.prs.save(output_path)
-            logger.info(f"PPT报告已生成: {output_path}")
-            return output_path
-
-        except Exception as e:
-            logger.error(f"PPT生成失败: {e}")
-            return None
+        tf = title_box.text_frame
+        p = tf.paragraphs[0]
+        p.text = title_text
+        p.font.size = Pt(32)
+        p.font.bold = True
 
     def _add_title_slide(self, config: ReportConfig):
         """添加标题幻灯片"""
@@ -426,14 +416,7 @@ class PPTReportGenerator:
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
 
-        title_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
-        )
-        tf = title_box.text_frame
-        p = tf.paragraphs[0]
-        p.text = "数据概览"
-        p.font.size = Pt(32)
-        p.font.bold = True
+        self._add_slide_title(slide, "数据概览")
 
         metrics = [
             ("总文章数", summary.get("total_articles", 0)),
@@ -475,14 +458,7 @@ class PPTReportGenerator:
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
 
-        title_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
-        )
-        tf = title_box.text_frame
-        p = tf.paragraphs[0]
-        p.text = "情感分析"
-        p.font.size = Pt(32)
-        p.font.bold = True
+        self._add_slide_title(slide, "情感分析")
 
         content_box = slide.shapes.add_textbox(
             Inches(0.5), Inches(1.5), Inches(12.333), Inches(5.5)
@@ -500,14 +476,7 @@ class PPTReportGenerator:
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
 
-        title_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
-        )
-        tf = title_box.text_frame
-        p = tf.paragraphs[0]
-        p.text = "热门话题 Top 10"
-        p.font.size = Pt(32)
-        p.font.bold = True
+        self._add_slide_title(slide, "热门话题 Top 10")
 
         for i, topic in enumerate(topics[:10]):
             left = (
@@ -544,14 +513,7 @@ class PPTReportGenerator:
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
 
-        title_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
-        )
-        tf = title_box.text_frame
-        p = tf.paragraphs[0]
-        p.text = "预警记录"
-        p.font.size = Pt(32)
-        p.font.bold = True
+        self._add_slide_title(slide, "预警记录")
 
         text_width = Inches(6.5) if chart_bytes else Inches(12.333)
         content_box = slide.shapes.add_textbox(
@@ -585,14 +547,9 @@ class PPTReportGenerator:
         """添加趋势幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
-        title_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(0.3), Inches(12.333), Inches(0.8)
-        )
-        tf = title_box.text_frame
-        p = tf.paragraphs[0]
-        p.text = "舆情趋势"
-        p.font.size = Pt(32)
-        p.font.bold = True
+
+        self._add_slide_title(slide, "舆情趋势")
+
         if chart_bytes:
             slide.shapes.add_picture(
                 io.BytesIO(chart_bytes),
@@ -601,15 +558,16 @@ class PPTReportGenerator:
                 Inches(11.0),
                 Inches(5.5),
             )
-        else:
-            content_box = slide.shapes.add_textbox(
-                Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.5)
-            )
-            tf = content_box.text_frame
-            for item in trend[:10]:
-                p = tf.add_paragraph()
-                p.text = f"{item.get('date', '')}: {item.get('count', 0)}"
-                p.font.size = Pt(16)
+            return
+
+        content_box = slide.shapes.add_textbox(
+            Inches(0.5), Inches(1.3), Inches(12.333), Inches(5.5)
+        )
+        tf = content_box.text_frame
+        for item in trend[:10]:
+            p = tf.add_paragraph()
+            p.text = f"{item.get('date', '')}: {item.get('count', 0)}"
+            p.font.size = Pt(16)
 
     def _add_end_slide(self):
         """添加结束幻灯片"""
@@ -625,6 +583,66 @@ class PPTReportGenerator:
         p.font.size = Pt(48)
         p.font.bold = True
         p.alignment = PP_ALIGN.CENTER
+
+    def generate(
+        self, data: Dict[str, Any], output_path: str = None, config: ReportConfig = None
+    ) -> Optional[str]:
+        """
+        生成PPT报告
+        """
+        if not PPTX_AVAILABLE:
+            logger.error("python-pptx未安装")
+            return None
+
+        config = config or ReportConfig()
+        sections = self._resolve_sections(config)
+
+        if output_path is None:
+            output_path = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pptx"
+
+        try:
+            self.prs = Presentation()
+            self.prs.slide_width = Inches(13.333)
+            self.prs.slide_height = Inches(7.5)
+
+            self._add_title_slide(config)
+
+            if "summary" in sections and "summary" in data:
+                chart = self._render_chart(
+                    _chart_renderer.render_sentiment_pie, config, data
+                )
+                self._add_summary_slide(data["summary"], chart)
+
+            if "sentiment" in sections and "sentiment_analysis" in data:
+                self._add_sentiment_slide(data["sentiment_analysis"])
+
+            if "topics" in sections and "hot_topics" in data:
+                chart = self._render_chart(
+                    _chart_renderer.render_topics_bar, config, data
+                )
+                self._add_topics_slide(data["hot_topics"], chart)
+
+            if "alerts" in sections and "alerts" in data:
+                chart = self._render_chart(
+                    _chart_renderer.render_alert_bar, config, data
+                )
+                self._add_alerts_slide(data["alerts"], chart)
+
+            if "trend" in sections and "trend" in data:
+                chart = self._render_chart(
+                    _chart_renderer.render_trend_line, config, data
+                )
+                self._add_trend_slide(data["trend"], chart)
+
+            self._add_end_slide()
+
+            self.prs.save(output_path)
+            logger.info(f"PPT报告已生成: {output_path}")
+            return output_path
+
+        except (OSError, RuntimeError, ValueError, KeyError) as e:
+            logger.error(f"PPT生成失败: {e}")
+            return None
 
 
 class ReportGenerator:

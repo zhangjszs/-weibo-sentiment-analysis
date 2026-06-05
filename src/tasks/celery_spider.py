@@ -10,7 +10,7 @@ import os
 import sys
 import time
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -67,36 +67,71 @@ def _notify_articles_upserted_event(
     )
 
 
-@celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
-def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
-    """
-    热门微博刷新任务（异步）
-    统一用于 /api/spider/crawl(type=hot) 和 /api/spider/refresh。
-    """
-    task_id = self.request.id
-    page_num = max(1, min(int(page_num), 10))
-
-    cookie = os.getenv("WEIBO_COOKIE", "")
-    if not cookie:
-        return {
-            "status": "failed",
-            "task_id": task_id,
-            "error": "WEIBO_COOKIE未配置",
-        }
-
-    import random
-
-    import requests
-
-    headers = {
+def _build_hot_headers(cookie: str) -> Dict[str, str]:
+    return {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Cookie": cookie,
         "Accept": "application/json, text/plain, */*",
         "Referer": "https://weibo.com/",
     }
 
+
+def _parse_hot_item(item: dict) -> Tuple:
+    user = item.get("user", {}) or {}
+    return (
+        item.get("id", ""),
+        item.get("attitudes_count", 0),
+        item.get("comments_count", 0),
+        item.get("reposts_count", 0),
+        (item.get("region_name", "") or "无").replace("发布于 ", "")[:50],
+        item.get("text_raw", "")[:2000],
+        item.get("textLength", 0),
+        datetime.now().strftime("%Y-%m-%d"),
+        "热门",
+        f"https://weibo.com/{user.get('id', '')}/{item.get('mblogid', '')}",
+        user.get("avatar_large", "")[:500],
+        user.get("screen_name", "")[:100],
+        f"https://weibo.com/u/{user.get('id', '')}",
+        user.get("v_plus", 0),
+    )
+
+
+def _fetch_hot_page(
+    headers: Dict[str, str], page: int, task_id: str
+) -> List[Tuple]:
+    import requests as req
+
+    url = "https://weibo.com/ajax/feed/hottimeline"
+    params = {"group_id": 102803, "max_id": 0, "count": 20, "refresh_type": 1}
+    try:
+        response = req.get(url, headers=headers, params=params, timeout=15)
+        if response.status_code != 200:
+            logger.warning(
+                f"[任务{task_id}] 第{page + 1}页返回异常状态: {response.status_code}"
+            )
+            return []
+        payload = response.json()
+        statuses = payload.get("statuses", []) if isinstance(payload, dict) else []
+        return [_parse_hot_item(item) for item in statuses]
+    except (req.RequestException, ValueError) as exc:
+        logger.warning(f"[任务{task_id}] 第{page + 1}页爬取失败: {exc}")
+        return []
+
+
+@celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
+def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
+    """热门微博刷新任务（异步）"""
+    task_id = self.request.id
+    page_num = max(1, min(int(page_num), 10))
+
+    cookie = os.getenv("WEIBO_COOKIE", "")
+    if not cookie:
+        return {"status": "failed", "task_id": task_id, "error": "WEIBO_COOKIE未配置"}
+
+    import random
+
+    headers = _build_hot_headers(cookie)
     rows: List[Tuple] = []
-    crawled = 0
 
     try:
         for page in range(page_num):
@@ -106,56 +141,10 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
                     "current": page + 1,
                     "total": page_num,
                     "status": f"正在爬取第 {page + 1}/{page_num} 页热门微博",
-                    "crawled": crawled,
+                    "crawled": len(rows),
                 },
             )
-
-            url = "https://weibo.com/ajax/feed/hottimeline"
-            params = {
-                "group_id": 102803,
-                "max_id": 0,
-                "count": 20,
-                "refresh_type": 1,
-            }
-            try:
-                response = requests.get(url, headers=headers, params=params, timeout=15)
-                if response.status_code != 200:
-                    logger.warning(
-                        f"[任务{task_id}] 第{page + 1}页返回异常状态: {response.status_code}"
-                    )
-                    continue
-
-                payload = response.json()
-                statuses = (
-                    payload.get("statuses", []) if isinstance(payload, dict) else []
-                )
-                for item in statuses:
-                    user = item.get("user", {}) or {}
-                    rows.append(
-                        (
-                            item.get("id", ""),
-                            item.get("attitudes_count", 0),
-                            item.get("comments_count", 0),
-                            item.get("reposts_count", 0),
-                            (item.get("region_name", "") or "无").replace(
-                                "发布于 ", ""
-                            )[:50],
-                            item.get("text_raw", "")[:2000],
-                            item.get("textLength", 0),
-                            datetime.now().strftime("%Y-%m-%d"),
-                            "热门",
-                            f"https://weibo.com/{user.get('id', '')}/{item.get('mblogid', '')}",
-                            user.get("avatar_large", "")[:500],
-                            user.get("screen_name", "")[:100],
-                            f"https://weibo.com/u/{user.get('id', '')}",
-                            user.get("v_plus", 0),
-                        )
-                    )
-                crawled = len(rows)
-            except Exception as page_exc:
-                logger.warning(f"[任务{task_id}] 第{page + 1}页爬取失败: {page_exc}")
-                continue
-
+            rows.extend(_fetch_hot_page(headers, page, task_id))
             time.sleep(random.uniform(0.5, 1.0))
 
         self.update_state(
@@ -164,51 +153,78 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
                 "current": page_num,
                 "total": page_num,
                 "status": "正在批量入库...",
-                "crawled": crawled,
+                "crawled": len(rows),
             },
         )
 
         imported = _upsert_articles_batch(rows)
-        _notify_articles_upserted_event(
-            task_id=task_id,
-            pages=page_num,
-            crawled=crawled,
-            imported=imported,
-        )
+        _notify_articles_upserted_event(task_id, page_num, len(rows), imported)
 
         result = {
             "status": "success",
             "task_id": task_id,
             "pages": page_num,
-            "crawled": crawled,
+            "crawled": len(rows),
             "imported": imported,
             "completed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
         logger.info(f"[任务{task_id}] 热门微博刷新完成: {result}")
         return result
 
-    except Exception as exc:
+    except (requests.RequestException, OSError) as exc:
         logger.error(f"[任务{task_id}] 热门微博刷新失败: {exc}")
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
 
+def _build_search_params(keyword: str, page: int) -> Dict[str, Any]:
+    return {
+        "q": keyword,
+        "type": "all",
+        "sub": "all",
+        "timescope": "custom",
+        "refer": "g",
+        "page": page,
+        "count": 10,
+    }
+
+
+def _fetch_search_page(config, search_url: str, keyword: str, page: int, task_id: str):
+    """Fetch one search page and return (valid_statuses, error_msg)."""
+    params = _build_search_params(keyword, page)
+    try:
+        response = config.make_safe_request(
+            search_url, method="GET", params=params, use_proxy=True
+        )
+    except (requests.RequestException, OSError) as exc:
+        logger.error(f"[任务{task_id}] 第{page}页请求异常: {exc}")
+        return None, str(exc)
+
+    if not response or response.status_code != 200:
+        code = response.status_code if response else "None"
+        logger.error(f"[任务{task_id}] 第{page}页请求失败: {code}")
+        return None, f"HTTP {code}"
+
+    data = response.json()
+    if "data" not in data or "list" not in data["data"]:
+        logger.warning(f"[任务{task_id}] 第{page}页响应格式异常")
+        return None, "invalid response"
+
+    statuses = data["data"]["list"]
+    valid = [s for s in statuses if "text_raw" in s or "text" in s]
+    if not valid:
+        logger.warning(f"[任务{task_id}] 第{page}页无有效数据")
+        return [], None
+
+    return valid, None
+
+
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
 def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:
-    """
-    关键词搜索爬虫任务（异步）
-
-    Args:
-        keyword: 搜索关键词
-        page_num: 爬取页数
-
-    Returns:
-        dict: 任务执行结果
-    """
+    """关键词搜索爬虫任务（异步）"""
     task_id = self.request.id
     logger.info(f"[任务{task_id}] 开始搜索爬虫: keyword={keyword}, pages={page_num}")
 
     try:
-        # 更新任务状态为"开始"
         self.update_state(
             state="PROGRESS",
             meta={
@@ -219,81 +235,39 @@ def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:
             },
         )
 
-        # 导入爬虫模块
         from spider.config import get_config_manager
         from spider.spiderContent import init, parse_json
 
-        # 初始化
         init()
-
-        # 获取配置
         config = get_config_manager()
         search_url = "https://weibo.com/ajax/statuses/search"
 
         total_articles = 0
         success_pages = 0
 
-        # 逐页爬取
         for page in range(1, page_num + 1):
-            try:
-                # 更新进度
-                self.update_state(
-                    state="PROGRESS",
-                    meta={
-                        "current": page,
-                        "total": page_num,
-                        "status": f"正在爬取第 {page}/{page_num} 页",
-                        "articles": total_articles,
-                        "keyword": keyword,
-                    },
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": page,
+                    "total": page_num,
+                    "status": f"正在爬取第 {page}/{page_num} 页",
+                    "articles": total_articles,
+                    "keyword": keyword,
+                },
+            )
+
+            valid_statuses, _ = _fetch_search_page(
+                config, search_url, keyword, page, task_id
+            )
+            if valid_statuses:
+                parse_json(valid_statuses, f"搜索:{keyword}")
+                total_articles += len(valid_statuses)
+                success_pages += 1
+                logger.info(
+                    f"[任务{task_id}] 第{page}页成功: {len(valid_statuses)}条"
                 )
 
-                # 构造搜索参数
-                params = {
-                    "q": keyword,
-                    "type": "all",
-                    "sub": "all",
-                    "timescope": "custom",
-                    "refer": "g",
-                    "page": page,
-                    "count": 10,
-                }
-
-                # 发送请求（使用配置管理器的安全请求方法）
-                response = config.make_safe_request(
-                    search_url, method="GET", params=params, use_proxy=True
-                )
-
-                if response and response.status_code == 200:
-                    data = response.json()
-                    if "data" in data and "list" in data["data"]:
-                        statuses = data["data"]["list"]
-                        valid_statuses = [
-                            s for s in statuses if "text_raw" in s or "text" in s
-                        ]
-
-                        if valid_statuses:
-                            parse_json(valid_statuses, f"搜索:{keyword}")
-                            total_articles += len(valid_statuses)
-                            success_pages += 1
-                            logger.info(
-                                f"[任务{task_id}] 第{page}页成功: {len(valid_statuses)}条"
-                            )
-                        else:
-                            logger.warning(f"[任务{task_id}] 第{page}页无有效数据")
-                    else:
-                        logger.warning(f"[任务{task_id}] 第{page}页响应格式异常")
-                else:
-                    logger.error(
-                        f"[任务{task_id}] 第{page}页请求失败: {response.status_code if response else 'None'}"
-                    )
-
-            except Exception as e:
-                logger.error(f"[任务{task_id}] 第{page}页异常: {e}")
-                # 继续下一页，不中断整个任务
-                continue
-
-        # 任务完成
         result = {
             "status": "success",
             "task_id": task_id,
@@ -303,130 +277,123 @@ def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:
             "total_articles": total_articles,
             "completed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
-
         logger.info(f"[任务{task_id}] 完成: {result}")
         return result
 
-    except Exception as exc:
+    except (requests.RequestException, OSError) as exc:
         logger.error(f"[任务{task_id}] 失败: {exc}")
-        # 触发重试
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
+
+
+def _parse_uid_from_url(detail_url: str) -> Optional[str]:
+    if not detail_url or "weibo.com" not in detail_url:
+        return None
+    try:
+        parts = detail_url.replace("https://weibo.com/", "").split("/")
+        return parts[0] if parts else None
+    except (IndexError, AttributeError):
+        return None
+
+
+def _fetch_article_comments(
+    config, url: str, article_id: str, uid: Optional[str]
+) -> str:
+    """Fetch comments for one article. Returns parse result status."""
+    import random
+
+    from spider.config import DEFAULT_DELAY
+
+    delay = (
+        random.uniform(*DEFAULT_DELAY)
+        if isinstance(DEFAULT_DELAY, tuple)
+        else DEFAULT_DELAY
+    )
+    time.sleep(delay)
+
+    headers = config.get_random_headers()
+    if uid:
+        headers["Referer"] = f"https://weibo.com/{uid}/"
+
+    params = {
+        "is_reload": "1",
+        "id": article_id,
+        "is_show_bulletin": "2",
+        "is_mix": "0",
+        "count": "10",
+        "uid": uid or "nouid",
+        "fetch_level": "0",
+        "locale": "zh-CN",
+    }
+
+    response = config.make_safe_request(url, method="GET", params=params, use_proxy=True)
+    if not response or response.status_code != 200:
+        return "FAILED"
+
+    from spider.spiderComments import parse_json
+
+    return parse_json(response.json(), article_id)
+
+
+def _load_articles_from_csv(csv_path: str, limit: int) -> List[list]:
+    if not os.path.exists(csv_path):
+        return []
+    with open(csv_path, encoding="utf8") as f:
+        reader = csv.reader(f)
+        try:
+            next(reader)
+        except StopIteration:
+            return []
+        return [a for a in reader if a][:limit]
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
 def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
-    """
-    评论爬虫任务（异步）
-    爬取articleData.csv中的文章评论
-
-    Args:
-        article_limit: 限制爬取的文章数量（防止任务过长）
-
-    Returns:
-        dict: 任务执行结果
-    """
+    """评论爬虫任务（异步）"""
     task_id = self.request.id
     logger.info(f"[任务{task_id}] 开始评论爬虫: limit={article_limit}")
 
     try:
-        from spider.config import DEFAULT_DELAY, get_config_manager
-        from spider.spiderComments import init, parse_json
+        from spider.config import get_config_manager
+        from spider.spiderComments import init
 
         init()
 
         url = "https://weibo.com/ajax/statuses/buildComments"
-        article_csv_path = os.path.join(Config.DATA_DIR, "articleData.csv")
+        csv_path = os.path.join(Config.DATA_DIR, "articleData.csv")
 
-        if not os.path.exists(article_csv_path):
+        articles = _load_articles_from_csv(csv_path, article_limit)
+        if not articles:
             return {
                 "status": "failed",
-                "error": f"articleData.csv不存在: {article_csv_path}",
+                "error": f"articleData.csv不存在或为空: {csv_path}",
                 "task_id": task_id,
             }
 
+        config = get_config_manager()
         total_comments = 0
         processed_articles = 0
 
-        with open(article_csv_path, encoding="utf8") as readerFile:
-            reader = csv.reader(readerFile)
+        for i, article in enumerate(articles):
+            article_id = article[0]
+            self.update_state(
+                state="PROGRESS",
+                meta={
+                    "current": i + 1,
+                    "total": len(articles),
+                    "status": f"正在爬取文章 {article_id} 的评论",
+                    "comments": total_comments,
+                },
+            )
+
+            uid = _parse_uid_from_url(article[9] if len(article) > 9 else "")
+
             try:
-                next(reader)  # 跳过标题
-            except StopIteration:
-                return {"status": "failed", "error": "CSV文件为空", "task_id": task_id}
-
-            articles = list(reader)[:article_limit]  # 限制数量
-            total = len(articles)
-
-            for i, article in enumerate(articles):
-                if not article:
-                    continue
-
-                try:
-                    articleId = article[0]
-
-                    # 更新进度
-                    self.update_state(
-                        state="PROGRESS",
-                        meta={
-                            "current": i + 1,
-                            "total": total,
-                            "status": f"正在爬取文章 {articleId} 的评论",
-                            "comments": total_comments,
-                        },
-                    )
-
-                    # 从detailUrl提取uid
-                    uid = None
-                    if len(article) > 9:
-                        detail_url = article[9]
-                        if detail_url and "weibo.com" in detail_url:
-                            try:
-                                parts = detail_url.replace(
-                                    "https://weibo.com/", ""
-                                ).split("/")
-                                if len(parts) >= 1:
-                                    uid = parts[0]
-                            except Exception as e:
-                                logger.debug("解析 detail_url 失败: %s", e)
-
-                    # 延时
-                    import random
-
-                    if isinstance(DEFAULT_DELAY, tuple):
-                        time.sleep(random.uniform(DEFAULT_DELAY[0], DEFAULT_DELAY[1]))
-                    else:
-                        time.sleep(DEFAULT_DELAY)
-
-                    # 获取评论
-                    config = get_config_manager()
-                    headers = config.get_random_headers()
-                    if uid:
-                        headers["Referer"] = f"https://weibo.com/{uid}/"
-
-                    params = {
-                        "is_reload": "1",
-                        "id": articleId,
-                        "is_show_bulletin": "2",
-                        "is_mix": "0",
-                        "count": "10",
-                        "uid": uid or "nouid",
-                        "fetch_level": "0",
-                        "locale": "zh-CN",
-                    }
-
-                    response = config.make_safe_request(
-                        url, method="GET", params=params, use_proxy=True
-                    )
-
-                    if response and response.status_code == 200:
-                        result = parse_json(response.json(), articleId)
-                        if result == "SUCCESS":
-                            total_comments += 1
-                            processed_articles += 1
-
-                except Exception as e:
-                    logger.error(f"[任务{task_id}] 处理文章异常: {e}")
-                    continue
+                result = _fetch_article_comments(config, url, article_id, uid)
+                if result == "SUCCESS":
+                    total_comments += 1
+                    processed_articles += 1
+            except (requests.RequestException, OSError, ValueError) as exc:
+                logger.error(f"[任务{task_id}] 处理文章 {article_id} 异常: {exc}")
 
         return {
             "status": "success",
@@ -436,7 +403,7 @@ def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
             "completed_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         }
 
-    except Exception as exc:
+    except (requests.RequestException, OSError) as exc:
         logger.error(f"[任务{task_id}] 评论爬虫失败: {exc}")
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
@@ -478,12 +445,7 @@ def get_task_progress(self, task_id: str) -> Dict[str, Any]:
 
 
 def search_weibo_generator(keyword: str, page_num: int) -> Generator[Dict, None, None]:
-    """
-    生成器版本的微博搜索（用于实时进度反馈）
-
-    Yields:
-        dict: 每页的进度信息
-    """
+    """生成器版本的微博搜索（用于实时进度反馈）"""
     from spider.config import get_config_manager
     from spider.spiderContent import init, parse_json
 
@@ -492,42 +454,13 @@ def search_weibo_generator(keyword: str, page_num: int) -> Generator[Dict, None,
     search_url = "https://weibo.com/ajax/statuses/search"
 
     for page in range(1, page_num + 1):
-        params = {
-            "q": keyword,
-            "type": "all",
-            "sub": "all",
-            "timescope": "custom",
-            "refer": "g",
-            "page": page,
-            "count": 10,
-        }
-
-        try:
-            response = config.make_safe_request(
-                search_url, method="GET", params=params, use_proxy=True
-            )
-
-            if response and response.status_code == 200:
-                data = response.json()
-                if "data" in data and "list" in data["data"]:
-                    statuses = data["data"]["list"]
-                    valid_statuses = [
-                        s for s in statuses if "text_raw" in s or "text" in s
-                    ]
-
-                    if valid_statuses:
-                        parse_json(valid_statuses, f"搜索:{keyword}")
-                        yield {
-                            "page": page,
-                            "count": len(valid_statuses),
-                            "status": "success",
-                        }
-                    else:
-                        yield {"page": page, "count": 0, "status": "no_data"}
-                else:
-                    yield {"page": page, "count": 0, "status": "invalid_response"}
-            else:
-                yield {"page": page, "count": 0, "status": "request_failed"}
-
-        except Exception as e:
-            yield {"page": page, "count": 0, "status": "error", "error": str(e)}
+        valid_statuses, error = _fetch_search_page(
+            config, search_url, keyword, page, "generator"
+        )
+        if valid_statuses:
+            parse_json(valid_statuses, f"搜索:{keyword}")
+            yield {"page": page, "count": len(valid_statuses), "status": "success"}
+        elif error:
+            yield {"page": page, "count": 0, "status": "error", "error": error}
+        else:
+            yield {"page": page, "count": 0, "status": "no_data"}

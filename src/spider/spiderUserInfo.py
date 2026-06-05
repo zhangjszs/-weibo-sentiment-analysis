@@ -1,4 +1,5 @@
 import csv
+import logging
 import os
 import random
 import re
@@ -13,6 +14,43 @@ from config import (
     get_random_headers,
     get_working_proxy,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_uid_from_url(detail_url):
+    """从微博详情URL中提取用户ID"""
+    if not detail_url or "weibo.com" not in detail_url:
+        return None
+    parts = detail_url.replace("https://weibo.com/", "").split("/")
+    return parts[0] if parts else None
+
+
+def _read_csv_rows(file_path):
+    """读取CSV文件，返回所有数据行（跳过标题）"""
+    with open(file_path, encoding="utf8") as csvfile:
+        reader = csv.reader(csvfile)
+        next(reader)  # 跳过标题行
+        return list(reader)
+
+
+def _extract_friend_count(friend_info_text):
+    """从好友信息文本中提取好友数量"""
+    if not friend_info_text:
+        return 0
+    try:
+        friend_match = re.findall(
+            r"有\s<a>(\d+)</a>\s个好友", friend_info_text
+        )
+    except (re.error, TypeError):
+        return 0
+    return int(friend_match[0]) if friend_match else 0
+
+
+def _jsonpath_extract_first(response, path):
+    """用jsonpath提取字段，返回第一个匹配值或空字符串"""
+    result = jsonpath(response, path)
+    return result[0] if result else ""
 
 
 class UserInfoSpider:
@@ -63,8 +101,8 @@ class UserInfoSpider:
                 writer = csv.writer(csvfile)
                 writer.writerow(row)
             return True
-        except Exception as e:
-            print(f"写入用户数据失败: {e}")
+        except OSError as e:
+            logger.error("写入用户数据失败: %s", e)
             return False
 
     def get_user_detail(self, uid):
@@ -84,12 +122,11 @@ class UserInfoSpider:
 
             if response.status_code == 200:
                 return response.json()
-            else:
-                print(f"获取用户 {uid} 详细信息失败，状态码: {response.status_code}")
-                return None
+            logger.warning("获取用户 %s 详细信息失败，状态码: %s", uid, response.status_code)
+            return None
 
-        except Exception as e:
-            print(f"请求用户 {uid} 详细信息异常: {e}")
+        except requests.RequestException as e:
+            logger.error("请求用户 %s 详细信息异常: %s", uid, e)
             return None
 
     def get_user_info(self, uid):
@@ -109,66 +146,47 @@ class UserInfoSpider:
 
             if response.status_code == 200:
                 return response.json()
-            else:
-                print(f"获取用户 {uid} 基本信息失败，状态码: {response.status_code}")
-                return None
-
-        except Exception as e:
-            print(f"请求用户 {uid} 基本信息异常: {e}")
+            logger.warning("获取用户 %s 基本信息失败，状态码: %s", uid, response.status_code)
             return None
+
+        except requests.RequestException as e:
+            logger.error("请求用户 %s 基本信息异常: %s", uid, e)
+            return None
+
+    def _extract_detail_fields(self, response):
+        """从用户详细信息响应中提取所有字段"""
+        fields = {
+            "user_ips": "$..ip_location",
+            "user_time": "$..created_at",
+            "user_gender": "$..gender",
+            "user_description": "$..description",
+            "user_level": "$..sunshine_credit.level",
+            "media_num": "$..label_desc[0].name",
+            "friend_info": "$..friend_info",
+        }
+        extracted = {
+            key: _jsonpath_extract_first(response, path)
+            for key, path in fields.items()
+        }
+        extracted["friend_info"] = _extract_friend_count(extracted.get("friend_info"))
+        return extracted
 
     def parse_user_detail(self, response):
         """解析用户详细信息"""
         if not response or response.get("ok") != 1:
-            print("用户详细信息响应异常")
+            logger.warning("用户详细信息响应异常")
             return {}
 
         try:
-            # 使用jsonpath提取字段
-            fields = {
-                "user_ips": "$..ip_location",
-                "user_time": "$..created_at",
-                "user_gender": "$..gender",
-                "user_description": "$..description",
-                "user_level": "$..sunshine_credit.level",
-                "media_num": "$..label_desc[0].name",
-                "friend_info": "$..friend_info",
-            }
-
-            # 批量提取字段
-            extracted_data = {
-                key: jsonpath(response, path) for key, path in fields.items()
-            }
-
-            # 处理 False 返回值，统一转换
-            extracted_data = {
-                key: value[0] if value else ""
-                for key, value in extracted_data.items()
-            }
-
-            # 处理好友信息
-            if extracted_data.get("friend_info"):
-                try:
-                    friend_match = re.findall(
-                        r"有\s<a>(\d+)</a>\s个好友", extracted_data["friend_info"]
-                    )
-                    if friend_match:
-                        extracted_data["friend_info"] = int(friend_match[0])
-                    else:
-                        extracted_data["friend_info"] = 0
-                except Exception:
-                    extracted_data["friend_info"] = 0
-
-            return extracted_data
-
-        except Exception as e:
-            print(f"解析用户详细信息失败: {e}")
+            return self._extract_detail_fields(response)
+        except (KeyError, ValueError, TypeError) as e:
+            logger.error("解析用户详细信息失败: %s", e)
             return {}
 
     def parse_user_info(self, response):
         """解析用户基本信息"""
         if not response or response.get("ok") != 1:
-            print("用户基本信息响应异常")
+            logger.warning("用户基本信息响应异常")
             return {}
 
         try:
@@ -185,14 +203,41 @@ class UserInfoSpider:
                 "verified_type": user_info.get("verified_type", -1),
             }
 
-        except Exception as e:
-            print(f"解析用户基本信息失败: {e}")
+        except (KeyError, TypeError) as e:
+            logger.error("解析用户基本信息失败: %s", e)
             return {}
+
+    def _build_user_row(self, uid, detail_data, info_data):
+        """将详细信息和基本信息合并为CSV行"""
+        user_data = {
+            "user_id": uid,
+            "user_name": info_data.get("user_name", ""),
+            "user_time": detail_data.get("user_time", ""),
+            "user_gender": detail_data.get("user_gender", ""),
+            "user_description": detail_data.get("user_description", ""),
+            "user_level": detail_data.get("user_level", ""),
+            "media_num": detail_data.get("media_num", ""),
+            "friend_info": detail_data.get("friend_info", ""),
+            "user_likes": 0,  # 这个字段在API中不太明确，暂设为0
+            "user_ips": detail_data.get("user_ips", ""),
+            "followers_count": info_data.get("followers_count", ""),
+            "follow_count": info_data.get("follow_count", 0),
+            "status_count": info_data.get("status_count", 0),
+            "avatar_url": info_data.get("avatar_url", ""),
+            "verified": info_data.get("verified", False),
+            "verified_type": info_data.get("verified_type", -1),
+        }
+        return [user_data[key] for key in [
+            "user_id", "user_name", "user_time", "user_gender",
+            "user_description", "user_level", "media_num", "friend_info",
+            "user_likes", "user_ips", "followers_count", "follow_count",
+            "status_count", "avatar_url", "verified", "verified_type",
+        ]]
 
     def crawl_user_info(self, uid):
         """爬取单个用户的完整信息"""
         try:
-            print(f"正在爬取用户 {uid} 的信息...")
+            logger.info("正在爬取用户 %s 的信息...", uid)
 
             # 延时控制
             if isinstance(DEFAULT_DELAY, tuple):
@@ -209,93 +254,63 @@ class UserInfoSpider:
             info_response = self.get_user_info(uid)
             info_data = self.parse_user_info(info_response)
 
-            # 合并数据
-            user_data = {
-                "user_id": uid,
-                "user_name": info_data.get("user_name", ""),
-                "user_time": detail_data.get("user_time", ""),
-                "user_gender": detail_data.get("user_gender", ""),
-                "user_description": detail_data.get("user_description", ""),
-                "user_level": detail_data.get("user_level", ""),
-                "media_num": detail_data.get("media_num", ""),
-                "friend_info": detail_data.get("friend_info", ""),
-                "user_likes": 0,  # 这个字段在API中不太明确，暂设为0
-                "user_ips": detail_data.get("user_ips", ""),
-                "followers_count": info_data.get("followers_count", ""),
-                "follow_count": info_data.get("follow_count", 0),
-                "status_count": info_data.get("status_count", 0),
-                "avatar_url": info_data.get("avatar_url", ""),
-                "verified": info_data.get("verified", False),
-                "verified_type": info_data.get("verified_type", -1),
-            }
+            # 合并数据并写入CSV
+            row = self._build_user_row(uid, detail_data, info_data)
+            self.write_user_row(row)
 
-            # 写入CSV
-            self.write_user_row(
-                [
-                    user_data["user_id"],
-                    user_data["user_name"],
-                    user_data["user_time"],
-                    user_data["user_gender"],
-                    user_data["user_description"],
-                    user_data["user_level"],
-                    user_data["media_num"],
-                    user_data["friend_info"],
-                    user_data["user_likes"],
-                    user_data["user_ips"],
-                    user_data["followers_count"],
-                    user_data["follow_count"],
-                    user_data["status_count"],
-                    user_data["avatar_url"],
-                    user_data["verified"],
-                    user_data["verified_type"],
-                ]
-            )
-
-            print(f"用户 {uid} 信息爬取完成")
+            logger.info("用户 %s 信息爬取完成", uid)
             return True
 
-        except Exception as e:
-            print(f"爬取用户 {uid} 信息失败: {e}")
+        except (requests.RequestException, OSError, KeyError, ValueError) as e:
+            logger.error("爬取用户 %s 信息失败: %s", uid, e)
             return False
+
+    def _collect_ids_from_articles(self, article_path):
+        """从文章CSV中提取用户ID"""
+        if not os.path.exists(article_path):
+            return
+        try:
+            rows = _read_csv_rows(article_path)
+        except OSError as e:
+            logger.warning("读取文章CSV失败: %s", e)
+            return
+
+        for row in rows:
+            if len(row) <= 9 or not row[9]:
+                continue
+            uid = _extract_uid_from_url(row[9])
+            if uid:
+                self.user_ids.add(uid)
+
+    def _collect_ids_from_comments(self, comments_path):
+        """从评论CSV中提取用户ID"""
+        if not os.path.exists(comments_path):
+            return
+        try:
+            rows = _read_csv_rows(comments_path)
+        except OSError as e:
+            logger.warning("读取评论CSV失败: %s", e)
+            return
+
+        for row in rows:
+            if len(row) <= 10:
+                continue
+            user_id = row[10]
+            if user_id and user_id.isdigit():
+                self.user_ids.add(user_id)
 
     def collect_user_ids_from_csv(self):
         """从现有CSV文件中收集用户ID"""
-        # 从文章数据中收集用户ID
-        article_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)), "data", "articleData.csv"
-        )
-        if os.path.exists(article_path):
-            with open(article_path, encoding="utf8") as csvfile:
-                reader = csv.reader(csvfile)
-                next(reader)  # 跳过标题行
-                for row in reader:
-                    if len(row) > 11:  # authorName在第12列
-                        # 从detailUrl中提取用户ID
-                        if len(row) > 9 and row[9]:  # detailUrl
-                            try:
-                                detail_url = row[9]
-                                if "weibo.com" in detail_url:
-                                    parts = detail_url.replace(
-                                        "https://weibo.com/", ""
-                                    ).split("/")
-                                    if len(parts) >= 1:
-                                        self.user_ids.add(parts[0])
-                            except Exception:
-                                continue
         data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
-        comments_path = os.path.join(data_dir, "commentsData.csv")
 
-        if os.path.exists(comments_path):
-            with open(comments_path, encoding="utf8") as csvfile:
-                reader = csv.reader(csvfile)
-                next(reader)  # 跳过标题行
-                for row in reader:
-                    if len(row) > 10:  # user_id在第11列
-                        user_id = row[10]
-                        if user_id and user_id.isdigit():
-                            self.user_ids.add(user_id)
+        self._collect_ids_from_articles(
+            os.path.join(data_dir, "articleData.csv")
+        )
+        self._collect_ids_from_comments(
+            os.path.join(data_dir, "commentsData.csv")
+        )
 
-        print(f"收集到 {len(self.user_ids)} 个唯一用户ID")
+        logger.info("收集到 %d 个唯一用户ID", len(self.user_ids))
         return list(self.user_ids)
 
     def start_user_crawl(self, max_users=100):
@@ -304,10 +319,10 @@ class UserInfoSpider:
         user_ids = self.collect_user_ids_from_csv()
 
         if not user_ids:
-            print("没有找到可爬取的用户ID")
+            logger.warning("没有找到可爬取的用户ID")
             return
 
-        print(f"开始爬取用户信息，共 {len(user_ids)} 个用户...")
+        logger.info("开始爬取用户信息，共 %d 个用户...", len(user_ids))
 
         crawled_count = 0
         for uid in user_ids:
@@ -318,7 +333,7 @@ class UserInfoSpider:
             if success:
                 crawled_count += 1
 
-        print(f"用户信息爬取完成，共爬取 {crawled_count} 个用户")
+        logger.info("用户信息爬取完成，共爬取 %d 个用户", crawled_count)
 
 
 def start_user_spider(max_users=50):

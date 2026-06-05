@@ -19,6 +19,8 @@ from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
+LEVEL_ORDER: Dict["NotificationLevel", int] = {}
+
 
 class NotificationChannel(Enum):
     """通知渠道"""
@@ -46,6 +48,22 @@ class NotificationLevel(Enum):
     CRITICAL = "critical"
 
 
+LEVEL_ORDER = {
+    NotificationLevel.INFO: 0,
+    NotificationLevel.WARNING: 1,
+    NotificationLevel.DANGER: 2,
+    NotificationLevel.CRITICAL: 3,
+}
+
+
+def _parse_level(level_str: str) -> NotificationLevel:
+    """Parse a level string into a NotificationLevel, defaulting to WARNING."""
+    try:
+        return NotificationLevel(level_str)
+    except ValueError:
+        return NotificationLevel.WARNING
+
+
 @dataclass
 class NotificationRecipient:
     """通知接收人"""
@@ -65,33 +83,29 @@ class NotificationRecipient:
         if not self.enabled:
             return False
 
-        level_order = {
-            NotificationLevel.INFO: 0,
-            NotificationLevel.WARNING: 1,
-            NotificationLevel.DANGER: 2,
-            NotificationLevel.CRITICAL: 3,
-        }
-
-        if level_order.get(level, 0) < level_order.get(self.min_level, 0):
+        if LEVEL_ORDER.get(level, 0) < LEVEL_ORDER.get(self.min_level, 0):
             return False
 
         if channel not in self.channels:
             return False
 
-        if self.quiet_hours:
-            now = datetime.now()
-            start = self.quiet_hours.get("start", "00:00")
-            end = self.quiet_hours.get("end", "00:00")
-            current_time = now.strftime("%H:%M")
-
-            if start <= end:
-                if start <= current_time <= end:
-                    return False
-            else:
-                if current_time >= start or current_time <= end:
-                    return False
+        if self._in_quiet_hours():
+            return False
 
         return True
+
+    def _in_quiet_hours(self) -> bool:
+        """Check whether the current time falls within quiet hours."""
+        if not self.quiet_hours:
+            return False
+
+        now_time = datetime.now().strftime("%H:%M")
+        start = self.quiet_hours.get("start", "00:00")
+        end = self.quiet_hours.get("end", "00:00")
+
+        if start <= end:
+            return start <= now_time <= end
+        return now_time >= start or now_time <= end
 
 
 @dataclass
@@ -193,8 +207,11 @@ class EmailSender:
             logger.info(f"邮件发送成功: {to_email}")
             return True, "发送成功"
 
-        except Exception as e:
+        except smtplib.SMTPException as e:
             logger.error(f"邮件发送失败: {e}")
+            return False, str(e)
+        except OSError as e:
+            logger.error(f"邮件连接失败: {e}")
             return False, str(e)
 
 
@@ -214,7 +231,7 @@ class SMSSender:
             logger.info(f"[模拟] 短信发送成功: {phone} - {content[:50]}...")
             return True, "发送成功"
 
-        except Exception as e:
+        except ConnectionError as e:
             logger.error(f"短信发送失败: {e}")
             return False, str(e)
 
@@ -294,6 +311,16 @@ class NotificationQueue:
                 "retry_queue_size": len(self._retry_queue),
             }
 
+    def mark_sent(self) -> None:
+        """Record a successful send."""
+        with self._lock:
+            self._stats["total_sent"] += 1
+
+    def mark_failed(self) -> None:
+        """Record a failed send."""
+        with self._lock:
+            self._stats["total_failed"] += 1
+
 
 class NotificationService:
     """通知服务"""
@@ -311,6 +338,10 @@ class NotificationService:
         self._alert_bridge_registered = False
 
         self._init_default_templates()
+
+    # ------------------------------------------------------------------
+    # Template helpers
+    # ------------------------------------------------------------------
 
     def _init_default_templates(self):
         """初始化默认模板"""
@@ -400,6 +431,10 @@ class NotificationService:
 
         logger.info(f"已加载 {len(self.templates)} 个通知模板")
 
+    # ------------------------------------------------------------------
+    # Recipient management
+    # ------------------------------------------------------------------
+
     def add_recipient(self, recipient: NotificationRecipient):
         """添加接收人"""
         with self._lock:
@@ -414,6 +449,10 @@ class NotificationService:
         """获取所有接收人"""
         with self._lock:
             return list(self.recipients.values())
+
+    # ------------------------------------------------------------------
+    # Channel normalization (single source of truth)
+    # ------------------------------------------------------------------
 
     def _normalize_channels(
         self, channel_values: Optional[List[Any]]
@@ -441,17 +480,101 @@ class NotificationService:
         channel_values = alert_data.get("notification_channels")
 
         if not channel_values and alert_data.get("rule_id"):
-            try:
-                from services.alert_service import alert_engine
-
-                rule = alert_engine.rules.get(alert_data.get("rule_id"))
-                if rule:
-                    channel_values = getattr(rule, "notification_channels", None)
-            except Exception as e:
-                logger.debug(f"读取预警规则渠道失败: {e}")
+            channel_values = self._fetch_rule_channels(alert_data["rule_id"])
 
         channels = self._normalize_channels(channel_values)
         return channels or [NotificationChannel.WEBSOCKET]
+
+    def _fetch_rule_channels(self, rule_id: Any) -> Optional[List]:
+        """Fetch notification channels from an alert rule by id."""
+        try:
+            from services.alert_service import alert_engine
+
+            rule = alert_engine.rules.get(rule_id)
+            if rule:
+                return getattr(rule, "notification_channels", None)
+        except ImportError as e:
+            logger.debug(f"读取预警规则渠道失败: {e}")
+        except AttributeError as e:
+            logger.debug(f"读取预警规则渠道失败: {e}")
+        return None
+
+    # ------------------------------------------------------------------
+    # Admin recipient sync helpers
+    # ------------------------------------------------------------------
+
+    def _fetch_admin_users(
+        self, admin_usernames: set[str]
+    ) -> List[Optional[Dict[str, Any]]]:
+        """Fetch user records for admin usernames from the repository."""
+        from repositories.user_repository import UserRepository
+
+        repo = UserRepository()
+        return [
+            repo.find_by_username(username)
+            for username in sorted(admin_usernames)
+        ]
+
+    def _build_recipient(
+        self,
+        user: Dict[str, Any],
+        admin_usernames: set[str],
+    ) -> Optional[NotificationRecipient]:
+        """Build a NotificationRecipient from a user record, or None if invalid."""
+        username = (user.get("username") or "").strip()
+        if username not in admin_usernames:
+            return None
+
+        user_id = user.get("id")
+        if user_id is None:
+            return None
+
+        existing = self.recipients.get(user_id)
+        channels = self._build_admin_channels(user, existing)
+
+        return NotificationRecipient(
+            user_id=user_id,
+            email=user.get("email") or (existing.email if existing else None),
+            phone=existing.phone if existing else None,
+            min_level=existing.min_level if existing else NotificationLevel.INFO,
+            channels=channels,
+            quiet_hours=existing.quiet_hours if existing else {},
+            enabled=existing.enabled if existing else True,
+        )
+
+    def _build_admin_channels(
+        self,
+        user: Dict[str, Any],
+        existing: Optional[NotificationRecipient],
+    ) -> List[NotificationChannel]:
+        """Build the channel list for an admin user, merging with existing."""
+        channels = self._normalize_channels(
+            list(existing.channels) if existing else []
+        )
+        for channel in [NotificationChannel.WEBSOCKET, NotificationChannel.EMAIL]:
+            if channel == NotificationChannel.EMAIL and not user.get("email"):
+                continue
+            if channel not in channels:
+                channels.append(channel)
+        return channels
+
+    def _merge_recipients(
+        self,
+        user_records: List[Optional[Dict[str, Any]]],
+        admin_usernames: set[str],
+    ) -> int:
+        """Merge admin user records into self.recipients under lock. Returns count."""
+        synced = 0
+        with self._lock:
+            for user in user_records:
+                if not user:
+                    continue
+                recipient = self._build_recipient(user, admin_usernames)
+                if recipient is None:
+                    continue
+                self.recipients[recipient.user_id] = recipient
+                synced += 1
+        return synced
 
     def sync_admin_recipients(
         self,
@@ -468,50 +591,13 @@ class NotificationService:
             return 0
 
         if user_records is None:
-            from repositories.user_repository import UserRepository
+            user_records = self._fetch_admin_users(admin_usernames)
 
-            repo = UserRepository()
-            user_records = [
-                repo.find_by_username(username)
-                for username in sorted(admin_usernames)
-            ]
+        return self._merge_recipients(user_records, admin_usernames)
 
-        synced = 0
-        with self._lock:
-            for user in user_records:
-                if not user:
-                    continue
-
-                username = (user.get("username") or "").strip()
-                if username not in admin_usernames:
-                    continue
-
-                user_id = user.get("id")
-                if user_id is None:
-                    continue
-
-                existing = self.recipients.get(user_id)
-                channels = self._normalize_channels(
-                    list(existing.channels) if existing else []
-                )
-                for channel in [NotificationChannel.WEBSOCKET, NotificationChannel.EMAIL]:
-                    if channel == NotificationChannel.EMAIL and not user.get("email"):
-                        continue
-                    if channel not in channels:
-                        channels.append(channel)
-
-                self.recipients[user_id] = NotificationRecipient(
-                    user_id=user_id,
-                    email=user.get("email") or (existing.email if existing else None),
-                    phone=existing.phone if existing else None,
-                    min_level=existing.min_level if existing else NotificationLevel.INFO,
-                    channels=channels,
-                    quiet_hours=existing.quiet_hours if existing else {},
-                    enabled=existing.enabled if existing else True,
-                )
-                synced += 1
-
-        return synced
+    # ------------------------------------------------------------------
+    # Alert bridge
+    # ------------------------------------------------------------------
 
     def handle_alert(self, alert: Any):
         """处理预警事件并按规则渠道入队通知。"""
@@ -536,8 +622,12 @@ class NotificationService:
         for callback in self._callbacks:
             try:
                 callback(message)
-            except Exception as e:
+            except (TypeError, ValueError, RuntimeError) as e:
                 logger.error(f"回调执行失败: {e}")
+
+    # ------------------------------------------------------------------
+    # Notification creation
+    # ------------------------------------------------------------------
 
     def create_notification(
         self,
@@ -554,29 +644,9 @@ class NotificationService:
             content = alert_data.get("message", "")
             sms_content = content[:70]
         else:
-            alert_context = (
-                alert_data.get("data", {})
-                if isinstance(alert_data.get("data"), dict)
-                else {}
-            )
-            context = {
-                "level": alert_data.get("level", "warning"),
-                "trigger_time": alert_data.get(
-                    "created_at", datetime.now().isoformat()
-                ),
-                "message": alert_data.get("message", ""),
-                "system_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                **alert_context,
-                **alert_data,
-            }
-            subject, content, sms_content = template.render(context)
+            subject, content, sms_content = self._render_template(template, alert_data)
 
-        level_str = alert_data.get("level", "warning")
-        level = (
-            NotificationLevel(level_str)
-            if level_str in [e.value for e in NotificationLevel]
-            else NotificationLevel.WARNING
-        )
+        level = _parse_level(alert_data.get("level", "warning"))
 
         message = NotificationMessage(
             id=str(uuid.uuid4()),
@@ -591,58 +661,119 @@ class NotificationService:
 
         return message
 
+    def _render_template(
+        self, template: NotificationTemplate, alert_data: Dict
+    ) -> tuple:
+        """Render a template against alert data, returning (subject, content, sms)."""
+        alert_context = (
+            alert_data.get("data", {})
+            if isinstance(alert_data.get("data"), dict)
+            else {}
+        )
+        context = {
+            "level": alert_data.get("level", "warning"),
+            "trigger_time": alert_data.get(
+                "created_at", datetime.now().isoformat()
+            ),
+            "message": alert_data.get("message", ""),
+            "system_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            **alert_context,
+            **alert_data,
+        }
+        return template.render(context)
+
+    # ------------------------------------------------------------------
+    # Channel-specific send helpers
+    # ------------------------------------------------------------------
+
+    def _send_email(self, message: NotificationMessage) -> tuple:
+        """Send via email channel. Returns (success, error_msg)."""
+        if not message.recipient.email:
+            return False, "接收人邮箱为空"
+        return self.email_sender.send(
+            message.recipient.email, message.subject, message.content
+        )
+
+    def _send_sms(self, message: NotificationMessage) -> tuple:
+        """Send via SMS channel. Returns (success, error_msg)."""
+        if not message.recipient.phone:
+            return False, "接收人手机号为空"
+        return self.sms_sender.send(message.recipient.phone, message.content)
+
+    def _send_websocket(self, message: NotificationMessage) -> tuple:
+        """Send via WebSocket channel. Returns (success, error_msg)."""
+        try:
+            from services.websocket_service import websocket_service
+
+            if not websocket_service.socketio:
+                return False, "WebSocket服务未初始化"
+
+            websocket_service.send_to_user(
+                str(message.recipient.user_id),
+                websocket_service.create_message(
+                    websocket_service.MessageType.NOTIFICATION,
+                    title=message.subject,
+                    content=message.content,
+                    level=message.level.value,
+                ),
+            )
+            return True, ""
+
+        except (ImportError, AttributeError) as e:
+            return False, str(e)
+
+    _CHANNEL_SENDERS: Dict[NotificationChannel, str] = {}
+
+    def _get_channel_sender(
+        self, channel: NotificationChannel
+    ) -> Callable[[NotificationMessage], tuple]:
+        """Return the send helper for a given channel."""
+        sender_map = {
+            NotificationChannel.EMAIL: self._send_email,
+            NotificationChannel.SMS: self._send_sms,
+            NotificationChannel.WEBSOCKET: self._send_websocket,
+        }
+        return sender_map[channel]
+
     def send_notification(self, message: NotificationMessage) -> tuple:
         """发送通知"""
-        success = False
-        error_msg = ""
-
-        if message.channel == NotificationChannel.EMAIL:
-            if message.recipient.email:
-                success, error_msg = self.email_sender.send(
-                    message.recipient.email, message.subject, message.content
-                )
-            else:
-                error_msg = "接收人邮箱为空"
-
-        elif message.channel == NotificationChannel.SMS:
-            if message.recipient.phone:
-                success, error_msg = self.sms_sender.send(
-                    message.recipient.phone, message.content
-                )
-            else:
-                error_msg = "接收人手机号为空"
-
-        elif message.channel == NotificationChannel.WEBSOCKET:
-            try:
-                from services.websocket_service import websocket_service
-
-                if websocket_service.socketio:
-                    websocket_service.send_to_user(
-                        str(message.recipient.user_id),
-                        websocket_service.create_message(
-                            websocket_service.MessageType.NOTIFICATION,
-                            title=message.subject,
-                            content=message.content,
-                            level=message.level.value,
-                        ),
-                    )
-                    success = True
-                else:
-                    error_msg = "WebSocket服务未初始化"
-            except Exception as e:
-                error_msg = str(e)
+        sender = self._get_channel_sender(message.channel)
+        success, error_msg = sender(message)
 
         if success:
             message.status = NotificationStatus.SENT
             message.sent_at = datetime.now()
-            self.queue._stats["total_sent"] += 1
+            self.queue.mark_sent()
         else:
             message.status = NotificationStatus.FAILED
             message.error_message = error_msg
-            self.queue._stats["total_failed"] += 1
+            self.queue.mark_failed()
 
         self._trigger_callbacks(message)
         return success, error_msg
+
+    # ------------------------------------------------------------------
+    # Queue helpers
+    # ------------------------------------------------------------------
+
+    def _resolve_alert_level(self, alert_data: Dict) -> NotificationLevel:
+        """Parse and return the alert level from alert data."""
+        return _parse_level(alert_data.get("level", "warning"))
+
+    def _queue_for_recipient(
+        self,
+        recipient: NotificationRecipient,
+        channels: List[NotificationChannel],
+        level: NotificationLevel,
+        alert_data: Dict,
+    ) -> None:
+        """Enqueue notifications for a single recipient across matching channels."""
+        for channel in channels:
+            if not recipient.can_receive(level, channel):
+                continue
+            message = self.create_notification(alert_data, channel, recipient)
+            if message:
+                self.queue.enqueue(message)
 
     def queue_notification(
         self, alert_data: Dict, channels: List[NotificationChannel] = None
@@ -651,42 +782,42 @@ class NotificationService:
         if channels is None:
             channels = [NotificationChannel.EMAIL, NotificationChannel.SMS]
 
-        level_str = alert_data.get("level", "warning")
-        level = (
-            NotificationLevel(level_str)
-            if level_str in [e.value for e in NotificationLevel]
-            else NotificationLevel.WARNING
-        )
+        level = self._resolve_alert_level(alert_data)
 
         with self._lock:
             recipients = list(self.recipients.values())
 
         for recipient in recipients:
-            for channel in channels:
-                if not recipient.can_receive(level, channel):
-                    continue
+            self._queue_for_recipient(recipient, channels, level, alert_data)
 
-                message = self.create_notification(alert_data, channel, recipient)
-                if message:
-                    self.queue.enqueue(message)
+    # ------------------------------------------------------------------
+    # Worker loop
+    # ------------------------------------------------------------------
 
     def _process_queue(self):
         """处理队列"""
         while self._running:
-            message = self.queue.dequeue()
-            if message:
-                success, error = self.send_notification(message)
-
-                if not success and message.retry_count < message.max_retries:
-                    message.retry_count += 1
-                    self.queue.enqueue_retry(message)
-
-            retry_message = self.queue.get_retry_message()
-            if retry_message:
-                time.sleep(2**retry_message.retry_count)
-                self.send_notification(retry_message)
-
+            self._process_pending_message()
+            self._process_retry_message()
             time.sleep(0.1)
+
+    def _process_pending_message(self) -> None:
+        """Dequeue and send one pending message, retrying on failure."""
+        message = self.queue.dequeue()
+        if not message:
+            return
+        success, _error = self.send_notification(message)
+        if not success and message.retry_count < message.max_retries:
+            message.retry_count += 1
+            self.queue.enqueue_retry(message)
+
+    def _process_retry_message(self) -> None:
+        """Dequeue and send one retry message with exponential backoff."""
+        retry_message = self.queue.get_retry_message()
+        if not retry_message:
+            return
+        time.sleep(2**retry_message.retry_count)
+        self.send_notification(retry_message)
 
     def start(self):
         """启动服务"""

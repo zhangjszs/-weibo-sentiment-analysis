@@ -10,6 +10,8 @@ import threading
 from datetime import datetime
 
 from flask import Blueprint, request
+from requests import RequestException
+from sqlalchemy.exc import SQLAlchemyError
 
 from config.settings import Config
 from services.spider_task_service import query_spider_task_progress, submit_spider_task
@@ -93,6 +95,77 @@ def register_submitted_task(dispatch_result: dict) -> None:
         _spider_state["message"] = "任务已提交，等待执行..."
 
 
+def _apply_in_progress_state(result: dict, state: str) -> None:
+    """Apply PENDING or PROGRESS state to spider state."""
+    _spider_state["running"] = True
+    progress_meta = result.get("progress", {}) if state == "PROGRESS" else {}
+    _spider_state["progress"] = (
+        _progress_to_percent(progress_meta) if state == "PROGRESS" else 0
+    )
+    _spider_state["message"] = (
+        progress_meta.get("status") if isinstance(progress_meta, dict) else ""
+    ) or result.get("status", "任务执行中...")
+
+
+def _finalize_task(task_id: str, result: dict, final_status: str) -> None:
+    """Record history for a finished task if not already finalized."""
+    if _spider_state.get("last_finalized_task_id") == task_id:
+        return
+
+    task_label = _spider_state.get("current_task") or "爬虫任务"
+    if final_status == "success":
+        task_result = result.get("result", {})
+        _add_history(
+            task_label,
+            "success",
+            f"task_id={task_id}",
+            _extract_result_count(task_result),
+        )
+    else:
+        error_msg = result.get("error", "任务失败")
+        _add_history(
+            task_label,
+            "error",
+            f"task_id={task_id}: {error_msg}",
+            0,
+        )
+
+    _spider_state["last_finalized_task_id"] = task_id
+
+
+def _clear_current_task() -> None:
+    """Clear all current-task fields in spider state."""
+    _spider_state["current_task_id"] = None
+    _spider_state["current_task_type"] = None
+    _spider_state["current_task"] = None
+
+
+def _apply_success_state(task_id: str, result: dict) -> None:
+    """Apply SUCCESS state to spider state."""
+    _spider_state["running"] = False
+    _spider_state["progress"] = 100
+    _spider_state["message"] = "任务完成"
+    _finalize_task(task_id, result, "success")
+    _clear_current_task()
+
+
+def _apply_failure_state(task_id: str, result: dict) -> None:
+    """Apply FAILURE state to spider state."""
+    _spider_state["running"] = False
+    _spider_state["progress"] = 0
+    _spider_state["message"] = str(result.get("error", "任务失败"))
+    _finalize_task(task_id, result, "failure")
+    _clear_current_task()
+
+
+_STATE_HANDLERS = {
+    "PENDING": lambda _task_id, result: _apply_in_progress_state(result, "PENDING"),
+    "PROGRESS": lambda _task_id, result: _apply_in_progress_state(result, "PROGRESS"),
+    "SUCCESS": _apply_success_state,
+    "FAILURE": _apply_failure_state,
+}
+
+
 def _refresh_task_state() -> None:
     task_id = _spider_state.get("current_task_id")
     if not task_id:
@@ -100,200 +173,113 @@ def _refresh_task_state() -> None:
 
     try:
         result = query_spider_task_progress(task_id)
-    except Exception as e:
-        logger.warning(f"查询任务状态失败: task_id={task_id}, error={e}")
+    except (RequestException, SQLAlchemyError, OSError) as e:
+        logger.warning("查询任务状态失败: task_id=%s, error=%s", task_id, e)
         return
 
     state = result.get("state")
-    if state in ("PENDING", "PROGRESS"):
-        _spider_state["running"] = True
-        progress_meta = result.get("progress", {}) if state == "PROGRESS" else {}
-        _spider_state["progress"] = (
-            _progress_to_percent(progress_meta) if state == "PROGRESS" else 0
+    handler = _STATE_HANDLERS.get(state)
+    if handler:
+        handler(task_id, result)
+
+
+def _query_table_count(table_name: str) -> int:
+    """Return the row count for *table_name*, or 0 on failure."""
+    from utils.query import querys
+
+    try:
+        result = querys(
+            f"SELECT COUNT(*) as cnt FROM {table_name}", [], "select"
         )
-        _spider_state["message"] = (
-            progress_meta.get("status") if isinstance(progress_meta, dict) else ""
-        ) or result.get("status", "任务执行中...")
-        return
+    except SQLAlchemyError as e:
+        logger.debug("查询 %s 数量失败: %s", table_name, e)
+        return 0
 
-    if state == "SUCCESS":
-        _spider_state["running"] = False
-        _spider_state["progress"] = 100
-        _spider_state["message"] = "任务完成"
-        if _spider_state.get("last_finalized_task_id") != task_id:
-            task_result = result.get("result", {})
-            _add_history(
-                _spider_state.get("current_task") or "爬虫任务",
-                "success",
-                f"task_id={task_id}",
-                _extract_result_count(task_result),
-            )
-            _spider_state["last_finalized_task_id"] = task_id
-        _spider_state["current_task_id"] = None
-        _spider_state["current_task_type"] = None
-        _spider_state["current_task"] = None
-        return
+    if not result:
+        return 0
 
-    if state == "FAILURE":
-        _spider_state["running"] = False
-        _spider_state["progress"] = 0
-        error_msg = result.get("error", "任务失败")
-        _spider_state["message"] = str(error_msg)
-        if _spider_state.get("last_finalized_task_id") != task_id:
-            _add_history(
-                _spider_state.get("current_task") or "爬虫任务",
-                "error",
-                f"task_id={task_id}: {error_msg}",
-                0,
-            )
-            _spider_state["last_finalized_task_id"] = task_id
-        _spider_state["current_task_id"] = None
-        _spider_state["current_task_type"] = None
-        _spider_state["current_task"] = None
+    first_row = result[0]
+    if isinstance(first_row, (list, tuple)):
+        return int(first_row[0])
+    return int(first_row.get("cnt", 0))
+
+
+def _query_latest_time(table_name: str, fallback: str = "暂无数据") -> str:
+    """Return the latest `created_at` value for *table_name*."""
+    from utils.query import querys
+
+    try:
+        result = querys(
+            f"SELECT MAX(created_at) as latest FROM {table_name}", [], "select"
+        )
+    except SQLAlchemyError as e:
+        logger.debug("查询 %s 最新时间失败: %s", table_name, e)
+        return fallback
+
+    if not result or not result[0]:
+        return fallback
+
+    first_row = result[0]
+    val = first_row[0] if isinstance(first_row, (list, tuple)) else first_row.get("latest", "")
+    return str(val) if val else fallback
+
+
+def _query_daily_trend(table_name: str) -> list[dict]:
+    """Return the 7-day daily count trend for *table_name*."""
+    from utils.query import query_dataframe
+
+    try:
+        df = query_dataframe(f"""
+            SELECT DATE(created_at) as date, COUNT(*) as count
+            FROM {table_name}
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date
+        """)
+    except SQLAlchemyError as e:
+        logger.debug("查询 %s 每日趋势失败: %s", table_name, e)
+        return []
+
+    if df is None or df.empty:
+        return []
+
+    return [
+        {"date": str(row["date"]), "count": int(row["count"])}
+        for _, row in df.iterrows()
+    ]
+
+
+def _build_overview_response() -> dict:
+    """Build the full overview payload (DB stats + spider state)."""
+    return {
+        "articleCount": _query_table_count("article"),
+        "commentCount": _query_table_count("comments"),
+        "userCount": _query_table_count("user"),
+        "latestArticleTime": _query_latest_time("article"),
+        "latestCommentTime": _query_latest_time("comments"),
+        "isRunning": _spider_state["running"],
+        "currentTask": _spider_state["current_task"],
+        "currentTaskId": _spider_state["current_task_id"],
+        "progress": _spider_state["progress"],
+        "message": _spider_state["message"],
+        "dailyTrend": _query_daily_trend("article"),
+        "commentTrend": _query_daily_trend("comments"),
+        "history": _spider_state["history"][:20],
+    }
 
 
 @spider_bp.route("/overview", methods=["GET"])
 @admin_required
 def spider_overview():
-    """
-    获取爬虫概览数据：文章/评论/用户总数、最近文章时间等
-    """
+    """获取爬虫概览数据：文章/评论/用户总数、最近文章时间等"""
     try:
         _refresh_task_state()
-        from utils.query import query_dataframe, querys
-
-        # 统计各表数量
-        article_count = 0
-        comment_count = 0
-        user_count = 0
-        latest_article_time = "暂无数据"
-        latest_comment_time = "暂无数据"
-
-        try:
-            result = querys("SELECT COUNT(*) as cnt FROM article", [], "select")
-            if result:
-                article_count = (
-                    result[0][0]
-                    if isinstance(result[0], (list, tuple))
-                    else result[0].get("cnt", 0)
-                )
-        except Exception as e:
-            logger.debug("查询 article 数量失败: %s", e)
-
-        try:
-            result = querys("SELECT COUNT(*) as cnt FROM comments", [], "select")
-            if result:
-                comment_count = (
-                    result[0][0]
-                    if isinstance(result[0], (list, tuple))
-                    else result[0].get("cnt", 0)
-                )
-        except Exception as e:
-            logger.debug("查询 comments 数量失败: %s", e)
-
-        try:
-            result = querys("SELECT COUNT(*) as cnt FROM user", [], "select")
-            if result:
-                user_count = (
-                    result[0][0]
-                    if isinstance(result[0], (list, tuple))
-                    else result[0].get("cnt", 0)
-                )
-        except Exception as e:
-            logger.debug("查询 user 数量失败: %s", e)
-
-        try:
-            result = querys(
-                "SELECT MAX(created_at) as latest FROM article", [], "select"
-            )
-            if result and result[0]:
-                val = (
-                    result[0][0]
-                    if isinstance(result[0], (list, tuple))
-                    else result[0].get("latest", "")
-                )
-                if val:
-                    latest_article_time = str(val)
-        except Exception as e:
-            logger.debug("查询 article 最新时间失败: %s", e)
-
-        try:
-            result = querys(
-                "SELECT MAX(created_at) as latest FROM comments", [], "select"
-            )
-            if result and result[0]:
-                val = (
-                    result[0][0]
-                    if isinstance(result[0], (list, tuple))
-                    else result[0].get("latest", "")
-                )
-                if val:
-                    latest_comment_time = str(val)
-        except Exception as e:
-            logger.debug("查询 comments 最新时间失败: %s", e)
-
-        # 获取每日文章数趋势（最近 7 天）
-        daily_trend = []
-        try:
-            df = query_dataframe("""
-                SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM article
-                WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                GROUP BY DATE(created_at)
-                ORDER BY date
-            """)
-            if df is not None and not df.empty:
-                for _, row in df.iterrows():
-                    daily_trend.append(
-                        {
-                            "date": str(row["date"]),
-                            "count": int(row["count"]),
-                        }
-                    )
-        except Exception as e:
-            logger.debug("查询每日文章趋势失败: %s", e)
-
-        # 获取每日评论数趋势
-        comment_trend = []
-        try:
-            df = query_dataframe("""
-                SELECT DATE(created_at) as date, COUNT(*) as count
-                FROM comments
-                WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-                GROUP BY DATE(created_at)
-                ORDER BY date
-            """)
-            if df is not None and not df.empty:
-                for _, row in df.iterrows():
-                    comment_trend.append(
-                        {
-                            "date": str(row["date"]),
-                            "count": int(row["count"]),
-                        }
-                    )
-        except Exception as e:
-            logger.debug("查询每日评论趋势失败: %s", e)
-
-        return ok(
-            {
-                "articleCount": article_count,
-                "commentCount": comment_count,
-                "userCount": user_count,
-                "latestArticleTime": latest_article_time,
-                "latestCommentTime": latest_comment_time,
-                "isRunning": _spider_state["running"],
-                "currentTask": _spider_state["current_task"],
-                "currentTaskId": _spider_state["current_task_id"],
-                "progress": _spider_state["progress"],
-                "message": _spider_state["message"],
-                "dailyTrend": daily_trend,
-                "commentTrend": comment_trend,
-                "history": _spider_state["history"][:20],
-            }
-        ), 200
-
-    except Exception as e:
-        logger.error(f"获取爬虫概览失败: {e}")
+        return ok(_build_overview_response()), 200
+    except SQLAlchemyError as e:
+        logger.error("获取爬虫概览失败 (DB): %s", e)
+        return error(f"获取概览失败: {e}", code=500), 500
+    except OSError as e:
+        logger.error("获取爬虫概览失败 (IO): %s", e)
         return error(f"获取概览失败: {e}", code=500), 500
 
 
@@ -336,8 +322,8 @@ def spider_crawl():
         )
     except ValueError as ve:
         return error(str(ve), code=400), 400
-    except Exception as e:
-        logger.error(f"提交爬虫任务失败: {e}")
+    except (RequestException, SQLAlchemyError, OSError, RuntimeError) as e:
+        logger.error("提交爬虫任务失败: %s", e)
         return error("任务提交失败", code=500), 500
 
     register_submitted_task(dispatch_result)
@@ -390,8 +376,8 @@ def spider_quick_crawl():
         )
     except ValueError as ve:
         return error(str(ve), code=400), 400
-    except Exception as e:
-        logger.error(f"提交快速爬虫任务失败: {e}")
+    except (RequestException, SQLAlchemyError, OSError, RuntimeError) as e:
+        logger.error("提交快速爬虫任务失败: %s", e)
         return error("任务提交失败", code=500), 500
 
     register_submitted_task(dispatch_result)
@@ -406,6 +392,17 @@ def spider_quick_crawl():
     ), 200
 
 
+def _read_log_tail(path: str, lines_num: int) -> list[str]:
+    """Return the last *lines_num* non-empty lines from *path*."""
+    try:
+        with open(path, encoding="utf-8", errors="ignore") as f:
+            all_lines = f.readlines()
+    except OSError as e:
+        return [f"[读取日志失败: {path}] {e}"]
+
+    return [line.strip() for line in all_lines[-lines_num:] if line.strip()]
+
+
 @spider_bp.route("/logs", methods=["GET"])
 @admin_required
 def spider_logs():
@@ -417,20 +414,10 @@ def spider_logs():
         os.path.join(Config.BASE_DIR, "spider", "weibo_spider.log"),
     ]
 
-    log_lines = []
+    log_lines: list[str] = []
     for lp in log_paths:
         if os.path.exists(lp):
-            try:
-                with open(lp, encoding="utf-8", errors="ignore") as f:
-                    all_lines = f.readlines()
-                    # 取最后 lines_num 行
-                    tail = all_lines[-lines_num:]
-                    for line in tail:
-                        line = line.strip()
-                        if line:
-                            log_lines.append(line)
-            except Exception as e:
-                log_lines.append(f"[读取日志失败: {lp}] {e}")
+            log_lines.extend(_read_log_tail(lp, lines_num))
 
     # 按时间倒序（最新在前）
     log_lines.reverse()

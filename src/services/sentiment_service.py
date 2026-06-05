@@ -24,57 +24,69 @@ from .sentiment_dictionaries import sentiment_dict
 
 logger = logging.getLogger(__name__)
 
-# 缓存统计
-cache_stats = {
-    "hits": 0,
-    "misses": 0,
-    "total": 0,
-    "last_reset": time.time()
-}
+class _StatsManager:
+    """Encapsulates cache and performance statistics."""
 
-# 性能统计
-performance_stats = {
-    "total_requests": 0,
-    "total_time": 0,
-    "avg_response_time": 0,
-    "max_response_time": 0,
-    "min_response_time": float('inf'),
-    "requests_by_mode": {},
-    "time_by_mode": {},
-    "last_reset": time.time()
-}
+    def __init__(self):
+        self.cache = {"hits": 0, "misses": 0, "total": 0, "last_reset": time.time()}
+        self.performance = {
+            "total_requests": 0,
+            "total_time": 0,
+            "avg_response_time": 0,
+            "max_response_time": 0,
+            "min_response_time": float('inf'),
+            "requests_by_mode": {},
+            "time_by_mode": {},
+            "last_reset": time.time(),
+        }
+        self.memory_cache: Dict[str, tuple] = {}
 
-# 内存缓存（作为Redis的后备）
-memory_cache: Dict[str, tuple] = {}
+    def record_cache_hit(self):
+        self.cache["hits"] += 1
+        self.cache["total"] += 1
+
+    def record_cache_miss(self):
+        self.cache["misses"] += 1
+        self.cache["total"] += 1
+
+    def record_performance(self, processing_time: float, mode: str):
+        p = self.performance
+        p["total_requests"] += 1
+        p["total_time"] += processing_time
+        p["avg_response_time"] = p["total_time"] / p["total_requests"]
+        p["max_response_time"] = max(p["max_response_time"], processing_time)
+        p["min_response_time"] = min(p["min_response_time"], processing_time)
+        p["requests_by_mode"].setdefault(mode, 0)
+        p["time_by_mode"].setdefault(mode, 0.0)
+        p["requests_by_mode"][mode] += 1
+        p["time_by_mode"][mode] += processing_time
+
+    def reset_cache(self):
+        self.cache = {"hits": 0, "misses": 0, "total": 0, "last_reset": time.time()}
+        return self.cache
+
+    def reset_performance(self):
+        self.performance = {
+            "total_requests": 0, "total_time": 0, "avg_response_time": 0,
+            "max_response_time": 0, "min_response_time": float('inf'),
+            "requests_by_mode": {}, "time_by_mode": {},
+            "last_reset": time.time(),
+        }
+        return self.performance
+
+
+_stats = _StatsManager()
+
 MEMORY_CACHE_MAX_SIZE = 10000
-MEMORY_CACHE_TTL = 3600  # 1小时
+MEMORY_CACHE_TTL = 3600
 
-# 性能监控装饰器
 def performance_monitor(func):
     """性能监控装饰器"""
     def wrapper(*args, **kwargs):
         start_time = time.time()
         result = func(*args, **kwargs)
-        end_time = time.time()
-        
-        # 计算处理时间
-        processing_time = (end_time - start_time) * 1000  # 转换为毫秒
-        
-        # 更新性能统计
-        performance_stats["total_requests"] += 1
-        performance_stats["total_time"] += processing_time
-        performance_stats["avg_response_time"] = performance_stats["total_time"] / performance_stats["total_requests"]
-        performance_stats["max_response_time"] = max(performance_stats["max_response_time"], processing_time)
-        performance_stats["min_response_time"] = min(performance_stats["min_response_time"], processing_time)
-        
-        # 记录按模式的统计
-        mode = kwargs.get('mode', 'simple')
-        if mode not in performance_stats["requests_by_mode"]:
-            performance_stats["requests_by_mode"][mode] = 0
-            performance_stats["time_by_mode"][mode] = 0
-        performance_stats["requests_by_mode"][mode] += 1
-        performance_stats["time_by_mode"][mode] += processing_time
-        
+        processing_time = (time.time() - start_time) * 1000
+        _stats.record_performance(processing_time, kwargs.get('mode', 'simple'))
         return result
     return wrapper
 
@@ -95,7 +107,7 @@ try:
     redis_client.ping()
     REDIS_AVAILABLE = True
     logger.info("Redis缓存已启用")
-except Exception as e:
+except (redis.RedisError, OSError) as e:
     logger.warning(f"Redis连接失败，将使用内存缓存: {e}")
     redis_client = None
     REDIS_AVAILABLE = False
@@ -103,21 +115,15 @@ except Exception as e:
 # 清理内存缓存的函数
 def cleanup_memory_cache():
     """清理过期的内存缓存项"""
-    current_time = time.time()
-    expired_keys = []
-    
-    for key, (_, timestamp) in memory_cache.items():
-        if current_time - timestamp > MEMORY_CACHE_TTL:
-            expired_keys.append(key)
-    
-    for key in expired_keys:
-        del memory_cache[key]
-    
-    # 如果缓存大小超过限制，删除最旧的项
-    if len(memory_cache) > MEMORY_CACHE_MAX_SIZE:
-        sorted_keys = sorted(memory_cache.items(), key=lambda x: x[1][1])
-        for key, _ in sorted_keys[:len(memory_cache) - MEMORY_CACHE_MAX_SIZE]:
-            del memory_cache[key]
+    cache = _stats.memory_cache
+    now = time.time()
+    expired = [k for k, (_, ts) in cache.items() if now - ts > MEMORY_CACHE_TTL]
+    for k in expired:
+        del cache[k]
+    if len(cache) > MEMORY_CACHE_MAX_SIZE:
+        oldest = sorted(cache.items(), key=lambda x: x[1][1])
+        for k, _ in oldest[:len(cache) - MEMORY_CACHE_MAX_SIZE]:
+            del cache[k]
 
 
 class SentimentResult:
@@ -209,219 +215,147 @@ class SnowNLPStrategy(SentimentStrategy):
     positive_emotions = {'喜悦', '感动', '兴奋', '期待'}
     negative_emotions = {'愤怒', '悲伤', '失望', '焦虑', '无奈', '讽刺'}
 
-    def analyze(self, text: str) -> SentimentResult:
-        if not text:
-            return SentimentResult(0.5, "neutral", source="snownlp")
+    @staticmethod
+    def _adjust_score(score: float, factor: float) -> float:
+        if score > 0.5:
+            return min(1.0, (score - 0.5) * factor + 0.5)
+        return max(0.0, 0.5 - (0.5 - score) * factor)
 
-        # 缓存SnowNLP对象
+    def _compute_scores(self, text: str):
         s = SnowNLP(text)
         snownlp_score = s.sentiments
+        dict_score, pos_words, neg_words = sentiment_dict.get_sentiment_score(text)
 
-        # 使用情感词典计算得分
-        dict_score, positive_words, negative_words = sentiment_dict.get_sentiment_score(text)
+        negation_count = sum(1 for p in self.negation_patterns if p in text)
+        is_sarcastic = any(p in text for p in self.sarcasm_patterns)
 
-        # 检测否定句式（使用集合操作优化）
-        negation_count = sum(1 for pattern in self.negation_patterns if pattern in text)
-        
-        # 检测讽刺和反语（使用集合操作优化）
-        is_sarcastic = any(pattern in text for pattern in self.sarcasm_patterns)
-        
-        # 检测程度副词（使用字典查找优化）
         degree_factor = 1.0
         for adverb, factor in self.degree_adverbs.items():
             if adverb in text:
                 degree_factor = factor
                 break
-        
-        # 处理否定句式
+
         if negation_count > 0:
-            # 对于否定句，反转情感倾向
             snownlp_score = 1.0 - snownlp_score
             dict_score = 1.0 - dict_score
-            # 否定强度调整（增加调整幅度，确保否定句被正确识别）
-            negation_strength = min(negation_count * 0.2, 0.4)
-            snownlp_score = max(0.0, min(1.0, snownlp_score - negation_strength))
-            dict_score = max(0.0, min(1.0, dict_score - negation_strength))
-        
-        # 处理讽刺和反语
+            strength = min(negation_count * 0.2, 0.4)
+            snownlp_score = max(0.0, min(1.0, snownlp_score - strength))
+            dict_score = max(0.0, min(1.0, dict_score - strength))
+
         if is_sarcastic:
-            # 检测是否真的是讽刺（需要同时包含正面词汇和讽刺标记）
-            has_positive_words = any(word in text for word in ['好', '棒', '开心', '高兴', '喜欢', '优秀', '厉害'])
-            if has_positive_words:
-                # 对于真正的讽刺，反转情感倾向并适当调整
+            pos_words_set = {'好', '棒', '开心', '高兴', '喜欢', '优秀', '厉害'}
+            if any(w in text for w in pos_words_set):
                 snownlp_score = 1.0 - snownlp_score
                 dict_score = 1.0 - dict_score
-                # 讽刺强度调整（降低调整幅度）
-                sarcasm_strength = 0.2
-                snownlp_score = max(0.0, min(1.0, snownlp_score - sarcasm_strength))
-                dict_score = max(0.0, min(1.0, dict_score - sarcasm_strength))
-        
-        # 应用程度副词调整
+                snownlp_score = max(0.0, min(1.0, snownlp_score - 0.2))
+                dict_score = max(0.0, min(1.0, dict_score - 0.2))
+
         if degree_factor != 1.0:
-            if snownlp_score > 0.5:
-                # 正向情感增强
-                snownlp_score = min(1.0, (snownlp_score - 0.5) * degree_factor + 0.5)
-            else:
-                # 负向情感增强
-                snownlp_score = max(0.0, 0.5 - (0.5 - snownlp_score) * degree_factor)
-            
-            if dict_score > 0.5:
-                dict_score = min(1.0, (dict_score - 0.5) * degree_factor + 0.5)
-            else:
-                dict_score = max(0.0, 0.5 - (0.5 - dict_score) * degree_factor)
+            snownlp_score = self._adjust_score(snownlp_score, degree_factor)
+            dict_score = self._adjust_score(dict_score, degree_factor)
 
-        # 融合得分：调整权重，增加情感词典的权重，特别是对于负面文本
-        # 对于负面文本，情感词典的权重更高
-        if dict_score < 0.5:
-            # 负面文本，增加情感词典权重
-            score = snownlp_score * 0.3 + dict_score * 0.7
-        else:
-            # 正面文本，保持平衡
-            score = snownlp_score * 0.5 + dict_score * 0.5
-        score = max(0.0, min(1.0, score))  # 确保得分在0-1范围内
+        weight = 0.7 if dict_score < 0.5 else 0.5
+        score = max(0.0, min(1.0, snownlp_score * (1 - weight) + dict_score * weight))
 
-        # 调整标签判断阈值，使其更准确
+        return s, score, snownlp_score, dict_score, pos_words, neg_words, negation_count, is_sarcastic, degree_factor
+
+    def _determine_label(self, score: float, text: str, negation_count: int, emotion: str) -> str:
         label = "neutral"
         if score > 0.6:
             label = "positive"
         elif score < 0.4:
             label = "negative"
-        
-        # 细粒度情感识别
-        emotion = self._get_emotion(text, positive_words, negative_words, score)
 
-        # 检测明显的负面文本（使用集合操作优化）
-        if any(indicator in text for indicator in self.negative_indicators):
-            if score > 0.5:
-                label = "negative"
-                score = min(score, 0.45)
-        # 对于明显的正面文本，强制调整为positive（使用集合操作优化）
-        elif any(indicator in text for indicator in self.positive_indicators) and negation_count == 0:
-            # 只有当没有否定词时，才将正面文本调整为positive
-            if score < 0.5:
-                label = "positive"
-                score = max(score, 0.55)
-
-        # 检测中性文本（使用集合操作优化）
-        if any(indicator in text for indicator in self.neutral_indicators):
-            label = "neutral"
-            score = 0.5
-
-        # 对于否定句，强制调整为negative
+        if any(ind in text for ind in self.negative_indicators) and score > 0.5:
+            return "negative"
+        if any(ind in text for ind in self.positive_indicators) and negation_count == 0 and score < 0.5:
+            return "positive"
+        if any(ind in text for ind in self.neutral_indicators):
+            return "neutral"
         if negation_count > 0:
-            # 对于包含否定词的句子，直接设置为negative
-            label = "negative"
-            score = min(score, 0.45)
+            return "negative"
+        if emotion in self.negative_emotions:
+            return "negative"
+        if emotion in self.positive_emotions:
+            return "positive"
+        return label
 
-        # 对于特定负面情感，强制调整为negative
-        if emotion in self.negative_emotions and label != 'negative':
-            label = "negative"
-            score = min(score, 0.45)
-
-        # 对于特定正面情感，强制调整为positive
-        if emotion in self.positive_emotions and label != 'positive':
-            label = "positive"
-            score = max(score, 0.55)
-
-        # 生成详细的分析理由
-        reasoning_parts = []
-        reasoning_parts.append("基于SnowNLP和情感词典融合计算")
-        
-        if positive_words:
-            reasoning_parts.append(f"正向词: {', '.join(positive_words[:3])}")
-        if negative_words:
-            reasoning_parts.append(f"负向词: {', '.join(negative_words[:3])}")
+    def _build_reasoning(self, pos_words, neg_words, negation_count, is_sarcastic,
+                         degree_factor, dict_score, snownlp_score, score, emotion) -> str:
+        parts = ["基于SnowNLP和情感词典融合计算"]
+        if pos_words:
+            parts.append(f"正向词: {', '.join(pos_words[:3])}")
+        if neg_words:
+            parts.append(f"负向词: {', '.join(neg_words[:3])}")
         if negation_count > 0:
-            reasoning_parts.append(f"包含{negation_count}个否定词，情感倾向反转")
+            parts.append(f"包含{negation_count}个否定词，情感倾向反转")
         if is_sarcastic:
-            reasoning_parts.append("检测到讽刺或反语，情感倾向反转")
+            parts.append("检测到讽刺或反语，情感倾向反转")
         if degree_factor != 1.0:
-            reasoning_parts.append(f"包含程度副词，情感强度调整为{degree_factor}倍")
-        
-        # 最终得分计算说明
+            parts.append(f"包含程度副词，情感强度调整为{degree_factor}倍")
         if dict_score < 0.5:
-            reasoning_parts.append("负面文本，情感词典权重更高")
-        reasoning_parts.append(f"最终得分: SnowNLP({snownlp_score:.2f}) * 0.5 + 情感词典({dict_score:.2f}) * 0.5 = {score:.2f}")
-        
-        # 情感标签判断
-        if score > 0.6:
-            reasoning_parts.append("得分大于0.6，判断为正面情感")
-        elif score < 0.4:
-            reasoning_parts.append("得分小于0.4，判断为负面情感")
-        else:
-            reasoning_parts.append("得分在0.4-0.6之间，判断为中性情感")
-        
-        # 细粒度情感说明
+            parts.append("负面文本，情感词典权重更高")
+        parts.append(f"最终得分: SnowNLP({snownlp_score:.2f}) + 情感词典({dict_score:.2f}) = {score:.2f}")
+        label_hint = "正面" if score > 0.6 else ("负面" if score < 0.4 else "中性")
+        parts.append(f"判断为{label_hint}情感")
         if emotion != "无感":
-            reasoning_parts.append(f"细粒度情感: {emotion}")
-        
-        reasoning = "，".join(reasoning_parts)
-        
-        # 优化关键词提取，结合情感词典和文本内容
-        base_keywords = s.keywords(10)  # 提取更多关键词
-        
-        # 从情感词中提取关键词（使用集合操作优化）
-        sentiment_keywords = []
-        base_keywords_set = set(base_keywords)
-        if positive_words:
-            sentiment_keywords.extend([word for word in positive_words if word in base_keywords_set])
-        if negative_words:
-            sentiment_keywords.extend([word for word in negative_words if word in base_keywords_set])
-        
-        # 从文本中提取情感相关的关键词
-        emotion_keywords = []
+            parts.append(f"细粒度情感: {emotion}")
+        return "，".join(parts)
+
+    _EMOTION_RELATED_WORDS = {
+        "喜悦": ["开心", "高兴", "快乐", "喜悦", "兴奋", "激动", "惊喜", "赞", "好", "棒"],
+        "愤怒": ["生气", "愤怒", "恼火", "烦躁", "不满", "讨厌", "恨"],
+        "悲伤": ["伤心", "难过", "悲伤", "痛苦", "流泪", "失望", "遗憾"],
+        "焦虑": ["担心", "焦虑", "紧张", "压力", "担忧"],
+        "期待": ["期待", "希望", "憧憬", "向往"],
+        "感动": ["感动", "温暖", "感激", "感谢"],
+        "兴奋": ["兴奋", "激动", "亢奋"],
+        "失望": ["失望", "遗憾", "沮丧"],
+        "无奈": ["无奈", "无语", "尴尬"],
+        "讽刺": ["讽刺", "反语", "嘲笑"],
+        "惊讶": ["惊讶", "震惊", "意外"],
+        "恐惧": ["害怕", "恐惧", "担心"],
+        "厌恶": ["厌恶", "讨厌", "反感"],
+        "平静": ["平静", "淡定", "从容"],
+    }
+
+    def _extract_keywords(self, s, pos_words, neg_words, emotion, text) -> list:
+        base = s.keywords(10)
+        base_set = set(base)
+        sentiment_kw = [w for w in (pos_words + neg_words) if w in base_set]
+
+        emotion_kw = []
         if emotion != "无感":
-            # 根据情感类型提取相关关键词
-            emotion_related_words = {
-                "喜悦": ["开心", "高兴", "快乐", "喜悦", "兴奋", "激动", "惊喜", "赞", "好", "棒"],
-                "愤怒": ["生气", "愤怒", "恼火", "烦躁", "不满", "讨厌", "恨"],
-                "悲伤": ["伤心", "难过", "悲伤", "痛苦", "流泪", "失望", "遗憾"],
-                "焦虑": ["担心", "焦虑", "紧张", "压力", "担忧"],
-                "期待": ["期待", "希望", "憧憬", "向往"],
-                "感动": ["感动", "温暖", "感激", "感谢"],
-                "兴奋": ["兴奋", "激动", "亢奋"],
-                "失望": ["失望", "遗憾", "沮丧"],
-                "无奈": ["无奈", "无语", "尴尬"],
-                "讽刺": ["讽刺", "反语", "嘲笑"],
-                "惊讶": ["惊讶", "震惊", "意外"],
-                "恐惧": ["害怕", "恐惧", "担心"],
-                "厌恶": ["厌恶", "讨厌", "反感"],
-                "平静": ["平静", "淡定", "从容"]
-            }
-            related_words = emotion_related_words.get(emotion, [])
-            for word in related_words:
-                if word in text and word not in emotion_keywords:
-                    emotion_keywords.append(word)
-        
-        # 合并关键词，去重并排序
-        all_keywords = []
-        seen_keywords = set()
-        # 优先添加情感关键词
-        for keyword in sentiment_keywords:
-            if keyword not in seen_keywords:
-                all_keywords.append(keyword)
-                seen_keywords.add(keyword)
-        # 然后添加情感相关关键词
-        for keyword in emotion_keywords:
-            if keyword not in seen_keywords:
-                all_keywords.append(keyword)
-                seen_keywords.add(keyword)
-        # 最后添加基础关键词
-        for keyword in base_keywords:
-            if keyword not in seen_keywords:
-                all_keywords.append(keyword)
-                seen_keywords.add(keyword)
-        
-        # 限制关键词数量为5个
-        keywords = all_keywords[:5]
-        
+            for w in self._EMOTION_RELATED_WORDS.get(emotion, []):
+                if w in text and w not in emotion_kw:
+                    emotion_kw.append(w)
+
+        seen = set()
+        result = []
+        for kw in sentiment_kw + emotion_kw + base:
+            if kw not in seen:
+                result.append(kw)
+                seen.add(kw)
+        return result[:5]
+
+    def analyze(self, text: str) -> SentimentResult:
+        if not text:
+            return SentimentResult(0.5, "neutral", source="snownlp")
+
+        s, score, sn_score, dict_score, pos, neg, neg_cnt, sarcastic, degree = self._compute_scores(text)
+        emotion = self._get_emotion(text, pos, neg, score)
+        label = self._determine_label(score, text, neg_cnt, emotion)
+
+        adj_score = min(score, 0.45) if label == "negative" else (max(score, 0.55) if label == "positive" else score)
+        if any(ind in text for ind in self.neutral_indicators):
+            adj_score = 0.5
+
+        reasoning = self._build_reasoning(pos, neg, neg_cnt, sarcastic, degree, dict_score, sn_score, adj_score, emotion)
+        keywords = self._extract_keywords(s, pos, neg, emotion, text)
+
         return SentimentResult(
-            score=score,
-            label=label,
-            keywords=keywords,
-            reasoning=reasoning,
-            emotion=emotion,
-            source="snownlp",
+            score=adj_score, label=label, keywords=keywords,
+            reasoning=reasoning, emotion=emotion, source="snownlp",
         )
 
     # 预定义的情感模式（类变量，避免重复创建）
@@ -463,72 +397,61 @@ class SnowNLPStrategy(SentimentStrategy):
         '😴': '无感', '🤔': '无感', '😐': '无感', '😑': '无感'
     }
     
+    _SCORE_EMOTION_MAP = {
+        "positive": [
+            (['开心', '高兴', '快乐', '喜悦', '兴奋', '激动', '惊喜'], "喜悦"),
+            (['感动', '温暖', '感激', '感谢'], "感动"),
+            (['惊喜', '兴奋', '激动'], "兴奋"),
+        ],
+        "negative": [
+            (['生气', '愤怒', '恼火', '烦躁', '不满'], "愤怒"),
+            (['伤心', '难过', '悲伤', '痛苦', '流泪'], "悲伤"),
+            (['失望', '遗憾', '沮丧'], "失望"),
+            (['厌恶', '讨厌', '反感'], "厌恶"),
+        ],
+        "neutral": [
+            (['担心', '焦虑', '紧张', '压力', '担忧'], "焦虑"),
+            (['期待', '希望', '憧憬', '向往'], "期待"),
+            (['麻烦', '压力', '负担', '无奈'], "无奈"),
+            (['平静', '淡定', '从容'], "平静"),
+        ],
+    }
+
+    def _lookup_emotion_by_words(self, text: str, word_groups: list, default: str) -> str:
+        for words, emotion in word_groups:
+            if any(w in text for w in words):
+                return emotion
+        return default
+
     def _get_emotion(self, text: str, positive_words: list, negative_words: list, score: float) -> str:
-        """
-        细粒度情感识别
-        
-        Args:
-            text: 待分析文本
-            positive_words: 正向词列表
-            negative_words: 负向词列表
-            score: 情感得分
-            
-        Returns:
-            str: 细粒度情感标签
-        """
-        # 检测讽刺和反语（使用字典查找优化）
+        """细粒度情感识别"""
         for pattern, emotion in self.sarcasm_patterns.items():
             if pattern in text:
-                # 对于讽刺和反语，情感倾向通常与字面意思相反
-                if any(word in text for word in ['好', '棒', '开心', '高兴', '喜欢']):
+                if any(w in text for w in ['好', '棒', '开心', '高兴', '喜欢']):
                     return "讽刺"
-                elif any(word in text for word in ['不生气', '没关系', '还好']):
+                if any(w in text for w in ['不生气', '没关系', '还好']):
                     return "愤怒"
-                else:
-                    return emotion
-        
-        # 检测网络用语情感（使用字典查找优化）
+                return emotion
+
         for word, emotion in self.internet_emotions.items():
             if word in text:
                 return emotion
-        
-        # 检测emoji表情情感（使用字典查找优化）
+
         for emoji, emotion in self.emoji_emotions.items():
             if emoji in text:
                 return emotion
-        
-        # 基于情感词和得分判断细粒度情感
+
         if score > 0.7:
-            if any(word in text for word in ['开心', '高兴', '快乐', '喜悦', '兴奋', '激动', '惊喜']):
-                return "喜悦"
-            elif any(word in text for word in ['感动', '温暖', '感激', '感谢']):
-                return "感动"
-            elif any(word in text for word in ['惊喜', '兴奋', '激动']):
-                return "兴奋"
-            else:
-                return "积极"
+            bucket = "positive"
+            default = "积极"
         elif score < 0.3:
-            if any(word in text for word in ['生气', '愤怒', '恼火', '烦躁', '不满']):
-                return "愤怒"
-            elif any(word in text for word in ['伤心', '难过', '悲伤', '痛苦', '流泪']):
-                return "悲伤"
-            elif any(word in text for word in ['失望', '遗憾', '沮丧']):
-                return "失望"
-            elif any(word in text for word in ['厌恶', '讨厌', '反感']):
-                return "厌恶"
-            else:
-                return "消极"
+            bucket = "negative"
+            default = "消极"
         else:
-            if any(word in text for word in ['担心', '焦虑', '紧张', '压力', '担忧']):
-                return "焦虑"
-            elif any(word in text for word in ['期待', '希望', '憧憬', '向往']):
-                return "期待"
-            elif any(word in text for word in ['麻烦', '压力', '负担', '无奈']):
-                return "无奈"
-            elif any(word in text for word in ['平静', '淡定', '从容']):
-                return "平静"
-            else:
-                return "无感"
+            bucket = "neutral"
+            default = "无感"
+
+        return self._lookup_emotion_by_words(text, self._SCORE_EMOTION_MAP[bucket], default)
 
 
 def get_cache_key(text: str, mode: str) -> str:
@@ -540,55 +463,40 @@ def get_cache_key(text: str, mode: str) -> str:
     return hashlib.md5(key_data.encode()).hexdigest()
 
 
+def _build_sentiment_from_cache_data(data: dict, source: str) -> SentimentResult:
+    return SentimentResult(
+        score=data.get("score", 0.5),
+        label=data.get("label", "neutral"),
+        reasoning=data.get("reasoning"),
+        emotion=data.get("emotion"),
+        keywords=data.get("keywords", []),
+        cached=True,
+        source=source,
+    )
+
+
 def get_from_cache(text: str, mode: str) -> Optional[SentimentResult]:
     """从缓存获取结果"""
     cache_key = get_cache_key(text, mode)
-    
-    # 1. 尝试从Redis获取
+
     if REDIS_AVAILABLE:
         try:
             cached = redis_client.get(cache_key)
             if cached:
-                data = json.loads(cached)
-                cache_stats["hits"] += 1
-                cache_stats["total"] += 1
-                return SentimentResult(
-                    score=data.get("score", 0.5),
-                    label=data.get("label", "neutral"),
-                    reasoning=data.get("reasoning"),
-                    emotion=data.get("emotion"),
-                    keywords=data.get("keywords", []),
-                    cached=True,
-                    source="cache_redis",
-                )
-        except Exception as e:
+                _stats.record_cache_hit()
+                return _build_sentiment_from_cache_data(json.loads(cached), "cache_redis")
+        except (redis.RedisError, json.JSONDecodeError, TypeError) as e:
             logger.warning(f"Redis缓存读取失败: {e}")
-    
-    # 2. 尝试从内存缓存获取
-    try:
-        if cache_key in memory_cache:
-            data, timestamp = memory_cache[cache_key]
-            if time.time() - timestamp < MEMORY_CACHE_TTL:
-                cache_stats["hits"] += 1
-                cache_stats["total"] += 1
-                return SentimentResult(
-                    score=data.get("score", 0.5),
-                    label=data.get("label", "neutral"),
-                    reasoning=data.get("reasoning"),
-                    emotion=data.get("emotion"),
-                    keywords=data.get("keywords", []),
-                    cached=True,
-                    source="cache_memory",
-                )
-            else:
-                # 过期项，删除
-                del memory_cache[cache_key]
-    except Exception as e:
-        logger.warning(f"内存缓存读取失败: {e}")
-    
-    # 缓存未命中
-    cache_stats["misses"] += 1
-    cache_stats["total"] += 1
+
+    cache = _stats.memory_cache
+    if cache_key in cache:
+        data, timestamp = cache[cache_key]
+        if time.time() - timestamp < MEMORY_CACHE_TTL:
+            _stats.record_cache_hit()
+            return _build_sentiment_from_cache_data(data, "cache_memory")
+        del cache[cache_key]
+
+    _stats.record_cache_miss()
     return None
 
 
@@ -602,22 +510,17 @@ def save_to_cache(text: str, mode: str, result: SentimentResult) -> None:
         "emotion": result.emotion,
         "keywords": result.keywords,
     }
-    
-    # 1. 保存到Redis
+
     if REDIS_AVAILABLE:
         try:
             redis_client.setex(cache_key, Config.LLM_CACHE_TTL, json.dumps(data))
-        except Exception as e:
+        except (redis.RedisError, TypeError) as e:
             logger.warning(f"Redis缓存写入失败: {e}")
-    
-    # 2. 保存到内存缓存
-    try:
-        # 定期清理内存缓存
-        if len(memory_cache) > MEMORY_CACHE_MAX_SIZE:
-            cleanup_memory_cache()
-        memory_cache[cache_key] = (data, time.time())
-    except Exception as e:
-        logger.warning(f"内存缓存写入失败: {e}")
+
+    cache = _stats.memory_cache
+    if len(cache) > MEMORY_CACHE_MAX_SIZE:
+        cleanup_memory_cache()
+    cache[cache_key] = (data, time.time())
 
 
 class LLMStrategy(SentimentStrategy):
@@ -647,7 +550,7 @@ class LLMStrategy(SentimentStrategy):
             # 写入缓存
             save_to_cache(text, "smart", result)
             return result
-        except Exception as e:
+        except (requests.RequestException, ValueError, KeyError) as e:
             logger.error(f"LLM熔断器触发，降级到SnowNLP: {e}")
             return SnowNLPStrategy().analyze(text)
 
@@ -737,9 +640,8 @@ class LLMStrategy(SentimentStrategy):
             logger.error(f"LLM输出JSON解析失败: {e}, content: {content[:200]}")
             # 尝试容错解析
             return self._fallback_parse(content)
-        except Exception as e:
+        except (ValueError, KeyError, TypeError) as e:
             logger.error(f"LLM输出校验失败: {e}")
-            # 尝试容错解析，而不是直接触发熔断器
             return self._fallback_parse(content)
 
     def _fallback_parse(self, content: str) -> SentimentResult:
@@ -822,7 +724,7 @@ class CustomModelStrategy(SentimentStrategy):
                 try:
                     from model.model_version_manager import load_model_with_versioning
                     self._model, self._model_metadata = load_model_with_versioning(model_dir)
-                except Exception as e:
+                except (ImportError, OSError) as e:
                     logger.warning(f"使用版本管理加载模型失败，使用普通加载: {e}")
                     self._model = joblib.load(self.model_path)
                     self._model_metadata = {"loaded": True, "model_path": self.model_path}
@@ -840,184 +742,98 @@ class CustomModelStrategy(SentimentStrategy):
         """
         return self._analyze_batch_with_model([text])[0]
 
+    @staticmethod
+    def _map_prediction_label(prediction) -> str:
+        if isinstance(prediction, str):
+            return {"positive": "positive", "pos": "positive",
+                    "negative": "negative", "neg": "negative"}.get(prediction, "neutral")
+        return {0: "negative", 1: "neutral", 2: "positive"}.get(prediction, "neutral")
+
+    @staticmethod
+    def _extract_model_keywords(text: str) -> list:
+        try:
+            s = SnowNLP(text)
+            base = s.keywords(10)
+            pos_set = {'好', '优秀', '棒', '赞', '满意', '喜欢', '高兴', '开心', '快乐', '幸福',
+                       '美好', '精彩', '出色', '成功', '完美', 'yyds', '666', 'nb', '厉害', 'nice'}
+            neg_set = {'差', '糟糕', '烂', '垃圾', '失望', '讨厌', '生气', '难过', '悲伤', '痛苦',
+                       '不好', '失败', '错误', '崩溃', '绝望', '难受', '无语', '醉了', '吐了'}
+            sentiment = [w for w in base if w in pos_set or w in neg_set]
+            seen = set(sentiment)
+            result = sentiment + [w for w in base if w not in seen]
+            return result[:5]
+        except (ValueError, AttributeError):
+            try:
+                return SnowNLP(text).keywords(5)
+            except (ValueError, AttributeError):
+                return []
+
+    def _build_model_reasoning(self, label: str, score: float, emotion: Optional[str]) -> str:
+        parts = ["基于自定义训练模型预测"]
+        if self._model_metadata:
+            parts.append(f"模型版本: {self._model_metadata.get('current_version', 'unknown')}")
+        parts.append(f"预测置信度: {score:.2f}")
+        if label != "neutral" and score < 0.7:
+            parts.append("模型置信度较低，结合SnowNLP分析进行调整")
+        label_cn = {"positive": "正面", "negative": "负面"}.get(label, "中性")
+        parts.append(f"预测为{label_cn}情感")
+        if emotion:
+            parts.append(f"细粒度情感: {emotion}")
+        return "，".join(parts)
+
+    def _finalize_single_result(self, text: str, label: str, score: float, processing_time: float, snow_strategy) -> SentimentResult:
+        keywords = self._extract_model_keywords(text)
+        emotion = None
+        try:
+            emotion = snow_strategy.analyze(text).emotion
+        except (ValueError, AttributeError):
+            pass
+
+        reasoning = self._build_model_reasoning(label, score, emotion)
+
+        try:
+            from model.model_monitor import ModelMonitor
+            ModelMonitor().log_prediction(text, label, score, processing_time)
+        except (ImportError, AttributeError):
+            pass
+
+        if label == "neutral" and score < 0.7:
+            snow_result = snow_strategy.analyze(text)
+            if snow_result.label != "neutral":
+                label = snow_result.label
+                score = (score + snow_result.score) / 2
+                reasoning += f"，结合SnowNLP分析: {snow_result.reasoning}"
+                keywords = snow_result.keywords
+
+        return SentimentResult(
+            score=score, label=label, reasoning=reasoning,
+            emotion=emotion, keywords=keywords, source="custom_model",
+        )
+
     def _analyze_batch_with_model(self, texts: list) -> list:
-        """
-        批量分析文本
-
-        Args:
-            texts: 文本列表
-
-        Returns:
-            list: 情感分析结果列表
-        """
         model = self._load_model()
         if not model:
             raise RuntimeError("模型未加载成功")
 
-        # 长文本截断处理
-        max_length = 512
-        processed_texts = []
-        for text in texts:
-            if len(text) > max_length:
-                processed_texts.append(text[:max_length])
-            else:
-                processed_texts.append(text)
-
-        # 记录开始时间
-        import time
+        processed = [t[:512] for t in texts]
         start_time = time.time()
+        predictions = model.predict(processed)
 
-        # 批量预测
-        predictions = model.predict(processed_texts)
-        
-        # 批量获取概率
-        scores = []
         if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(processed_texts)
-            scores = [float(max(prob)) for prob in probs]
+            probs = model.predict_proba(processed)
+            scores = [float(max(p)) for p in probs]
         else:
             scores = [0.5] * len(texts)
 
-        # 计算处理时间
-        processing_time = time.time() - start_time
+        per_item_time = (time.time() - start_time) / max(len(texts), 1)
+        snow = SnowNLPStrategy()
 
-        # 处理结果
-        results = []
-        snow_strategy = SnowNLPStrategy()
-        
-        for i, (text, prediction, score) in enumerate(zip(texts, predictions, scores)):
-            # 映射标签
-            label_map = {0: "negative", 1: "neutral", 2: "positive"}
-            label = label_map.get(prediction, "neutral")
-
-            # 如果预测出来是字符串, 尝试转换
-            if isinstance(prediction, str):
-                if prediction in ["positive", "pos"]:
-                    label = "positive"
-                elif prediction in ["negative", "neg"]:
-                    label = "negative"
-                else:
-                    label = "neutral"
-
-            # 优化关键词提取
-            keywords = []
-            try:
-                # 尝试使用SnowNLP提取关键词
-                from snownlp import SnowNLP
-                s = SnowNLP(text)
-                base_keywords = s.keywords(10)
-                
-                # 从文本中提取情感相关的关键词
-                sentiment_keywords = []
-                
-                # 正向情感关键词
-                positive_keywords = ['好', '优秀', '棒', '赞', '满意', '喜欢', '高兴', '开心', '快乐', '幸福',
-                                   '美好', '精彩', '出色', '成功', '完美', '舒适', '便利', '快速', '高效',
-                                   '安全', '可靠', '稳定', '创新', '专业', '贴心', '温暖', '感动', '惊喜',
-                                   '推荐', '值得', '物超所值', '性价比高', '质量好', '服务好', '态度好',
-                                   '好用', '实用', '方便', '快捷', '美观', '时尚', '流行', '先进', '强大',
-                                   'yyds', '永远的神', '绝绝子', '666', 'nb', '牛批', '牛逼', '厉害',
-                                   '奥利给', '给力', 'nice', '赞', '好评', '种草', '安利', '真香', '爱了']
-                
-                # 负向情感关键词
-                negative_keywords = ['差', '糟糕', '烂', '垃圾', '失望', '讨厌', '生气', '难过', '悲伤', '痛苦',
-                                   '不好', '失败', '错误', '麻烦', '困难', '复杂', '缓慢', '低效', '不安全',
-                                   '不可靠', '不稳定', '落后', '不专业', '冷漠', '冰冷', '无聊', '枯燥',
-                                   '不推荐', '不值得', '物有所值', '性价比低', '质量差', '服务差', '态度差',
-                                   '难用', '不实用', '不方便', '慢', '丑陋', '过时', '弱小', '破防', '破防了',
-                                   '无语', '醉了', '吐了', '服了', '晕了', '崩溃', '绝望', '难受', '痛苦',
-                                   '伤心', '难过', '生气', '愤怒', '恼火', '烦躁', '焦虑', '担忧', '害怕',
-                                   '恐惧', '紧张', '压力', '负担', '烦恼', '无聊', '枯燥', '失望', '绝望']
-                
-                # 提取情感关键词
-                for word in base_keywords:
-                    if word in positive_keywords or word in negative_keywords:
-                        if word not in sentiment_keywords:
-                            sentiment_keywords.append(word)
-                
-                # 合并关键词
-                all_keywords = []
-                all_keywords.extend(sentiment_keywords)
-                for keyword in base_keywords:
-                    if keyword not in all_keywords:
-                        all_keywords.append(keyword)
-                
-                # 限制关键词数量为5个
-                keywords = all_keywords[:5]
-                
-            except Exception as e:
-                logger.debug(f"提取关键词失败: {e}")
-                # 失败时使用简单的关键词提取
-                try:
-                    from snownlp import SnowNLP
-                    s = SnowNLP(text)
-                    keywords = s.keywords(5)
-                except:
-                    keywords = []
-
-            # 构建详细的推理理由
-            reasoning_parts = []
-            reasoning_parts.append("基于自定义训练模型预测")
-            if self._model_metadata:
-                version = self._model_metadata.get("current_version", "unknown")
-                reasoning_parts.append(f"模型版本: {version}")
-            
-            reasoning_parts.append(f"预测置信度: {score:.2f}")
-            
-            # 如果使用了SnowNLP补充分析
-            if label != "neutral" and score < 0.7:
-                reasoning_parts.append("模型置信度较低，结合SnowNLP分析进行调整")
-            
-            # 情感标签说明
-            if label == "positive":
-                reasoning_parts.append("预测为正面情感")
-            elif label == "negative":
-                reasoning_parts.append("预测为负面情感")
-            else:
-                reasoning_parts.append("预测为中性情感")
-            
-            # 情感类型说明
-            emotion = None
-            try:
-                # 使用SnowNLP的情感识别功能
-                snow_result = snow_strategy.analyze(text)
-                emotion = snow_result.emotion
-            except Exception as e:
-                logger.debug(f"获取情感类型失败: {e}")
-            
-            if emotion:
-                reasoning_parts.append(f"细粒度情感: {emotion}")
-            
-            reasoning = "，".join(reasoning_parts)
-
-            # 记录预测（使用监控）
-            try:
-                from model.model_monitor import ModelMonitor
-                monitor = ModelMonitor()
-                monitor.log_prediction(text, label, score, processing_time / len(texts))
-            except Exception as e:
-                logger.debug(f"记录预测监控失败: {e}")
-
-            # 如果模型预测为中性且置信度低，或者模型预测不准确，使用SnowNLP策略作为补充
-            if label == "neutral" and score < 0.7:
-                snow_result = snow_strategy.analyze(text)
-                # 结合模型预测和SnowNLP结果
-                if snow_result.label != "neutral":
-                    label = snow_result.label
-                    score = (score + snow_result.score) / 2
-                    reasoning += f"，结合SnowNLP分析: {snow_result.reasoning}"
-                    keywords = snow_result.keywords
-
-            results.append(SentimentResult(
-                score=score,
-                label=label,
-                reasoning=reasoning,
-                emotion=emotion,
-                keywords=keywords,
-                source="custom_model",
-            ))
-
-        return results
+        return [
+            self._finalize_single_result(
+                text, self._map_prediction_label(pred), score, per_item_time, snow
+            )
+            for text, pred, score in zip(texts, predictions, scores)
+        ]
 
     def analyze(self, text: str) -> SentimentResult:
         """
@@ -1047,13 +863,13 @@ class CustomModelStrategy(SentimentStrategy):
                         cached=True,
                         source="cache",
                     )
-            except Exception as e:
+            except (redis.RedisError, json.JSONDecodeError, TypeError) as e:
                 logger.debug(f"缓存读取失败: {e}")
 
         # 2. 调用模型分析
         try:
             result = self._analyze_with_model(text)
-        except Exception as e:
+        except (RuntimeError, ValueError, OSError) as e:
             logger.error(f"模型分析失败，降级到SnowNLP: {e}")
             return SnowNLPStrategy().analyze(text)
 
@@ -1066,7 +882,7 @@ class CustomModelStrategy(SentimentStrategy):
                     "keywords": result.keywords,
                 }
                 redis_client.setex(cache_key, Config.LLM_CACHE_TTL, json.dumps(data))
-            except Exception as e:
+            except (redis.RedisError, TypeError) as e:
                 logger.debug(f"缓存写入失败: {e}")
 
         return result
@@ -1118,7 +934,7 @@ class CustomModelStrategy(SentimentStrategy):
                     results[index] = result
                     # 写入缓存
                     save_to_cache(uncached_texts[i], "custom_model", result)
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.error(f"批量分析失败，降级到SnowNLP: {e}")
                 # 降级到逐个分析（使用同一个SnowNLP实例）
                 snow_strategy = SnowNLPStrategy()
@@ -1180,7 +996,7 @@ class SentimentService:
                 from .sentiment_strategy_selector import AdaptiveStrategyManager
                 manager = AdaptiveStrategyManager()
                 return manager.analyze_batch(texts)
-            except Exception as e:
+            except (ImportError, AttributeError, RuntimeError) as e:
                 logger.error(f"智能批量分析失败，降级到逐个分析: {e}")
         # 对于上下文感知模式
         elif mode == "contextual":
@@ -1191,7 +1007,7 @@ class SentimentService:
                     try:
                         result = contextual_analyzer.analyze(text)
                         results.append(result.to_dict())
-                    except Exception as e:
+                    except (ValueError, AttributeError, TypeError) as e:
                         logger.error(f"上下文分析失败: {e}")
                         results.append(
                             {
@@ -1204,7 +1020,7 @@ class SentimentService:
                             }
                         )
                 return results
-            except Exception as e:
+            except (ImportError, AttributeError) as e:
                 logger.error(f"上下文批量分析失败: {e}")
         # 对于自定义模型，使用批处理
         elif mode == "custom":
@@ -1212,7 +1028,7 @@ class SentimentService:
                 strategy = CustomModelStrategy()
                 batch_results = strategy.analyze_batch(texts)
                 return [result.to_dict() for result in batch_results]
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.error(f"批量分析失败，降级到逐个分析: {e}")
         # 对于SnowNLP模式，使用优化的批量处理
         elif mode == "simple":
@@ -1223,7 +1039,7 @@ class SentimentService:
                     try:
                         result = strategy.analyze(text)
                         results.append(result.to_dict())
-                    except Exception as e:
+                    except (ValueError, AttributeError) as e:
                         logger.error(f"SnowNLP分析失败: {e}")
                         results.append(
                             {
@@ -1236,7 +1052,7 @@ class SentimentService:
                             }
                         )
                 return results
-            except Exception as e:
+            except (ValueError, AttributeError) as e:
                 logger.error(f"SnowNLP批量分析失败: {e}")
 
         # 其他模式使用逐个分析
@@ -1245,7 +1061,7 @@ class SentimentService:
             try:
                 result = SentimentService.analyze(text, mode)
                 results.append(result)
-            except Exception as e:
+            except (ValueError, RuntimeError) as e:
                 logger.error(f"批量分析失败: {e}")
                 # 失败时返回中性结果
                 results.append(
@@ -1298,7 +1114,7 @@ class SentimentService:
                             "中性": int(loaded.get("中性", 0)),
                             "负面": int(loaded.get("负面", 0)),
                         }
-            except Exception as e:
+            except (redis.RedisError, json.JSONDecodeError, TypeError) as e:
                 logger.warning(f"情感分布缓存读取失败: {e}")
 
         results = SentimentService.analyze_batch(sample_texts, mode)
@@ -1318,90 +1134,55 @@ class SentimentService:
                     Config.LLM_CACHE_TTL,
                     json.dumps(sentiment_counts, ensure_ascii=False),
                 )
-            except Exception as e:
+            except (redis.RedisError, TypeError) as e:
                 logger.warning(f"情感分布缓存写入失败: {e}")
 
         return sentiment_counts
 
     @staticmethod
     def get_cache_stats() -> dict:
-        """获取缓存统计信息"""
-        stats = {
+        cs = _stats.cache
+        total = cs["total"]
+        return {
             "redis_available": REDIS_AVAILABLE,
-            "memory_cache_size": len(memory_cache),
+            "memory_cache_size": len(_stats.memory_cache),
             "cache_stats": {
-                "hits": cache_stats["hits"],
-                "misses": cache_stats["misses"],
-                "total": cache_stats["total"],
-                "hit_rate": "{:.2f}%" .format(cache_stats["hits"] / cache_stats["total"] * 100) if cache_stats["total"] > 0 else "0.00%",
-                "last_reset": cache_stats["last_reset"]
-            }
+                "hits": cs["hits"],
+                "misses": cs["misses"],
+                "total": total,
+                "hit_rate": f"{cs['hits'] / total * 100:.2f}%" if total > 0 else "0.00%",
+                "last_reset": cs["last_reset"],
+            },
         }
-        
-        if REDIS_AVAILABLE:
-            try:
-                info = redis_client.info("memory")
-                stats.update({
-                    "redis_info": {
-                        "used_memory": info.get("used_memory_human", "N/A"),
-                        "keys": redis_client.dbsize()
-                    }
-                })
-            except Exception as e:
-                stats["redis_error"] = str(e)
-        
-        return stats
 
     @staticmethod
     def reset_cache_stats() -> dict:
-        """重置缓存统计信息"""
-        global cache_stats
-        cache_stats = {
-            "hits": 0,
-            "misses": 0,
-            "total": 0,
-            "last_reset": time.time()
-        }
-        return cache_stats
+        return _stats.reset_cache()
 
     @staticmethod
     def get_performance_stats() -> dict:
-        """获取性能统计信息"""
-        # 计算按模式的平均响应时间
+        p = _stats.performance
         mode_stats = {}
-        for mode, count in performance_stats["requests_by_mode"].items():
+        for mode, count in p["requests_by_mode"].items():
             if count > 0:
                 mode_stats[mode] = {
                     "requests": count,
-                    "total_time": performance_stats["time_by_mode"][mode],
-                    "avg_response_time": performance_stats["time_by_mode"][mode] / count
+                    "total_time": p["time_by_mode"][mode],
+                    "avg_response_time": p["time_by_mode"][mode] / count,
                 }
-        
         return {
-            "total_requests": performance_stats["total_requests"],
-            "total_time": performance_stats["total_time"],
-            "avg_response_time": performance_stats["avg_response_time"],
-            "max_response_time": performance_stats["max_response_time"],
-            "min_response_time": performance_stats["min_response_time"] if performance_stats["min_response_time"] != float('inf') else 0,
+            "total_requests": p["total_requests"],
+            "total_time": p["total_time"],
+            "avg_response_time": p["avg_response_time"],
+            "max_response_time": p["max_response_time"],
+            "min_response_time": p["min_response_time"] if p["min_response_time"] != float('inf') else 0,
             "mode_stats": mode_stats,
-            "last_reset": performance_stats["last_reset"]
+            "last_reset": p["last_reset"],
         }
 
     @staticmethod
     def reset_performance_stats() -> dict:
-        """重置性能统计信息"""
-        global performance_stats
-        performance_stats = {
-            "total_requests": 0,
-            "total_time": 0,
-            "avg_response_time": 0,
-            "max_response_time": 0,
-            "min_response_time": float('inf'),
-            "requests_by_mode": {},
-            "time_by_mode": {},
-            "last_reset": time.time()
-        }
-        return performance_stats
+        return _stats.reset_performance()
 
     @staticmethod
     def analyze_sequence(texts: list, mode: str = "custom") -> dict:

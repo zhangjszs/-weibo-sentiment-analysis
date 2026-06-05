@@ -7,6 +7,7 @@ API路由模块
 """
 
 import logging
+import re
 
 from flask import Blueprint, request
 
@@ -37,6 +38,13 @@ user_repo = UserRepository()
 
 bp = Blueprint("api", __name__, url_prefix="/api")
 
+_TIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$")
+
+
+# ---------------------------------------------------------------------------
+# Cookie helpers
+# ---------------------------------------------------------------------------
+
 
 def _cookie_secure() -> bool:
     return Config.FLASK_ENV == "production"
@@ -63,6 +71,283 @@ def _clear_auth_cookie(response) -> None:
         Config.AUTH_COOKIE_NAME,
         path="/",
     )
+
+
+# ---------------------------------------------------------------------------
+# Validation helpers (return error tuple or None)
+# ---------------------------------------------------------------------------
+
+
+def _validate_search_param(value, field_label):
+    """Validate a single search parameter against injection and keyword rules.
+
+    Returns an error response tuple on failure, or None on success.
+    """
+    from utils.input_validator import detect_sql_injection, validate_keyword
+
+    if not value:
+        return None
+
+    validation = validate_keyword(value)
+    if not validation["valid"]:
+        return error(validation["message"], code=400), 400
+
+    if detect_sql_injection(value):
+        logger.warning("检测到SQL注入尝试: %s=%s", field_label, value[:50])
+        return error(f"{field_label}包含非法字符", code=400), 400
+
+    return None
+
+
+def _validate_time_range(start_time, end_time):
+    """Validate start/end time strings.
+
+    Returns an error response tuple on failure, or None on success.
+    """
+    if start_time and not _TIME_PATTERN.match(start_time):
+        return error(
+            "开始时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）", code=400
+        ), 400
+
+    if end_time and not _TIME_PATTERN.match(end_time):
+        return error(
+            "结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）", code=400
+        ), 400
+
+    return None
+
+
+def _require_authenticated_user():
+    """Return the current user dict or an error response tuple."""
+    user = getattr(request, "current_user", None)
+    if not user:
+        return None, (error("未认证", code=401), 401)
+    return user, None
+
+
+# ---------------------------------------------------------------------------
+# Article / comment helpers
+# ---------------------------------------------------------------------------
+
+
+def _parse_pagination():
+    """Extract and clamp page/limit from query string."""
+    page = int(request.args.get("page", 1))
+    limit = min(int(request.args.get("limit", 10)), 100)
+    return page, limit
+
+
+def _build_article_query_params():
+    """Build and validate all article-list query parameters.
+
+    Returns (params_dict, error_response).  On success error_response is None.
+    """
+    page, limit = _parse_pagination()
+    keyword = request.args.get("keyword", "")
+    start_time = request.args.get("start_time", "")
+    end_time = request.args.get("end_time", "")
+    article_type = request.args.get("type", "")
+    region = request.args.get("region", "")
+
+    for field_label, value in [
+        ("关键词", keyword),
+        ("类型", article_type),
+        ("地区", region),
+    ]:
+        err = _validate_search_param(value, field_label)
+        if err is not None:
+            return None, err
+
+    err = _validate_time_range(start_time, end_time)
+    if err is not None:
+        return None, err
+
+    return {
+        "page": page,
+        "limit": limit,
+        "keyword": keyword,
+        "start_time": start_time,
+        "end_time": end_time,
+        "article_type": article_type,
+        "region": region,
+    }, None
+
+
+def _format_article_response(params):
+    """Fetch and return the article list for validated *params*."""
+    result = article_service.get_articles(
+        params["page"],
+        params["limit"],
+        params["keyword"],
+        params["start_time"],
+        params["end_time"],
+        params["article_type"],
+        params["region"],
+    )
+    return ok(result), 200
+
+
+def _build_comment_query_params():
+    """Build and validate all comment-list query parameters.
+
+    Returns (params_dict, error_response).  On success error_response is None.
+    """
+    page, limit = _parse_pagination()
+    keyword = request.args.get("keyword", "")
+    article_id = request.args.get("article_id", "")
+    user = request.args.get("user", "")
+    start_time = request.args.get("start_time", "")
+    end_time = request.args.get("end_time", "")
+
+    for field_label, value in [("关键词", keyword), ("用户名", user)]:
+        err = _validate_search_param(value, field_label)
+        if err is not None:
+            return None, err
+
+    err = _validate_time_range(start_time, end_time)
+    if err is not None:
+        return None, err
+
+    return {
+        "page": page,
+        "limit": limit,
+        "keyword": keyword,
+        "article_id": article_id,
+        "user": user,
+        "start_time": start_time,
+        "end_time": end_time,
+    }, None
+
+
+def _format_comment_response(params):
+    """Fetch and return the comment list for validated *params*."""
+    result = comment_service.get_comments(
+        params["page"],
+        params["limit"],
+        params["keyword"],
+        params["article_id"],
+        params["user"],
+        params["start_time"],
+        params["end_time"],
+    )
+    return ok(result), 200
+
+
+# ---------------------------------------------------------------------------
+# Profile / password helpers
+# ---------------------------------------------------------------------------
+
+
+def _validate_email(email):
+    """Return True if *email* looks valid, False otherwise."""
+    return not email or "@" in email
+
+
+def _parse_avatar_color(raw):
+    """Return a validated avatar_color string or None."""
+    color = str(raw).strip()
+    if len(color) == 7 and color.startswith("#"):
+        return color
+    return None
+
+
+def _parse_profile_updates(data):
+    """Extract and validate profile update fields from *data*.
+
+    Returns (updates_dict, error_response).  On success error_response is None.
+    """
+    updates = {}
+
+    nickname = data.get("nickname")
+    if nickname is not None:
+        updates["nickname"] = str(nickname).strip()[:50]
+
+    email = data.get("email")
+    if email is not None:
+        email = str(email).strip()[:100]
+        if not _validate_email(email):
+            return None, (error("邮箱格式不正确", code=400), 400)
+        updates["email"] = email
+
+    bio = data.get("bio")
+    if bio is not None:
+        updates["bio"] = str(bio).strip()[:200]
+
+    avatar_color = data.get("avatar_color")
+    if avatar_color is not None:
+        parsed = _parse_avatar_color(avatar_color)
+        if parsed is not None:
+            updates["avatar_color"] = parsed
+
+    if not updates:
+        return None, error("没有需要更新的字段", code=400), 400
+
+    return updates, None
+
+
+def _save_profile_updates(user_id, updates):
+    """Persist profile *updates* and return the appropriate response."""
+    success = user_repo.update_profile(user_id, **updates)
+    if success:
+        return ok(msg="资料更新成功"), 200
+    return error("更新失败", code=500), 500
+
+
+def _parse_password_change_data(data):
+    """Extract and validate password-change inputs from *data*.
+
+    Returns ((old_pw, new_pw), error_response).  On success error_response is None.
+    """
+    old_password = (data.get("oldPassword") or "").strip()
+    new_password = (data.get("newPassword") or "").strip()
+    confirm_password = (data.get("confirmPassword") or "").strip()
+
+    if not old_password or not new_password:
+        return None, error("请填写完整的密码信息", code=400), 400
+
+    if new_password != confirm_password:
+        return None, error("两次输入的新密码不一致", code=400), 400
+
+    validation = validate_password(new_password)
+    if not validation["valid"]:
+        return None, error(validation["message"], code=400), 400
+
+    return (old_password, new_password), None
+
+
+def _execute_password_change(user, old_password, new_password):
+    """Verify old password, hash new one, persist, and audit.
+
+    Returns a response tuple.
+    """
+    from utils.password_hasher import hash_password, verify_password
+
+    info = user_repo.find_by_id(user["user_id"])
+    if not info:
+        return error("用户不存在", code=404), 404
+
+    if not verify_password(old_password, info.get("password", "")):
+        return error("旧密码不正确", code=400), 400
+
+    new_hash = hash_password(new_password)
+    success = user_repo.update_password(user["user_id"], new_hash)
+    if not success:
+        return error("密码修改失败", code=500), 500
+
+    logger.info("User %s changed password", user["user_id"])
+    audit_log(
+        user["user_id"],
+        info.get("username", ""),
+        "change_password",
+        "密码修改成功",
+        request.remote_addr,
+    )
+    return ok(msg="密码修改成功"), 200
+
+
+# ---------------------------------------------------------------------------
+# Route handlers – auth
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/auth/login", methods=["POST"])
@@ -96,10 +381,17 @@ def api_login():
                 _set_auth_cookie(response, token)
             response.status_code = 200
             return response
+
         audit_log(None, username, "login_failed", "登录失败", request.remote_addr)
         return error(msg, code=401), 401
-    except Exception as e:
-        logger.error(f"API登录异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("API登录参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("API登录服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("API登录异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
@@ -130,16 +422,23 @@ def api_register():
             audit_log(None, username, "register", "注册成功", request.remote_addr)
             return ok(msg=msg), 200
         return error(msg, code=400), 400
-    except Exception as e:
-        logger.error(f"API注册异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("API注册参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("API注册服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("API注册异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
 @bp.route("/auth/me", methods=["GET"])
 def api_me():
-    user = getattr(request, "current_user", None)
-    if not user:
-        return error("未认证", code=401), 401
+    user, err = _require_authenticated_user()
+    if err is not None:
+        return err
+
     try:
         info = user_repo.find_by_id(user["user_id"])
         if not info:
@@ -156,8 +455,14 @@ def api_me():
                 "is_admin": is_admin_user(info),
             }
         ), 200
-    except Exception as e:
-        logger.error(f"获取当前用户信息异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取当前用户信息参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取当前用户信息服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取当前用户信息异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
@@ -169,12 +474,18 @@ def api_logout():
     return response
 
 
+# ---------------------------------------------------------------------------
+# Route handlers – user profile & password
+# ---------------------------------------------------------------------------
+
+
 @bp.route("/user/profile", methods=["GET"])
 def get_user_profile():
     """获取用户完整个人资料"""
-    user = getattr(request, "current_user", None)
-    if not user:
-        return error("未认证", code=401), 401
+    user, err = _require_authenticated_user()
+    if err is not None:
+        return err
+
     try:
         info = user_repo.find_by_id(user["user_id"])
         if not info:
@@ -191,103 +502,70 @@ def get_user_profile():
                 "is_admin": is_admin_user(info),
             }
         ), 200
-    except Exception as e:
-        logger.error(f"获取用户资料异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取用户资料参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取用户资料服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取用户资料异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
 @bp.route("/user/profile", methods=["PUT"])
 def update_user_profile():
     """更新用户个人资料"""
-    user = getattr(request, "current_user", None)
-    if not user:
-        return error("未认证", code=401), 401
+    user, err = _require_authenticated_user()
+    if err is not None:
+        return err
+
     try:
         data = request.get_json(silent=True) or {}
-        updates = {}
-
-        nickname = data.get("nickname")
-        if nickname is not None:
-            nickname = str(nickname).strip()[:50]
-            updates["nickname"] = nickname
-
-        email = data.get("email")
-        if email is not None:
-            email = str(email).strip()[:100]
-            if email and "@" not in email:
-                return error("邮箱格式不正确", code=400), 400
-            updates["email"] = email
-
-        bio = data.get("bio")
-        if bio is not None:
-            updates["bio"] = str(bio).strip()[:200]
-
-        avatar_color = data.get("avatar_color")
-        if avatar_color is not None:
-            avatar_color = str(avatar_color).strip()
-            if len(avatar_color) == 7 and avatar_color.startswith("#"):
-                updates["avatar_color"] = avatar_color
-
-        if not updates:
-            return error("没有需要更新的字段", code=400), 400
-
-        success = user_repo.update_profile(user["user_id"], **updates)
-        if success:
-            return ok(msg="资料更新成功"), 200
-        return error("更新失败", code=500), 500
-    except Exception as e:
-        logger.error(f"更新用户资料异常: {e}")
+        updates, err = _parse_profile_updates(data)
+        if err is not None:
+            return err
+        return _save_profile_updates(user["user_id"], updates)
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("更新用户资料参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("更新用户资料服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("更新用户资料异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
 @bp.route("/user/password", methods=["PUT"])
 def change_user_password():
     """修改用户密码"""
-    user = getattr(request, "current_user", None)
-    if not user:
-        return error("未认证", code=401), 401
+    user, err = _require_authenticated_user()
+    if err is not None:
+        return err
+
     try:
         data = request.get_json(silent=True) or {}
-        old_password = (data.get("oldPassword") or "").strip()
-        new_password = (data.get("newPassword") or "").strip()
-        confirm_password = (data.get("confirmPassword") or "").strip()
+        creds, err = _parse_password_change_data(data)
+        if err is not None:
+            return err
 
-        if not old_password or not new_password:
-            return error("请填写完整的密码信息", code=400), 400
-
-        if new_password != confirm_password:
-            return error("两次输入的新密码不一致", code=400), 400
-
-        password_validation = validate_password(new_password)
-        if not password_validation["valid"]:
-            return error(password_validation["message"], code=400), 400
-
-        # Verify old password
-        from utils.password_hasher import hash_password, verify_password
-
-        info = user_repo.find_by_id(user["user_id"])
-        if not info:
-            return error("用户不存在", code=404), 404
-
-        if not verify_password(old_password, info.get("password", "")):
-            return error("旧密码不正确", code=400), 400
-
-        new_hash = hash_password(new_password)
-        success = user_repo.update_password(user["user_id"], new_hash)
-        if success:
-            logger.info(f"User {user['user_id']} changed password")
-            audit_log(
-                user["user_id"],
-                info.get("username", ""),
-                "change_password",
-                "密码修改成功",
-                request.remote_addr,
-            )
-            return ok(msg="密码修改成功"), 200
-        return error("密码修改失败", code=500), 500
-    except Exception as e:
-        logger.error(f"修改密码异常: {e}")
+        old_password, new_password = creds
+        return _execute_password_change(user, old_password, new_password)
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("修改密码参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("修改密码服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("修改密码异常: %s", e)
         return error("服务器内部错误", code=500), 500
+
+
+# ---------------------------------------------------------------------------
+# Route handlers – stats
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/stats/summary", methods=["GET"])
@@ -296,9 +574,20 @@ def get_stats_summary():
     try:
         data = article_service.get_stats_summary()
         return ok(data), 200
-    except Exception as e:
-        logger.error(f"获取统计摘要失败: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取统计摘要参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取统计摘要服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取统计摘要失败: %s", e)
         return error("获取统计数据失败，请稍后重试", code=500), 500
+
+
+# ---------------------------------------------------------------------------
+# Route handlers – articles & comments
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/articles", methods=["GET"])
@@ -313,64 +602,18 @@ def get_articles():
         end_time: 结束时间
     """
     try:
-        page = int(request.args.get("page", 1))
-        limit = min(int(request.args.get("limit", 10)), 100)  # 限制最大100条
-        keyword = request.args.get("keyword", "")
-        start_time = request.args.get("start_time", "")
-        end_time = request.args.get("end_time", "")
-        article_type = request.args.get("type", "")
-        region = request.args.get("region", "")
-
-        # 参数校验：关键词长度和SQL注入检测
-        if keyword or article_type or region:
-            from utils.input_validator import detect_sql_injection, validate_keyword
-
-            if keyword:
-                validation = validate_keyword(keyword)
-                if not validation["valid"]:
-                    return error(validation["message"], code=400), 400
-                if detect_sql_injection(keyword):
-                    logger.warning(f"检测到SQL注入尝试: keyword={keyword[:50]}")
-                    return error("关键词包含非法字符", code=400), 400
-
-            if article_type:
-                validation = validate_keyword(article_type)
-                if not validation["valid"]:
-                    return error(validation["message"], code=400), 400
-                if detect_sql_injection(article_type):
-                    logger.warning(f"检测到SQL注入尝试: type={article_type[:50]}")
-                    return error("类型包含非法字符", code=400), 400
-
-            if region:
-                validation = validate_keyword(region)
-                if not validation["valid"]:
-                    return error(validation["message"], code=400), 400
-                if detect_sql_injection(region):
-                    logger.warning(f"检测到SQL注入尝试: region={region[:50]}")
-                    return error("地区包含非法字符", code=400), 400
-
-        # 参数校验：时间格式
-        if start_time or end_time:
-            import re
-
-            time_pattern = r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$"
-            if start_time and not re.match(time_pattern, start_time):
-                return error(
-                    "开始时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）", code=400
-                ), 400
-            if end_time and not re.match(time_pattern, end_time):
-                return error(
-                    "结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）", code=400
-                ), 400
-
-        result = article_service.get_articles(
-            page, limit, keyword, start_time, end_time, article_type, region
-        )
-
-        return ok(result), 200
-
-    except Exception as e:
-        return error(str(e), code=500), 500
+        params, err = _build_article_query_params()
+        if err is not None:
+            return err
+        return _format_article_response(params)
+    except (ValueError, KeyError, TypeError) as e:
+        return error(f"请求参数错误: {e}", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取文章列表服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取文章列表异常: %s", e)
+        return error("服务器内部错误", code=500), 500
 
 
 @bp.route("/comments", methods=["GET"])
@@ -387,52 +630,23 @@ def get_comments():
         end_time: 结束时间
     """
     try:
-        page = int(request.args.get("page", 1))
-        limit = min(int(request.args.get("limit", 10)), 100)
-        keyword = request.args.get("keyword", "")
-        article_id = request.args.get("article_id", "")
-        user = request.args.get("user", "")
-        start_time = request.args.get("start_time", "")
-        end_time = request.args.get("end_time", "")
+        params, err = _build_comment_query_params()
+        if err is not None:
+            return err
+        return _format_comment_response(params)
+    except (ValueError, KeyError, TypeError) as e:
+        return error(f"请求参数错误: {e}", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取评论列表服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取评论列表异常: %s", e)
+        return error("服务器内部错误", code=500), 500
 
-        if keyword or user:
-            from utils.input_validator import detect_sql_injection, validate_keyword
 
-            if keyword:
-                validation = validate_keyword(keyword)
-                if not validation["valid"]:
-                    return error(validation["message"], code=400), 400
-                if detect_sql_injection(keyword):
-                    logger.warning(f"检测到SQL注入尝试: keyword={keyword[:50]}")
-                    return error("关键词包含非法字符", code=400), 400
-
-            if user:
-                validation = validate_keyword(user)
-                if not validation["valid"]:
-                    return error(validation["message"], code=400), 400
-                if detect_sql_injection(user):
-                    logger.warning(f"检测到SQL注入尝试: user={user[:50]}")
-                    return error("用户名包含非法字符", code=400), 400
-
-        if start_time or end_time:
-            import re
-
-            time_pattern = r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$"
-            if start_time and not re.match(time_pattern, start_time):
-                return error(
-                    "开始时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）", code=400
-                ), 400
-            if end_time and not re.match(time_pattern, end_time):
-                return error(
-                    "结束时间格式错误（应为YYYY-MM-DD或YYYY-MM-DD HH:MM:SS）", code=400
-                ), 400
-
-        result = comment_service.get_comments(
-            page, limit, keyword, article_id, user, start_time, end_time
-        )
-        return ok(result), 200
-    except Exception as e:
-        return error(str(e), code=500), 500
+# ---------------------------------------------------------------------------
+# Route handlers – sentiment analysis
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/sentiment/analyze", methods=["POST"])
@@ -456,14 +670,12 @@ def analyze_sentiment():
         if not text:
             return error("text is required", code=400), 400
 
-        # 参数校验
         from utils.input_validator import validate_keyword
 
         validation = validate_keyword(text[:50])  # 只校验前50字符
         if not validation["valid"]:
             return error(validation["message"], code=400), 400
 
-        # 异步模式
         if is_async:
             dispatch_result = submit_analyze_task(text=text, mode=mode)
             return ok(
@@ -476,13 +688,16 @@ def analyze_sentiment():
                 code=202,
             ), 202
 
-        # 同步模式
         result = analyze_text(text=text, mode=mode)
-
         return ok(result), 200
-
-    except Exception as e:
-        logger.error(f"情感分析接口异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("情感分析参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("情感分析服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("情感分析接口异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
@@ -509,19 +724,26 @@ def predict_batch():
             return error("单次最多预测100条文本", code=400), 400
 
         results = analyze_batch(texts=texts, mode=mode)
-
         return ok({"total": len(results), "results": results}), 200
-
-    except Exception as e:
-        logger.error(f"批量预测接口异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("批量预测参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("批量预测服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("批量预测接口异常: %s", e)
         return error("服务器内部错误", code=500), 500
+
+
+# ---------------------------------------------------------------------------
+# Route handlers – model
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/model/info", methods=["GET"])
 def get_model_info():
-    """
-    获取模型信息接口
-    """
+    """获取模型信息接口"""
     try:
         import json
         import os
@@ -541,7 +763,6 @@ def get_model_info():
         }
 
         if model_path.exists():
-            import os.path
             from datetime import datetime
 
             mtime = os.path.getmtime(model_path)
@@ -555,13 +776,18 @@ def get_model_info():
                 with open(summary_path, encoding="utf-8") as f:
                     summary = json.load(f)
                     info["training_samples"] = summary.get("total_comments")
-            except Exception as e:
+            except (ValueError, OSError) as e:
                 logger.debug("读取训练摘要文件失败: %s", e)
 
         return ok(info), 200
-
-    except Exception as e:
-        logger.error(f"获取模型信息异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取模型信息参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取模型信息服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取模型信息异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
@@ -578,7 +804,6 @@ def retrain_model():
         optimize = data.get("optimize", False)
 
         dispatch_result = submit_retrain_task(optimize=bool(optimize))
-
         logger.info("模型重训练任务已提交: task_id=%s", dispatch_result["task_id"])
 
         return ok(
@@ -590,10 +815,20 @@ def retrain_model():
             msg="模型重训练任务已提交",
             code=202,
         ), 202
-
-    except Exception as e:
-        logger.error(f"模型重训练接口异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("模型重训练参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("模型重训练服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("模型重训练接口异常: %s", e)
         return error("服务器内部错误", code=500), 500
+
+
+# ---------------------------------------------------------------------------
+# Route handlers – spider / tasks
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/spider/search", methods=["POST"])
@@ -609,6 +844,7 @@ def spider_search():
         data = request.json or {}
         keyword = data.get("keyword", "")
         page_num = data.get("page_num", 3)
+
         from utils.input_validator import validate_keyword
 
         validation = validate_keyword(keyword)
@@ -634,9 +870,14 @@ def spider_search():
             },
             msg="爬虫任务已提交",
         ), 200
-
-    except Exception as e:
-        logger.error(f"爬虫接口异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("爬虫参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("爬虫服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("爬虫接口异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
@@ -669,25 +910,32 @@ def spider_comments():
             },
             msg="评论爬虫任务已提交",
         ), 200
-
-    except Exception as e:
-        logger.error(f"评论爬虫接口异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("评论爬虫参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("评论爬虫服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("评论爬虫接口异常: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
 @bp.route("/tasks/<task_id>/status", methods=["GET"])
 @admin_required
 def get_task_status(task_id):
-    """
-    查询异步任务状态
-    """
+    """查询异步任务状态"""
     try:
         result = query_task_progress(task_id)
-
         return ok(result), 200
-
-    except Exception as e:
-        logger.error(f"查询任务状态异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("查询任务状态参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("查询任务状态服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("查询任务状态异常: %s", e)
         return error("查询失败", code=500), 500
 
 
@@ -721,10 +969,20 @@ def refresh_data():
             },
             msg="刷新任务已提交",
         ), 200
-
-    except Exception as e:
-        logger.error(f"刷新数据异常: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("刷新数据参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("刷新数据服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("刷新数据异常: %s", e)
         return error("服务器内部错误", code=500), 500
+
+
+# ---------------------------------------------------------------------------
+# Route handlers – today stats & strategy
+# ---------------------------------------------------------------------------
 
 
 @bp.route("/stats/today", methods=["GET"])
@@ -732,36 +990,52 @@ def get_today_stats():
     """获取今日数据统计"""
     try:
         return ok(article_service.get_today_stats()), 200
-    except Exception as e:
-        logger.error(f"获取今日统计失败: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取今日统计参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取今日统计服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取今日统计失败: %s", e)
         return error(str(e), code=500), 500
 
 
 @bp.route("/sentiment/strategy/stats", methods=["GET"])
 def get_strategy_stats():
-    """
-    获取情感分析策略性能统计
-    """
+    """获取情感分析策略性能统计"""
     try:
         from services.sentiment_strategy_selector import AdaptiveStrategyManager
+
         manager = AdaptiveStrategyManager()
         stats = manager.get_performance_stats()
         return ok(stats), 200
-    except Exception as e:
-        logger.error(f"获取策略统计失败: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取策略统计参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取策略统计服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取策略统计失败: %s", e)
         return error("服务器内部错误", code=500), 500
 
 
 @bp.route("/sentiment/strategy/health", methods=["GET"])
 def get_strategy_health():
-    """
-    获取情感分析策略健康状态
-    """
+    """获取情感分析策略健康状态"""
     try:
         from services.sentiment_strategy_selector import AdaptiveStrategyManager
+
         manager = AdaptiveStrategyManager()
         health = manager.get_health_status()
         return ok(health), 200
-    except Exception as e:
-        logger.error(f"获取策略健康状态失败: {e}")
+    except (ValueError, KeyError, TypeError) as e:
+        logger.error("获取策略健康状态参数异常: %s", e)
+        return error("请求参数错误", code=400), 400
+    except ConnectionError as e:
+        logger.error("获取策略健康状态服务不可用: %s", e)
+        return error("服务暂时不可用", code=503), 503
+    except RuntimeError as e:
+        logger.error("获取策略健康状态失败: %s", e)
         return error("服务器内部错误", code=500), 500

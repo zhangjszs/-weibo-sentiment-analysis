@@ -10,6 +10,7 @@ import logging
 import threading
 from datetime import datetime, timedelta
 from urllib.parse import unquote
+from collections import defaultdict
 
 from flask import Blueprint, request
 
@@ -37,6 +38,21 @@ CACHE_TIMEOUT = {
     "ip": 600,  # IP数据 10分钟
     "yuqing": 300,  # 舆情数据 5分钟
     "cloud": 1800,  # 词云数据 30分钟
+}
+
+
+PROVINCE_MAP = {
+    "北京": "北京市", "天津": "天津市", "上海": "上海市", "重庆": "重庆市",
+    "河北": "河北省", "山西": "山西省", "辽宁": "辽宁省", "吉林": "吉林省",
+    "黑龙江": "黑龙江省", "江苏": "江苏省", "浙江": "浙江省", "安徽": "安徽省",
+    "福建": "福建省", "江西": "江西省", "山东": "山东省", "河南": "河南省",
+    "湖北": "湖北省", "湖南": "湖南省", "广东": "广东省", "海南": "海南省",
+    "四川": "四川省", "贵州": "贵州省", "云南": "云南省", "陕西": "陕西省",
+    "甘肃": "甘肃省", "青海": "青海省", "台湾": "台湾省",
+    "内蒙古": "内蒙古自治区", "广西": "广西壮族自治区",
+    "西藏": "西藏自治区", "宁夏": "宁夏回族自治区",
+    "新疆": "新疆维吾尔自治区", "香港": "香港特别行政区",
+    "澳门": "澳门特别行政区",
 }
 
 
@@ -221,6 +237,183 @@ def _get_hot_comments(limit=5):
     return hot_comments
 
 
+def _get_with_cache(cache_key_prefix, timeout_key, fetch_fn, *args, **kwargs):
+    """通用缓存包装：命中缓存直接返回，否则调用 fetch_fn 并缓存结果。"""
+    cache_key = get_cache_key(cache_key_prefix, *args, **kwargs)
+    cached = get_cached_data(cache_key, CACHE_TIMEOUT[timeout_key])
+    if cached:
+        return cached
+    data = fetch_fn(*args, **kwargs)
+    set_cached_data(cache_key, data, CACHE_TIMEOUT[timeout_key])
+    return data
+
+
+def _build_table_search_result(hot_word):
+    """构建表格搜索结果（数据 + 图表 + 情感）。"""
+    table_data = getTableData.getTableData(hot_word)
+    x_data, y_data = getTableData.getTableDataEchartsData(hot_word)
+    hot_word_num = len(table_data)
+    emotion_value = _classify_sentiment_from_table(table_data)
+    return table_data, x_data, y_data, hot_word_num, emotion_value
+
+
+def _classify_sentiment_from_table(table_data):
+    """根据第一条匹配评论做简单情感分类。"""
+    if not table_data:
+        return ""
+    try:
+        from snownlp import SnowNLP
+
+        content = table_data[0][4] if len(table_data[0]) > 4 else ""
+        sentiment = SnowNLP(content).sentiments
+        if sentiment > 0.6:
+            return "正面"
+        if sentiment < 0.4:
+            return "负面"
+        return "中性"
+    except (ImportError, IndexError, AttributeError):
+        return "中性"
+
+
+def _build_yuqing_summary(chart_two_data):
+    """从饼图数据提取情感统计摘要。"""
+    stats = {"positive": 0, "neutral": 0, "negative": 0}
+    if not chart_two_data or len(chart_two_data) < 2:
+        return stats
+    label_key_map = {"正面": "positive", "中性": "neutral", "负面": "negative"}
+    for item in chart_two_data[0]:
+        key = label_key_map.get(item.get("name"))
+        if key:
+            stats[key] = item["value"]
+    return stats
+
+
+def _build_yuqing_sentiment_and_trend(comments):
+    """对评论进行情感分析，返回 (sentiment_list, trend_counts)。"""
+    from services.sentiment_service import SentimentService
+
+    zh_label_map = {"positive": "正面", "neutral": "中性", "negative": "负面"}
+    comment_texts = [
+        str(c[1]) for c in comments if len(c) > 1 and c[1]
+    ]
+    results = SentimentService.analyze_batch(comment_texts, mode="simple")
+    sentiment_list = []
+    trend_counts = defaultdict(lambda: {"positive": 0, "neutral": 0, "negative": 0})
+
+    for idx, (comment, result) in enumerate(zip(comments, results), start=1):
+        result = result or {}
+        label = result.get("label", "neutral")
+        score = float(result.get("score", 0.5))
+        comment_time = comment[0] if len(comment) > 0 else ""
+        comment_date = str(comment_time).split(" ")[0] if comment_time else ""
+
+        if idx <= 100:
+            sentiment_list.append({
+                "id": idx,
+                "content": comment[1] if len(comment) > 1 else "",
+                "sentiment": zh_label_map.get(label, "中性"),
+                "score": score,
+                "reasoning": result.get("reasoning", ""),
+                "emotion": result.get("emotion", "无感"),
+                "keywords": result.get("keywords", []),
+                "analysis_source": result.get("source", "unknown"),
+                "source": "微博评论",
+                "time": comment_time,
+            })
+
+        if comment_date:
+            trend_counts[comment_date][label] = trend_counts[comment_date].get(label, 0) + 1
+
+    return sentiment_list, dict(trend_counts)
+
+
+def _build_yuqing_trend(trend_counts):
+    """将 trend_counts 字典转换为前端可用的趋势数据。"""
+    sorted_dates = sorted(trend_counts.keys())
+    return {
+        "dates": sorted_dates,
+        "positive": [trend_counts[d]["positive"] for d in sorted_dates],
+        "neutral": [trend_counts[d]["neutral"] for d in sorted_dates],
+        "negative": [trend_counts[d]["negative"] for d in sorted_dates],
+    }
+
+
+def _build_yuqing_keywords(chart_three_data, max_words=20):
+    """从词频数据构建关键词云列表。"""
+    if not chart_three_data or len(chart_three_data) != 2:
+        return []
+    hot_words, counts = chart_three_data
+    colors = ["#67c23a", "#409eff", "#e6a23c", "#f56c6c", "#909399"]
+    return [
+        {
+            "text": word,
+            "weight": count // 10,
+            "color": colors[i % len(colors)],
+        }
+        for i, (word, count) in enumerate(zip(hot_words[:max_words], counts[:max_words]))
+    ]
+
+
+def _build_ip_map_data(geo_one_data):
+    """将 geo 数据映射为标准省份名称的 map 数据和地区排行。"""
+    if not geo_one_data:
+        return [], []
+    map_data = [
+        {"name": _normalize_region_name(item.get("name", ""), PROVINCE_MAP), "value": item.get("value", 0)}
+        for item in geo_one_data
+    ]
+    region_data = sorted(geo_one_data, key=lambda x: x.get("value", 0), reverse=True)[:10]
+    return map_data, region_data
+
+
+def _build_ip_list():
+    """从数据库查询评论 IP/地区分布列表。"""
+    try:
+        df = query_dataframe("""
+            SELECT
+                MAX(authorName) as authorName,
+                authorAddress,
+                COUNT(*) as count,
+                MAX(created_at) as last_time
+            FROM comments
+            WHERE authorAddress IS NOT NULL AND authorAddress != ''
+            GROUP BY authorAddress
+            ORDER BY count DESC
+            LIMIT 10
+        """)
+        if df.empty:
+            return []
+        return [
+            {
+                "ip": "",
+                "location": row["authorAddress"],
+                "count": int(row["count"]),
+                "lastTime": str(row["last_time"]),
+                "user": row["authorName"],
+            }
+            for _, row in df.iterrows()
+        ]
+    except (ConnectionError, OSError) as e:
+        logger.warning("查询IP数据失败，返回空列表: %s", e)
+        return []
+
+
+def _build_article_type_data():
+    """查询文章类型分布，返回饼图格式数据。"""
+    type_df = query_dataframe("""
+        SELECT type, COUNT(*) AS count
+        FROM article
+        GROUP BY type
+        ORDER BY count DESC
+    """)
+    if type_df.empty:
+        return []
+    return [
+        {"name": row["type"] if row["type"] else "未知", "value": int(row["count"])}
+        for _, row in type_df.iterrows()
+    ]
+
+
 @db.route("/getHomeData", methods=["GET"])
 def get_home_data():
     """
@@ -240,28 +433,28 @@ def get_home_data():
         return success_response(cached_data)
 
     try:
-        topFiveComments = getHomeData.getHomeTopLikeCommentsData()
-        articleLen, maxLikeAuthorName, maxCity = getHomeData.getTagData()
-        xData, yData = getHomeData.getCreatedNumEchartsData()
-        userCreatedDicData = getHomeData.getTypeCharData()
-        commentUserCreatedDicData = getHomeData.getCommentsUserCratedNumEchartsData()
+        top_five_comments = getHomeData.getHomeTopLikeCommentsData()
+        article_len, max_like_author, max_city = getHomeData.getTagData()
+        x_data, y_data = getHomeData.getCreatedNumEchartsData()
+        user_type_data = getHomeData.getTypeCharData()
+        comment_time_data = getHomeData.getCommentsUserCratedNumEchartsData()
 
         data = {
-            "topFiveComments": topFiveComments,
-            "articleLen": articleLen,
-            "maxLikeAuthorName": maxLikeAuthorName,
-            "maxCity": maxCity,
-            "xData": xData,
-            "yData": yData,
-            "userCreatedDicData": userCreatedDicData,
-            "commentUserCreatedDicData": commentUserCreatedDicData,
+            "topFiveComments": top_five_comments,
+            "articleLen": article_len,
+            "maxLikeAuthorName": max_like_author,
+            "maxCity": max_city,
+            "xData": x_data,
+            "yData": y_data,
+            "userCreatedDicData": user_type_data,
+            "commentUserCreatedDicData": comment_time_data,
         }
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["home"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取首页数据失败: {e}")
-        return error_response(f"获取首页数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取首页数据失败: %s", e)
+        return error_response(f"获取首页数据失败: {e}")
 
 
 @db.route("/getTableData", methods=["GET"])
@@ -272,7 +465,7 @@ def get_table_data():
         hotWord: 搜索关键词
     """
     hot_word = _normalize_hot_word(request.args.get("hotWord", ""))
-    logger.info(f"收到请求，hotWord='{hot_word}'")
+    logger.info("收到请求，hotWord='%s'", hot_word)
     cache_key = get_cache_key("table_data", hot_word)
     cached_data = get_cached_data(cache_key, CACHE_TIMEOUT["table"])
     if cached_data:
@@ -280,62 +473,42 @@ def get_table_data():
         return success_response(cached_data)
 
     try:
-        # 获取热词列表
         ciping_total = getTableData.getTableDataPageData()
-        logger.info(f"获取热词列表: {len(ciping_total)} 个")
+        logger.info("获取热词列表: %d 个", len(ciping_total))
 
-        # 如果没有指定 hotWord，默认使用第一个热词
-        if not hot_word and ciping_total and len(ciping_total) > 0:
+        if not hot_word and ciping_total:
             hot_word = ciping_total[0][0]
-            logger.info(f"未指定热词，使用默认热词: '{hot_word}'")
+            logger.info("未指定热词，使用默认热词: '%s'", hot_word)
 
-        # 获取搜索结果
-        logger.info(f"检查hot_word: '{hot_word}', 是否为空: {not hot_word}")
-        if hot_word:
-            logger.info(f"搜索热词: '{hot_word}'")
-            table_data = getTableData.getTableData(hot_word)
-            logger.info(f"获取表格数据: {len(table_data)} 条")
-            x_data, y_data = getTableData.getTableDataEchartsData(hot_word)
-            # 计算热词出现次数
-            default_hot_word_num = len(table_data)
-            # 简单的情感分析（基于第一条匹配评论）
-            emotion_value = ""
-            if table_data and len(table_data) > 0:
-                try:
-                    from snownlp import SnowNLP
-
-                    content = table_data[0][4] if len(table_data[0]) > 4 else ""
-                    sentiment = SnowNLP(content).sentiments
-                    if sentiment > 0.6:
-                        emotion_value = "正面"
-                    elif sentiment < 0.4:
-                        emotion_value = "负面"
-                    else:
-                        emotion_value = "中性"
-                except Exception:
-                    emotion_value = "中性"
-        else:
+        if not hot_word:
             logger.info("hot_word为空，跳过搜索")
-            table_data = []
-            x_data, y_data = [], []
-            default_hot_word_num = 0
-            emotion_value = ""
+            data = _build_table_response(ciping_total, [], [], [], 0, "")
+            set_cached_data(cache_key, data, CACHE_TIMEOUT["table"])
+            return success_response(data)
 
-        data = {
-            "hotWordList": ciping_total,
-            "tableList": table_data,
-            "xData": x_data,
-            "yData": y_data,
-            "defaultHotWordNum": default_hot_word_num,
-            "emotionValue": emotion_value,
-            "total": len(table_data),
-        }
+        logger.info("搜索热词: '%s'", hot_word)
+        table_data, x_data, y_data, hot_word_num, emotion_value = _build_table_search_result(hot_word)
+        logger.info("获取表格数据: %d 条", len(table_data))
 
+        data = _build_table_response(ciping_total, table_data, x_data, y_data, hot_word_num, emotion_value)
         set_cached_data(cache_key, data, CACHE_TIMEOUT["table"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取表格数据失败: {e}")
-        return error_response(f"获取表格数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取表格数据失败: %s", e)
+        return error_response(f"获取表格数据失败: {e}")
+
+
+def _build_table_response(ciping_total, table_data, x_data, y_data, hot_word_num, emotion_value):
+    """组装表格接口的响应字典。"""
+    return {
+        "hotWordList": ciping_total,
+        "tableList": table_data,
+        "xData": x_data,
+        "yData": y_data,
+        "defaultHotWordNum": hot_word_num,
+        "emotionValue": emotion_value,
+        "total": len(table_data),
+    }
 
 
 @db.route("/getArticleData", methods=["GET"])
@@ -352,43 +525,16 @@ def get_article_data():
         return success_response(cached_data)
 
     try:
-        # 获取类型列表
         type_list = getEchartsData.getTypeList()
-
-        # 获取图表数据
         chart_one_data = getEchartsData.getArticleCharOneData(default_type)
         chart_two_data = getEchartsData.getArticleCharTwoData(default_type)
         chart_three_data = getEchartsData.getArticleCharThreeData(default_type)
-
-        # 获取文章表格数据
         table_data = getTableData.getTableDataArticle(False)
 
-        # 转换类型数据为饼图格式
-        type_data = []
-        if type_list:
-            type_df = query_dataframe("""
-                SELECT type, COUNT(*) AS count
-                FROM article
-                GROUP BY type
-                ORDER BY count DESC
-            """)
-            if not type_df.empty:
-                type_data = [
-                    {
-                        "name": row["type"] if row["type"] else "未知",
-                        "value": int(row["count"]),
-                    }
-                    for _idx, row in type_df.iterrows()
-                ]
+        type_data = _build_article_type_data() if type_list else []
 
-        # 转换情感数据
-        sentiment_data = [0, 0, 0]
-        if chart_three_data and len(chart_three_data) == 2:
-            sentiment_data = [
-                len(table_data) // 3,
-                len(table_data) // 3,
-                len(table_data) // 3,
-            ]
+        third = len(table_data) // 3
+        sentiment_data = [third, third, third] if chart_three_data and len(chart_three_data) == 2 else [0, 0, 0]
 
         data = {
             "typeList": type_list,
@@ -405,9 +551,9 @@ def get_article_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["article"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取文章数据失败: {e}")
-        return error_response(f"获取文章数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取文章数据失败: %s", e)
+        return error_response(f"获取文章数据失败: {e}")
 
 
 @db.route("/getCommentData", methods=["GET"])
@@ -426,26 +572,7 @@ def get_comment_data():
         time_distribution = _get_comment_hour_distribution()
         user_activity = _get_comment_user_activity()
 
-        # 真实情感分布数据（下沉到 Service 层并缓存，避免接口层重复计算）
-        sentiment_counts = {"正面": 0, "中性": 0, "负面": 0}
-        try:
-            from services.sentiment_service import SentimentService
-
-            comment_texts = _get_recent_comment_texts()
-            sentiment_counts = SentimentService.analyze_distribution(
-                comment_texts,
-                mode="simple",
-                sample_size=100,
-            )
-        except Exception as e:
-            logger.warning(f"情感分析失败: {e}")
-            total_comments = sum(time_distribution["counts"])
-            sentiment_counts = {
-                "正面": int(total_comments * 0.35),
-                "中性": int(total_comments * 0.45),
-                "负面": int(total_comments * 0.20),
-            }
-
+        sentiment_counts = _compute_comment_sentiment(time_distribution)
         sentiment_data = [{"name": k, "value": v} for k, v in sentiment_counts.items()]
         hot_comments = _get_hot_comments()
 
@@ -460,9 +587,28 @@ def get_comment_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["comment"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取评论数据失败: {e}")
-        return error_response(f"获取评论数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取评论数据失败: %s", e)
+        return error_response(f"获取评论数据失败: {e}")
+
+
+def _compute_comment_sentiment(time_distribution):
+    """计算评论情感分布，失败时回退到比例估算。"""
+    try:
+        from services.sentiment_service import SentimentService
+
+        comment_texts = _get_recent_comment_texts()
+        return SentimentService.analyze_distribution(
+            comment_texts, mode="simple", sample_size=100,
+        )
+    except (ImportError, ConnectionError, OSError) as e:
+        logger.warning("情感分析失败: %s", e)
+        total = sum(time_distribution["counts"])
+        return {
+            "正面": int(total * 0.35),
+            "中性": int(total * 0.45),
+            "负面": int(total * 0.20),
+        }
 
 
 @db.route("/getIPData", methods=["GET"])
@@ -478,91 +624,8 @@ def get_ip_data():
     try:
         geo_one_data = getEchartsData.getGeoCharDataOne()
         geo_two_data = getEchartsData.getGeoCharDataTwo()
-
-        # 地图数据
-        province_map = {
-            "北京": "北京市",
-            "天津": "天津市",
-            "上海": "上海市",
-            "重庆": "重庆市",
-            "河北": "河北省",
-            "山西": "山西省",
-            "辽宁": "辽宁省",
-            "吉林": "吉林省",
-            "黑龙江": "黑龙江省",
-            "江苏": "江苏省",
-            "浙江": "浙江省",
-            "安徽": "安徽省",
-            "福建": "福建省",
-            "江西": "江西省",
-            "山东": "山东省",
-            "河南": "河南省",
-            "湖北": "湖北省",
-            "湖南": "湖南省",
-            "广东": "广东省",
-            "海南": "海南省",
-            "四川": "四川省",
-            "贵州": "贵州省",
-            "云南": "云南省",
-            "陕西": "陕西省",
-            "甘肃": "甘肃省",
-            "青海": "青海省",
-            "台湾": "台湾省",
-            "内蒙古": "内蒙古自治区",
-            "广西": "广西壮族自治区",
-            "西藏": "西藏自治区",
-            "宁夏": "宁夏回族自治区",
-            "新疆": "新疆维吾尔自治区",
-            "香港": "香港特别行政区",
-            "澳门": "澳门特别行政区",
-        }
-
-        map_data = []
-        if geo_one_data:
-            for item in geo_one_data:
-                name = item.get("name", "")
-                full_name = _normalize_region_name(name, province_map)
-
-                map_data.append({"name": full_name, "value": item.get("value", 0)})
-
-        # 地区排行数据
-        region_data = []
-        if geo_one_data:
-            region_data = sorted(
-                geo_one_data, key=lambda x: x.get("value", 0), reverse=True
-            )[:10]
-
-        # IP详细列表数据（从数据库查询真实数据）
-        ip_list = []
-        try:
-            # 查询评论中的IP/地区信息
-            df = query_dataframe("""
-                SELECT
-                    MAX(authorName) as authorName,
-                    authorAddress,
-                    COUNT(*) as count,
-                    MAX(created_at) as last_time
-                FROM comments
-                WHERE authorAddress IS NOT NULL AND authorAddress != ''
-                GROUP BY authorAddress
-                ORDER BY count DESC
-                LIMIT 10
-            """)
-
-            if not df.empty:
-                for idx, row in df.iterrows():
-                    ip_list.append(
-                        {
-                            "ip": "",
-                            "location": row["authorAddress"],
-                            "count": int(row["count"]),
-                            "lastTime": str(row["last_time"]),
-                            "user": row["authorName"],
-                        }
-                    )
-        except Exception as e:
-            logger.warning(f"查询IP数据失败，返回空列表: {e}")
-            ip_list = []
+        map_data, region_data = _build_ip_map_data(geo_one_data)
+        ip_list = _build_ip_list()
 
         data = {
             "geoOneData": geo_one_data,
@@ -574,9 +637,9 @@ def get_ip_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["ip"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取IP数据失败: {e}")
-        return error_response(f"获取IP数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取IP数据失败: %s", e)
+        return error_response(f"获取IP数据失败: {e}")
 
 
 @db.route("/getYuqingData", methods=["GET"])
@@ -594,98 +657,11 @@ def get_yuqing_data():
         chart_two_data = getEchartsData.getYuQingCharDataTwo()
         chart_three_data = getEchartsData.getYuQingCharDataThree()
 
-        # 情感统计
-        stats = {"positive": 0, "neutral": 0, "negative": 0}
-        if chart_two_data and len(chart_two_data) >= 2:
-            bie_data1 = chart_two_data[0]
-            for item in bie_data1:
-                if item["name"] == "正面":
-                    stats["positive"] = item["value"]
-                elif item["name"] == "中性":
-                    stats["neutral"] = item["value"]
-                elif item["name"] == "负面":
-                    stats["negative"] = item["value"]
-
+        stats = _build_yuqing_summary(chart_two_data)
         comments = _get_recent_comments(limit=100)
-        sentiment_list = []
-        trend_counts = {}
-        try:
-            from services.sentiment_service import SentimentService
-
-            comment_texts = [
-                str(comment[1]) for comment in comments if len(comment) > 1 and comment[1]
-            ]
-            analysis_results = SentimentService.analyze_batch(comment_texts, mode="simple")
-
-            zh_label_map = {
-                "positive": "正面",
-                "neutral": "中性",
-                "negative": "负面",
-            }
-            trend_key_map = {
-                "positive": "positive",
-                "neutral": "neutral",
-                "negative": "negative",
-            }
-
-            for idx, (comment, result) in enumerate(zip(comments, analysis_results), start=1):
-                label = (result or {}).get("label", "neutral")
-                score = float((result or {}).get("score", 0.5))
-                reasoning = (result or {}).get("reasoning", "")
-                emotion = (result or {}).get("emotion", "无感")
-                keywords = (result or {}).get("keywords", [])
-                analysis_source = (result or {}).get("source", "unknown")
-                comment_time = comment[0] if len(comment) > 0 else ""
-                comment_date = str(comment_time).split(" ")[0] if comment_time else ""
-
-                if idx <= 100:  # 增加返回的情感分析结果数量
-                    sentiment_list.append(
-                        {
-                            "id": idx,
-                            "content": comment[1] if len(comment) > 1 else "",
-                            "sentiment": zh_label_map.get(label, "中性"),
-                            "score": score,
-                            "reasoning": reasoning,
-                            "emotion": emotion,
-                            "keywords": keywords,
-                            "analysis_source": analysis_source,
-                            "source": "微博评论",
-                            "time": comment_time,
-                        }
-                    )
-
-                if comment_date:
-                    if comment_date not in trend_counts:
-                        trend_counts[comment_date] = {
-                            "positive": 0,
-                            "neutral": 0,
-                            "negative": 0,
-                        }
-                    trend_counts[comment_date][trend_key_map.get(label, "neutral")] += 1
-        except Exception as e:
-            logger.warning(f"构建舆情列表与趋势失败，返回空结果: {e}")
-
-        sorted_dates = sorted(trend_counts.keys())
-        trend = {
-            "dates": sorted_dates,
-            "positive": [trend_counts[date]["positive"] for date in sorted_dates],
-            "neutral": [trend_counts[date]["neutral"] for date in sorted_dates],
-            "negative": [trend_counts[date]["negative"] for date in sorted_dates],
-        }
-
-        # 关键词云数据
-        keywords = []
-        if chart_three_data and len(chart_three_data) == 2:
-            hot_words, counts = chart_three_data
-            colors = ["#67c23a", "#409eff", "#e6a23c", "#f56c6c", "#909399"]
-            for i, (word, count) in enumerate(zip(hot_words[:20], counts[:20])):
-                keywords.append(
-                    {
-                        "text": word,
-                        "weight": count // 10,
-                        "color": colors[i % len(colors)],
-                    }
-                )
+        sentiment_list, trend_counts = _build_yuqing_sentiment_and_trend(comments)
+        trend = _build_yuqing_trend(trend_counts)
+        keywords = _build_yuqing_keywords(chart_three_data)
 
         data = {
             "chartOneData": chart_one_data,
@@ -700,9 +676,9 @@ def get_yuqing_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["yuqing"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取舆情数据失败: {e}")
-        return error_response(f"获取舆情数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取舆情数据失败: %s", e)
+        return error_response(f"获取舆情数据失败: {e}")
 
 
 @db.route("/getContentCloudData", methods=["GET"])
@@ -725,24 +701,7 @@ def get_content_cloud_data():
             cloud_path = getEchartsData.getContentCloud()
 
         author_cloud_path = getHomeData.getUserNameWordCloud()
-
-        # 词频统计数据
-        word_stats = []
-        from utils.getPublicData import getAllCiPingTotal
-
-        ciping_data = getAllCiPingTotal()[:50]
-        total_count = sum([int(x[1]) for x in ciping_data]) if ciping_data else 1
-        for _i, item in enumerate(ciping_data):
-            if len(item) >= 2:
-                count = int(item[1])
-                word_stats.append(
-                    {
-                        "word": item[0],
-                        "count": count,
-                        "frequency": f"{(count / total_count * 100):.2f}%",
-                        "sentiment": "中性",
-                    }
-                )
+        word_stats = _build_word_stats()
 
         data = {
             "contentCloudPath": cloud_path,
@@ -754,9 +713,30 @@ def get_content_cloud_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["cloud"])
         return success_response(data)
-    except Exception as e:
-        logger.error(f"获取词云数据失败: {e}")
-        return error_response(f"获取词云数据失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("获取词云数据失败: %s", e)
+        return error_response(f"获取词云数据失败: {e}")
+
+
+def _build_word_stats():
+    """构建词频统计数据列表。"""
+    from utils.getPublicData import getAllCiPingTotal
+
+    ciping_data = getAllCiPingTotal()[:50]
+    if not ciping_data:
+        return []
+    total_count = sum(int(x[1]) for x in ciping_data) or 1
+    return [
+        {
+            "word": item[0],
+            "count": count,
+            "frequency": f"{(count / total_count * 100):.2f}%",
+            "sentiment": "中性",
+        }
+        for item in ciping_data
+        if len(item) >= 2
+        for count in [int(item[1])]
+    ]
 
 
 @db.route("/clearCache", methods=["POST"])
@@ -764,12 +744,13 @@ def clear_cache():
     """
     清空所有缓存（管理接口）
     """
+    user = getattr(request, "current_user", None)
+    if not is_admin_user(user):
+        return error_response("权限不足", 403)
+
     try:
-        user = getattr(request, "current_user", None)
-        if not is_admin_user(user):
-            return error_response("权限不足", 403)
         memory_cache.clear()
         return success_response({"message": "缓存已清空"})
-    except Exception as e:
-        logger.error(f"清空缓存失败: {e}")
-        return error_response(f"清空缓存失败: {str(e)}")
+    except (ConnectionError, OSError) as e:
+        logger.error("清空缓存失败: %s", e)
+        return error_response(f"清空缓存失败: {e}")

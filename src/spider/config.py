@@ -229,30 +229,42 @@ class SpiderConfigManager:
 
     def _load_working_proxies(self):
         """从文件加载可用代理列表"""
+        if not os.path.exists(self.PROXY_FILE):
+            logger.info("代理文件不存在，将使用直连模式")
+            self.working_proxies = []
+            return
+
         try:
-            if os.path.exists(self.PROXY_FILE):
-                with open(self.PROXY_FILE, encoding="utf-8") as f:
-                    data = json.load(f)
-                    # 支持两种格式：字符串列表或字典列表
-                    if isinstance(data, list):
-                        # 字符串列表格式 ["ip:port", ...]
-                        self.working_proxies = data
-                    elif isinstance(data, dict) and "proxies" in data:
-                        # 字典格式 {"proxies": [{"ip": "x", "port": "y"}, ...]}
-                        self.working_proxies = [
-                            f"{p['ip']}:{p['port']}"
-                            for p in data["proxies"]
-                            if "ip" in p and "port" in p
-                        ]
-                    else:
-                        self.working_proxies = []
-                logger.info(f"加载了 {len(self.working_proxies)} 个保存的代理")
-            else:
-                logger.info("代理文件不存在，将使用直连模式")
-                self.working_proxies = []
-        except Exception as e:
+            with open(self.PROXY_FILE, encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
             logger.error(f"加载代理文件失败: {e}")
             self.working_proxies = []
+            return
+
+        self.working_proxies = self._parse_proxy_data(data)
+        logger.info(f"加载了 {len(self.working_proxies)} 个保存的代理")
+
+    @staticmethod
+    def _parse_proxy_data(data):
+        """解析代理数据，支持两种格式
+
+        Args:
+            data: 字符串列表 ["ip:port", ...] 或
+                  字典列表 {"proxies": [{"ip": "x", "port": "y"}, ...]}
+
+        Returns:
+            list: 代理地址列表
+        """
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict) and "proxies" in data:
+            return [
+                f"{p['ip']}:{p['port']}"
+                for p in data["proxies"]
+                if "ip" in p and "port" in p
+            ]
+        return []
 
     def _save_working_proxies(self):
         """保存可用代理列表到文件"""
@@ -260,7 +272,7 @@ class SpiderConfigManager:
             with open(self.PROXY_FILE, "w", encoding="utf-8") as f:
                 json.dump(self.working_proxies, f, indent=2, ensure_ascii=False)
             logger.debug(f"保存了 {len(self.working_proxies)} 个可用代理")
-        except Exception as e:
+        except OSError as e:
             logger.error(f"保存代理文件失败: {e}")
 
     def get_random_user_agent(self):
@@ -328,7 +340,7 @@ class SpiderConfigManager:
                 )
                 return False
 
-        except Exception as e:
+        except (requests.RequestException, ValueError, OSError) as e:
             logger.debug(f"代理测试异常: {proxy_ip} ({e})")
             return False
 
@@ -366,45 +378,69 @@ class SpiderConfigManager:
         if not self.USE_PROXY:
             return None
 
-        # 尝试从本地已验证的代理获取
+        proxy = self._pick_local_proxy(verify)
+        if proxy is not None:
+            return proxy
+
+        return self._fetch_proxy_from_pool()
+
+    def _pick_local_proxy(self, verify: bool):
+        """从本地已验证代理列表中选取一个
+
+        Args:
+            verify: 是否验证代理可用性
+
+        Returns:
+            dict: 代理配置字典；verify 失败或列表为空时返回 None
+        """
         with self.proxy_lock:
-            if self.working_proxies:
-                # 随机选择一个代理
-                proxy_ip = random.choice(self.working_proxies)
+            if not self.working_proxies:
+                return None
 
-                # 如果需要验证，测试代理可用性
-                if verify:
-                    if self.test_proxy(proxy_ip):
-                        return {
-                            "http": f"http://{proxy_ip}",
-                            "https": f"http://{proxy_ip}",
-                        }
-                    else:
-                        # 移除失效代理
-                        self.working_proxies.remove(proxy_ip)
-                        self._save_working_proxies()
-                        logger.warning(f"移除失效代理: {proxy_ip}")
-                        return None
+            proxy_ip = random.choice(self.working_proxies)
 
-                # 直接返回（不验证以提高效率）
-                return {"http": f"http://{proxy_ip}", "https": f"http://{proxy_ip}"}
+            if not verify:
+                return self._make_proxy_dict(proxy_ip)
 
-        # 本地代理不足，尝试从代理池获取
+            if self.test_proxy(proxy_ip):
+                return self._make_proxy_dict(proxy_ip)
+
+            # 验证失败，移除失效代理
+            self.working_proxies.remove(proxy_ip)
+            self._save_working_proxies()
+            logger.warning(f"移除失效代理: {proxy_ip}")
+            return None
+
+    def _fetch_proxy_from_pool(self):
+        """从远程代理池获取代理
+
+        Returns:
+            dict: 代理配置字典；获取失败时返回 None
+        """
         try:
             from proxy_pool import get_proxy_pool
-
-            pool = get_proxy_pool()
-            proxy_dict = pool.get_proxy_dict()
-            if proxy_dict:
-                logger.info(f"从代理池获取代理: {proxy_dict.get('http', '')}")
-                return proxy_dict
         except ImportError:
             logger.debug("代理池模块未加载")
-        except Exception as e:
+            return None
+
+        try:
+            pool = get_proxy_pool()
+            proxy_dict = pool.get_proxy_dict()
+        except (ConnectionError, OSError) as e:
             logger.warning(f"从代理池获取代理失败: {e}")
+            return None
+
+        if proxy_dict:
+            logger.info(f"从代理池获取代理: {proxy_dict.get('http', '')}")
+            return proxy_dict
 
         logger.warning("未找到可用代理，将使用直连")
         return None
+
+    @staticmethod
+    def _make_proxy_dict(proxy_ip: str) -> dict:
+        """将 ip:port 字符串转为 requests 代理字典"""
+        return {"http": f"http://{proxy_ip}", "https": f"http://{proxy_ip}"}
 
     def make_safe_request(self, url, method="GET", use_proxy=True, **kwargs):
         """
@@ -421,100 +457,131 @@ class SpiderConfigManager:
             requests.Response: 响应对象
         """
         self.request_count += 1
+        self._prepare_request(kwargs)
+        self._apply_request_delay()
 
-        # 设置默认参数
+        last_exception = None
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                self._configure_proxy(kwargs, use_proxy)
+                response = requests.request(method, url, **kwargs)
+                return self._handle_response(response, url)
+            except (requests.RequestException, SpiderException) as e:
+                last_exception = e
+                self._handle_proxy_failure(kwargs, attempt, e)
+
+        self._record_failed_request(url)
+        raise last_exception
+
+    def _prepare_request(self, kwargs: dict):
+        """为请求设置默认的 headers 和 timeout"""
         kwargs.setdefault("headers", self.get_random_headers())
         kwargs.setdefault("timeout", self.DEFAULT_TIMEOUT)
 
-        # 请求间隔（反反爬）
+    def _apply_request_delay(self):
+        """应用反反爬随机延迟"""
         delay = random.uniform(*self.DEFAULT_DELAY)
         logger.debug(f"请求延迟: {delay:.2f}秒")
         time.sleep(delay)
 
-        # 重试机制
-        last_exception = None
-        for attempt in range(self.MAX_RETRIES):
-            try:
-                # 设置代理
-                if use_proxy and self.USE_PROXY:
-                    proxy = self.get_working_proxy()
-                    if proxy:
-                        kwargs["proxies"] = proxy
-                        logger.debug(f"使用代理: {proxy['http']}")
-                    else:
-                        kwargs.pop("proxies", None)
-                        logger.debug("使用直连")
-                else:
-                    kwargs.pop("proxies", None)
+    def _configure_proxy(self, kwargs: dict, use_proxy: bool):
+        """根据配置决定请求使用的代理"""
+        if use_proxy and self.USE_PROXY:
+            proxy = self.get_working_proxy()
+            if proxy:
+                kwargs["proxies"] = proxy
+                logger.debug(f"使用代理: {proxy['http']}")
+            else:
+                kwargs.pop("proxies", None)
+                logger.debug("使用直连")
+        else:
+            kwargs.pop("proxies", None)
 
-                # 发起请求
-                response = requests.request(method, url, **kwargs)
+    def _handle_response(self, response, url: str):
+        """检查 HTTP 响应状态码，成功返回 response，否则抛出对应异常"""
+        if response.status_code == 200:
+            self.success_count += 1
+            logger.debug(f"请求成功: {url[:80]}...")
+            return response
 
-                # 状态检查
-                if response.status_code == 200:
-                    self.success_count += 1
-                    logger.debug(f"请求成功: {url[:80]}...")
-                    return response
-                elif response.status_code == 403:
-                    logger.warning("请求被拒绝(403): 可能Cookie失效或触发反爬机制")
-                    logger.warning(
-                        ">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<"
-                    )
-                    raise CookieExpiredException(
-                        message="403 Forbidden - Cookie失效或反爬触发",
-                        details={"status_code": 403, "url": url[:100]}
-                    )
-                elif response.status_code == 302:
-                    logger.warning("请求被重定向(302): 可能Cookie失效导致跳转登录页")
-                    logger.warning(
-                        ">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<"
-                    )
-                    raise CookieExpiredException(
-                        message="302 Found - 可能需要更新Cookie",
-                        details={"status_code": 302, "url": url[:100]}
-                    )
-                elif response.status_code == 429:
-                    logger.warning("请求频率过高(429): 需要降低请求频率")
-                    raise RateLimitException(
-                        message="429 Too Many Requests - 请求过于频繁",
-                        retry_after=self.RETRY_DELAY * 5,
-                        details={"status_code": 429, "url": url[:100]}
-                    )
-                else:
-                    raise SpiderException(
-                        message=f"HTTP {response.status_code}",
-                        error_code=f"HTTP_{response.status_code}",
-                        details={"status_code": response.status_code, "url": url[:100]}
-                    )
+        status_handlers = {
+            403: self._raise_cookie_expired,
+            302: self._raise_cookie_redirect,
+            429: self._raise_rate_limit,
+        }
+        handler = status_handlers.get(response.status_code)
+        if handler:
+            raise handler(url)
 
-            except Exception as e:
-                last_exception = e
-                logger.warning(f"请求失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}")
+        raise SpiderException(
+            message=f"HTTP {response.status_code}",
+            error_code=f"HTTP_{response.status_code}",
+            details={"status_code": response.status_code, "url": url[:100]},
+        )
 
-                if attempt < self.MAX_RETRIES - 1:
-                    retry_delay = self.RETRY_DELAY * (attempt + 1)  # 递增延迟
-                    logger.info(f"等待 {retry_delay} 秒后重试...")
-                    time.sleep(retry_delay)
+    def _raise_cookie_expired(self, url: str) -> CookieExpiredException:
+        """构造 403 Cookie 过期异常"""
+        logger.warning("请求被拒绝(403): 可能Cookie失效或触发反爬机制")
+        logger.warning(">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<")
+        return CookieExpiredException(
+            message="403 Forbidden - Cookie失效或反爬触发",
+            details={"status_code": 403, "url": url[:100]},
+        )
 
-                    # 移除当前代理（如果使用了代理）
-                    if "proxies" in kwargs:
-                        current_proxy = kwargs.get("proxies", {}).get("http", "")
-                        if current_proxy:
-                            proxy_ip = current_proxy.replace("http://", "")
-                            with self.proxy_lock:
-                                if proxy_ip in self.working_proxies:
-                                    self.working_proxies.remove(proxy_ip)
-                                    logger.info(f"移除当前失效代理: {proxy_ip}")
+    def _raise_cookie_redirect(self, url: str) -> CookieExpiredException:
+        """构造 302 重定向异常"""
+        logger.warning("请求被重定向(302): 可能Cookie失效导致跳转登录页")
+        logger.warning(">>> 请检查 spider/config.py 中的 Cookie 是否过期！ <<<")
+        return CookieExpiredException(
+            message="302 Found - 可能需要更新Cookie",
+            details={"status_code": 302, "url": url[:100]},
+        )
 
-        # 所有重试失败
-        self.failed_count += 1
-        # 只记录 URL 的前100个字符，避免泄露敏感参数
+    def _raise_rate_limit(self, url: str) -> RateLimitException:
+        """构造 429 频率限制异常"""
+        logger.warning("请求频率过高(429): 需要降低请求频率")
+        return RateLimitException(
+            message="429 Too Many Requests - 请求过于频繁",
+            retry_after=self.RETRY_DELAY * 5,
+            details={"status_code": 429, "url": url[:100]},
+        )
+
+    def _handle_proxy_failure(self, kwargs: dict, attempt: int, error: Exception):
+        """处理单次请求失败：记录日志、递增延迟、移除失效代理"""
+        logger.warning(f"请求失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {error}")
+
+        if attempt >= self.MAX_RETRIES - 1:
+            return
+
+        retry_delay = self.RETRY_DELAY * (attempt + 1)
+        logger.info(f"等待 {retry_delay} 秒后重试...")
+        time.sleep(retry_delay)
+
+        self._remove_current_proxy(kwargs)
+
+    def _remove_current_proxy(self, kwargs: dict):
+        """移除本次请求使用的代理（如果存在）"""
+        current_proxy = kwargs.get("proxies", {}).get("http", "")
+        if not current_proxy:
+            return
+        proxy_ip = current_proxy.replace("http://", "")
+        with self.proxy_lock:
+            if proxy_ip in self.working_proxies:
+                self.working_proxies.remove(proxy_ip)
+                logger.info(f"移除当前失效代理: {proxy_ip}")
+
+    @staticmethod
+    def _mask_url(url: str) -> str:
+        """脱敏 URL，隐藏查询参数"""
         safe_url = url[:100] + "..." if len(url) > 100 else url
-        # 移除可能的敏感参数
         if "?" in safe_url:
             safe_url = safe_url.split("?")[0] + "?[params_hidden]"
-        logger.error(f"请求最终失败: {safe_url}")
-        raise last_exception
+        return safe_url
+
+    def _record_failed_request(self, url: str):
+        """记录失败请求的统计和日志"""
+        self.failed_count += 1
+        logger.error(f"请求最终失败: {self._mask_url(url)}")
 
     def get_config_stats(self):
         """
