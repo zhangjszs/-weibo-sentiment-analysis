@@ -28,6 +28,8 @@ celery_app = Celery(
 
 # Celery配置
 celery_app.conf.update(
+    # 启动时重试 broker 连接（Celery 5.x 默认 False，docker-compose 启动顺序敏感需打开）
+    broker_connection_retry_on_startup=True,
     # 序列化配置
     task_serializer="json",
     accept_content=["json"],

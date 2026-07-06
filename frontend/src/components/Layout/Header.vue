@@ -25,7 +25,10 @@
       </el-breadcrumb>
     </div>
     <div class="header-right">
-      <el-tooltip content="快速爬取" placement="bottom">
+      <el-tooltip
+        content="快速爬取"
+        placement="bottom"
+      >
         <el-button
           circle
           :icon="Download"

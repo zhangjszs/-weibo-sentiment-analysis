@@ -7,7 +7,7 @@ version = "1.0.0"
 description = "A Weibo public opinion analysis and visualization system based on Python"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 authors = [
     {name = "Weibo Sentiment Team"}
 ]
@@ -15,7 +15,7 @@ authors = [
 # ===== Black 代码格式化配置 =====
 [tool.black]
 line-length = 88
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+target-version = ['py311']
 include = '\.pyi?$'
 extend-exclude = '''
 /(
@@ -59,13 +59,16 @@ addopts = [
 ]
 markers = [
     "unit: 单元测试",
-    "integration: 集成测试", 
+    "integration: 集成测试",
     "slow: 慢速测试",
     "database: 需要数据库的测试",
 ]
+# 不再一刀切忽略所有 DeprecationWarning，只忽略已知第三方 noise
 filterwarnings = [
-    "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning",
+    "ignore::DeprecationWarning:celery.*",
+    "ignore::DeprecationWarning:pkg_resources.*",
+    "ignore::DeprecationWarning:google.*",
+    "ignore::PendingDeprecationWarning:celery.*",
 ]
 
 # ===== Coverage 覆盖率配置 =====
@@ -87,11 +90,11 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 show_missing = true
-fail_under = 30
+fail_under = 50
 
 # ===== MyPy 类型检查配置 (可选) =====
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
@@ -107,7 +110,7 @@ exclude = [
 # ===== Ruff 快速代码检查配置 (可选替代 flake8) =====
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py311"
 exclude = [
     ".git",
     ".venv",

@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, scoped_session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, scoped_session, sessionmaker
 
 from config.settings import Config
 
@@ -14,8 +14,12 @@ engine = create_engine(
 db_session = scoped_session(
     sessionmaker(autocommit=False, autoflush=False, bind=engine)
 )
-Base = declarative_base()
-Base.query = db_session.query_property()
+
+
+# SQLAlchemy 2.0 风格：用 DeclarativeBase 替代 declarative_base()
+# 不再挂 Base.query（query_property 为 1.x 遗留，2.0 推荐显式 session 查询）
+class Base(DeclarativeBase):
+    pass
 
 
 def init_db():

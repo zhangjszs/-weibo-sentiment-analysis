@@ -11,14 +11,14 @@ import sys
 try:
     from importlib.metadata import PackageNotFoundError, version
 except ImportError:
-    print("❌ Python 3.8+ required for importlib.metadata")
+    print("❌ Python 3.11+ required for importlib.metadata")
     sys.exit(1)
 
 
 def check_python_version():
     print(f"Checking Python version... {sys.version.split()[0]}")
-    if sys.version_info < (3, 8):
-        print("❌ Python 3.8+ is required.")
+    if sys.version_info < (3, 11):
+        print("❌ Python 3.11+ is required (与 pyproject.toml requires-python 对齐).")
         return False
     print("✅ Python version OK")
     return True

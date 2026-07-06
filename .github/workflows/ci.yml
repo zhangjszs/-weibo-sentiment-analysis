@@ -12,7 +12,8 @@ jobs:
 
     services:
       mysql:
-        image: mysql:5.7
+        # 升级到 MySQL 8.0（与 docker-compose 对齐）
+        image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: weibo_test
@@ -36,8 +37,24 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements/requirements.txt
-        pip install pytest pytest-cov
+        # 先装 CPU 版 torch，避免从 PyPI 拉 GPU 大包（torch>=2.2,<3.0 已被满足）
+        pip install torch --index-url https://download.pytorch.org/whl/cpu
+        pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
+
+    - name: Ruff check
+      run: ruff check src/
+
+    # black/mypy 暂为软门：现有代码未全量格式化/类型补全，Phase 5 收尾后改硬
+    - name: Black check (soft until Phase 5)
+      continue-on-error: true
+      run: black --check src/ tests/
+
+    - name: Mypy (soft until Phase 5)
+      continue-on-error: true
+      run: mypy src/
+
+    - name: Bandit security scan
+      run: bandit -r src/ -ll -x tests/
 
     - name: Initialize test database
       run: |
@@ -71,5 +88,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Build Docker Image
+    - name: Build backend Docker image
       run: docker build . --file Dockerfile --tag weibo-backend:latest
+
+    - name: Build spider service image
+      run: docker build -t test-spider spider_service/
+
+    - name: Build nlp service image
+      run: docker build -t test-nlp nlp_service/

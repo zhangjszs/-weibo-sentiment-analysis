@@ -10,7 +10,7 @@ default_stages: [pre-commit]
 repos:
   # ===== 预置钩子（通用文件检查）=====
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       # 检测大文件
       - id: check-added-large-files
@@ -41,7 +41,7 @@ repos:
 
   # ===== Black 代码格式化 =====
   - repo: https://github.com/psf/black
-    rev: 24.1.1
+    rev: 24.10.0
     hooks:
       - id: black
         language_version: python3
@@ -65,14 +65,14 @@ repos:
 
   # ===== Ruff 快速代码检查 (替代 flake8) =====
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.1
+    rev: v0.7.4
     hooks:
       - id: ruff
         args: ['--fix', '--config', 'pyproject.toml']
 
   # ===== 安全检查 =====
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.7
+    rev: 1.7.10
     hooks:
       - id: bandit
         args: ['-c', 'pyproject.toml', '-ll']
