@@ -14,3 +14,6 @@ def make_celery():
     return celery
 
 celery_app = make_celery()
+
+# Celery 5.x：启动时重试 broker 连接（docker-compose 启动顺序敏感需打开）
+celery_app.conf.update(broker_connection_retry_on_startup=True)

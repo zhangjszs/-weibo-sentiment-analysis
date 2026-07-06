@@ -296,8 +296,10 @@ class SnowNLPStrategy(SentimentStrategy):
         if dict_score < 0.5:
             parts.append("负面文本，情感词典权重更高")
         parts.append(f"最终得分: SnowNLP({snownlp_score:.2f}) + 情感词典({dict_score:.2f}) = {score:.2f}")
-        label_hint = "正面" if score > 0.6 else ("负面" if score < 0.4 else "中性")
-        parts.append(f"判断为{label_hint}情感")
+        # Phase 3.7：内部用英文 label，展示层用 label_to_chinese 转中文
+        from utils.sentiment import label_to_chinese
+        label_en = "positive" if score > 0.6 else ("negative" if score < 0.4 else "neutral")
+        parts.append(f"判断为{label_to_chinese(label_en)}情感")
         if emotion != "无感":
             parts.append(f"细粒度情感: {emotion}")
         return "，".join(parts)
@@ -454,12 +456,16 @@ class SnowNLPStrategy(SentimentStrategy):
         return self._lookup_emotion_by_words(text, self._SCORE_EMOTION_MAP[bucket], default)
 
 
-def get_cache_key(text: str, mode: str) -> str:
-    """生成缓存键"""
+def get_cache_key(text: str, mode: str, backend: str = "default") -> str:
+    """生成缓存键。
+
+    Phase 3 起改为 ``sentiment:v4:{backend}:{mode}:{text}``，把 backend 维度
+    纳入 key 以避免 BERT/sklearn/snownlp 互相污染缓存（旧 v3 缓存自然失效）。
+    """
     # 限制文本长度，避免缓存键过长
     max_text_length = 1000
     truncated_text = text[:max_text_length]
-    key_data = f"sentiment:v3:{mode}:{truncated_text}"
+    key_data = f"sentiment:v4:{backend}:{mode}:{truncated_text}"
     return hashlib.md5(key_data.encode()).hexdigest()
 
 
@@ -475,9 +481,11 @@ def _build_sentiment_from_cache_data(data: dict, source: str) -> SentimentResult
     )
 
 
-def get_from_cache(text: str, mode: str) -> Optional[SentimentResult]:
+def get_from_cache(
+    text: str, mode: str, backend: str = "default"
+) -> Optional[SentimentResult]:
     """从缓存获取结果"""
-    cache_key = get_cache_key(text, mode)
+    cache_key = get_cache_key(text, mode, backend)
 
     if REDIS_AVAILABLE:
         try:
@@ -500,9 +508,11 @@ def get_from_cache(text: str, mode: str) -> Optional[SentimentResult]:
     return None
 
 
-def save_to_cache(text: str, mode: str, result: SentimentResult) -> None:
+def save_to_cache(
+    text: str, mode: str, result: SentimentResult, backend: str = "default"
+) -> None:
     """保存结果到缓存"""
-    cache_key = get_cache_key(text, mode)
+    cache_key = get_cache_key(text, mode, backend)
     data = {
         "score": result.score,
         "label": result.label,
@@ -699,55 +709,32 @@ class LLMStrategy(SentimentStrategy):
 
 
 class CustomModelStrategy(SentimentStrategy):
-    """自定义模型策略 (sklearn)"""
+    """自定义模型策略（Phase 3 起面向 ModelBackend 抽象）。
+
+    不再直接持有 sklearn 模型，而是通过 :class:`AutoBackendSelector` 选择
+    底层 backend（bert / sklearn / snownlp），上层只负责缓存、SnowNLP
+    融合与结果封装。降级链路由 backend 自身处理。
+    """
 
     def __init__(self):
-        self.model_path = os.path.join(
-            Config.BASE_DIR, "model", "best_sentiment_model.pkl"
-        )
-        self._model = None
-        self._model_metadata = None
+        # 延迟导入避免与 sentiment_backend 形成模块级循环依赖
+        from .sentiment_backend import AutoBackendSelector
 
-    def _load_model(self):
-        if self._model is None:
-            import sys
+        self._selector = AutoBackendSelector()
+        self._backend = None  # 懒加载：首次 predict 时才 select
+        self._snow_strategy: Optional[SnowNLPStrategy] = None
 
-            import joblib
+    @property
+    def backend(self):
+        """懒加载选中 backend，便于在测试中替换。"""
+        if self._backend is None:
+            self._backend = self._selector.select()
+        return self._backend
 
-            # 添加 model 目录 to sys.path 以便 pickle 可以找到 model_utils
-            model_dir = os.path.join(Config.BASE_DIR, "model")
-            if model_dir not in sys.path:
-                sys.path.append(model_dir)
-
-            if os.path.exists(self.model_path):
-                # 使用版本管理加载模型
-                try:
-                    from model.model_version_manager import load_model_with_versioning
-                    self._model, self._model_metadata = load_model_with_versioning(model_dir)
-                except (ImportError, OSError) as e:
-                    logger.warning(f"使用版本管理加载模型失败，使用普通加载: {e}")
-                    self._model = joblib.load(self.model_path)
-                    self._model_metadata = {"loaded": True, "model_path": self.model_path}
-        return self._model
-
-    def _analyze_with_model(self, text: str) -> SentimentResult:
-        """
-        使用本地模型进行情感分析
-
-        Args:
-            text: 待分析文本
-
-        Returns:
-            SentimentResult: 情感分析结果
-        """
-        return self._analyze_batch_with_model([text])[0]
-
-    @staticmethod
-    def _map_prediction_label(prediction) -> str:
-        if isinstance(prediction, str):
-            return {"positive": "positive", "pos": "positive",
-                    "negative": "negative", "neg": "negative"}.get(prediction, "neutral")
-        return {0: "negative", 1: "neutral", 2: "positive"}.get(prediction, "neutral")
+    def _get_snow_strategy(self) -> "SnowNLPStrategy":
+        if self._snow_strategy is None:
+            self._snow_strategy = SnowNLPStrategy()
+        return self._snow_strategy
 
     @staticmethod
     def _extract_model_keywords(text: str) -> list:
@@ -768,20 +755,24 @@ class CustomModelStrategy(SentimentStrategy):
             except (ValueError, AttributeError):
                 return []
 
-    def _build_model_reasoning(self, label: str, score: float, emotion: Optional[str]) -> str:
-        parts = ["基于自定义训练模型预测"]
-        if self._model_metadata:
-            parts.append(f"模型版本: {self._model_metadata.get('current_version', 'unknown')}")
+    def _build_model_reasoning(
+        self, label: str, score: float, emotion: Optional[str], backend_name: str
+    ) -> str:
+        from utils.sentiment import label_to_chinese
+
+        parts = [f"基于{backend_name}后端预测"]
         parts.append(f"预测置信度: {score:.2f}")
         if label != "neutral" and score < 0.7:
             parts.append("模型置信度较低，结合SnowNLP分析进行调整")
-        label_cn = {"positive": "正面", "negative": "负面"}.get(label, "中性")
-        parts.append(f"预测为{label_cn}情感")
+        parts.append(f"预测为{label_to_chinese(label)}情感")
         if emotion:
             parts.append(f"细粒度情感: {emotion}")
         return "，".join(parts)
 
-    def _finalize_single_result(self, text: str, label: str, score: float, processing_time: float, snow_strategy) -> SentimentResult:
+    def _finalize_single_result(
+        self, text: str, label: str, score: float, processing_time: float,
+        snow_strategy: "SnowNLPStrategy", backend_name: str,
+    ) -> SentimentResult:
         keywords = self._extract_model_keywords(text)
         emotion = None
         try:
@@ -789,7 +780,7 @@ class CustomModelStrategy(SentimentStrategy):
         except (ValueError, AttributeError):
             pass
 
-        reasoning = self._build_model_reasoning(label, score, emotion)
+        reasoning = self._build_model_reasoning(label, score, emotion, backend_name)
 
         try:
             from model.model_monitor import ModelMonitor
@@ -797,6 +788,7 @@ class CustomModelStrategy(SentimentStrategy):
         except (ImportError, AttributeError):
             pass
 
+        # 中性且低置信度时，融合 SnowNLP 结果做二次判定
         if label == "neutral" and score < 0.7:
             snow_result = snow_strategy.analyze(text)
             if snow_result.label != "neutral":
@@ -807,138 +799,93 @@ class CustomModelStrategy(SentimentStrategy):
 
         return SentimentResult(
             score=score, label=label, reasoning=reasoning,
-            emotion=emotion, keywords=keywords, source="custom_model",
+            emotion=emotion, keywords=keywords, source=backend_name,
         )
 
-    def _analyze_batch_with_model(self, texts: list) -> list:
-        model = self._load_model()
-        if not model:
-            raise RuntimeError("模型未加载成功")
-
-        processed = [t[:512] for t in texts]
-        start_time = time.time()
-        predictions = model.predict(processed)
-
-        if hasattr(model, "predict_proba"):
-            probs = model.predict_proba(processed)
-            scores = [float(max(p)) for p in probs]
-        else:
-            scores = [0.5] * len(texts)
-
-        per_item_time = (time.time() - start_time) / max(len(texts), 1)
-        snow = SnowNLPStrategy()
-
-        return [
-            self._finalize_single_result(
-                text, self._map_prediction_label(pred), score, per_item_time, snow
-            )
-            for text, pred, score in zip(texts, predictions, scores)
-        ]
+    def _predict_with_backend(self, texts: list):
+        """调用 backend.predict_batch，返回 [(label, score), ...]。"""
+        return self.backend.predict_batch(texts)
 
     def analyze(self, text: str) -> SentimentResult:
-        """
-        执行情感分析，带缓存和错误降级处理
-
-        Args:
-            text: 待分析文本
-
-        Returns:
-            SentimentResult: 情感分析结果
-        """
+        """执行情感分析，带缓存和错误降级处理。"""
         if not text or not text.strip():
             return SentimentResult(0.5, "neutral", reasoning="空文本", source="custom_model")
 
-        # 1. 检查缓存
-        cache_key = get_cache_key(text, "custom_model")
-        if REDIS_AVAILABLE:
-            try:
-                cached = redis_client.get(cache_key)
-                if cached:
-                    data = json.loads(cached)
-                    return SentimentResult(
-                        score=data.get("score", 0.5),
-                        label=data.get("label", "neutral"),
-                        reasoning="缓存结果",
-                        keywords=data.get("keywords", []),
-                        cached=True,
-                        source="cache",
-                    )
-            except (redis.RedisError, json.JSONDecodeError, TypeError) as e:
-                logger.debug(f"缓存读取失败: {e}")
+        backend_name = self.backend.name
 
-        # 2. 调用模型分析
+        # 1. 检查缓存（按 backend 维度隔离）
+        cached_result = get_from_cache(text, "custom_model", backend_name)
+        if cached_result:
+            return cached_result
+
+        # 2. 调用 backend 预测
         try:
-            result = self._analyze_with_model(text)
-        except (RuntimeError, ValueError, OSError) as e:
-            logger.error(f"模型分析失败，降级到SnowNLP: {e}")
-            return SnowNLPStrategy().analyze(text)
+            predictions = self._predict_with_backend([text])
+            if not predictions:
+                raise RuntimeError("backend 返回空结果")
+            label, score = predictions[0]
+        except Exception as e:
+            logger.error(f"backend({backend_name}) 分析失败，降级到SnowNLP: {e}")
+            return self._get_snow_strategy().analyze(text)
 
-        # 3. 写入缓存
-        if REDIS_AVAILABLE:
-            try:
-                data = {
-                    "score": result.score,
-                    "label": result.label,
-                    "keywords": result.keywords,
-                }
-                redis_client.setex(cache_key, Config.LLM_CACHE_TTL, json.dumps(data))
-            except (redis.RedisError, TypeError) as e:
-                logger.debug(f"缓存写入失败: {e}")
+        # 3. 封装结果（含 SnowNLP 融合与 model_monitor 记录）
+        result = self._finalize_single_result(
+            text, label, float(score), 0.0, self._get_snow_strategy(), backend_name
+        )
 
+        # 4. 写入缓存
+        save_to_cache(text, "custom_model", result, backend_name)
         return result
 
     def analyze_batch(self, texts: list) -> list:
-        """
-        批量分析文本
-
-        Args:
-            texts: 文本列表
-
-        Returns:
-            list: 情感分析结果列表
-        """
+        """批量分析文本。"""
         if not texts:
             return []
 
-        # 1. 检查缓存（批量检查）
-        results = [None] * len(texts)
-        uncached_texts = []
-        uncached_indices = []
+        backend_name = self.backend.name
+
+        # 1. 批量检查缓存
+        results: list = [None] * len(texts)
+        uncached_texts: list = []
+        uncached_indices: list = []
 
         for i, text in enumerate(texts):
             if not text or not text.strip():
-                results[i] = SentimentResult(0.5, "neutral", reasoning="空文本", source="custom_model")
+                results[i] = SentimentResult(
+                    0.5, "neutral", reasoning="空文本", source="custom_model"
+                )
                 continue
-
-            # 检查缓存
-            cached_result = get_from_cache(text, "custom_model")
+            cached_result = get_from_cache(text, "custom_model", backend_name)
             if cached_result:
                 results[i] = cached_result
             else:
-                # 未缓存的文本
                 uncached_texts.append(text)
                 uncached_indices.append(i)
 
-        # 2. 批量分析未缓存的文本
+        # 2. 批量预测未缓存的文本
         if uncached_texts:
             try:
-                # 加载模型（一次性加载）
-                model = self._load_model()
-                if not model:
-                    raise RuntimeError("模型未加载成功")
-                
-                batch_results = self._analyze_batch_with_model(uncached_texts)
-                
-                # 填充结果并写入缓存
-                for i, (index, result) in enumerate(zip(uncached_indices, batch_results)):
-                    results[index] = result
-                    # 写入缓存
-                    save_to_cache(uncached_texts[i], "custom_model", result)
-            except (RuntimeError, ValueError) as e:
-                logger.error(f"批量分析失败，降级到SnowNLP: {e}")
-                # 降级到逐个分析（使用同一个SnowNLP实例）
-                snow_strategy = SnowNLPStrategy()
+                start_time = time.time()
+                predictions = self._predict_with_backend(uncached_texts)
+                per_item_time = (time.time() - start_time) / max(len(uncached_texts), 1)
+
+                if len(predictions) != len(uncached_texts):
+                    raise RuntimeError(
+                        f"backend 返回长度不匹配: {len(predictions)} != {len(uncached_texts)}"
+                    )
+
+                snow = self._get_snow_strategy()
                 for i, (index, text) in enumerate(zip(uncached_indices, uncached_texts)):
+                    label, score = predictions[i]
+                    result = self._finalize_single_result(
+                        text, label, float(score), per_item_time, snow, backend_name
+                    )
+                    results[index] = result
+                    save_to_cache(text, "custom_model", result, backend_name)
+            except Exception as e:
+                logger.error(f"批量分析失败，降级到SnowNLP: {e}")
+                snow_strategy = self._get_snow_strategy()
+                for index, text in zip(uncached_indices, uncached_texts):
                     results[index] = snow_strategy.analyze(text)
 
         return results

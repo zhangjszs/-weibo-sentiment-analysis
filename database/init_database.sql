@@ -140,11 +140,16 @@ CREATE TABLE `audit_log` (
 -- ===========================================
 
 -- 初始用户数据
+-- 密码已使用 bcrypt 哈希（rounds=12），原始明文仅供开发演示：
+--   admin / Admin123!  (与 docker-compose.yml 的 DEMO_ADMIN_PASSWORD 一致)
+--   Edward / 123123
+--   EdwardD / 123123
+--   test_user / 123456
 INSERT INTO `user` (`id`, `username`, `password`, `createTime`, `is_admin`, `nickname`, `email`) VALUES
-(1, 'admin', '123456', CURDATE(), 1, '系统管理员', 'admin@example.com'),
-(2, 'Edward', '123123', '2023-03-06', 0, 'Edward', 'edward@example.com'),
-(3, 'EdwardD', '123123', '2023-08-08', 0, 'EdwardD', 'edwardd@example.com'),
-(4, 'test_user', '123456', CURDATE(), 0, '测试用户', 'test@example.com');
+(1, 'admin', '$2b$12$2H4lUDRAjOFzkzLjP80ArOF3ZtfFBTAPb4BKm7c/pBwtFhej4OCF6', CURDATE(), 1, '系统管理员', 'admin@example.com'),
+(2, 'Edward', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-03-06', 0, 'Edward', 'edward@example.com'),
+(3, 'EdwardD', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-08-08', 0, 'EdwardD', 'edwardd@example.com'),
+(4, 'test_user', '$2b$12$jUS./uWfpcNjrqQHNkoKIO/4kFAL5dVOl/abobS6u4MB3i8LoR1/W', CURDATE(), 0, '测试用户', 'test@example.com');
 
 SET FOREIGN_KEY_CHECKS = 1;
 

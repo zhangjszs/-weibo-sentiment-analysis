@@ -147,8 +147,9 @@ class SentimentAnalyzer:
                     prediction = self.model.predict([text])
                     probability = self.model.predict_proba([text])
 
-                    sentiment_map = {0: "负面", 1: "中性", 2: "正面"}
-                    sentiment = sentiment_map.get(prediction[0], "未知")
+                    # Phase 3.7：内部统一英文 label，展示层用 label_to_chinese 转中文
+                    sentiment_map = {0: "negative", 1: "neutral", 2: "positive"}
+                    sentiment = sentiment_map.get(prediction[0], "unknown")
 
                     confidence = float(np.max(probability))
 
@@ -166,7 +167,7 @@ class SentimentAnalyzer:
                     results.append(
                         {
                             "text": text,
-                            "sentiment": "未知",
+                            "sentiment": "unknown",
                             "confidence": 0.0,
                             "raw_prediction": -1,
                         }

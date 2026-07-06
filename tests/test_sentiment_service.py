@@ -10,7 +10,7 @@
 
 import os
 import sys
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -251,6 +251,81 @@ class TestSentimentServiceModes:
         result = SentimentService.analyze("测试文本", mode="smart")
         assert result is not None
         assert "label" in result
+
+
+class TestCustomModelStrategyBackend:
+    """Phase 3：CustomModelStrategy + ModelBackend 集成测试。"""
+
+    def _make_strategy_with_mock_backend(self, predictions):
+        """构造一个注入 mock backend 的 CustomModelStrategy。"""
+        from services.sentiment_service import CustomModelStrategy
+
+        strategy = CustomModelStrategy.__new__(CustomModelStrategy)
+        strategy._snow_strategy = None
+        strategy._backend = MagicMock()
+        strategy._backend.name = "mock_backend"
+        strategy._backend.predict_batch.return_value = predictions
+        return strategy
+
+    def test_analyze_uses_backend_prediction(self):
+        """analyze 应使用 backend.predict_batch 的结果并填入 source。"""
+        strategy = self._make_strategy_with_mock_backend(
+            [("positive", 0.92)]
+        )
+        result = strategy.analyze("好棒")
+        assert result.label == "positive"
+        assert result.score == 0.92
+        assert result.source == "mock_backend"
+        strategy._backend.predict_batch.assert_called_once_with(["好棒"])
+
+    def test_analyze_empty_text_short_circuits(self):
+        strategy = self._make_strategy_with_mock_backend([("positive", 0.9)])
+        result = strategy.analyze("")
+        assert result.label == "neutral"
+        assert result.source == "custom_model"
+        # 空文本不应调用 backend
+        strategy._backend.predict_batch.assert_not_called()
+
+    def test_analyze_falls_back_to_snownlp_on_backend_failure(self):
+        strategy = self._make_strategy_with_mock_backend([])
+        strategy._backend.predict_batch.side_effect = RuntimeError("backend down")
+        result = strategy.analyze("测试文本")
+        # 降级到 SnowNLP，应该有结果
+        assert result.label in ("positive", "negative", "neutral")
+        assert 0.0 <= result.score <= 1.0
+
+    def test_analyze_batch_uses_backend_predict_batch(self):
+        strategy = self._make_strategy_with_mock_backend(
+            [("positive", 0.8), ("negative", 0.7)]
+        )
+        results = strategy.analyze_batch(["好", "差"])
+        assert len(results) == 2
+        assert results[0].label == "positive"
+        assert results[1].label == "negative"
+        assert all(r.source == "mock_backend" for r in results)
+
+    def test_analyze_batch_empty_input(self):
+        strategy = self._make_strategy_with_mock_backend([])
+        assert strategy.analyze_batch([]) == []
+
+    def test_analyze_batch_falls_back_to_snownlp_on_failure(self):
+        strategy = self._make_strategy_with_mock_backend([])
+        strategy._backend.predict_batch.side_effect = RuntimeError("batch fail")
+        results = strategy.analyze_batch(["好棒", "糟糕"])
+        assert len(results) == 2
+        for r in results:
+            assert r.label in ("positive", "negative", "neutral")
+
+    def test_cache_key_includes_backend_dimension(self):
+        """不同 backend 应产生不同 cache key（避免污染）。"""
+        from services.sentiment_service import get_cache_key
+
+        key_bert = get_cache_key("test", "custom_model", "bert")
+        key_sklearn = get_cache_key("test", "custom_model", "sklearn")
+        key_default = get_cache_key("test", "custom_model")
+        assert key_bert != key_sklearn
+        assert key_bert != key_default
+        assert key_sklearn != key_default
 
 
 if __name__ == "__main__":

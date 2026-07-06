@@ -119,7 +119,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -136,6 +136,12 @@ services:
     depends_on:
       web:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     restart: unless-stopped
 
   spider-api:
@@ -175,7 +181,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8090/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -225,13 +231,17 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      
+
+      # Phase 3.8: HTTP 透传到主后端
+      NLP_BACKEND_URL: http://web:5000
+      NLP_BACKEND_TIMEOUT: ${NLP_BACKEND_TIMEOUT:-20}
+
       # LLM 配置
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
       LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
       LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
-      
+
       # 服务鉴权
       NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
     command: ["python", "app/main.py"]
@@ -240,8 +250,10 @@ services:
     depends_on:
       redis:
         condition: service_healthy
+      web:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8091/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8091/health')"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -258,7 +270,11 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/0
-      
+
+      # Phase 3.8: HTTP 透传到主后端
+      NLP_BACKEND_URL: http://web:5000
+      NLP_BACKEND_TIMEOUT: ${NLP_BACKEND_TIMEOUT:-20}
+
       # LLM 配置
       LLM_API_KEY: ${LLM_API_KEY:-}
       LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
@@ -267,6 +283,8 @@ services:
     command: ["celery", "-A", "celery_app", "worker", "--loglevel=info", "-Q", "nlp,default"]
     depends_on:
       redis:
+        condition: service_healthy
+      web:
         condition: service_healthy
     restart: unless-stopped
 

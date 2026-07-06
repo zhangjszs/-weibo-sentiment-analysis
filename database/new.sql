@@ -81,11 +81,13 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci; -- 修改表字符集为 utf8mb4
 
 -- 重新插入 user 数据 (注意 createTime 格式现在是 YYYY-MM-DD)
+-- 密码已使用 bcrypt 哈希（rounds=12），原始明文仅供开发演示：
+--   Edward / 123123, EdwardD / 123123, 19123 / 19123, qwd / 123
 INSERT INTO `user` (`id`, `username`, `password`, `createTime`, `is_admin`, `nickname`, `email`) VALUES
-                                                                    (2, 'Edward', '123123', '2023-03-06', 0, 'Edward', 'edward@example.com'),
-                                                                    (3, 'EdwardD', '123123', '2023-08-08', 0, 'EdwardD', 'edwardd@example.com'),
-                                                                    (4, '19123', '19123', '2024-03-18', 0, '19123', '19123@example.com'),
-                                                                    (5, 'qwd', '123', '2024-03-18', 0, 'qwd', 'qwd@example.com');
+                                                                    (2, 'Edward', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-03-06', 0, 'Edward', 'edward@example.com'),
+                                                                    (3, 'EdwardD', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-08-08', 0, 'EdwardD', 'edwardd@example.com'),
+                                                                    (4, '19123', '$2b$12$CNR.o2tuVy19WyTXES7ASOx1kjR7JtBoOdDoUMEM97sehZtWSUEM.', '2024-03-18', 0, '19123', '19123@example.com'),
+                                                                    (5, 'qwd', '$2b$12$gaW6YWbWVBSgc1m9cH/4OuWHVekDHl733nqhQtqaMYEnCBeV6HGQm', '2024-03-18', 0, 'qwd', 'qwd@example.com');
 
 -- --------------------------------------------------------
 -- 导出 表 wb.reposts 结构 (用于传播分析)

@@ -18,7 +18,8 @@ class BaseRepository:
         return self.session.query(self.model).limit(limit).offset(offset).all()
 
     def find_by_id(self, id: Any) -> Optional[Any]:
-        return self.session.query(self.model).get(id)
+        # SQLAlchemy 2.0：Query.get() 已移除，改用 Session.get()
+        return self.session.get(self.model, id)
 
     def count(self) -> int:
         return self.session.query(self.model).count()

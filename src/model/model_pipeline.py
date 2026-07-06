@@ -55,10 +55,10 @@ class ModelPipeline:
     def _initialize_modules(self) -> bool:
         """初始化所有处理模块"""
         try:
-            # 导入修复后的模块
-            from improved_ciPingTotal import WordFrequencyAnalyzer
-            from improved_index import ModelDataProcessor
-            from improved_yuqing import SentimentAnalyzer
+            # 直接从同级模块导入（不再依赖不存在的 improved_* 包装）
+            from .ciPingTotal import WordFrequencyAnalyzer
+            from .index import ModelDataProcessor
+            from .yuqing import SentimentAnalyzer
 
             # 创建实例
             self.data_processor = ModelDataProcessor(str(self.model_dir))

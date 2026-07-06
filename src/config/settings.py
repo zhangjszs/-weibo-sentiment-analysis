@@ -152,6 +152,23 @@ class Config:
     MODEL_DIR = os.path.join(BASE_DIR, "model")
     SPIDER_DIR = os.path.join(BASE_DIR, "spider")
 
+    # Sentiment Backend Settings（Phase 3 BERT 升级）
+    # 取值：bert / sklearn / snownlp / auto（auto=优先 bert，按链路降级）
+    SENTIMENT_BACKEND = os.getenv("SENTIMENT_BACKEND", "auto")
+    BERT_MODEL_NAME = os.getenv(
+        "BERT_MODEL_NAME", "IDEA-CCNL/Erlangshen-Roberta-110M-Sentiment"
+    )
+    BERT_MODEL_PATH = os.getenv(
+        "BERT_MODEL_PATH", os.path.join(MODEL_DIR, "bert_sentiment_onnx")
+    )
+    BERT_MAX_LENGTH = int(os.getenv("BERT_MAX_LENGTH", 128))
+    BERT_BATCH_SIZE = int(os.getenv("BERT_BATCH_SIZE", 32))
+    BERT_DEVICE = os.getenv("BERT_DEVICE", "cpu")  # cpu / cuda
+    BERT_FALLBACK_TO_SKLEARN = (
+        os.getenv("BERT_FALLBACK_TO_SKLEARN", "True").lower() == "true"
+    )
+    BERT_INFERENCE_TIMEOUT = float(os.getenv("BERT_INFERENCE_TIMEOUT", 2.0))
+
     # App Settings
     JSON_AS_ASCII = False
     SEND_FILE_MAX_AGE_DEFAULT = 0 if IS_DEVELOPMENT else 43200
