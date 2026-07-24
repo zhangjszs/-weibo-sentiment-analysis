@@ -244,7 +244,7 @@ class TestSentimentServiceModes:
         assert result is not None
         assert "label" in result
 
-    @patch('services.sentiment_service.Config')
+    @patch('services.sentiment_service.strategies.Config')
     def test_smart_mode_no_api_key(self, mock_config):
         """smart 模式在没有 API key 时应该降级"""
         mock_config.LLM_API_KEY = None

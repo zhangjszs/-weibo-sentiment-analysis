@@ -179,7 +179,7 @@ class TestSentimentService:
     @pytest.fixture
     def mock_snownlp(self):
         """Mock SnowNLP"""
-        with patch("services.sentiment_service.SnowNLP") as mock:
+        with patch("services.sentiment_service.strategies.SnowNLP") as mock:
             mock_instance = MagicMock()
             mock_instance.sentiments = 0.7
             mock_instance.keywords.return_value = ["关键词1", "关键词2"]
