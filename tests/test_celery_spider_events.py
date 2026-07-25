@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 """
-爬虫任务领域事件测试
+爬虫任务文章入库副作用测试。
+
+原 test 断言领域事件总线 publish 被调用——那是实现细节。P2 简化后，
+行为契约是：文章批量写入后清空缓存。本测试直接验证 clear_all_cache 被调用。
 """
 
 from unittest.mock import patch
 
-from services.domain_events import ArticlesUpsertedEvent
 from tasks.celery_spider import _notify_articles_upserted_event
 
 
-def test_notify_articles_upserted_event_publishes_domain_event():
-    with patch("tasks.celery_spider.domain_event_bus.publish") as mock_publish:
+def test_notify_articles_upserted_event_clears_cache():
+    with patch("utils.cache.clear_all_cache") as mock_clear:
         _notify_articles_upserted_event(
             task_id="task-123",
             pages=2,
@@ -18,10 +20,4 @@ def test_notify_articles_upserted_event_publishes_domain_event():
             imported=18,
         )
 
-    mock_publish.assert_called_once()
-    published_event = mock_publish.call_args.args[0]
-    assert isinstance(published_event, ArticlesUpsertedEvent)
-    assert published_event.task_id == "task-123"
-    assert published_event.pages == 2
-    assert published_event.crawled == 18
-    assert published_event.imported == 18
+    mock_clear.assert_called_once()
