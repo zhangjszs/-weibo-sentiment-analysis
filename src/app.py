@@ -198,7 +198,9 @@ try:
     app.register_blueprint(audit_bp)  # 注册审计日志蓝图
     app.register_blueprint(bigscreen_bp)  # 注册数据大屏蓝图
 
-    # API 蓝图排除 CSRF（使用 Bearer Token 鉴权）
+    # API 蓝图排除 CSRF：JWT 走 Bearer header 不需要 CSRF 令牌；
+    # cookie 鉴权的 CSRF 防护由 SameSite=Strict（生产）+ Origin 校验（见
+    # _validate_origin_for_state_change）双层保障。
     csrf.exempt(api.bp)
     csrf.exempt(db)
     csrf.exempt(spider_bp)
@@ -208,6 +210,7 @@ try:
     csrf.exempt(platform_bp)
     csrf.exempt(favorites_bp)
     csrf.exempt(audit_bp)
+    csrf.exempt(bigscreen_bp)  # P3 修复：此前遗漏，与同域 /api/* 蓝图保持一致
 
     logger.info(
         "蓝图注册完成: page, user, api, data, spider, alert, propagation, report, platform"
@@ -293,6 +296,46 @@ def _require_jwt_auth():
     user_info = _attach_current_user_from_token()
     if not user_info:
         return error("缺少认证令牌", code=401), 401
+    return None
+
+
+def _validate_origin_for_state_change():
+    """对 CSRF 豁免的 API 路径做 Origin 校验（defense-in-depth）。
+
+    SameSite=Strict cookie 是主防线，本检查是第二层：
+    - 浏览器 POST/PUT/PATCH/DELETE 会带 Origin 头 → 校验是否在 ALLOWED_ORIGINS
+    - 非浏览器客户端（curl、API SDK）不带 Origin → 放行（它们用 Bearer header）
+    - Origin 缺失时回退到 Referer 校验（部分隐私模式会去掉 Origin）
+
+    Returns:
+        None 或 (error_response, status_code) 元组
+    """
+    if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
+        return None
+
+    origin = request.headers.get("Origin")
+    if origin:
+        if origin in Config.ALLOWED_ORIGINS:
+            return None
+        logger.warning(
+            "CSRF Origin 校验失败: origin=%s path=%s method=%s ip=%s",
+            origin, request.path, request.method, get_client_ip(),
+        )
+        return error("跨站请求被拒绝", code=403), 403
+
+    # Origin 缺失：回退到 Referer（部分隐私模式会去掉 Origin）
+    referer = request.headers.get("Referer", "")
+    if referer:
+        for allowed in Config.ALLOWED_ORIGINS:
+            if referer.startswith(allowed):
+                return None
+        logger.warning(
+            "CSRF Referer 校验失败: referer=%s path=%s method=%s ip=%s",
+            referer, request.path, request.method, get_client_ip(),
+        )
+        return error("跨站请求被拒绝", code=403), 403
+
+    # 既无 Origin 也无 Referer：视为非浏览器客户端 → 放行
     return None
 
 
@@ -428,8 +471,9 @@ def before_request():
     2. 登录/注册页面无需认证
     3. 健康检查端点无需认证
     4. API端点部分无需认证
-    5. 其他页面需要登录验证
-    6. 记录请求日志
+    5. CSRF defense-in-depth：对 /api/* 与 /getAllData/* 的状态变更方法校验 Origin
+    6. 其他页面需要登录验证
+    7. 记录请求日志
     """
     # 记录请求信息
     log_request_info()
@@ -470,6 +514,12 @@ def before_request():
                 _attach_current_user_from_token()
             return None
 
+        # CSRF defense-in-depth：对状态变更方法校验 Origin/Referer
+        # （CSRF 豁免的 /api/* 蓝图靠 SameSite + Origin 双层防护）
+        origin_err = _validate_origin_for_state_change()
+        if origin_err is not None:
+            return origin_err
+
         auth_result = _require_jwt_auth()
         if auth_result is not None:
             return auth_result
@@ -477,6 +527,11 @@ def before_request():
 
     # 数据API端点 - JWT保护（用于Vue前端）
     if request.path.startswith("/getAllData/"):
+        # CSRF defense-in-depth：同 /api/* 路径
+        origin_err = _validate_origin_for_state_change()
+        if origin_err is not None:
+            return origin_err
+
         auth_result = _require_jwt_auth()
         if auth_result is not None:
             return auth_result
