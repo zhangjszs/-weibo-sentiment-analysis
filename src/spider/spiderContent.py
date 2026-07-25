@@ -21,7 +21,7 @@ import requests
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from config import (
+from spider.config import (
     DEFAULT_DELAY,
     get_random_headers,
     get_working_proxy,
