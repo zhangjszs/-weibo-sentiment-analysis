@@ -99,6 +99,71 @@ def writerRow(row: List[Any]) -> bool:
         return False
 
 
+def _save_comment_to_db(
+    comment_id, article_id, created_at, like_counts, region, content,
+    author_name, author_gender, author_address, author_avatar, user_id,
+    reply_count, comment_source, is_hot, parent_id, reply_to_user,
+    verified_type, followers_count,
+) -> None:
+    """双写：将评论写入 DB（best-effort）。
+
+    P1.2：CSV 仍是下游（spiderUserInfo / yuqing 模型 / main.py）依赖的数据源，
+    DB 作为可靠副本以消除"CSV 写入失败静默丢数据"的风险。失败仅记录日志、不抛
+    异常，不影响 CSV 主流程。schema 由 ensure_comments_columns() 首次调用时
+    幂等补齐（create_all 不会 ALTER 已有表）。
+    """
+    try:
+        from sqlalchemy.exc import IntegrityError
+
+        from database import db_session, ensure_comments_columns
+        from models.comment import Comment
+
+        ensure_comments_columns()
+
+        # articleId 在模型中是 BigInteger；非数字时跳过本次 DB 写入
+        try:
+            article_id_int = int(article_id)
+        except (TypeError, ValueError):
+            logger.warning("article_id 非数字，跳过 DB 写入: %r", article_id)
+            return
+
+        comment = Comment(
+            articleId=article_id_int,
+            created_at=created_at,
+            content=content,
+            likeNum=like_counts or 0,
+            user=author_name,
+            region=region,
+            authorGender=author_gender,
+            authorAddress=author_address,
+            authorAvatar=author_avatar,
+            comment_id=comment_id,
+            user_id=user_id,
+            reply_count=reply_count or 0,
+            comment_source=comment_source,
+            is_hot=bool(is_hot),
+            parent_id=parent_id,
+            reply_to_user=reply_to_user,
+            verified_type=verified_type if verified_type is not None else -1,
+            followers_count=followers_count or 0,
+        )
+        db_session.add(comment)
+        db_session.commit()
+    except IntegrityError as e:
+        # (articleId, created_at) 主键冲突 — 评论已存在，视为成功
+        try:
+            db_session.rollback()
+        except Exception:
+            pass
+        logger.debug("评论已存在于DB（主键冲突），跳过: %s", getattr(e, "orig", e))
+    except Exception as e:
+        try:
+            db_session.rollback()
+        except Exception:
+            pass
+        logger.error("DB写入评论失败（CSV仍已写入）: %s", e)
+
+
 # ========== 请求构建与执行 ==========
 
 
@@ -363,6 +428,28 @@ def process_comment(
             user_info["verified_type"],
             user_info["followers_count"],
         ]
+    )
+
+    # 双写 DB（best-effort：失败仅记日志，不影响下方 CSV 成败判定与去重）
+    _save_comment_to_db(
+        comment_id=comment_id,
+        article_id=article_id,
+        created_at=created_at,
+        like_counts=like_counts,
+        region=region,
+        content=content,
+        author_name=user_info["author_name"],
+        author_gender=user_info["author_gender"],
+        author_address=user_info["author_address"],
+        author_avatar=user_info["author_avatar"],
+        user_id=user_info["user_id"],
+        reply_count=reply_count,
+        comment_source=comment_source,
+        is_hot=is_hot,
+        parent_id=parent_id,
+        reply_to_user=reply_to_user,
+        verified_type=user_info["verified_type"],
+        followers_count=user_info["followers_count"],
     )
 
     if not success:
