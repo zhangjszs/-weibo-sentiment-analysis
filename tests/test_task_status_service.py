@@ -131,19 +131,18 @@ class TestQueryLocalTask:
 
     @patch("services.task_status_service.AsyncResult")
     def test_progress_state_zero_total_no_division_error(self, mock_async):
-        """PROGRESS 且 total=0 → 不抛除零异常。
+        """PROGRESS 且 total=0 → progress=0（任务尚未开始），不抛除零也不超过 100%。
 
-        注意：源码 `int(info.get("total", 1) or 1)` 中 `0 or 1` 求值为 1
-        （0 是 falsy），所以 total=0 会被当成 1。当 current>0 时 progress
-        可能超过 100（如 5/1*100=500）——这是一个潜在 bug，但本测试只验证
-        不抛异常，并记录实际行为。
+        历史 bug：源码 `int(info.get("total", 1) or 1)` 中 `0 or 1` 求值为 1
+        （0 是 falsy），total=0 被当成 1，导致 current>0 时 progress 超过 100
+        （如 5/1*100=500）。修复：total=0 时 progress 直接取 0。
         """
         mock_async.return_value = _make_async_result(
             "PROGRESS", info={"current": 5, "total": 0, "status": ""}
         )
         result = _query_local_task("task-3")
-        # 实际行为：total=0 被转为 1，progress=500（超过 100 的已知 bug）
-        assert result["progress"] == 500
+        # 修复后：total=0 → progress=0（不再超过 100%）
+        assert result["progress"] == 0
 
     @patch("services.task_status_service.AsyncResult")
     def test_progress_state_none_info(self, mock_async):
