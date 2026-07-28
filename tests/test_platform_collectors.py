@@ -5,7 +5,7 @@
 
 import pytest
 
-from src.services.platform_collectors import (
+from services.platform_collectors import (
     BilibiliCollector,
     DouyinCollector,
     Platform,
