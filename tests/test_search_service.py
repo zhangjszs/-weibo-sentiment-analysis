@@ -355,11 +355,12 @@ class TestIndexDocument:
         assert row[0] >= before
 
     def test_replace_existing_document(self, engine):
-        """相同 doc_id 应替换 search_index（INSERT OR REPLACE 生效）。
+        """相同 doc_id 应同时替换 search_index 与 search_fts。
 
-        注意：search_fts 表的 INSERT OR REPLACE **实际不生效**——FTS5 默认
-        以 rowid 为主键而非 id 列，所以重复插入会追加而非替换。这是一个已知
-        bug：替换文档后旧标题仍可通过 FTS 搜到。本测试记录实际行为。
+        历史 bug：FTS5 虚拟表以 rowid 为主键，id 只是普通列，原 `INSERT OR
+        REPLACE INTO search_fts` 按 rowid 匹配而非 id，重复插入会追加新条目，
+        导致替换文档后旧标题仍可通过 FTS 搜到。修复方式：INSERT 前先
+        `DELETE FROM search_fts WHERE id = ?`。本测试验证修复后旧标题不再可搜。
         """
         engine.index_document("d1", "旧标题", "旧内容")
         engine.index_document("d1", "新标题", "新内容")
@@ -369,9 +370,20 @@ class TestIndexDocument:
         # 新标题可搜到
         results = engine.search("新标题")
         assert any(r.id == "d1" for r in results)
-        # 已知 bug：旧标题仍可通过 FTS 搜到（FTS5 rowid 主键，未替换旧条目）
+        # 修复后：旧标题不应再被搜到
         old_results = engine.search("旧标题")
-        assert any(r.id == "d1" for r in old_results)
+        assert not any(r.id == "d1" for r in old_results)
+
+    def test_replace_in_batch_index_clears_stale_fts(self, engine):
+        """batch_index 重复索引相同 doc_id 也应清除旧 FTS 条目（同 index_document 修复）"""
+        engine.index_document("d1", "批量旧标题", "旧内容")
+        engine.batch_index(
+            [{"id": "d1", "title": "批量新标题", "content": "新内容"}]
+        )
+        new_results = engine.search("批量新标题")
+        assert any(r.id == "d1" for r in new_results)
+        old_results = engine.search("批量旧标题")
+        assert not any(r.id == "d1" for r in old_results)
 
     def test_pinyin_columns_populated(self, engine):
         """索引时应填充 pinyin_title / pinyin_content 列"""
