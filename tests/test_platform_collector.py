@@ -184,3 +184,49 @@ def test_factory_list_supported():
     assert Platform.DOUYIN in supported
     assert Platform.ZHIHU in supported
     assert Platform.BILIBILI in supported
+
+
+# --- BasePlatformCollector.collect（platform_collector.py 28-31）---
+
+
+def test_base_collector_collect_returns_empty_list():
+    """基类 collect 默认返回空列表并记录日志（覆盖 30-31）"""
+    c = WechatCollector()
+    result = c.collect("科技", limit=5)
+    assert result == []
+
+
+def test_base_collector_collect_default_limit():
+    """collect 默认 limit=20"""
+    c = ZhihuCollector()
+    result = c.collect("AI")
+    assert result == []
+
+
+# --- PlatformCollectorFactory 补充分支 ---
+
+
+def test_factory_get_by_valid_string():
+    """通过有效字符串获取采集器（覆盖 str → Platform 转换成功路径 104）"""
+    c = PlatformCollectorFactory.get("wechat")
+    assert isinstance(c, WechatCollector)
+
+    c2 = PlatformCollectorFactory.get("bilibili")
+    assert isinstance(c2, BilibiliCollector)
+
+
+def test_factory_get_unregistered_enum_raises():
+    """传入有效但未注册的 Platform 枚举应抛 ValueError（覆盖 108-109）"""
+    # WEIBO / KUAISHOU 存在于枚举但未在 _registry 注册
+    with pytest.raises(ValueError, match="不支持的平台"):
+        PlatformCollectorFactory.get(Platform.WEIBO)
+
+    with pytest.raises(ValueError, match="不支持的平台"):
+        PlatformCollectorFactory.get(Platform.KUAISHOU)
+
+
+def test_factory_get_unregistered_enum_value_in_message():
+    """错误信息应包含平台值（枚举 str 形如 'Platform.KUAISHOU'）"""
+    with pytest.raises(ValueError) as exc_info:
+        PlatformCollectorFactory.get(Platform.KUAISHOU)
+    assert "KUAISHOU" in str(exc_info.value)
