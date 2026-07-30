@@ -55,12 +55,20 @@ def _make_async_result(
 
 @pytest.fixture
 def patched_config(monkeypatch):
-    """提供可配置的 Config 开关，默认全部关闭（走 local）"""
-    from config.settings import Config
+    """提供可配置的 Config 开关，默认全部关闭（走 local）。
 
-    monkeypatch.setattr(Config, "SPIDER_SERVICE_ENABLED", False)
-    monkeypatch.setattr(Config, "NLP_SERVICE_ENABLED", False)
-    return Config
+    必须改写服务实际引用的 Config 对象（``services.task_status_service.Config``），
+    而非重新 ``from config.settings import Config``。原因：test_startup_service 与
+    conftest 的 app fixture 会 ``importlib.reload(config.settings)``，reload 会替换
+    ``Config`` 类对象——此时 ``task_status_service.Config``（导入时绑定）仍指向旧
+    类，而重新 import 得到新类；patch 新类不影响服务读取的旧类（默认 False），
+    导致服务跳过 spider/nlp 直接走 local，回退链测试全盘失配（评估 P0 #9）。
+    """
+    import services.task_status_service as tss
+
+    monkeypatch.setattr(tss.Config, "SPIDER_SERVICE_ENABLED", False)
+    monkeypatch.setattr(tss.Config, "NLP_SERVICE_ENABLED", False)
+    return tss.Config
 
 
 # ---------------------------------------------------------------------------
