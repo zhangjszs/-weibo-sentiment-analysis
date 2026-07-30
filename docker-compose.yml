@@ -60,7 +60,8 @@ services:
       
       # 管理员配置
       ADMIN_USERS: ${ADMIN_USERS:-admin}
-      AUTO_CREATE_DEMO_ADMIN: ${AUTO_CREATE_DEMO_ADMIN:-True}
+      # 安全收紧（评估 P0 #7）：默认不自动创建弱口令 demo 管理员；开发环境显式置 True
+      AUTO_CREATE_DEMO_ADMIN: ${AUTO_CREATE_DEMO_ADMIN:-False}
       DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-admin}
       DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Admin123!}
       
@@ -86,19 +87,19 @@ services:
       SPIDER_MAX_RETRIES: ${SPIDER_MAX_RETRIES:-3}
       SPIDER_USE_PROXY: ${SPIDER_USE_PROXY:-False}
       
-      # Spider 服务配置
-      SPIDER_SERVICE_ENABLED: "True"
+      # Spider 服务配置（评估 P0 #7：硬编码 "True" 改为可覆盖，全栈默认仍启用）
+      SPIDER_SERVICE_ENABLED: ${SPIDER_SERVICE_ENABLED:-True}
       SPIDER_SERVICE_BASE_URL: http://spider-api:8090
       SPIDER_SERVICE_TIMEOUT: ${SPIDER_SERVICE_TIMEOUT:-15}
       SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:-}
-      SPIDER_SERVICE_FALLBACK_LOCAL: "True"
-      
+      SPIDER_SERVICE_FALLBACK_LOCAL: ${SPIDER_SERVICE_FALLBACK_LOCAL:-True}
+
       # NLP 服务配置
-      NLP_SERVICE_ENABLED: "True"
+      NLP_SERVICE_ENABLED: ${NLP_SERVICE_ENABLED:-True}
       NLP_SERVICE_BASE_URL: http://nlp-api:8091
       NLP_SERVICE_TIMEOUT: ${NLP_SERVICE_TIMEOUT:-20}
       NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
-      NLP_SERVICE_FALLBACK_LOCAL: "True"
+      NLP_SERVICE_FALLBACK_LOCAL: ${NLP_SERVICE_FALLBACK_LOCAL:-True}
       
       # LLM 配置
       LLM_API_KEY: ${LLM_API_KEY:-}
@@ -124,6 +125,46 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    restart: unless-stopped
+
+  # 主应用 Celery worker（评估 P0 #6）：消费 sentiment/default 队列。
+  # 此前仅有 spider-worker / nlp-worker，主应用的 celery_sentiment 异步情感分析任务无消费者。
+  # 注意：celery 命令不走 run.py，需显式设 PYTHONPATH=/app/src（与 CI 一致）。
+  # 未加 beat：当前无 beat_schedule（无周期任务），待预警扫描/变点检测等周期任务落地（P1）再补。
+  web-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: weibo-web-worker
+    environment:
+      PYTHONPATH: /app/src
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+      # 数据库配置
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      DB_NAME: ${MYSQL_DATABASE:-wb}
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-10}
+
+      # Redis / Celery 配置
+      REDIS_URL: redis://redis:6379/0
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+
+      # LLM 配置（smart 模式情感分析需要）
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_API_URL: ${LLM_API_URL:-https://api.openai.com/v1/chat/completions}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
+    command: ["celery", "-A", "tasks.celery_config:celery_app", "worker", "--loglevel=info", "-Q", "sentiment,default"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
