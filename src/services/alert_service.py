@@ -13,7 +13,6 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 from models.alert import (
     Alert,
-    AlertHistory,
     AlertLevel,
     AlertRule,
     AlertType,
@@ -184,23 +183,28 @@ class ThresholdChecker:
 
 
 class AlertRuleEngine:
-    """预警规则引擎"""
+    """预警规则引擎
+
+    P0 #5：规则与预警改为 DB 持久化。
+    - 规则：每次评估从 ``alert_rules`` 表加载（支持多 worker 共享、API 增删改持久化）。
+    - 预警消息：写入 ``alerts`` 表（兼作历史，重启不丢）。
+    - 运行时状态（``AlertSuppression`` 抑制计数 / ``ThresholdChecker`` 指标缓存 /
+      回调列表）保留内存，不持久化。
+    - 默认规则惰性 seed：首次 ``get_rules`` / ``check_alerts`` 时若表空才写入 DB，
+      避免 import 期 DB 访问（``alert_engine`` 在模块导入即实例化）。
+    """
 
     def __init__(self):
-        self.rules: Dict[str, AlertRule] = {}
-        self.alert_history: List[Alert] = []
-        self.max_history = 1000
         self._lock = threading.Lock()
         self._callbacks: List[Callable[[Alert], None]] = []
         self.suppression = AlertSuppression()
         self.threshold_checker = ThresholdChecker()
         self.validator = ThresholdValidator()
+        self._defaults_seeded = False
 
-        self._init_default_rules()
-
-    def _init_default_rules(self):
-        """初始化默认预警规则"""
-        default_rules = [
+    def _build_default_rules(self) -> List[AlertRule]:
+        """构造默认预警规则列表（不写 DB，供 seed 使用）。"""
+        return [
             AlertRule(
                 id="negative_surge",
                 name="负面舆情激增",
@@ -283,39 +287,86 @@ class AlertRuleEngine:
             ),
         ]
 
-        for rule in default_rules:
-            self.rules[rule.id] = rule
+    def _ensure_defaults_seeded(self) -> None:
+        """惰性 seed：``alert_rules`` 表为空时写入默认规则。
 
-        logger.info(f"已加载 {len(self.rules)} 条默认预警规则")
+        import-safe：仅首次 ``get_rules`` / ``check_alerts`` 调用时触发。
+        DB 不可用时仅记日志并置 flag（避免重复尝试），规则查询随后返回空。
+        """
+        if self._defaults_seeded:
+            return
+        # 先置位，避免 seed 异常后每次调用都重试（DB 持续不可用会拖慢请求）
+        self._defaults_seeded = True
+        try:
+            from database import db_session
+
+            if db_session.query(AlertRule).count() == 0:
+                for rule in self._build_default_rules():
+                    db_session.add(rule)
+                db_session.commit()
+                logger.info("已 seed 默认预警规则到 DB")
+        except Exception as e:
+            logger.warning(f"seed 默认预警规则失败（DB 不可用？规则将无法评估）: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
+
+    def _init_default_rules(self) -> None:
+        """兼容旧入口：触发默认规则 seed。"""
+        self._ensure_defaults_seeded()
 
     def add_rule(self, rule: AlertRule) -> Tuple[bool, str]:
-        """添加预警规则"""
+        """添加预警规则（持久化到 DB）"""
         valid, errors = self.validator.validate_rule(rule)
         if not valid:
             return False, "; ".join(errors)
 
-        with self._lock:
-            self.rules[rule.id] = rule
+        try:
+            from database import db_session
+
+            db_session.add(rule)
+            db_session.commit()
             logger.info(f"添加预警规则: {rule.name} (优先级: {rule.priority})")
-        return True, "规则添加成功"
+            return True, "规则添加成功"
+        except Exception as e:
+            logger.error(f"添加规则失败: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
+            return False, f"添加失败: {e}"
 
     def remove_rule(self, rule_id: str) -> bool:
-        """移除预警规则"""
-        with self._lock:
-            if rule_id in self.rules:
-                del self.rules[rule_id]
-                self.suppression.reset(rule_id)
-                logger.info(f"移除预警规则: {rule_id}")
-                return True
+        """移除预警规则（从 DB 删除）"""
+        try:
+            from database import db_session
+
+            rule = db_session.get(AlertRule, rule_id)
+            if not rule:
+                return False
+            db_session.delete(rule)
+            db_session.commit()
+            self.suppression.reset(rule_id)
+            logger.info(f"移除预警规则: {rule_id}")
+            return True
+        except Exception as e:
+            logger.error(f"移除规则失败: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
             return False
 
     def update_rule(self, rule_id: str, **kwargs) -> Tuple[bool, str]:
-        """更新预警规则"""
-        with self._lock:
-            if rule_id not in self.rules:
+        """更新预警规则（持久化到 DB）"""
+        try:
+            from database import db_session
+
+            rule = db_session.get(AlertRule, rule_id)
+            if not rule:
                 return False, f"规则不存在: {rule_id}"
 
-            rule = self.rules[rule_id]
             for key, value in kwargs.items():
                 if hasattr(rule, key):
                     setattr(rule, key, value)
@@ -324,10 +375,19 @@ class AlertRuleEngine:
 
             valid, errors = self.validator.validate_rule(rule)
             if not valid:
+                db_session.rollback()
                 return False, "; ".join(errors)
 
+            db_session.commit()
             logger.info(f"更新预警规则: {rule_id}")
             return True, "规则更新成功"
+        except Exception as e:
+            logger.error(f"更新规则失败: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
+            return False, f"更新失败: {e}"
 
     def register_callback(self, callback: Callable[[Alert], None]):
         """注册预警回调函数"""
@@ -389,14 +449,20 @@ class AlertRuleEngine:
         return alert
 
     def check_alerts(self, metrics: Dict[str, float]) -> List[Alert]:
-        """检查所有规则并触发预警"""
+        """检查所有规则并触发预警（规则从 DB 加载）"""
+        self._ensure_defaults_seeded()
+        try:
+            from database import db_session
+
+            rules = db_session.query(AlertRule).all()
+        except Exception as e:
+            logger.error(f"check_alerts 加载规则失败: {e}")
+            return []
+
         triggered_alerts = []
-
-        sorted_rules = sorted(
-            self.rules.values(), key=lambda r: r.priority, reverse=True
-        )
-
-        for rule in sorted_rules:
+        # 按优先级降序评估；rule 为 session 内持久对象，_fire_alert 的状态变更
+        # 会随 _add_to_history 的 commit 一并持久化
+        for rule in sorted(rules, key=lambda r: r.priority, reverse=True):
             if not rule.enabled:
                 continue
 
@@ -570,8 +636,15 @@ class AlertRuleEngine:
         return None
 
     def evaluate_keyword_match(self, text: str, keywords: List[str]) -> Optional[Alert]:
-        """评估关键词匹配"""
-        rule = self.rules.get("keyword_match")
+        """评估关键词匹配（keyword_match 规则从 DB 加载）"""
+        try:
+            from database import db_session
+
+            rule = db_session.get(AlertRule, "keyword_match")
+        except Exception as e:
+            logger.error(f"加载 keyword_match 规则失败: {e}")
+            return None
+
         if not rule or not rule.enabled:
             return None
 
@@ -590,83 +663,160 @@ class AlertRuleEngine:
         return None
 
     def _add_to_history(self, alert: Alert):
-        """添加到预警历史"""
-        with self._lock:
-            self.alert_history.append(alert)
-            if len(self.alert_history) > self.max_history:
-                self.alert_history = self.alert_history[-self.max_history :]
+        """写入 DB（best-effort）：alert 新增 + 触发规则的 last_triggered /
+        trigger_count 状态变更一并提交（rule 为 session 内持久对象，dirty 自动跟踪）。"""
+        try:
+            from database import db_session
+
+            db_session.add(alert)
+            db_session.commit()
+        except Exception as e:
+            logger.error(f"预警写入 DB 失败: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
 
     def get_alert_history(
         self, limit: int = 50, level: str = None, unread_only: bool = False
     ) -> List[Dict]:
-        """获取预警历史"""
-        with self._lock:
-            alerts = self.alert_history.copy()
+        """获取预警历史（从 DB 查询）"""
+        try:
+            from database import db_session
 
-        if level:
-            alerts = [a for a in alerts if a.level.value == level]
-
-        if unread_only:
-            alerts = [a for a in alerts if not a.is_read]
-
-        alerts = sorted(alerts, key=lambda x: x.created_at, reverse=True)
-
-        return [a.to_dict() for a in alerts[:limit]]
+            q = db_session.query(Alert)
+            if level:
+                try:
+                    q = q.filter(Alert.level == AlertLevel(level))
+                except ValueError:
+                    return []  # 非法 level
+            if unread_only:
+                q = q.filter(Alert.is_read.is_(False))
+            q = q.order_by(Alert.created_at.desc()).limit(limit)
+            return [a.to_dict() for a in q.all()]
+        except Exception as e:
+            logger.error(f"加载预警历史失败: {e}")
+            return []
 
     def mark_alert_read(self, alert_id: str) -> bool:
         """标记预警已读"""
-        with self._lock:
-            for alert in self.alert_history:
-                if alert.id == alert_id:
-                    alert.is_read = True
-                    return True
-        return False
+        try:
+            from database import db_session
+
+            alert = db_session.get(Alert, alert_id)
+            if not alert:
+                return False
+            alert.is_read = True
+            db_session.commit()
+            return True
+        except Exception as e:
+            logger.error(f"标记已读失败: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
+            return False
 
     def mark_all_read(self) -> int:
         """标记所有预警已读"""
-        count = 0
-        with self._lock:
-            for alert in self.alert_history:
-                if not alert.is_read:
-                    alert.is_read = True
-                    count += 1
-        return count
+        try:
+            from database import db_session
+
+            count = (
+                db_session.query(Alert)
+                .filter(Alert.is_read.is_(False))
+                .update({Alert.is_read: True})
+            )
+            db_session.commit()
+            return count
+        except Exception as e:
+            logger.error(f"批量标记已读失败: {e}")
+            try:
+                db_session.rollback()
+            except Exception:
+                pass
+            return 0
 
     def get_unread_count(self) -> int:
         """获取未读预警数量"""
-        with self._lock:
-            return sum(1 for a in self.alert_history if not a.is_read)
+        try:
+            from database import db_session
+
+            return db_session.query(Alert).filter(Alert.is_read.is_(False)).count()
+        except Exception as e:
+            logger.error(f"获取未读数失败: {e}")
+            return 0
+
+    def get_rule(self, rule_id: str) -> Optional[AlertRule]:
+        """按 ID 获取单条规则（从 DB）。"""
+        try:
+            from database import db_session
+
+            return db_session.get(AlertRule, rule_id)
+        except Exception as e:
+            logger.error(f"获取规则失败: {e}")
+            return None
 
     def get_rules(self) -> List[Dict]:
-        """获取所有规则"""
-        with self._lock:
+        """获取所有规则（从 DB 加载，按优先级降序）"""
+        self._ensure_defaults_seeded()
+        try:
+            from database import db_session
+
+            rules = db_session.query(AlertRule).all()
             return [
-                rule.to_dict()
-                for rule in sorted(
-                    self.rules.values(), key=lambda r: r.priority, reverse=True
-                )
+                r.to_dict()
+                for r in sorted(rules, key=lambda r: r.priority, reverse=True)
             ]
+        except Exception as e:
+            logger.error(f"加载规则失败: {e}")
+            return []
 
     def get_stats(self) -> Dict:
-        """获取预警统计"""
-        with self._lock:
-            alerts = self.alert_history
+        """获取预警统计（聚合查询）"""
+        try:
+            from database import db_session
+            from sqlalchemy import func
 
-        level_counts = defaultdict(int)
-        type_counts = defaultdict(int)
-
-        for alert in alerts:
-            level_counts[alert.level.value] += 1
-            type_counts[alert.alert_type.value] += 1
-
-        return {
-            "total_alerts": len(alerts),
-            "unread_count": sum(1 for a in alerts if not a.is_read),
-            "level_distribution": dict(level_counts),
-            "type_distribution": dict(type_counts),
-            "active_rules": sum(1 for r in self.rules.values() if r.enabled),
-            "suppression_stats": self.suppression.get_stats(),
-        }
+            total = db_session.query(Alert).count()
+            unread = db_session.query(Alert).filter(Alert.is_read.is_(False)).count()
+            level_rows = (
+                db_session.query(Alert.level, func.count(Alert.id))
+                .group_by(Alert.level)
+                .all()
+            )
+            type_rows = (
+                db_session.query(Alert.alert_type, func.count(Alert.id))
+                .group_by(Alert.alert_type)
+                .all()
+            )
+            active_rules = (
+                db_session.query(AlertRule).filter(AlertRule.enabled.is_(True)).count()
+            )
+            level_dist = {
+                (lv.value if lv else "unknown"): cnt for lv, cnt in level_rows
+            }
+            type_dist = {
+                (t.value if t else "unknown"): cnt for t, cnt in type_rows
+            }
+            return {
+                "total_alerts": total,
+                "unread_count": unread,
+                "level_distribution": level_dist,
+                "type_distribution": type_dist,
+                "active_rules": active_rules,
+                "suppression_stats": self.suppression.get_stats(),
+            }
+        except Exception as e:
+            logger.error(f"获取统计失败: {e}")
+            return {
+                "total_alerts": 0,
+                "unread_count": 0,
+                "level_distribution": {},
+                "type_distribution": {},
+                "active_rules": 0,
+                "suppression_stats": self.suppression.get_stats(),
+            }
 
 
 alert_engine = AlertRuleEngine()
@@ -679,7 +829,6 @@ __all__ = [
     "ThresholdConfig",
     "AlertRule",
     "Alert",
-    "AlertHistory",
     "AlertSuppression",
     "ThresholdValidator",
     "ThresholdChecker",

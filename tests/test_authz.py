@@ -2,7 +2,6 @@ import pytest
 from flask import Flask, request
 
 from config.settings import Config
-from services.alert_service import alert_engine
 from utils.authz import admin_required
 
 
@@ -142,7 +141,13 @@ def spider_client_with_mock_user(monkeypatch):
 
 
 @pytest.fixture
-def alert_client_with_mock_user(monkeypatch):
+def alert_client_with_mock_user(monkeypatch, alert_db):
+    """alert_db：in-memory SQLite，使 alert_api 写库隔离（rules/alerts 落测试库）。
+
+    ``restore_alert_engine_state`` autouse fixture 已移除——``alert_engine.rules`` /
+    ``alert_engine.alert_history`` 内存缓存随 P0 #5 一并删除，且本文件用例不触发
+    预警评估（403 在 admin_required 即被拦），无需快照/恢复。
+    """
     app = Flask(__name__)
     monkeypatch.setattr(Config, "ADMIN_USERS", {"admin"})
 
@@ -156,17 +161,6 @@ def alert_client_with_mock_user(monkeypatch):
 
     app.register_blueprint(alert_bp)
     return app.test_client()
-
-
-@pytest.fixture(autouse=True)
-def restore_alert_engine_state():
-    rules_snapshot = dict(alert_engine.rules)
-    history_snapshot = list(alert_engine.alert_history)
-    try:
-        yield
-    finally:
-        alert_engine.rules = dict(rules_snapshot)
-        alert_engine.alert_history = list(history_snapshot)
 
 
 def test_spider_crawl_submits_celery_task(spider_client_with_mock_user, monkeypatch):

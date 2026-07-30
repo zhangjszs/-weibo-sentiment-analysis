@@ -853,7 +853,13 @@ class TestNormalizeChannels:
 
 
 class TestResolveChannels:
-    """测试渠道解析（service.py 478-500）"""
+    """测试渠道解析（service.py 478-500）
+
+    P0 #5：``_fetch_rule_channels`` 改为直接查 ``alert_rules`` 表
+    （``alert_engine.rules`` 内存缓存已删除）。触及 DB 的用例依赖 conftest 的
+    ``alert_db`` fixture（in-memory SQLite，monkeypatch ``database.db_session``），
+    在测试库内构造规则再断言 ``resolve_channels`` 解析结果。
+    """
 
     def test_explicit_channels(self):
         from services.notification_service import (
@@ -866,34 +872,35 @@ class TestResolveChannels:
             NotificationChannel.EMAIL
         ]
 
-    def test_fallback_to_rule(self, monkeypatch):
-        from services import alert_service
+    def test_fallback_to_rule(self, alert_db):
+        """alert_data 无 notification_channels 但有 rule_id → 从 DB 取规则渠道"""
+        from models.alert import AlertLevel, AlertRule, AlertType
         from services.notification_service import (
             NotificationChannel,
             NotificationService,
         )
 
-        fake_engine = MagicMock()
-        fake_rule = MagicMock()
-        fake_rule.notification_channels = ["sms"]
-        fake_engine.rules = {"rule-1": fake_rule}
-        monkeypatch.setattr(alert_service, "alert_engine", fake_engine)
+        rule = AlertRule(
+            id="rule-1",
+            name="测试规则",
+            alert_type=AlertType.CUSTOM,
+            level=AlertLevel.WARNING,
+            notification_channels=["sms"],
+        )
+        alert_db.add(rule)
+        alert_db.commit()
 
         service = NotificationService()
         assert service.resolve_channels({"rule_id": "rule-1"}) == [
             NotificationChannel.SMS
         ]
 
-    def test_rule_not_found_returns_websocket(self, monkeypatch):
-        from services import alert_service
+    def test_rule_not_found_returns_websocket(self, alert_db):
+        """规则不存在时 _fetch_rule_channels 返回 None → 回退 WEBSOCKET"""
         from services.notification_service import (
             NotificationChannel,
             NotificationService,
         )
-
-        fake_engine = MagicMock()
-        fake_engine.rules = {}
-        monkeypatch.setattr(alert_service, "alert_engine", fake_engine)
 
         service = NotificationService()
         assert service.resolve_channels({"rule_id": "unknown"}) == [
@@ -909,22 +916,35 @@ class TestResolveChannels:
         service = NotificationService()
         assert service.resolve_channels({}) == [NotificationChannel.WEBSOCKET]
 
-    def test_fetch_rule_channels_import_error(self, monkeypatch):
-        import sys
-
-        monkeypatch.setitem(sys.modules, "services.alert_service", None)
+    def test_fetch_rule_channels_db_error_returns_none(self, monkeypatch):
+        """DB 查询异常时 _fetch_rule_channels 应吞异常返回 None（best-effort）"""
+        import database
         from services.notification_service import NotificationService
+
+        fake_session = MagicMock()
+        fake_session.get.side_effect = RuntimeError("db down")
+        monkeypatch.setattr(database, "db_session", fake_session)
 
         service = NotificationService()
         assert service._fetch_rule_channels("rule-1") is None
 
-    def test_fetch_rule_channels_attribute_error(self, monkeypatch):
-        from services import alert_service
+    def test_fetch_rule_channels_returns_rule_channels(self, alert_db):
+        """规则存在时直接返回其 notification_channels 配置"""
+        from models.alert import AlertLevel, AlertRule, AlertType
         from services.notification_service import NotificationService
 
-        monkeypatch.setattr(alert_service, "alert_engine", MagicMock(spec=[]))
+        rule = AlertRule(
+            id="rule-ch",
+            name="带渠道规则",
+            alert_type=AlertType.CUSTOM,
+            level=AlertLevel.INFO,
+            notification_channels=["email", "sms"],
+        )
+        alert_db.add(rule)
+        alert_db.commit()
+
         service = NotificationService()
-        assert service._fetch_rule_channels("rule-1") is None
+        assert service._fetch_rule_channels("rule-ch") == ["email", "sms"]
 
 
 class TestFetchAdminUsers:

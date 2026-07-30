@@ -101,3 +101,51 @@ def authed_client(client):
     token = create_token(1, "tester")
     set_auth_cookie(client, token)
     return client
+
+
+# ---------------------------------------------------------------------------
+# 预警子系统 DB fixture（P0 #5）
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def alert_db(monkeypatch):
+    """in-memory SQLite + scoped_session，monkeypatch 到 ``database.db_session``。
+
+    供预警子系统测试：``alert_service`` / ``notification_service`` 方法内部
+    ``from database import db_session`` 调用时读取 ``database.db_session`` 模块
+    属性，故 patch 该属性即可让引擎/服务写入测试 SQLite。``StaticPool`` 保证所有
+    连接共享同一 :memory: 库（否则每连接各持独立 :memory:）。``expire_on_commit=False``
+    使提交后对象属性仍可直接访问（_fire_alert 返回的 alert/rule 无需 reload）。
+    """
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    import database
+    from database import Base
+
+    test_engine = create_engine(
+        "sqlite:///:memory:",
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+    TestSession = scoped_session(
+        sessionmaker(bind=test_engine, expire_on_commit=False)
+    )
+    monkeypatch.setattr(database, "db_session", TestSession)
+    Base.metadata.create_all(test_engine)
+    yield TestSession
+    TestSession.remove()
+    Base.metadata.drop_all(test_engine)
+    test_engine.dispose()
+
+
+@pytest.fixture
+def alert_engine(alert_db):
+    """DB-backed 预警引擎，已 seed 5 条默认规则。"""
+    from services.alert_service import AlertRuleEngine
+
+    eng = AlertRuleEngine()
+    eng._ensure_defaults_seeded()
+    return eng

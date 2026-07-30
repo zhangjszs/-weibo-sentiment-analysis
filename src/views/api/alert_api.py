@@ -48,7 +48,7 @@ def create_rule():
         if not rule_id or not name:
             return error("规则ID和名称不能为空", code=400), 400
 
-        if rule_id in alert_engine.rules:
+        if alert_engine.get_rule(rule_id):
             return error("规则ID已存在", code=400), 400
 
         rule = AlertRule(
@@ -121,7 +121,7 @@ def delete_rule(rule_id: str):
 def toggle_rule(rule_id: str):
     """切换预警规则启用状态"""
     try:
-        rule = alert_engine.rules.get(rule_id)
+        rule = alert_engine.get_rule(rule_id)
         if not rule:
             return error("预警规则不存在", code=404), 404
 
@@ -247,44 +247,50 @@ def test_alert():
 @admin_required
 @rate_limit(max_requests=30, window_seconds=60)
 def evaluate_data():
-    """评估数据触发预警"""
+    """评估数据触发预警
+
+    P0 #5 修复：此前调用不存在的 ``evaluate_volume_spike`` 等公开方法（实际只有
+    ``_evaluate_*`` 私有方法、签名不同）→ 必抛 AttributeError。改为构造 metrics
+    交给 ``check_alerts`` 统一评估，再按 type 过滤返回首条触发的预警（每条规则
+    alert_type 唯一，匹配的就是目标规则）。
+    """
     try:
         data = request.json
         eval_type = data.get("type")
 
-        alert = None
-
+        # 构造 metrics：字段名与 _evaluate_* 期望的 metrics key 对齐
         if eval_type == "volume_spike":
-            current_count = data.get("current_count", 0)
-            baseline_count = data.get("baseline_count", 0)
-            time_window = data.get("time_window", 60)
-            alert = alert_engine.evaluate_volume_spike(
-                current_count, baseline_count, time_window
-            )
-
+            metrics = {
+                "current_count": data.get("current_count", 0),
+                "baseline_count": data.get("baseline_count", 0),
+                "time_window_minutes": data.get("time_window", 60),
+            }
         elif eval_type == "negative_surge":
-            negative_count = data.get("negative_count", 0)
-            total_count = data.get("total_count", 0)
-            time_window = data.get("time_window", 30)
-            alert = alert_engine.evaluate_negative_surge(
-                negative_count, total_count, time_window
-            )
-
+            metrics = {
+                "negative_count": data.get("negative_count", 0),
+                "total_count": data.get("total_count", 0),
+                "time_window_minutes": data.get("time_window", 30),
+            }
         elif eval_type == "sentiment_shift":
-            current_sentiment = data.get("current_sentiment", 0.5)
-            previous_sentiment = data.get("previous_sentiment", 0.5)
-            time_window = data.get("time_window", 30)
-            alert = alert_engine.evaluate_sentiment_shift(
-                current_sentiment, previous_sentiment, time_window
-            )
-
+            metrics = {
+                "current_sentiment": data.get("current_sentiment", 0.5),
+                "previous_sentiment": data.get("previous_sentiment", 0.5),
+                "time_window_minutes": data.get("time_window", 30),
+            }
         elif eval_type == "hot_topic":
-            topic_mentions = data.get("topic_mentions", 0)
-            topic_name = data.get("topic_name", "")
-            time_window = data.get("time_window", 60)
-            alert = alert_engine.evaluate_hot_topic(
-                topic_mentions, topic_name, time_window
-            )
+            metrics = {
+                "topic_mentions": data.get("topic_mentions", 0),
+                "topic_name": data.get("topic_name", ""),
+                "time_window_minutes": data.get("time_window", 60),
+            }
+        else:
+            return ok({"triggered": False, "message": f"未知评估类型: {eval_type}"}), 200
+
+        alerts = alert_engine.check_alerts(metrics)
+        alert = next(
+            (a for a in alerts if a.alert_type and a.alert_type.value == eval_type),
+            None,
+        )
 
         if alert:
             return ok({"triggered": True, "alert": alert.to_dict()}), 200
