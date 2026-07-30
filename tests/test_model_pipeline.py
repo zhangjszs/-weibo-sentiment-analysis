@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 模型流水线单元测试
-测试范围：数据处理、情感分析、词频统计流水线
+测试范围：数据处理、词频统计、超参数优化
+
+注：原 TestSentimentAnalyzer（model.yuqing）与 TestModelPipeline（model.model_pipeline）
+随 yuqing.py / model_pipeline.py 作为死代码移除（含 pickle.load 安全项）。model.index /
+ciPingTotal / hyperparameter_optimizer 仍保留，其测试继续覆盖。
 """
 
 import os
@@ -145,114 +149,6 @@ class TestModelDataProcessor:
         assert comments[0][2] == "测试评论"
 
 
-class TestSentimentAnalyzer:
-    """情感分析器测试"""
-
-    @pytest.fixture
-    def temp_model_dir(self):
-        """创建临时模型目录"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            yield Path(tmpdir)
-
-    @pytest.fixture
-    def mock_model(self):
-        """创建模拟模型"""
-        mock = MagicMock()
-        mock.predict.return_value = [2]
-        mock.predict_proba.return_value = [[0.1, 0.2, 0.7]]
-        return mock
-
-    def test_preprocess_comments(self, temp_model_dir):
-        """测试评论预处理"""
-        from model.yuqing import SentimentAnalyzer
-
-        analyzer = SentimentAnalyzer(str(temp_model_dir))
-        comments = [
-            [1, "2024-01-01", "100", "user1", "这个产品真的很不错"],
-            [2, "2024-01-01", "50", "user2", "质量一般"],
-        ]
-
-        result = analyzer.preprocess_comments(comments)
-
-        assert len(result) == 2
-        assert all(isinstance(text, str) for text in result)
-
-    def test_preprocess_comments_filters_short(self, temp_model_dir):
-        """测试过滤短文本"""
-        from model.yuqing import SentimentAnalyzer
-
-        analyzer = SentimentAnalyzer(str(temp_model_dir))
-        comments = [
-            [1, "2024-01-01", "100", "user1", "好"],
-            [2, "2024-01-01", "50", "user2", "这个产品真的很不错"],
-        ]
-
-        result = analyzer.preprocess_comments(comments)
-
-        assert len(result) == 1
-
-    def test_analyze_sentiment(self, temp_model_dir, mock_model):
-        """测试情感分析"""
-        from model.yuqing import SentimentAnalyzer
-
-        analyzer = SentimentAnalyzer(str(temp_model_dir))
-        analyzer.model = mock_model
-
-        texts = ["这个很好", "那个很差"]
-        results = analyzer.analyze_sentiment(texts)
-
-        assert len(results) == 2
-        assert "sentiment" in results[0]
-        assert "confidence" in results[0]
-
-    def test_generate_summary_statistics(self, temp_model_dir):
-        """测试统计汇总生成"""
-        from model.yuqing import SentimentAnalyzer
-
-        analyzer = SentimentAnalyzer(str(temp_model_dir))
-        results = [
-            {"sentiment": "正面", "confidence": 0.8},
-            {"sentiment": "中性", "confidence": 0.5},
-            {"sentiment": "负面", "confidence": 0.3},
-            {"sentiment": "正面", "confidence": 0.9},
-        ]
-
-        summary = analyzer.generate_summary_statistics(results)
-
-        assert summary["total_comments"] == 4
-        assert summary["sentiment_counts"]["正面"] == 2
-        assert "average_confidence" in summary
-
-    def test_get_comment_data_prefers_query_dataframe(self, temp_model_dir, monkeypatch):
-        """测试情感分析器读取评论优先走查询层"""
-        import types
-
-        fake_public_data = types.SimpleNamespace(
-            getAllCommentsData=lambda: (_ for _ in ()).throw(
-                AssertionError("should not load all comments")
-            )
-        )
-        monkeypatch.setitem(sys.modules, "getPublicData", fake_public_data)
-
-        from model.yuqing import SentimentAnalyzer
-        import model.yuqing as yuqing_model
-
-        monkeypatch.setattr(
-            yuqing_model,
-            "query_dataframe",
-            lambda sql, params=None: __import__("pandas").DataFrame(
-                [{"articleId": 1, "created_at": "2026-03-20", "content": "测试评论"}]
-            ),
-            raising=False,
-        )
-
-        analyzer = SentimentAnalyzer(str(temp_model_dir))
-        comments = analyzer.get_comment_data()
-
-        assert len(comments) == 1
-        assert comments[0][2] == "测试评论"
-
-
 class TestWordFrequencyAnalyzer:
     """词频分析器测试"""
 
@@ -331,57 +227,6 @@ class TestWordFrequencyAnalyzer:
         assert report["unique_word_count"] == 4
         assert "max_frequency" in report
         assert "min_frequency" in report
-
-
-class TestModelPipeline:
-    """模型流水线测试"""
-
-    @pytest.fixture
-    def temp_model_dir(self):
-        """创建临时模型目录"""
-        with tempfile.TemporaryDirectory() as tmpdir:
-            yield Path(tmpdir)
-
-    def test_pipeline_initialization(self, temp_model_dir):
-        """测试流水线初始化"""
-        from model.model_pipeline import ModelPipeline
-
-        pipeline = ModelPipeline(str(temp_model_dir))
-
-        assert pipeline.model_dir == temp_model_dir
-        assert pipeline.pipeline_status["data_processing"] is False
-        assert pipeline.pipeline_status["sentiment_analysis"] is False
-
-    def test_generate_pipeline_report(self, temp_model_dir):
-        """测试生成流水线报告"""
-        from datetime import datetime
-
-        from model.model_pipeline import ModelPipeline
-
-        pipeline = ModelPipeline(str(temp_model_dir))
-        pipeline.pipeline_status["start_time"] = datetime.now()
-        pipeline.pipeline_status["end_time"] = datetime.now()
-        pipeline.pipeline_status["data_processing"] = True
-
-        report = pipeline.generate_pipeline_report()
-
-        assert "pipeline_status" in report
-        assert "execution_time_seconds" in report
-        assert "success_rate" in report
-
-    def test_save_pipeline_report(self, temp_model_dir):
-        """测试保存流水线报告"""
-        from model.model_pipeline import ModelPipeline
-
-        pipeline = ModelPipeline(str(temp_model_dir))
-        report = {
-            "pipeline_status": {"data_processing": True},
-            "execution_time_seconds": 1.5,
-        }
-
-        success = pipeline.save_pipeline_report(report)
-
-        assert success is True
 
 
 class TestHyperparameterOptimizer:
