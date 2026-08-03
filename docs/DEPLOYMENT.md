@@ -232,7 +232,7 @@ pip install -r requirements/requirements.txt
 
 2. **更新配置文件**
    编辑以下文件中的 Cookie：
-   - `spider/config.py`
+   - `src/spider/config.py`
    - `spider/improved_config.py`
    - `safe_spider_config.txt`
 

@@ -105,15 +105,18 @@
 │   ├── package.json
 │   └── vite.config.js
 ├── docs/                       # 项目文档
-├── scripts/                    # 运维脚本
-├── tests/                      # 测试用例
+├── scripts/                    # 运维脚本（verify_project.ps1、healthcheck.py）
+├── tests/                      # 测试用例（pytest）
+├── database/                   # 数据库初始化 SQL
 ├── data/                       # 数据文件目录
 ├── cache/                      # 缓存目录
 ├── logs/                       # 日志目录
+├── requirements/               # Python 依赖
+│   ├── requirements.txt        # 运行时依赖
+│   ├── requirements-dev.txt    # 开发依赖（测试、lint）
+│   └── requirements.audit.txt  # 审计依赖
 ├── run.py                      # 启动脚本
-├── requirements.txt            # Python 依赖
-├── requirements-dev.txt        # 开发依赖
-├── pyproject.toml              # 工具配置
+├── pyproject.toml              # 工具配置（pytest、ruff、mypy）
 ├── .editorconfig               # 编辑器配置
 ├── .pre-commit-config.yaml     # Git Hooks
 ├── .gitignore                  # Git 忽略配置
@@ -148,8 +151,9 @@
 
 ```bash
 # 激活环境并安装依赖
-pip install -r requirements.txt
-cp .env.example .env  # 记得配置数据库密码配置
+pip install -r requirements/requirements.txt
+pip install -r requirements/requirements-dev.txt  # 开发依赖（测试、lint）
+cp .env.example .env  # 记得配置数据库密码
 
 # 运行后端
 python run.py
@@ -160,8 +164,8 @@ python run.py
 
 ```bash
 cd frontend
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # 浏览器访问 http://localhost:3000
 ```
 
@@ -319,7 +323,7 @@ ruff check src/
 
 ### 缓存策略
 
-- 内存缓存: 使用 `utils/cache.py` 实现
+- 内存缓存: 使用 `src/utils/cache.py` 实现
 - 缓存时间: 根据数据更新频率设置 3-30 分钟
 - 缓存清理: 通过 `/getAllData/clearCache` 接口手动清理
 
