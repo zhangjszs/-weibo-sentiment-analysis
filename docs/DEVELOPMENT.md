@@ -12,6 +12,58 @@
 - [调试技巧](#调试技巧)
 - [性能优化](#性能优化)
 
+## 🛡️ 质量门禁 (Quality Gate)
+
+推送或提交 PR 前，**必须**通过项目质量门禁。一条命令完成后端 + 前端全部检查：
+
+```powershell
+pwsh -NoProfile -File scripts/verify_project.ps1
+```
+
+该脚本按顺序执行：
+
+1. `python -m ruff check src tests` — 静态检查
+2. `python -m pytest -m "unit or api" -q --maxfail=1` — 后端快速测试
+3. `npm run lint` — 前端 lint
+4. `npm run build` — 前端构建
+
+任一步骤失败立即退出，返回原始退出码。
+
+### 测试分层
+
+| Marker | 含义 | 默认运行 | 需要 |
+|--------|------|----------|------|
+| `unit` | 纯逻辑，无外部服务 | ✅ | 无 |
+| `api` | Flask client 测试 | ✅ | 无 |
+| `integration` | 数据库集成 | ❌ | SQLite / MySQL |
+| `external` | 外部服务 | ❌ | Redis / 微博 Cookie / 远程 NLP |
+| `slow` | 性能/压力测试 | ❌ | 无（但耗时） |
+
+```powershell
+# 默认门禁（CI backend-fast job）
+pytest -m "unit or api" -q
+
+# 集成测试
+pytest -m integration -q
+
+# 外部依赖测试
+pytest -m external -q
+
+# 全部测试
+pytest -q
+```
+
+### 健康检查端点
+
+- `GET /health` — Liveness 探针，纯进程存活检查，**无 I/O**，始终返回 `{"status": "ok"}`
+- `GET /ready` — Readiness 探针，检查数据库 / Redis（带超时），返回 200 或 503
+
+```bash
+# 独立健康检查脚本（用于部署后验证）
+python scripts/healthcheck.py
+python scripts/healthcheck.py -b http://localhost:5000
+```
+
 ## 🚀 开发环境搭建
 
 ### 1. 环境要求

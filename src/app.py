@@ -352,21 +352,81 @@ def index():
 
 @app.route("/health")
 def health_check():
-    """
-    健康检查端点
-    用于监控系统状态和负载均衡健康检查
+    """Liveness probe.
 
-    Returns:
-        JSON: 系统状态信息
+    Returns 200 as long as the Flask process is alive.  This endpoint must
+    NOT perform any I/O (no database, no Redis, no filesystem) so that
+    load balancers and ``scripts/healthcheck.py`` can rely on it even when
+    external dependencies are down.
     """
+    return jsonify({"status": "ok"})
+
+
+@app.route("/ready")
+def ready_check():
+    """Readiness probe with bounded-time dependency checks.
+
+    Returns 200 when all enabled dependencies are reachable, 503 otherwise.
+    Each check runs with a limited timeout so the endpoint never blocks
+    indefinitely when Redis/MySQL is unreachable.
+    """
+    import concurrent.futures
+
+    checks: dict[str, dict] = {}
+    overall_ready = True
+
+    def _check_database() -> dict:
+        try:
+            from sqlalchemy import text
+
+            db_session.execute(text("SELECT 1"))
+            db_session.remove()
+            return {"ready": True}
+        except Exception as exc:
+            return {"ready": False, "error": type(exc).__name__}
+
+    def _check_redis() -> dict:
+        try:
+            import redis as redis_lib
+
+            client = redis_lib.Redis(
+                host=Config.REDIS_HOST,
+                port=Config.REDIS_PORT,
+                db=Config.REDIS_DB,
+                password=Config.REDIS_PASSWORD or None,
+                socket_connect_timeout=3,
+                socket_timeout=3,
+            )
+            client.ping()
+            return {"ready": True}
+        except Exception as exc:
+            return {"ready": False, "error": type(exc).__name__}
+
+    # Database is always checked (required dependency).
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        futures = {"database": executor.submit(_check_database)}
+        # Redis is only checked when it appears to be explicitly enabled.
+        if Config.REDIS_URL and Config.REDIS_URL != "disabled":
+            futures["redis"] = executor.submit(_check_redis)
+
+        for name, future in futures.items():
+            try:
+                result = future.result(timeout=6)
+            except concurrent.futures.TimeoutError:
+                result = {"ready": False, "error": "timeout"}
+            except Exception as exc:
+                result = {"ready": False, "error": type(exc).__name__}
+            checks[name] = result
+            if not result.get("ready"):
+                overall_ready = False
+
+    status_code = 200 if overall_ready else 503
     return jsonify(
         {
-            "status": "healthy",
-            "timestamp": datetime.now().isoformat(),
-            "uptime": time.time() - app.start_time if hasattr(app, "start_time") else 0,
-            "version": "1.0.0",
+            "status": "ready" if overall_ready else "degraded",
+            "checks": checks,
         }
-    )
+    ), status_code
 
 
 @app.route("/api/health/details")

@@ -58,10 +58,12 @@ addopts = [
     "--strict-markers",
 ]
 markers = [
-    "unit: 单元测试",
-    "integration: 集成测试",
-    "slow: 慢速测试",
-    "database: 需要数据库的测试",
+    "unit: 纯逻辑，无外部服务（默认门禁）",
+    "api: Flask client 测试，使用内存应用（默认门禁）",
+    "integration: 需要真实数据库（SQLite 或 MySQL）",
+    "external: 需要 Redis、微博 Cookie 或远程 NLP 服务",
+    "slow: 性能/压力测试（每条 >2s）",
+    "database: 涉及数据库层的测试",
 ]
 # 不再一刀切忽略所有 DeprecationWarning，只忽略已知第三方 noise
 filterwarnings = [

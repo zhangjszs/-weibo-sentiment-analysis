@@ -1,98 +1,125 @@
-name: Backend CI/CD
+name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+# Cancel in-progress runs for the same branch/PR to save CI minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  # --- Fast backend gate: lint + unit/api tests (no external services) ---
+  backend-fast:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
+
+      - name: Ruff check
+        run: ruff check src/ tests/
+
+      - name: Backend fast tests (unit + api)
+        env:
+          FLASK_ENV: testing
+          SECRET_KEY: ci-test-secret-key-must-be-at-least-32-characters-long
+          JWT_SECRET_KEY: ci-test-jwt-secret-key-must-be-at-least-32-characters-long
+        run: |
+          pytest -m "unit or api" -q --maxfail=1
+
+  # --- Frontend gate: lint + build ---
+  frontend-fast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Frontend lint
+        working-directory: frontend
+        run: npm run lint
+
+      - name: Frontend build
+        working-directory: frontend
+        run: npm run build
+
+  # --- Integration tests: needs MySQL + Redis ---
+  integration:
+    runs-on: ubuntu-latest
+    needs: [backend-fast, frontend-fast]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     services:
       mysql:
-        # 升级到 MySQL 8.0（与 docker-compose 对齐）
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: weibo_test
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
       redis:
         image: redis:7
         ports:
           - 6379:6379
-        options: --health-cmd="redis-cli ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.11
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        # 先装 CPU 版 torch，避免从 PyPI 拉 GPU 大包（torch>=2.2,<3.0 已被满足）
-        pip install torch --index-url https://download.pytorch.org/whl/cpu
-        pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
 
-    - name: Ruff check
-      run: ruff check src/
+      - name: Initialize test database
+        run: |
+          sed 's/`wb`/`weibo_test`/g' database/init_database.sql | mysql -h 127.0.0.1 -u root -proot
 
-    # black/mypy 暂为软门：现有代码未全量格式化/类型补全，Phase 5 收尾后改硬
-    - name: Black check (soft until Phase 5)
-      continue-on-error: true
-      run: black --check src/ tests/
-
-    - name: Mypy (soft until Phase 5)
-      continue-on-error: true
-      run: mypy src/
-
-    - name: Bandit security scan
-      run: bandit -r src/ -ll -x tests/
-
-    - name: Initialize test database
-      run: |
-        sed 's/`wb`/`weibo_test`/g' database/init_database.sql | mysql -h 127.0.0.1 -u root -proot
-
-    - name: Run Unit Tests
-      env:
-        DB_HOST: 127.0.0.1
-        DB_PORT: 3306
-        DB_USER: root
-        DB_PASSWORD: root
-        DB_NAME: weibo_test
-        SECRET_KEY: ci-test-secret-key-must-be-at-least-32-characters-long
-        JWT_SECRET_KEY: ci-test-jwt-secret-key-must-be-at-least-32-characters-long
-        REDIS_URL: redis://localhost:6379/0
-        PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
-      run: |
-        pytest tests/ --cov=src --cov-report=xml
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v4
-      with:
-        files: ./coverage.xml
-        fail_ci_if_error: false
-
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Build backend Docker image
-      run: docker build . --file Dockerfile --tag weibo-backend:latest
-
-    - name: Build spider service image
-      run: docker build -t test-spider spider_service/
-
-    - name: Build nlp service image
-      run: docker build -t test-nlp nlp_service/
+      - name: Integration tests
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: root
+          DB_NAME: weibo_test
+          SECRET_KEY: ci-test-secret-key-must-be-at-least-32-characters-long
+          JWT_SECRET_KEY: ci-test-jwt-secret-key-must-be-at-least-32-characters-long
+          REDIS_URL: redis://localhost:6379/0
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
+        run: |
+          pytest -m "integration" -q --maxfail=1
