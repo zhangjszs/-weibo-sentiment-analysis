@@ -31,6 +31,14 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = Split-Path -Parent $PSScriptRoot
 $FrontendDir = Join-Path $ProjectRoot "frontend"
 
+# Prefer .venv Python over system Python (avoids Windows Store shim).
+$VenvPython = Join-Path $ProjectRoot ".venv" "Scripts" "python.exe"
+if (Test-Path $VenvPython) {
+    $PythonExe = $VenvPython
+} else {
+    $PythonExe = "python"
+}
+
 function Invoke-Step {
     param([string]$Name, [scriptblock]$Script)
     Write-Host "`n===== $Name =====" -ForegroundColor Cyan
@@ -45,11 +53,11 @@ function Invoke-Step {
 
 if (-not $FrontendOnly) {
     Invoke-Step "Backend: ruff check" {
-        & python -m ruff check src tests
+        & $PythonExe -m ruff check src tests
     }
 
     Invoke-Step "Backend: pytest (unit + api)" {
-        & python -m pytest -m "unit or api" -q --maxfail=1
+        & $PythonExe -m pytest -m "unit or api" -q --maxfail=1
     }
 }
 
@@ -58,6 +66,10 @@ if (-not $BackendOnly) {
     try {
         Invoke-Step "Frontend: npm run lint" {
             & npm run lint
+        }
+
+        Invoke-Step "Frontend: npm run test:run" {
+            & npm run test:run
         }
 
         Invoke-Step "Frontend: npm run build" {

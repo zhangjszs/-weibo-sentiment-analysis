@@ -17,7 +17,6 @@ from __future__ import annotations
 
 import argparse
 import re
-import sys
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -122,7 +121,7 @@ def check_document(doc_path: Path) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--strict", action="store_true", help="Enable stricter checks (reserved for future use)")
-    args = parser.parse_args(argv)
+    parser.parse_args(argv)
 
     all_missing: dict[str, list[str]] = {}
     for doc in DOC_FILES:

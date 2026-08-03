@@ -19,11 +19,9 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 import urllib.error
 import urllib.request
 from typing import Any
-
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
 DEFAULT_TIMEOUT_SECONDS = 10
