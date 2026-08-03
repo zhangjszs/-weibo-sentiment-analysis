@@ -7,29 +7,35 @@ from wordcloud import WordCloud
 
 from config.settings import BASE_DIR
 from utils.cache import cache_result
-from utils.query import query_dataframe
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
 
 
 def get_abs_path(rel_path):
     return os.path.join(BASE_DIR, rel_path)
 
 
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
+
+
 @cache_result(timeout=300)  # 缓存5分钟
 def getHomeTopLikeCommentsData():
     """获取点赞最多的评论 - 优化版"""
     try:
-        df = query_dataframe(
-            """
-            SELECT articleId, created_at, like_counts, region, content,
-                   authorName, authorGender, authorAddress, authorAvatar
-            FROM comments
-            ORDER BY like_counts DESC
-            LIMIT 4
-            """
-        )
-        if not df.empty:
-            return df.values.tolist()
-        return []
+        comments = _comment_repo().get_top_liked_comments(limit=4)
+        return [
+            [
+                c["articleId"], c["created_at"], c["like_counts"], c["region"],
+                c["content"], c["authorName"], c["authorGender"],
+                c["authorAddress"], c["authorAvatar"]
+            ]
+            for c in comments
+        ]
     except Exception as e:
         print(f"获取热门评论失败: {e}")
         return []
@@ -39,36 +45,11 @@ def getHomeTopLikeCommentsData():
 def getTagData():
     """获取标签数据 - 优化版"""
     try:
-        df = query_dataframe(
-            """
-            SELECT
-                COUNT(*) AS article_count,
-                (
-                    SELECT authorName
-                    FROM article
-                    ORDER BY likeNum DESC
-                    LIMIT 1
-                ) AS maxLikeAuthorName,
-                (
-                    SELECT region
-                    FROM article
-                    WHERE region IS NOT NULL AND region != '' AND region != '无'
-                    GROUP BY region
-                    ORDER BY COUNT(*) DESC
-                    LIMIT 1
-                ) AS maxCity
-            FROM article
-            """
-        )
-        if df.empty:
-            return 0, "", ""
-
-        row = df.iloc[0]
-        return (
-            int(row.get("article_count", 0) or 0),
-            row.get("maxLikeAuthorName") or "",
-            row.get("maxCity") or "",
-        )
+        article_count = _article_repo().count_total()
+        max_like_author = _article_repo().get_top_liked_author() or ""
+        max_city_rows = _article_repo().count_by_region(limit=1)
+        max_city = max_city_rows[0]["region"] if max_city_rows else ""
+        return article_count, max_like_author, max_city
     except Exception as e:
         print(f"获取标签数据失败: {e}")
         return 0, "", ""
@@ -78,20 +59,11 @@ def getTagData():
 def getCreatedNumEchartsData():
     """获取创建数量图表数据 - 优化版"""
     try:
-        df = query_dataframe(
-            """
-            SELECT created_at, COUNT(*) AS count
-            FROM article
-            GROUP BY created_at
-            ORDER BY created_at DESC
-            """
-        )
-        if df.empty:
+        rows = _article_repo().count_by_date_range()
+        if not rows:
             return [], []
-
-        xData = [str(x) for x in df["created_at"].tolist()]
-        yData = [int(y) for y in df["count"].tolist()]
-
+        xData = [r["created_at"] for r in rows]
+        yData = [r["count"] for r in rows]
         return xData, yData
     except Exception as e:
         print(f"获取时间数据失败: {e}")
@@ -102,22 +74,13 @@ def getCreatedNumEchartsData():
 def getTypeCharData():
     """获取类型图表数据 - 优化版"""
     try:
-        df = query_dataframe(
-            """
-            SELECT type, COUNT(*) AS count
-            FROM article
-            GROUP BY type
-            ORDER BY count DESC
-            """
-        )
-        if df.empty:
+        rows = _article_repo().count_by_type()
+        if not rows:
             return []
-
-        resultData = []
-        for _idx, row in df.iterrows():
-            resultData.append(
-                {"name": row["type"] if row["type"] else "未知", "value": int(row["count"])}
-            )
+        resultData = [
+            {"name": r["type"], "value": r["count"]}
+            for r in rows
+        ]
         return resultData
     except Exception as e:
         print(f"获取类型数据失败: {e}")
@@ -128,20 +91,12 @@ def getTypeCharData():
 def getCommentsUserCratedNumEchartsData():
     """获取评论用户创建数量图表数据 - 优化版"""
     try:
-        df = query_dataframe(
-            """
-            SELECT created_at, COUNT(*) AS count
-            FROM comments
-            GROUP BY created_at
-            ORDER BY created_at DESC
-            """
-        )
-        if df.empty:
+        rows = _comment_repo().count_by_date_range()
+        if not rows:
             return []
-
         resultData = [
-            {"name": str(row["created_at"]), "value": int(row["count"])}
-            for _idx, row in df.iterrows()
+            {"name": r["created_at"], "value": r["count"]}
+            for r in rows
         ]
         return resultData
     except Exception as e:
@@ -179,16 +134,10 @@ def getUserNameWordCloud():
                 return output_path
 
         stopwords = stopwordslist()
-        df = query_dataframe(
-            """
-            SELECT authorName
-            FROM comments
-            WHERE authorName IS NOT NULL AND authorName != ''
-            ORDER BY created_at DESC
-            LIMIT 1000
-            """
-        )
-        text = " ".join(df["authorName"].dropna().astype(str)) if not df.empty else ""
+        comments = _comment_repo().get_all_for_export()
+        # 只取最近 1000 条，兼容旧逻辑
+        recent_comments = comments[:1000] if len(comments) > 1000 else comments
+        text = " ".join(c["authorName"] for c in recent_comments if c.get("authorName"))
 
         if not text.strip():
             print("没有找到用户名数据")

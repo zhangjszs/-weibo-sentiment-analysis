@@ -12,9 +12,10 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request, send_file
 
 from utils.api_response import error, ok
-from utils.query import querys
 from utils.rate_limiter import rate_limit
 from utils.report_generator import ReportConfig, report_generator
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,14 @@ def _coerce_bool(value, default: bool = False) -> bool:
 
 def _parse_demo_mode(default: bool = False) -> bool:
     return _coerce_bool(request.args.get("demo"), default)
+
+
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
 
 
 def get_demo_report_data():
@@ -113,38 +122,14 @@ def _empty_report_data():
     }
 
 
-def _load_recent_comment_texts(limit: int = 200):
-    rows = querys(
-        """SELECT content
-           FROM comments
-           WHERE content IS NOT NULL AND content != ''
-           ORDER BY created_at DESC
-           LIMIT %s""",
-        [max(1, min(limit, 1000))],
-        "select",
-    )
-    return [str(row.get("content")).strip() for row in (rows or []) if row.get("content")]
-
-
 def _build_report_data(demo_mode: bool = False):
     """构建报告数据：默认真实数据，仅显式请求时返回演示数据。"""
     if demo_mode:
         return get_demo_report_data(), "demo", True
 
     try:
-        article_rows = querys("SELECT COUNT(*) AS count FROM article", type="select")
-        comment_rows = querys("SELECT COUNT(*) AS count FROM comments", type="select")
-
-        total_articles = (
-            int(article_rows[0].get("count", 0))
-            if article_rows and article_rows[0].get("count") is not None
-            else 0
-        )
-        total_comments = (
-            int(comment_rows[0].get("count", 0))
-            if comment_rows and comment_rows[0].get("count") is not None
-            else 0
-        )
+        total_articles = _article_repo().count_total()
+        total_comments = _comment_repo().count_total()
 
         positive_count = 0
         neutral_count = 0
@@ -154,7 +139,7 @@ def _build_report_data(demo_mode: bool = False):
             from services.sentiment_service import SentimentService
 
             sentiment_counts = SentimentService.analyze_distribution(
-                _load_recent_comment_texts(limit=200),
+                _comment_repo().get_recent_texts(limit=200),
                 mode="simple",
                 sample_size=200,
             )
@@ -201,20 +186,13 @@ def _build_report_data(demo_mode: bool = False):
 
         trend = []
         try:
-            trend_rows = querys(
-                """SELECT DATE(created_at) AS date, COUNT(*) AS count
-                   FROM comments
-                   WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 DAY)
-                   GROUP BY DATE(created_at)
-                   ORDER BY date""",
-                type="select",
-            )
+            trend_rows = _comment_repo().get_recent_trend(days=7)
             trend = [
                 {
                     "date": str(row.get("date")),
                     "count": int(row.get("count") or 0),
                 }
-                for row in (trend_rows or [])
+                for row in trend_rows
                 if row.get("date") is not None
             ]
         except Exception as exc:

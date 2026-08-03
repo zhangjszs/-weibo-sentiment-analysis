@@ -10,11 +10,15 @@ from flask import Blueprint, request
 
 from utils.api_response import error, ok
 from utils.log_sanitizer import SafeLogger
-from utils.query import querys
+from repositories.user_favorite_repository import UserFavoriteRepository
 
 logger = SafeLogger("favorites_api", logging.INFO)
 
 favorites_bp = Blueprint("favorites", __name__, url_prefix="/api/favorites")
+
+
+def _fav_repo() -> UserFavoriteRepository:
+    return UserFavoriteRepository()
 
 
 @favorites_bp.route("/<article_id>", methods=["POST"])
@@ -30,19 +34,11 @@ def add_favorite(article_id):
             return error("文章ID不能为空", code=400), 400
 
         # Check if already favorited
-        existing = querys(
-            "SELECT id FROM user_favorites WHERE user_id = %s AND article_id = %s",
-            [user["user_id"], article_id],
-            "select",
-        )
+        existing = _fav_repo().find_by_user_and_article(user["user_id"], article_id)
         if existing:
             return ok(msg="已收藏"), 200
 
-        querys(
-            "INSERT INTO user_favorites (user_id, article_id) VALUES (%s, %s)",
-            [user["user_id"], article_id],
-            "insert",
-        )
+        _fav_repo().add_favorite(user["user_id"], article_id)
         return ok(msg="收藏成功"), 200
     except Exception as e:
         logger.error(f"添加收藏异常: {e}")
@@ -58,11 +54,7 @@ def remove_favorite(article_id):
 
     try:
         article_id = str(article_id).strip()[:50]
-        querys(
-            "DELETE FROM user_favorites WHERE user_id = %s AND article_id = %s",
-            [user["user_id"], article_id],
-            "delete",
-        )
+        _fav_repo().remove_favorite(user["user_id"], article_id)
         return ok(msg="已取消收藏"), 200
     except Exception as e:
         logger.error(f"取消收藏异常: {e}")
@@ -78,11 +70,7 @@ def check_favorite(article_id):
 
     try:
         article_id = str(article_id).strip()[:50]
-        existing = querys(
-            "SELECT id FROM user_favorites WHERE user_id = %s AND article_id = %s",
-            [user["user_id"], article_id],
-            "select",
-        )
+        existing = _fav_repo().find_by_user_and_article(user["user_id"], article_id)
         return ok({"favorited": bool(existing)}), 200
     except Exception as e:
         logger.error(f"检查收藏状态异常: {e}")
@@ -101,47 +89,13 @@ def list_favorites():
         limit = min(50, max(1, int(request.args.get("limit", 10))))
         offset = (page - 1) * limit
 
-        # Count total
-        count_result = querys(
-            "SELECT COUNT(*) as total FROM user_favorites WHERE user_id = %s",
-            [user["user_id"]],
-            "select",
+        items, total = _fav_repo().find_with_article(
+            user_id=user["user_id"], limit=limit, offset=offset
         )
-        total = count_result[0]["total"] if count_result else 0
-
-        # Get favorites with article details
-        items = querys(
-            """SELECT f.id, f.article_id, f.created_at AS favorited_at,
-                      a.content, a.authorName AS source, a.created_at,
-                      a.likeNum, a.commentsLen AS commentNum, a.reposts_count AS forwardNum
-               FROM user_favorites f
-               LEFT JOIN article a ON f.article_id = a.id
-               WHERE f.user_id = %s
-               ORDER BY f.created_at DESC
-               LIMIT %s OFFSET %s""",
-            [user["user_id"], limit, offset],
-            "select",
-        )
-
-        results = []
-        for item in items or []:
-            results.append(
-                {
-                    "id": item.get("id"),
-                    "article_id": item.get("article_id"),
-                    "favorited_at": str(item.get("favorited_at", "")),
-                    "content": item.get("content", ""),
-                    "source": item.get("source", ""),
-                    "created_at": str(item.get("created_at", "")),
-                    "like_num": item.get("likeNum", 0),
-                    "comment_num": item.get("commentNum", 0),
-                    "forward_num": item.get("forwardNum", 0),
-                }
-            )
 
         return ok(
             {
-                "items": results,
+                "items": items,
                 "total": total,
                 "page": page,
                 "limit": limit,
@@ -167,17 +121,8 @@ def batch_check_favorites():
 
         # Limit batch size
         article_ids = [str(aid).strip() for aid in article_ids[:100]]
-        placeholders = ",".join(["%s"] * len(article_ids))
-        params = [user["user_id"]] + article_ids
 
-        results = querys(
-            f"SELECT article_id FROM user_favorites WHERE user_id = %s AND article_id IN ({placeholders})",
-            params,
-            "select",
-        )
-
-        favorited_set = {r["article_id"] for r in (results or [])}
-        favorites = {aid: aid in favorited_set for aid in article_ids}
+        favorites = _fav_repo().check_batch(user["user_id"], article_ids)
 
         return ok({"favorites": favorites}), 200
     except Exception as e:

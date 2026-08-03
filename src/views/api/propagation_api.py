@@ -12,8 +12,8 @@ from flask import Blueprint, request
 
 from services.propagation_analyzer import PropagationAnalyzer
 from utils.api_response import error, ok
-from utils.query import querys
 from utils.rate_limiter import rate_limit
+from repositories.repost_repository import RepostRepository
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +48,10 @@ def _normalize_reposts(rows):
     return reposts
 
 
+def _repost_repo() -> RepostRepository:
+    return RepostRepository()
+
+
 def _load_reposts(article_id: str, count: int, demo_mode: bool):
     """加载传播数据：默认只返回真实数据，演示模式需显式开启。"""
     global _REPOSTS_TABLE_MISSING
@@ -59,43 +63,13 @@ def _load_reposts(article_id: str, count: int, demo_mode: bool):
         return [], "reposts_table_missing", False
 
     try:
-        rows = querys(
-            """SELECT id, user_id, article_id, content, created_at AS post_time,
-                      repost_count, comment_count, like_count, depth, parent_id
-               FROM reposts
-               WHERE article_id = %s
-               ORDER BY created_at ASC
-               LIMIT %s""",
-            [article_id, max(1, min(count, 500))],
-            "select",
-        )
+        rows = _repost_repo().find_with_users(article_id, limit=max(1, min(count, 500)))
 
         if not rows:
             logger.info("传播数据未查询到真实内容")
             return [], "reposts_empty", False
 
-        user_ids = sorted({row.get("user_id") for row in rows if row.get("user_id")})
-        user_name_map = {}
-        # 限制用户ID数量，防止 DoS 攻击
-        if user_ids and len(user_ids) <= 1000:
-            placeholders = ",".join(["%s"] * len(user_ids))
-            user_rows = querys(
-                f"SELECT id, username FROM user WHERE id IN ({placeholders})",
-                user_ids,
-                "select",
-            )
-            user_name_map = {str(u.get("id")): u.get("username") for u in user_rows}
-        elif len(user_ids) > 1000:
-            logger.warning(f"用户ID数量过多({len(user_ids)})，限制查询前1000个")
-
-        normalized_rows = []
-        for row in rows:
-            copied = dict(row)
-            user_id = str(copied.get("user_id") or "")
-            copied["user_name"] = user_name_map.get(user_id) or f"用户{user_id or '未知'}"
-            normalized_rows.append(copied)
-
-        return _normalize_reposts(normalized_rows), "reposts_table", False
+        return _normalize_reposts(rows), "reposts_table", False
     except Exception as exc:
         error_text = str(exc)
         if "doesn't exist" in error_text and "reposts" in error_text:

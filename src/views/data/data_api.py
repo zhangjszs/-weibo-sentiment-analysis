@@ -18,7 +18,8 @@ from utils import getEchartsData, getHomeData, getTableData
 from utils.api_response import error, ok
 from utils.authz import is_admin_user
 from utils.cache import memory_cache
-from utils.query import query_dataframe
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -130,111 +131,32 @@ def _normalize_region_name(name, province_map):
     return name
 
 
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
+
+
 def _get_comment_hour_distribution():
-    hours = [f"{h}:00" for h in range(24)]
-    counts = [0] * 24
-
-    df = query_dataframe(
-        """
-        SELECT HOUR(created_at) AS hour_bucket, COUNT(*) AS count
-        FROM comments
-        WHERE created_at IS NOT NULL
-        GROUP BY hour_bucket
-        ORDER BY hour_bucket
-        """
-    )
-    if df.empty:
-        return {"hours": hours, "counts": counts}
-
-    for _idx, row in df.iterrows():
-        try:
-            hour = int(row["hour_bucket"])
-        except (TypeError, ValueError):
-            continue
-        if 0 <= hour < 24:
-            counts[hour] = int(row["count"])
-
-    return {"hours": hours, "counts": counts}
+    return _comment_repo().get_hour_distribution()
 
 
 def _get_comment_user_activity(limit=10):
-    df = query_dataframe(
-        """
-        SELECT authorName, COUNT(*) AS count
-        FROM comments
-        WHERE authorName IS NOT NULL AND authorName != ''
-        GROUP BY authorName
-        ORDER BY count DESC, authorName ASC
-        LIMIT %s
-        """,
-        params=[limit],
-    )
-    if df.empty:
-        return {"users": [], "counts": []}
-
-    return {
-        "users": df["authorName"].astype(str).tolist(),
-        "counts": [int(value) for value in df["count"].tolist()],
-    }
+    return _comment_repo().get_top_active_users(limit=limit)
 
 
 def _get_recent_comment_texts(limit=200):
-    df = query_dataframe(
-        """
-        SELECT content
-        FROM comments
-        WHERE content IS NOT NULL AND content != ''
-        ORDER BY created_at DESC
-        LIMIT %s
-        """,
-        params=[limit],
-    )
-    if df.empty:
-        return []
-    return [str(value) for value in df["content"].dropna().tolist()]
+    return _comment_repo().get_recent_texts(limit=limit)
 
 
 def _get_recent_comments(limit=100):
-    df = query_dataframe(
-        """
-        SELECT created_at, content
-        FROM comments
-        WHERE content IS NOT NULL AND content != ''
-        ORDER BY created_at DESC
-        LIMIT %s
-        """,
-        params=[limit],
-    )
-    if df.empty:
-        return []
-    return df.values.tolist()
+    return _comment_repo().get_recent_comments(limit=limit)
 
 
 def _get_hot_comments(limit=5):
-    df = query_dataframe(
-        """
-        SELECT created_at, like_counts, content, authorName
-        FROM comments
-        ORDER BY like_counts DESC, created_at DESC
-        LIMIT %s
-        """,
-        params=[limit],
-    )
-    if df.empty:
-        return []
-
-    hot_comments = []
-    for _idx, row in df.iterrows():
-        hot_comments.append(
-            {
-                "user": str(row.get("authorName") or "未知用户"),
-                "time": str(row.get("created_at") or ""),
-                "content": str(row.get("content") or ""),
-                "likes": int(row.get("like_counts") or 0),
-                "replies": 0,
-            }
-        )
-    return hot_comments
+    return _comment_repo().get_hot_comments(limit=limit)
 
 
 def _get_with_cache(cache_key_prefix, timeout_key, fetch_fn, *args, **kwargs):
@@ -369,30 +291,7 @@ def _build_ip_map_data(geo_one_data):
 def _build_ip_list():
     """从数据库查询评论 IP/地区分布列表。"""
     try:
-        df = query_dataframe("""
-            SELECT
-                MAX(authorName) as authorName,
-                authorAddress,
-                COUNT(*) as count,
-                MAX(created_at) as last_time
-            FROM comments
-            WHERE authorAddress IS NOT NULL AND authorAddress != ''
-            GROUP BY authorAddress
-            ORDER BY count DESC
-            LIMIT 10
-        """)
-        if df.empty:
-            return []
-        return [
-            {
-                "ip": "",
-                "location": row["authorAddress"],
-                "count": int(row["count"]),
-                "lastTime": str(row["last_time"]),
-                "user": row["authorName"],
-            }
-            for _, row in df.iterrows()
-        ]
+        return _comment_repo().get_ip_list()
     except (ConnectionError, OSError) as e:
         logger.warning("查询IP数据失败，返回空列表: %s", e)
         return []
@@ -400,18 +299,11 @@ def _build_ip_list():
 
 def _build_article_type_data():
     """查询文章类型分布，返回饼图格式数据。"""
-    type_df = query_dataframe("""
-        SELECT type, COUNT(*) AS count
-        FROM article
-        GROUP BY type
-        ORDER BY count DESC
-    """)
-    if type_df.empty:
+    try:
+        return _article_repo().get_type_distribution()
+    except (ConnectionError, OSError) as e:
+        logger.warning("查询文章类型分布失败: %s", e)
         return []
-    return [
-        {"name": row["type"] if row["type"] else "未知", "value": int(row["count"])}
-        for _, row in type_df.iterrows()
-    ]
 
 
 @db.route("/getHomeData", methods=["GET"])

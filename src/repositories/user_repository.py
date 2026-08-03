@@ -1,4 +1,5 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
+from sqlalchemy import func
 
 from models.user import User
 
@@ -15,8 +16,8 @@ class UserRepository(BaseRepository):
             return self._user_to_dict(user)
         return None
 
-    def find_by_id(self, user_id: int) -> Optional[Dict[str, Any]]:
-        user = self.session.query(User).filter_by(id=user_id).first()
+    def find_by_id(self, id: Any) -> Optional[Dict[str, Any]]:
+        user = self.session.query(User).filter_by(id=id).first()
         if user:
             return self._user_to_dict(user)
         return None
@@ -50,6 +51,11 @@ class UserRepository(BaseRepository):
         except Exception:
             self.session.rollback()
             return False
+
+    def get_all_for_export(self) -> List[Dict[str, Any]]:
+        """导出所有用户（兼容旧 querys('select * from user')）"""
+        rows = self.session.query(User).all()
+        return [self._user_to_dict(u) for u in rows]
 
     @staticmethod
     def _user_to_dict(user: User) -> Dict[str, Any]:

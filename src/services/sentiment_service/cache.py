@@ -29,6 +29,8 @@ logger = logging.getLogger(__name__)
 # 尝试导入Redis（可选依赖）
 try:
     import redis
+    from redis.backoff import NoBackoff
+    from redis.retry import Retry
 
     redis_params = Config.get_redis_connection_params()
     redis_params.update(
@@ -36,6 +38,11 @@ try:
             "socket_connect_timeout": 5,
             "socket_timeout": 5,
             "health_check_interval": 30,
+            # redis-py 8.0 默认 retry=10 次（ExponentialWithJitterBackoff），
+            # Redis 不可用时 ping() 会重试 10 轮，叠加 Windows TCP 拒绝连接
+            # 的 ~2s 延迟，导入阶段即阻塞 ~20s，拖垮测试套件。缓存层应
+            # fail-fast 退回内存缓存，而非反复重试。
+            "retry": Retry(NoBackoff(), 0),
         }
     )
     redis_client = redis.Redis(**redis_params)

@@ -10,8 +10,9 @@ from snownlp import SnowNLP
 from wordcloud import WordCloud
 
 from config.settings import BASE_DIR
-from utils import getPublicData
-from utils.query import query_dataframe
+from utils.getPublicData import getAllCiPingTotal
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -24,22 +25,20 @@ def get_abs_path(rel_path):
     return os.path.join(BASE_DIR, rel_path)
 
 
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
+
+
 def getTypeList():
     try:
-        df = query_dataframe(
-            """
-            SELECT DISTINCT type
-            FROM article
-            WHERE type IS NOT NULL AND type != ''
-            ORDER BY type
-            """
-        )
-        if df.empty:
-            return []
-        return df["type"].dropna().astype(str).tolist()
+        return _article_repo().get_distinct_types()
     except Exception as e:
         logger.warning(f"获取文章类型列表失败，降级到全量读取: {e}")
-        return list({x[8] for x in getPublicData.getAllData()})
+        return list({x[8] for x in getAllData()})
 
 
 def _build_bucket_labels(range_num: int, bucket_count: int):
@@ -49,70 +48,16 @@ def _build_bucket_labels(range_num: int, bucket_count: int):
     ]
 
 
-def _get_article_histogram(column: str, default_type, range_num: int, bucket_count: int):
-    labels = _build_bucket_labels(range_num, bucket_count)
-    counts = [0 for _ in labels]
-
-    case_lines = []
-    for idx in range(bucket_count):
-        upper_bound = range_num * (idx + 2)
-        case_lines.append(
-            f"WHEN COALESCE({column}, 0) < {upper_bound} THEN {idx}"
-        )
-
-    where_clause = "WHERE type IS NOT NULL AND type != ''"
-    params = []
-    if default_type:
-        where_clause = "WHERE type IS NOT NULL AND type != '' AND type <> %s"
-        params.append(default_type)
-
-    sql = f"""
-        SELECT bucket_index, COUNT(*) AS count
-        FROM (
-            SELECT
-                CASE
-                    {' '.join(case_lines)}
-                    ELSE NULL
-                END AS bucket_index
-            FROM article
-            {where_clause}
-        ) buckets
-        WHERE bucket_index IS NOT NULL
-        GROUP BY bucket_index
-        ORDER BY bucket_index
-    """
-
-    try:
-        df = query_dataframe(sql, params=params)
-        if not df.empty:
-            for _idx, row in df.iterrows():
-                bucket_index = int(row["bucket_index"])
-                if 0 <= bucket_index < len(counts):
-                    counts[bucket_index] = int(row["count"])
-            return labels, counts
-    except Exception as e:
-        logger.warning(f"文章图表聚合失败，降级到全量读取: {e}")
-
-    articleList = getPublicData.getAllData()
-    for article in articleList:
-        if article[8] != default_type:
-            for item in range(bucket_count):
-                if int(article[1 if column == 'likeNum' else 2]) < range_num * (item + 2):
-                    counts[item] += 1
-                    break
-    return labels, counts
-
-
 def getArticleCharOneData(defaultType):
-    return _get_article_histogram("likeNum", defaultType, 1000, 14)
+    return _article_repo().get_histogram("likeNum", exclude_type=defaultType, range_num=1000, bucket_count=14)
 
 
 def getArticleCharTwoData(defaultType):
-    return _get_article_histogram("commentsLen", defaultType, 1000, 14)
+    return _article_repo().get_histogram("commentsLen", exclude_type=defaultType, range_num=1000, bucket_count=14)
 
 
 def getArticleCharThreeData(defaultType):
-    return _get_article_histogram("commentsLen", defaultType, 50, 29)
+    return _article_repo().get_histogram("commentsLen", exclude_type=defaultType, range_num=50, bucket_count=29)
 
 
 def getGeoCharDataOne():
@@ -123,26 +68,7 @@ def getGeoCharDataOne():
         list: 城市分布列表
     """
     try:
-        df = query_dataframe(
-            """
-            SELECT region AS name, COUNT(*) AS value
-            FROM comments
-            WHERE region IS NOT NULL AND region != '' AND region != '无'
-            GROUP BY region
-            ORDER BY value DESC
-            """
-        )
-        if df.empty:
-            return []
-
-        cityDicList = [
-            {"name": str(row["name"]), "value": int(row["value"])}
-            for _idx, row in df.iterrows()
-        ]
-
-        logger.info(f"获取评论地理分布数据成功，共 {len(cityDicList)} 个省份")
-        return cityDicList
-
+        return _comment_repo().get_region_distribution()
     except Exception as e:
         logger.error(f"获取评论地理分布数据失败: {e}")
         return []
@@ -156,106 +82,43 @@ def getGeoCharDataTwo():
         list: 城市分布列表
     """
     try:
-        df = query_dataframe(
-            """
-            SELECT region AS name, COUNT(*) AS value
-            FROM article
-            WHERE region IS NOT NULL AND region != '' AND region != '无'
-            GROUP BY region
-            ORDER BY value DESC
-            """
-        )
-        if df.empty:
-            return []
-
-        cityDicList = [
-            {"name": str(row["name"]), "value": int(row["value"])}
-            for _idx, row in df.iterrows()
-        ]
-
-        logger.info(f"获取文章地理分布数据成功，共 {len(cityDicList)} 个省份")
-        return cityDicList
-
+        return _article_repo().get_region_distribution()
     except Exception as e:
         logger.error(f"获取文章地理分布数据失败: {e}")
         return []
 
 
 def getCommetCharDataOne():
-    range_num = 20
-    bucket_count = 99
-    x_data = _build_bucket_labels(range_num, bucket_count)
-    y_data = [0 for _ in x_data]
-
-    case_lines = []
-    for idx in range(bucket_count):
-        upper_bound = range_num * (idx + 2)
-        case_lines.append(
-            f"WHEN COALESCE(like_counts, 0) < {upper_bound} THEN {idx}"
-        )
-
     try:
-        df = query_dataframe(
-            f"""
-            SELECT bucket_index, COUNT(*) AS count
-            FROM (
-                SELECT
-                    CASE
-                        {' '.join(case_lines)}
-                        ELSE NULL
-                    END AS bucket_index
-                FROM comments
-            ) buckets
-            WHERE bucket_index IS NOT NULL
-            GROUP BY bucket_index
-            ORDER BY bucket_index
-            """
-        )
-        if not df.empty:
-            for _idx, row in df.iterrows():
-                bucket_index = int(row["bucket_index"])
-                if 0 <= bucket_index < len(y_data):
-                    y_data[bucket_index] = int(row["count"])
-            return x_data, y_data
+        return _comment_repo().get_like_histogram(range_num=20, bucket_count=99)
     except Exception as e:
         logger.warning(f"评论点赞分布聚合失败，降级到全量读取: {e}")
-
-    comment_list = getPublicData.getAllCommentsData()
-    for comment in comment_list:
-        for item in range(bucket_count):
-            if int(comment[2]) < range_num * (item + 2):
-                y_data[item] += 1
-                break
-    return x_data, y_data
+        comment_list = getAllCommentsData()
+        range_num = 20
+        bucket_count = 99
+        x_data = _build_bucket_labels(range_num, bucket_count)
+        y_data = [0 for _ in x_data]
+        for comment in comment_list:
+            for item in range(bucket_count):
+                if int(comment[2]) < range_num * (item + 2):
+                    y_data[item] += 1
+                    break
+        return x_data, y_data
 
 
 def getCommetCharDataTwo():
     try:
-        df = query_dataframe(
-            """
-            SELECT authorGender AS name, COUNT(*) AS value
-            FROM comments
-            WHERE authorGender IS NOT NULL AND authorGender != ''
-            GROUP BY authorGender
-            ORDER BY value DESC
-            """
-        )
-        if not df.empty:
-            return [
-                {"name": str(row["name"]), "value": int(row["value"])}
-                for _idx, row in df.iterrows()
-            ]
+        return _comment_repo().get_gender_distribution()
     except Exception as e:
         logger.warning(f"评论性别分布聚合失败，降级到全量读取: {e}")
-
-    comment_list = getPublicData.getAllCommentsData()
-    gender_dic = {}
-    for item in comment_list:
-        if gender_dic.get(item[6], -1) == -1:
-            gender_dic[item[6]] = 1
-        else:
-            gender_dic[item[6]] += 1
-    return [{"name": key, "value": value} for key, value in gender_dic.items()]
+        comment_list = getAllCommentsData()
+        gender_dic = {}
+        for item in comment_list:
+            if gender_dic.get(item[6], -1) == -1:
+                gender_dic[item[6]] = 1
+            else:
+                gender_dic[item[6]] += 1
+        return [{"name": key, "value": value} for key, value in gender_dic.items()]
 
 
 def stopwordslist():
@@ -272,7 +135,12 @@ _plt_lock = threading.Lock()
 
 
 def _build_cloud_text(table_name: str, limit: int = 1000):
-    texts = _load_recent_texts(table_name, limit=limit)
+    if table_name == "article":
+        texts = _article_repo().get_recent_texts(limit=limit)
+    elif table_name == "comments":
+        texts = _comment_repo().get_recent_texts(limit=limit)
+    else:
+        texts = []
     if not texts:
         return ""
     return " ".join(texts)
@@ -355,7 +223,7 @@ def getCommentContentCloud():
 
 
 def getYuQingCharDataOne():
-    hotWordList = getPublicData.getAllCiPingTotal()
+    hotWordList = getAllCiPingTotal()
     xData = ["正面", "中性", "负面"]
     yData = [0, 0, 0]
     for hotWord in hotWordList:
@@ -374,26 +242,6 @@ def getYuQingCharDataOne():
     return xData, yData, bieData
 
 
-def _load_recent_texts(table_name: str, limit: int = 200):
-    try:
-        df = query_dataframe(
-            f"""
-            SELECT content
-            FROM {table_name}
-            WHERE content IS NOT NULL AND content != ''
-            ORDER BY created_at DESC
-            LIMIT %s
-            """,
-            params=[max(1, min(limit, 1000))],
-        )
-        if df.empty:
-            return []
-        return df["content"].dropna().astype(str).tolist()
-    except Exception as e:
-        logger.warning(f"加载 {table_name} 文本失败: {e}")
-        return []
-
-
 def getYuQingCharDataTwo():
     from services.sentiment_service import SentimentService
 
@@ -404,8 +252,8 @@ def getYuQingCharDataTwo():
             {"name": "负面", "value": int(counts.get("负面", 0))},
         ]
 
-    comment_texts = _load_recent_texts("comments", limit=200)
-    article_texts = _load_recent_texts("article", limit=200)
+    comment_texts = _comment_repo().get_recent_texts(limit=200)
+    article_texts = _article_repo().get_recent_texts(limit=200)
 
     comment_counts = SentimentService.analyze_distribution(
         comment_texts, mode="simple", sample_size=200
@@ -418,5 +266,17 @@ def getYuQingCharDataTwo():
 
 
 def getYuQingCharDataThree():
-    hotWordList = getPublicData.getAllCiPingTotal()
+    hotWordList = getAllCiPingTotal()
     return [x[0] for x in hotWordList], [int(x[1]) for x in hotWordList]
+
+
+def getAllData():
+    """兼容旧接口：返回所有文章数据"""
+    from utils.getPublicData import getAllData as _getAllData
+    return _getAllData()
+
+
+def getAllCommentsData():
+    """兼容旧接口：返回所有评论数据"""
+    from utils.getPublicData import getAllCommentsData as _getAllCommentsData
+    return _getAllCommentsData()

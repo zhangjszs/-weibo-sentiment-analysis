@@ -62,15 +62,28 @@ def app(monkeypatch):
     """Flask应用fixture"""
     monkeypatch.setenv("AUTO_CREATE_DEMO_ADMIN", "False")
     monkeypatch.setenv("DEMO_ADMIN_RESET_PASSWORD", "False")
-    
+
     # 清除已导入的模块，确保使用新的环境变量
     for mod in list(sys.modules.keys()):
         if mod.startswith("app") or mod.startswith("config") or mod.startswith("services.startup_service"):
             del sys.modules[mod]
-    
+
     app_module = importlib.import_module("app")
     flask_app = app_module.app
     flask_app.config["TESTING"] = True
+
+    # Celery result backend 默认 redis://localhost:6379，Redis 不可用时
+    # AsyncResult.state 会因 redis-py 8.0 默认 retry=10 阻塞 ~20s。测试中
+    # 改用 memory backend，避免任何 Redis 连接尝试。
+    try:
+        from tasks.celery_config import celery_app
+
+        monkeypatch.setitem(celery_app.conf, "result_backend", "cache+memory://")
+        monkeypatch.setitem(celery_app.conf, "broker_url", "memory://")
+        monkeypatch.setitem(celery_app.conf, "task_always_eager", True)
+    except Exception:
+        pass
+
     return flask_app
 
 

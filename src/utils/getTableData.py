@@ -4,7 +4,8 @@ from datetime import datetime
 from snownlp import SnowNLP
 
 from utils.getPublicData import getAllCiPingTotal, getAllCommentsData, getAllData
-from utils.query import query_dataframe
+from repositories.comment_repository import CommentRepository
+from repositories.article_repository import ArticleRepository
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,14 @@ def _extract_date_part(value):
         return None
 
 
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
+
+
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
 def getTableDataPageData():
     return getAllCiPingTotal()
 
@@ -38,37 +47,22 @@ def getTableData(hotWord):
         list: 匹配的评论列表
     """
     try:
-        # 使用参数化查询在数据库层面进行过滤，避免N+1查询问题
-        # 使用LIKE进行模糊匹配，并限制返回数量
-        # MySQL使用%s作为占位符
-        # 只查询数据库中实际存在的字段
-        df = query_dataframe(
-            """
-            SELECT
-                articleId,
-                created_at,
-                like_counts,
-                region,
-                content,
-                authorName,
-                authorGender,
-                authorAddress,
-                authorAvatar
-            FROM comments
-            WHERE content LIKE %s
-            ORDER BY created_at DESC
-            LIMIT 1000
-        """,
-            params=(f"%{hotWord}%",),
-        )
+        # 使用 Repository 搜索
+        results = _comment_repo().search_by_content(hotWord, limit=1000)
 
-        # 转换为列表格式以保持向后兼容
-        if df.empty:
+        if not results:
             logger.info(f"未找到包含关键词 '{hotWord}' 的评论")
             return []
 
-        logger.info(f"找到 {len(df)} 条包含关键词 '{hotWord}' 的评论")
-        return df.values.tolist()
+        logger.info(f"找到 {len(results)} 条包含关键词 '{hotWord}' 的评论")
+        return [
+            [
+                r["articleId"], r["created_at"], r["like_counts"], r["region"],
+                r["content"], r["authorName"], r["authorGender"],
+                r["authorAddress"], r["authorAvatar"]
+            ]
+            for r in results
+        ]
 
     except Exception as e:
         logger.error(f"查询评论数据失败: {e}")
@@ -116,29 +110,16 @@ def getTableDataEchartsData(hotWord):
 
 def getTableDataArticle(flag):
     try:
-        df = query_dataframe(
-            """
-            SELECT
-                id,
-                likeNum,
-                commentsLen,
-                reposts_count,
-                region,
-                content,
-                content_len,
-                created_at,
-                type,
-                detailUrl,
-                authorName,
-                authorDetail,
-                isVip,
-                vipLevel
-            FROM article
-            ORDER BY created_at DESC
-            LIMIT 1000
-            """
-        )
-        table_list = df.values.tolist() if not df.empty else []
+        articles, _ = _article_repo().find_with_filter(limit=1000, offset=0)
+        table_list = [
+            [
+                a["id"], a["likeNum"], a["commentsLen"], a["reposts_count"],
+                a["region"], a["content"], a["contentLen"], a["created_at"],
+                a["type"], a["detailUrl"], a["authorName"], a["authorDetail"],
+                a["isVip"], 0  # vipLevel 字段不存在，用 0 占位
+            ]
+            for a in articles
+        ]
     except Exception as e:
         logger.error(f"查询文章表格数据失败: {e}")
         table_list = getAllData()
