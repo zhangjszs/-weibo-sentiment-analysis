@@ -181,6 +181,7 @@ try:
     from views.api.propagation_api import bp as propagation_bp  # 传播分析蓝图
     from views.api.report_api import bp as report_bp  # 报告生成蓝图
     from views.api.spider_api import spider_bp  # 爬虫管理蓝图
+    from views.api.v1_analysis import bp as v1_analysis_bp  # V1 分析 API
     from views.data import db  # 数据API蓝图
     from views.page import page  # 页面视图蓝图
     from views.user import user  # 用户认证蓝图
@@ -197,6 +198,7 @@ try:
     app.register_blueprint(favorites_bp)  # 注册收藏管理蓝图
     app.register_blueprint(audit_bp)  # 注册审计日志蓝图
     app.register_blueprint(bigscreen_bp)  # 注册数据大屏蓝图
+    app.register_blueprint(v1_analysis_bp)  # 注册 V1 分析 API 蓝图
 
     # API 蓝图排除 CSRF：JWT 走 Bearer header 不需要 CSRF 令牌；
     # cookie 鉴权的 CSRF 防护由 SameSite=Strict（生产）+ Origin 校验（见
@@ -209,6 +211,7 @@ try:
     csrf.exempt(report_bp)
     csrf.exempt(platform_bp)
     csrf.exempt(favorites_bp)
+    csrf.exempt(v1_analysis_bp)
     csrf.exempt(audit_bp)
     csrf.exempt(bigscreen_bp)  # P3 修复：此前遗漏，与同域 /api/* 蓝图保持一致
 
