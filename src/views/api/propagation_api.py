@@ -12,6 +12,7 @@ from flask import Blueprint, request
 
 from services.propagation_analyzer import PropagationAnalyzer
 from utils.api_response import error, ok
+from utils.data_provenance import demo_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
 from repositories.repost_repository import RepostRepository
 
@@ -178,14 +179,17 @@ def analyze_propagation(article_id: str):
 
         summary = analyzer.get_summary()
 
-        return ok(
+        meta = demo_meta(topic=article_id, data_count=node_count) if effective_demo_mode else real_meta(topic=article_id, data_count=node_count)
+
+        return provenance_response(
             {
                 "article_id": article_id,
                 "node_count": node_count,
                 "summary": summary,
                 "demo_mode": effective_demo_mode,
                 "data_source": data_source,
-            }
+            },
+            meta,
         ), 200
 
     except Exception as e:
@@ -212,7 +216,9 @@ def get_propagation_graph(article_id: str):
         graph_data["demo_mode"] = effective_demo_mode
         graph_data["data_source"] = data_source
 
-        return ok(graph_data), 200
+        meta = demo_meta(topic=article_id, data_count=node_count) if effective_demo_mode else real_meta(topic=article_id, data_count=node_count)
+
+        return provenance_response(graph_data, meta), 200
 
     except Exception as e:
         logger.error(f"获取传播图失败: {e}")
@@ -238,7 +244,9 @@ def get_kol_analysis(article_id: str):
         kol_nodes = analyzer.get_kol_nodes()
         user_ranking = analyzer.get_user_influence_ranking(20)
 
-        return ok(
+        meta = demo_meta(topic=article_id, data_count=node_count) if effective_demo_mode else real_meta(topic=article_id, data_count=node_count)
+
+        return provenance_response(
             {
                 "article_id": article_id,
                 "kol_count": len(kol_nodes),
@@ -246,7 +254,8 @@ def get_kol_analysis(article_id: str):
                 "user_ranking": user_ranking,
                 "demo_mode": effective_demo_mode,
                 "data_source": data_source,
-            }
+            },
+            meta,
         ), 200
 
     except Exception as e:

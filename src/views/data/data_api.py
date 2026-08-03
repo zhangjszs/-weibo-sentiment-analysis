@@ -18,6 +18,7 @@ from utils import getEchartsData, getHomeData, getTableData
 from utils.api_response import error, ok
 from utils.authz import is_admin_user
 from utils.cache import memory_cache
+from utils.data_provenance import provenance_response, real_meta
 from repositories.article_repository import ArticleRepository
 from repositories.comment_repository import CommentRepository
 
@@ -58,8 +59,12 @@ PROVINCE_MAP = {
 
 
 def success_response(data, msg="success"):
-    """统一成功响应格式"""
-    return ok(data, msg=msg), 200
+    """统一成功响应格式，自动附加 provenance meta。"""
+    try:
+        meta = real_meta(topic="data_api", data_count=len(data) if isinstance(data, (list, dict)) else 0)
+    except Exception:
+        return ok(data, msg=msg), 200
+    return provenance_response(data, meta, msg=msg)
 
 
 def error_response(msg, code=500):

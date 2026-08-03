@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request, send_file
 
 from utils.api_response import error, ok
+from utils.data_provenance import demo_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
 from utils.report_generator import ReportConfig, report_generator
 from repositories.article_repository import ArticleRepository
@@ -279,13 +280,20 @@ def generate_report():
         )
 
         if result_path:
-            return ok(
+            data_count = 0
+            if isinstance(report_data, dict):
+                summary = report_data.get("summary", {})
+                data_count = (summary.get("total_articles") or 0) + (summary.get("total_comments") or 0)
+
+            meta = demo_meta(topic=title, data_count=data_count) if request_demo_mode else real_meta(topic=title, data_count=data_count)
+            return provenance_response(
                 {
                     "file_path": result_path,
                     "download_url": f"/api/report/download/{os.path.basename(result_path)}",
                     "format": format_type,
                     "generated_at": datetime.now().isoformat(),
                 },
+                meta,
                 msg="报告生成成功",
             ), 200
         else:
@@ -324,7 +332,13 @@ def generate_all_reports():
         results = report_generator.generate_all(report_data, output_dir, config)
 
         if results:
-            return ok(
+            data_count = 0
+            if isinstance(report_data, dict):
+                summary = report_data.get("summary", {})
+                data_count = (summary.get("total_articles") or 0) + (summary.get("total_comments") or 0)
+
+            meta = demo_meta(topic=title, data_count=data_count) if request_demo_mode else real_meta(topic=title, data_count=data_count)
+            return provenance_response(
                 {
                     "files": {
                         fmt: {
@@ -335,6 +349,7 @@ def generate_all_reports():
                     },
                     "generated_at": datetime.now().isoformat(),
                 },
+                meta,
                 msg="报告生成成功",
             ), 200
         else:
