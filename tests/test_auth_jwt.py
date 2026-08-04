@@ -4,6 +4,10 @@ JWT 认证测试模块
 测试登录、用户信息获取、注册等接口的 JWT 认证功能
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 import importlib

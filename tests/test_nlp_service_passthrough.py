@@ -12,6 +12,10 @@ fixture 会清理 sys.modules["app*"]，其他测试不受影响。
 
 from __future__ import annotations
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch

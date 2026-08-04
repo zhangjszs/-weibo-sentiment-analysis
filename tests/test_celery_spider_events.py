@@ -6,6 +6,10 @@
 行为契约是：文章批量写入后清空缓存。本测试直接验证 clear_all_cache 被调用。
 """
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 from unittest.mock import patch
 
 from tasks.celery_spider import _notify_articles_upserted_event

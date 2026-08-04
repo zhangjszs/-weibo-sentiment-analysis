@@ -8,6 +8,10 @@
 ciPingTotal / hyperparameter_optimizer 仍保留，其测试继续覆盖。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 import tempfile

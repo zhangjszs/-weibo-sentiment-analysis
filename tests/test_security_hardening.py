@@ -3,6 +3,10 @@
 安全加固回归测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import pickle
 import shutil

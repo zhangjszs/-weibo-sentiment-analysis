@@ -10,6 +10,10 @@ CSRF Origin 校验测试（P3 defense-in-depth）。
 - Referer 回退校验
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 

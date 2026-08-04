@@ -4,6 +4,10 @@
 测试范围：模型训练、预测、评估、持久化
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 import tempfile

@@ -14,6 +14,10 @@ task_status_service 是统一任务状态查询服务，实现 spider-remote →
 不触碰真实 Celery / 远程服务。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from unittest.mock import MagicMock, patch

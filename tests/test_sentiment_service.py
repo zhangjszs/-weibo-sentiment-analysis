@@ -8,6 +8,10 @@
 - 结果包含 sentiment/score 字段
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import json
 import os
 import sys

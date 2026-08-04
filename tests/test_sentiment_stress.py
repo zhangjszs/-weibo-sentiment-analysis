@@ -4,6 +4,10 @@
 测试系统在高负载下的稳定性和性能
 """
 
+import pytest
+
+pytestmark = pytest.mark.slow
+
 # 压测脚本执行真实 NLP 推理，单次 250s+，会拖垮 CI 与全量套件（评估 P0 #8）。
 # 默认跳过；需要时显式运行：
 #   pytest tests/test_sentiment_stress.py -o addopts="" --no-cov -p no:cacheprovider

@@ -4,6 +4,10 @@
 测试不同类型文本的情感分析结果，包括正面、负面、中性以及复杂情感表达
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import sys
 import os
 

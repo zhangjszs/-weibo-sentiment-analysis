@@ -1,3 +1,6 @@
+import pytest
+
+pytestmark = pytest.mark.unit
 # tests/test_platform_collector.py
 """
 TDD: 多平台数据采集器

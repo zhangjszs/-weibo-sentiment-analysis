@@ -6,6 +6,10 @@
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
+import pytest
+
 pytest.skip(
     "integration script (requires external spider modules/network)",
     allow_module_level=True,

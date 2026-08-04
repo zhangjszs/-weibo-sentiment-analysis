@@ -3,6 +3,10 @@
 配置验证器测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 from unittest import mock
 

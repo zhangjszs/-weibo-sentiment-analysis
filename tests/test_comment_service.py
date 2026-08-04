@@ -14,6 +14,10 @@ CommentRepository。此前无独立单元测试。
 mock CommentRepository，不触碰真实 DB。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from datetime import datetime

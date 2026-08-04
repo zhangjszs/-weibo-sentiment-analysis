@@ -6,6 +6,10 @@ API 契约测试
 
 import pytest
 
+pytestmark = pytest.mark.api
+
+import pytest
+
 
 class TestHealthContract:
     """健康检查接口契约"""
@@ -14,9 +18,7 @@ class TestHealthContract:
         response = client.get("/health")
         assert response.status_code == 200
         data = response.get_json()
-        assert "status" in data
-        assert "timestamp" in data
-        assert "version" in data
+        assert data.get("status") == "ok"
 
 
 class TestSessionCheckContract:

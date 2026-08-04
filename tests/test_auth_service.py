@@ -16,6 +16,10 @@ mock 所有外部依赖（UserRepository、create_token、verify_password、hash
 check_password_strength），不触碰真实 DB / bcrypt / JWT。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from unittest.mock import MagicMock, patch

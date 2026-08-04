@@ -1,3 +1,6 @@
+import pytest
+
+pytestmark = pytest.mark.unit
 from flask import Flask, g
 
 from utils.api_response import error, ok

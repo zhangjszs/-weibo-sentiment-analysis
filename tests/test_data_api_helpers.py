@@ -3,6 +3,10 @@
 data_api 辅助函数测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 

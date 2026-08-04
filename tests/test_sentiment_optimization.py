@@ -4,6 +4,10 @@
 功能：测试情感分析的性能和准确性
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import time
 import json
 from services.sentiment_service import SentimentService

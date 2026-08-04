@@ -37,11 +37,21 @@ def test_health_endpoint_is_json(client):
 def test_ready_endpoint_reports_missing_dependencies(client, monkeypatch):
     """``/ready`` must report per-check status when a dependency is unreachable.
 
-    We point ``DATABASE_URL`` at an unresolvable host and assert the endpoint
-    still returns a stable response (200 or 503) with a ``checks`` map.
+    We monkeypatch the ``db_session`` that the Flask app imported at module
+    load time, so the readiness probe sees a hard failure without relying on
+    ``Config`` class attribute caching, which would ignore runtime
+    ``os.environ`` changes.
     """
-    monkeypatch.setenv("DB_HOST", "invalid-host-that-does-not-exist.local")
-    monkeypatch.setenv("DB_PORT", "12345")
+    import app as app_module
+
+    class _FailingSession:
+        def execute(self, *args, **kwargs):
+            raise Exception("simulated database failure")
+
+        def remove(self):
+            pass
+
+    monkeypatch.setattr(app_module, "db_session", _FailingSession())
 
     response = client.get("/ready")
     assert response.status_code in {200, 503}
@@ -52,14 +62,21 @@ def test_ready_endpoint_reports_missing_dependencies(client, monkeypatch):
 
     checks = payload["checks"]
     assert isinstance(checks, dict)
-    # At minimum the database check must be present and report not-ready.
-    if "database" in checks:
-        assert checks["database"].get("ready") is False
+    assert "database" in checks
+    assert checks["database"].get("ready") is False
 
 
 @pytest.mark.api
-def test_ready_endpoint_structure(client):
+def test_ready_endpoint_structure(client, monkeypatch):
     """When the app can start at all, ``/ready`` returns a well-formed payload."""
+    import redis as redis_lib
+
+    class _FakeRedis:
+        def ping(self):
+            pass
+
+    monkeypatch.setattr(redis_lib, "Redis", _FakeRedis)
+
     response = client.get("/ready")
     assert response.status_code in {200, 503}
 

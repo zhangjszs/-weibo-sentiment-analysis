@@ -1,5 +1,8 @@
 import pytest
 
+pytestmark = pytest.mark.unit
+import pytest
+
 from utils.chart_renderer import ChartRenderer
 
 

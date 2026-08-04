@@ -3,6 +3,10 @@
 旧静态脚本回归测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from pathlib import Path
 
 

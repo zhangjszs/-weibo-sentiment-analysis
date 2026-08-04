@@ -18,6 +18,10 @@ search_service 是高级搜索服务模块，提供 FTS5 全文检索、LIKE 回
 - 触发 FTS 失败回退路径、拼音/数字/ASCII/标点混合输入、高亮边界
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sqlite3
 import sys

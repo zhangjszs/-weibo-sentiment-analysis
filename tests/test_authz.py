@@ -1,4 +1,7 @@
 import pytest
+
+pytestmark = pytest.mark.unit
+import pytest
 from flask import Flask, request
 
 from config.settings import Config

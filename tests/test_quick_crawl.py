@@ -6,6 +6,10 @@
 
 import pytest
 
+pytestmark = pytest.mark.external
+
+import pytest
+
 
 class TestQuickCrawl:
     """测试快速爬取接口"""

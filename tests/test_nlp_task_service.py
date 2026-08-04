@@ -24,6 +24,10 @@ nlp_task_service 是 NLP 任务调度服务，支持本地 Celery 与独立 NLP 
 回退链路与字段归一化。不触碰真实 HTTP / Celery / SnowNLP。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from unittest.mock import MagicMock, patch

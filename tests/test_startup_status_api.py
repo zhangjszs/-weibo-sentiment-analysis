@@ -3,6 +3,10 @@
 启动状态 API 测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.api
+
 import os
 import sys
 

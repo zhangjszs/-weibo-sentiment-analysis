@@ -20,6 +20,10 @@ _generate_demo_data，因此基类版本此前从未被执行，本文件用一�
 子类 _MinimalCollector 来触发基类默认实现。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from datetime import datetime
 from unittest.mock import patch
 

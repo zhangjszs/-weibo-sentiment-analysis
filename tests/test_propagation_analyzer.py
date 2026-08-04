@@ -12,6 +12,10 @@ propagation_analyzer.py 单元测试
 是生产代码（propagation_api.py 的 7 处调用全部走它），此前零单元测试。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from datetime import datetime, timedelta

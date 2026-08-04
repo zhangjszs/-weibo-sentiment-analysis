@@ -17,6 +17,10 @@
 - _generate_demo_data() 模拟数据生成（zhihu.py 80-112）
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 from unittest.mock import MagicMock, patch
 
 import pytest

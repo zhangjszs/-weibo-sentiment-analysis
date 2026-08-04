@@ -3,6 +3,10 @@
 数据大屏 API 测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import json
 from unittest import mock
 

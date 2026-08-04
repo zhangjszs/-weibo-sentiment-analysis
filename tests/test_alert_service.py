@@ -18,6 +18,10 @@ DB fixture：in-memory SQLite + scoped_session，monkeypatch ``database.db_sessi
 使 _fire_alert 返回的 alert/rule 对象提交后属性仍可直接访问。
 """
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import os
 import sys
 from datetime import datetime, timedelta

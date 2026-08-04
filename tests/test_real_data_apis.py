@@ -13,6 +13,7 @@ import pytest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
+@pytest.mark.external
 def test_platform_data_does_not_silent_demo_fallback(authed_client, monkeypatch):
     import views.api.platform_api as platform_api
 

@@ -19,6 +19,10 @@ spider_task_service 是 Spider 任务调度服务，支持本地 Celery 与独�
 参数、回退链路与字段归一化。不触碰真实 HTTP / Celery。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from unittest.mock import MagicMock, patch

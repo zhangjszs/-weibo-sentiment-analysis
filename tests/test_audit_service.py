@@ -9,6 +9,10 @@ user_routes（改密）调用，记录关键用户操作。此前零单元测试
 类型转换、异常隔离。不触碰真实数据库。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from unittest.mock import patch

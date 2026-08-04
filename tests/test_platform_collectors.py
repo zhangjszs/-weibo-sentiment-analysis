@@ -5,6 +5,10 @@
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
+import pytest
+
 from services.platform_collectors import (
     BilibiliCollector,
     DouyinCollector,

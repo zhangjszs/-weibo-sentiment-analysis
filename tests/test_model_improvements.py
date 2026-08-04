@@ -4,6 +4,10 @@
 功能：验证模型的性能、批处理能力和社交媒体文本适应性
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import time
 from pathlib import Path
 

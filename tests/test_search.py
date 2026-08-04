@@ -3,6 +3,10 @@
 高级搜索服务单元测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import shutil
 import sys
 import tempfile

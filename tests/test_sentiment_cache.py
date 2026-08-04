@@ -18,6 +18,10 @@ sentiment_service/cache.py 单元测试
 monkeypatch 替换 cache_module.REDIS_AVAILABLE / redis_client 来覆盖 Redis 分支。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import json
 import time
 from unittest.mock import MagicMock

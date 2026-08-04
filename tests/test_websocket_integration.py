@@ -19,6 +19,10 @@ WebSocket 服务集成测试
 - get_stats 连接统计
 """
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import logging
 import os
 import sys

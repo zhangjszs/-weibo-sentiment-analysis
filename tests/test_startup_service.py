@@ -3,6 +3,10 @@
 启动服务测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 import importlib

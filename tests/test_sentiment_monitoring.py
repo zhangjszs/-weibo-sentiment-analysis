@@ -11,6 +11,10 @@ sentiment_service/monitoring.py 单元测试
 - cleanup_memory_cache（81-91）：过期删除、新鲜保留、未超限不删、超限删最旧
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import time
 
 import pytest

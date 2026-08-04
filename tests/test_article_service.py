@@ -15,6 +15,10 @@ ArticleRepository 与 utils.query.querys。此前无独立单元测试。
 mock ArticleRepository 与 utils.query.querys，不触碰真实 DB / SQL。
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import sys
 from datetime import datetime
