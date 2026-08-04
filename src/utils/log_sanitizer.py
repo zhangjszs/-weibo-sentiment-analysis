@@ -30,6 +30,12 @@ class LogSanitizer:
     # IP地址脱敏（保留前两段）
     IP_PATTERN = r"\b(\d{1,3}\.\d{1,3})\.\d+\.\d+\b"
 
+    # JWT / Bearer Token
+    TOKEN_PATTERN = r"Bearer\s+[A-Za-z0-9\-_\.]+"
+
+    # Cookie value (anything after =, between ; or end of string)
+    COOKIE_PATTERN = r"(Cookie:\s*[^=]+)=[^;]+"
+
     @staticmethod
     def sanitize_password(text: str) -> str:
         """
@@ -147,6 +153,24 @@ class LogSanitizer:
         return re.sub(LogSanitizer.IP_PATTERN, replace_ip, text)
 
     @staticmethod
+    def sanitize_token(text: str) -> str:
+        """脱敏 Bearer Token。"""
+        if not text:
+            return text
+        return re.sub(LogSanitizer.TOKEN_PATTERN, "Bearer ***", text)
+
+    @staticmethod
+    def sanitize_cookie(text: str) -> str:
+        """脱敏 Cookie 中的值。"""
+        if not text:
+            return text
+
+        def replace_cookie(match):
+            return match.group(1) + "=***"
+
+        return re.sub(LogSanitizer.COOKIE_PATTERN, replace_cookie, text)
+
+    @staticmethod
     def sanitize_all(text: str) -> str:
         """
         对所有敏感信息进行脱敏
@@ -162,6 +186,8 @@ class LogSanitizer:
 
         # 按优先级顺序进行脱敏
         sanitized = LogSanitizer.sanitize_password(text)
+        sanitized = LogSanitizer.sanitize_token(sanitized)
+        sanitized = LogSanitizer.sanitize_cookie(sanitized)
         sanitized = LogSanitizer.sanitize_email(sanitized)
         sanitized = LogSanitizer.sanitize_phone(sanitized)
         sanitized = LogSanitizer.sanitize_id_card(sanitized)
@@ -287,6 +313,16 @@ def sanitize_phone(text: str) -> str:
 def sanitize_ip(text: str) -> str:
     """便捷函数：脱敏IP地址"""
     return LogSanitizer.sanitize_ip(text)
+
+
+def sanitize_token(text: str) -> str:
+    """便捷函数：脱敏 Token"""
+    return LogSanitizer.sanitize_token(text)
+
+
+def sanitize_cookie(text: str) -> str:
+    """便捷函数：脱敏 Cookie"""
+    return LogSanitizer.sanitize_cookie(text)
 
 
 def sanitize_all(text: str) -> str:

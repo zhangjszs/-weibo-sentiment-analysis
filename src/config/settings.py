@@ -178,6 +178,11 @@ class Config:
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    LOG_SANITIZE_ENABLED = os.getenv("LOG_SANITIZE_ENABLED", "True").lower() in {"1", "true", "yes", "on"}
+
+    # Data Governance
+    AUDIT_LOG_RETENTION_DAYS = int(os.getenv("AUDIT_LOG_RETENTION_DAYS", "90"))
+    REPORT_TEMP_CLEANUP_HOURS = int(os.getenv("REPORT_TEMP_CLEANUP_HOURS", "1"))
 
     # Demo / Bootstrap
     DEMO_ADMIN_USERNAME = os.getenv("DEMO_ADMIN_USERNAME", "admin")
