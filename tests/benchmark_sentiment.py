@@ -4,6 +4,10 @@
 测试响应时间、吞吐量和缓存命中率
 """
 
+import pytest
+
+pytestmark = pytest.mark.slow
+
 import time
 import statistics
 from concurrent.futures import ThreadPoolExecutor

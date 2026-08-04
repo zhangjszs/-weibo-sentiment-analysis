@@ -486,16 +486,20 @@ class NotificationService:
         return channels or [NotificationChannel.WEBSOCKET]
 
     def _fetch_rule_channels(self, rule_id: Any) -> Optional[List]:
-        """Fetch notification channels from an alert rule by id."""
-        try:
-            from services.alert_service import alert_engine
+        """从 DB 按规则 ID 取其通知渠道配置。
 
-            rule = alert_engine.rules.get(rule_id)
+        P0 #5：``alert_engine.rules`` 内存缓存已移除（规则改 DB 持久化），
+        改为直接查 ``alert_rules`` 表。best-effort：失败返回 None，上层回退
+        默认 WEBSOCKET 渠道。
+        """
+        try:
+            from database import db_session
+            from models.alert import AlertRule
+
+            rule = db_session.get(AlertRule, rule_id)
             if rule:
                 return getattr(rule, "notification_channels", None)
-        except ImportError as e:
-            logger.debug(f"读取预警规则渠道失败: {e}")
-        except AttributeError as e:
+        except Exception as e:
             logger.debug(f"读取预警规则渠道失败: {e}")
         return None
 

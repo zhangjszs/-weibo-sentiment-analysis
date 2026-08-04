@@ -12,8 +12,9 @@ from flask import Blueprint, request
 
 from services.propagation_analyzer import PropagationAnalyzer
 from utils.api_response import error, ok
-from utils.query import querys
+from utils.data_provenance import demo_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
+from repositories.repost_repository import RepostRepository
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,10 @@ def _normalize_reposts(rows):
     return reposts
 
 
+def _repost_repo() -> RepostRepository:
+    return RepostRepository()
+
+
 def _load_reposts(article_id: str, count: int, demo_mode: bool):
     """加载传播数据：默认只返回真实数据，演示模式需显式开启。"""
     global _REPOSTS_TABLE_MISSING
@@ -59,43 +64,13 @@ def _load_reposts(article_id: str, count: int, demo_mode: bool):
         return [], "reposts_table_missing", False
 
     try:
-        rows = querys(
-            """SELECT id, user_id, article_id, content, created_at AS post_time,
-                      repost_count, comment_count, like_count, depth, parent_id
-               FROM reposts
-               WHERE article_id = %s
-               ORDER BY created_at ASC
-               LIMIT %s""",
-            [article_id, max(1, min(count, 500))],
-            "select",
-        )
+        rows = _repost_repo().find_with_users(article_id, limit=max(1, min(count, 500)))
 
         if not rows:
             logger.info("传播数据未查询到真实内容")
             return [], "reposts_empty", False
 
-        user_ids = sorted({row.get("user_id") for row in rows if row.get("user_id")})
-        user_name_map = {}
-        # 限制用户ID数量，防止 DoS 攻击
-        if user_ids and len(user_ids) <= 1000:
-            placeholders = ",".join(["%s"] * len(user_ids))
-            user_rows = querys(
-                f"SELECT id, username FROM user WHERE id IN ({placeholders})",
-                user_ids,
-                "select",
-            )
-            user_name_map = {str(u.get("id")): u.get("username") for u in user_rows}
-        elif len(user_ids) > 1000:
-            logger.warning(f"用户ID数量过多({len(user_ids)})，限制查询前1000个")
-
-        normalized_rows = []
-        for row in rows:
-            copied = dict(row)
-            user_id = str(copied.get("user_id") or "")
-            copied["user_name"] = user_name_map.get(user_id) or f"用户{user_id or '未知'}"
-            normalized_rows.append(copied)
-
-        return _normalize_reposts(normalized_rows), "reposts_table", False
+        return _normalize_reposts(rows), "reposts_table", False
     except Exception as exc:
         error_text = str(exc)
         if "doesn't exist" in error_text and "reposts" in error_text:
@@ -204,14 +179,17 @@ def analyze_propagation(article_id: str):
 
         summary = analyzer.get_summary()
 
-        return ok(
+        meta = demo_meta(topic=article_id, data_count=node_count) if effective_demo_mode else real_meta(topic=article_id, data_count=node_count)
+
+        return provenance_response(
             {
                 "article_id": article_id,
                 "node_count": node_count,
                 "summary": summary,
                 "demo_mode": effective_demo_mode,
                 "data_source": data_source,
-            }
+            },
+            meta,
         ), 200
 
     except Exception as e:
@@ -238,7 +216,9 @@ def get_propagation_graph(article_id: str):
         graph_data["demo_mode"] = effective_demo_mode
         graph_data["data_source"] = data_source
 
-        return ok(graph_data), 200
+        meta = demo_meta(topic=article_id, data_count=node_count) if effective_demo_mode else real_meta(topic=article_id, data_count=node_count)
+
+        return provenance_response(graph_data, meta), 200
 
     except Exception as e:
         logger.error(f"获取传播图失败: {e}")
@@ -264,7 +244,9 @@ def get_kol_analysis(article_id: str):
         kol_nodes = analyzer.get_kol_nodes()
         user_ranking = analyzer.get_user_influence_ranking(20)
 
-        return ok(
+        meta = demo_meta(topic=article_id, data_count=node_count) if effective_demo_mode else real_meta(topic=article_id, data_count=node_count)
+
+        return provenance_response(
             {
                 "article_id": article_id,
                 "kol_count": len(kol_nodes),
@@ -272,7 +254,8 @@ def get_kol_analysis(article_id: str):
                 "user_ranking": user_ranking,
                 "demo_mode": effective_demo_mode,
                 "data_source": data_source,
-            }
+            },
+            meta,
         ), 200
 
     except Exception as e:

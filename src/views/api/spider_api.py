@@ -13,14 +13,28 @@ from flask import Blueprint, request
 from requests import RequestException
 from sqlalchemy.exc import SQLAlchemyError
 
-from config.settings import Config
 from services.spider_task_service import query_spider_task_progress, submit_spider_task
 from utils.api_response import error, ok
 from utils.authz import admin_required
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
+from repositories.user_repository import UserRepository
 
 logger = logging.getLogger(__name__)
 
 spider_bp = Blueprint("spider_api", __name__, url_prefix="/api/spider")
+
+
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
+
+
+def _user_repo() -> UserRepository:
+    return UserRepository()
 
 # 爬虫任务状态（内存存储，进程级别）
 _spider_state = {
@@ -185,68 +199,51 @@ def _refresh_task_state() -> None:
 
 def _query_table_count(table_name: str) -> int:
     """Return the row count for *table_name*, or 0 on failure."""
-    from utils.query import querys
-
     try:
-        result = querys(
-            f"SELECT COUNT(*) as cnt FROM {table_name}", [], "select"
-        )
-    except SQLAlchemyError as e:
+        if table_name == "article":
+            return _article_repo().count_total()
+        elif table_name == "comments":
+            return _comment_repo().count_total()
+        elif table_name == "user":
+            return _user_repo().count_total()
+        else:
+            return 0
+    except Exception as e:
         logger.debug("查询 %s 数量失败: %s", table_name, e)
         return 0
-
-    if not result:
-        return 0
-
-    first_row = result[0]
-    if isinstance(first_row, (list, tuple)):
-        return int(first_row[0])
-    return int(first_row.get("cnt", 0))
 
 
 def _query_latest_time(table_name: str, fallback: str = "暂无数据") -> str:
     """Return the latest `created_at` value for *table_name*."""
-    from utils.query import querys
-
     try:
-        result = querys(
-            f"SELECT MAX(created_at) as latest FROM {table_name}", [], "select"
-        )
-    except SQLAlchemyError as e:
+        if table_name == "article":
+            latest_time = _article_repo().get_latest_update_time()
+            return str(latest_time) if latest_time else fallback
+        elif table_name == "comments":
+            latest_time = _comment_repo().count_by_date_range()
+            if latest_time:
+                latest_entry = latest_time[-1] if latest_time else None
+                return str(latest_entry.get("created_at")) if latest_entry else fallback
+            return fallback
+        else:
+            return fallback
+    except Exception as e:
         logger.debug("查询 %s 最新时间失败: %s", table_name, e)
         return fallback
-
-    if not result or not result[0]:
-        return fallback
-
-    first_row = result[0]
-    val = first_row[0] if isinstance(first_row, (list, tuple)) else first_row.get("latest", "")
-    return str(val) if val else fallback
 
 
 def _query_daily_trend(table_name: str) -> list[dict]:
     """Return the 7-day daily count trend for *table_name*."""
-    from utils.query import query_dataframe
-
     try:
-        df = query_dataframe(f"""
-            SELECT DATE(created_at) as date, COUNT(*) as count
-            FROM {table_name}
-            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
-            GROUP BY DATE(created_at)
-            ORDER BY date
-        """)
-    except SQLAlchemyError as e:
+        if table_name == "article":
+            return _article_repo().count_by_date_range()
+        elif table_name == "comments":
+            return _comment_repo().get_recent_trend(days=7)
+        else:
+            return []
+    except Exception as e:
         logger.debug("查询 %s 每日趋势失败: %s", table_name, e)
         return []
-
-    if df is None or df.empty:
-        return []
-
-    return [
-        {"date": str(row["date"]), "count": int(row["count"])}
-        for _, row in df.iterrows()
-    ]
 
 
 def _build_overview_response() -> dict:

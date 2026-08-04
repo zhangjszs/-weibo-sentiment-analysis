@@ -6,7 +6,9 @@ import sys
 from config.settings import Config
 
 from .cache import cache_result
-from .query import query_dataframe, querys
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
+from repositories.user_repository import UserRepository
 
 sys.path.append("model")
 
@@ -76,8 +78,6 @@ cityList = [
             "丹东市",
             "锦州市",
             "营口市",
-            "阜新市",
-            "辽阳市",
             "盘锦市",
             "盘锦市",
             "朝阳市",
@@ -529,17 +529,36 @@ cityList = [
 ]
 
 
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
+
+
+def _user_repo() -> UserRepository:
+    return UserRepository()
+
+
 @cache_result(timeout=600, use_file_cache=True)  # 缓存10分钟，使用文件缓存
 def getAllData():
-    """获取所有文章数据 - 使用DataFrame优化"""
+    """获取所有文章数据 - 使用 Repository"""
     try:
-        # 使用pandas直接查询，性能更好
-        df = query_dataframe("SELECT * FROM article ORDER BY created_at DESC")
-        return df.values.tolist()  # 保持向后兼容
+        articles, _ = _article_repo().find_with_filter(limit=10000, offset=0)
+        # 兼容旧返回格式：列表的列表
+        return [
+            [
+                a["id"], a["likeNum"], a["commentsLen"], a["reposts_count"],
+                a["region"], a["content"], a["contentLen"], a["created_at"],
+                a["type"], a["detailUrl"], a["authorAvatar"], a["authorName"],
+                a["authorDetail"], a["isVip"]
+            ]
+            for a in articles
+        ]
     except Exception as e:
-        print(f"获取文章数据失败: {e}")
-        # 降级到原始查询方式
-        return querys("select * from article", [], "select")
+        logger.error(f"获取文章数据失败: {e}")
+        return []
 
 
 @cache_result(timeout=1800, use_file_cache=True)  # 缓存30分钟，词频数据变化较少
@@ -575,45 +594,50 @@ def getAllCiPingTotal():
 
 @cache_result(timeout=300, use_file_cache=True)  # 缓存5分钟
 def getAllCommentsData():
-    """获取所有评论数据 - 使用DataFrame优化"""
+    """获取所有评论数据 - 使用 Repository"""
     try:
-        # 只查询必要字段，提升性能
-        df = query_dataframe("""
-            SELECT articleId, created_at, like_counts, region, content,
-                   authorName, authorGender, authorAddress, authorAvatar
-            FROM comments
-            ORDER BY created_at DESC
-            LIMIT 1000
-        """)  # 限制返回数量，避免内存溢出
-        return df.values.tolist()
+        comments = _comment_repo().get_all_for_export()
+        return [
+            [
+                c["articleId"], c["created_at"], c["like_counts"], c["region"],
+                c["content"], c["authorName"], c["authorGender"],
+                c["authorAddress"], c["authorAvatar"]
+            ]
+            for c in comments[:1000]  # 限制返回数量，避免内存溢出
+        ]
     except Exception as e:
-        print(f"获取评论数据失败: {e}")
-        return querys("select * from comments", [], "select")
+        logger.error(f"获取评论数据失败: {e}")
+        return []
 
 
 @cache_result(timeout=600)  # 缓存10分钟
 def getAllUserData():
     """获取所有用户数据"""
-    return querys("select * from user", [], "select")
+    try:
+        users = _user_repo().get_all_for_export()
+        return [
+            [u["id"], u["username"], u["password"], u["create_time"],
+             u["nickname"], u["email"], u["bio"], u["avatar_color"]]
+            for u in users
+        ]
+    except Exception as e:
+        logger.error(f"获取用户数据失败: {e}")
+        return []
 
 
 # 新增：优化版本的数据获取函数
 @cache_result(timeout=300)
 def getArticleDataFrame():
-    """直接返回文章数据的DataFrame"""
-    return query_dataframe("SELECT * FROM article ORDER BY created_at DESC")
+    """直接返回文章数据（Repository 转 DataFrame 由上层决定）"""
+    articles, _ = _article_repo().find_with_filter(limit=10000, offset=0)
+    return articles
 
 
 @cache_result(timeout=300)
 def getCommentsDataFrame():
-    """直接返回评论数据的DataFrame"""
-    return query_dataframe("""
-        SELECT articleId, created_at, like_counts, region, content,
-               authorName, authorGender, authorAddress, authorAvatar
-        FROM comments
-        ORDER BY created_at DESC
-        LIMIT 1000
-    """)
+    """直接返回评论数据"""
+    comments = _comment_repo().get_all_for_export()
+    return comments[:1000]
 
 
 @cache_result(timeout=600)
@@ -624,27 +648,21 @@ def getTopArticlesByLikes(limit=10):
     except Exception:
         limit = 10
     limit = max(1, min(limit, 100))
-    return query_dataframe(
-        """
-        SELECT * FROM article
-        ORDER BY likeNum DESC
-        LIMIT %s
-        """,
-        params=[limit],
+    articles, _ = _article_repo().find_with_filter(
+        limit=limit, offset=0
     )
+    # 按 likeNum 排序（已在 find_with_filter 中默认按 created_at 降序，这里需要重排）
+    articles.sort(key=lambda x: x.get("likeNum", 0), reverse=True)
+    return articles[:limit]
 
 
 @cache_result(timeout=600)
 def getArticlesByDateRange(start_date, end_date):
     """按日期范围获取文章"""
-    return query_dataframe(
-        """
-        SELECT * FROM article
-        WHERE created_at BETWEEN %s AND %s
-        ORDER BY created_at DESC
-    """,
-        params=[start_date, end_date],
+    articles, _ = _article_repo().find_with_filter(
+        start_time=start_date, end_time=end_date, limit=10000, offset=0
     )
+    return articles
 
 
 if __name__ == "__main__":

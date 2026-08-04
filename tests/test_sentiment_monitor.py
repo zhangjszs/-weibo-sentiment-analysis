@@ -3,6 +3,10 @@
 情感突变检测算法单元测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import sys
 from datetime import datetime, timedelta
 

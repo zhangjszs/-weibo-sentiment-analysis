@@ -3,6 +3,10 @@
 上下文感知情感分析测试脚本
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import time
 import json
 from services.sentiment_service import SentimentService

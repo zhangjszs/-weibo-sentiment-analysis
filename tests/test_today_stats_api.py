@@ -3,6 +3,10 @@
 /api/stats/today 接口测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.api
+
 import os
 import sys
 

@@ -1,3 +1,6 @@
+import pytest
+
+pytestmark = pytest.mark.unit
 # tests/test_collaboration.py
 """
 TDD: 团队协作功能 - 多角色权限、数据分享、操作日志、评论批注

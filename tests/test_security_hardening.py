@@ -3,6 +3,10 @@
 安全加固回归测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import os
 import pickle
 import shutil
@@ -84,7 +88,10 @@ def test_config_exposes_redis_and_llm_contract():
 
 
 def test_sentiment_distribution_aggregates_labels(monkeypatch):
-    import services.sentiment_service as sentiment_module
+    # 拆分后 REDIS_AVAILABLE 定义在 sentiment_service.cache 子模块，
+    # service.analyze_distribution 通过 _cache.REDIS_AVAILABLE 读取，
+    # 因此需 patch cache 子模块才能在运行时生效。
+    import services.sentiment_service.cache as sentiment_module
     from services.sentiment_service import SentimentService
 
     monkeypatch.setattr(sentiment_module, "REDIS_AVAILABLE", False)

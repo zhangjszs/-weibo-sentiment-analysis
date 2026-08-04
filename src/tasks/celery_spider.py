@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 from config.settings import Config
-from services.domain_events import ArticlesUpsertedEvent, domain_event_bus
 from tasks.celery_config import celery_app
 
 logger = logging.getLogger(__name__)
@@ -56,14 +55,18 @@ def _upsert_articles_batch(rows: List[Tuple], batch_size: int = 200) -> int:
 def _notify_articles_upserted_event(
     task_id: str, pages: int, crawled: int, imported: int
 ) -> None:
-    """发布文章批量写入事件，解耦副作用。"""
-    domain_event_bus.publish(
-        ArticlesUpsertedEvent(
-            task_id=task_id,
-            pages=pages,
-            crawled=crawled,
-            imported=imported,
-        )
+    """文章批量写入后清理缓存（原走领域事件总线，P2 简化为直接调用）。"""
+    from utils.cache import clear_all_cache
+
+    clear_all_cache()
+    logger.info(
+        "文章入库后已触发缓存清理",
+        extra={
+            "task_id": task_id,
+            "pages": pages,
+            "crawled": crawled,
+            "imported": imported,
+        },
     )
 
 

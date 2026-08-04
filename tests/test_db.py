@@ -13,6 +13,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from config.settings import Config
 
+pytestmark = pytest.mark.integration
+
 
 def is_mysql_available(host=None, port=None, timeout=2):
     """检查MySQL服务是否可用"""

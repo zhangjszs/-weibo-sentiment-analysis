@@ -13,13 +13,13 @@
 │   ├── database.py             # 数据库连接
 │   ├── config/                 # 配置文件
 │   │   └── settings.py         # 应用配置
-│   ├── model/                  # 情感分析模型（训练/推理）
+│   ├── model/                  # 情感分析模型（训练/推理，离线实验用）
 │   │   ├── trainModel.py       # 模型训练
-│   │   ├── model_pipeline.py   # 模型流水线
 │   │   ├── model_utils.py      # 模型工具函数
 │   │   ├── hyperparameter_optimizer.py  # 超参数优化
 │   │   ├── data_augmentation.py         # 数据增强
-│   │   └── yuqing.py           # 舆情分析入口
+│   │   ├── social_media_preprocessor.py # 社媒文本预处理
+│   │   └── social_media_augmenter.py    # 社媒数据增强
 │   ├── models/                 # ORM 数据模型
 │   │   ├── alert.py            # 预警模型
 │   │   ├── article.py          # 文章模型
@@ -33,7 +33,6 @@
 │   │   └── user_repository.py     # 用户仓库
 │   ├── services/               # 业务逻辑层
 │   │   ├── alert_service.py        # 预警服务
-│   │   ├── alert_history_service.py # 预警历史服务
 │   │   ├── article_service.py      # 文章服务
 │   │   ├── audit_service.py        # 审计服务
 │   │   ├── auth_service.py         # 认证服务
@@ -106,15 +105,18 @@
 │   ├── package.json
 │   └── vite.config.js
 ├── docs/                       # 项目文档
-├── scripts/                    # 运维脚本
-├── tests/                      # 测试用例
+├── scripts/                    # 运维脚本（verify_project.ps1、healthcheck.py）
+├── tests/                      # 测试用例（pytest）
+├── database/                   # 数据库初始化 SQL
 ├── data/                       # 数据文件目录
 ├── cache/                      # 缓存目录
 ├── logs/                       # 日志目录
+├── requirements/               # Python 依赖
+│   ├── requirements.txt        # 运行时依赖
+│   ├── requirements-dev.txt    # 开发依赖（测试、lint）
+│   └── requirements.audit.txt  # 审计依赖
 ├── run.py                      # 启动脚本
-├── requirements.txt            # Python 依赖
-├── requirements-dev.txt        # 开发依赖
-├── pyproject.toml              # 工具配置
+├── pyproject.toml              # 工具配置（pytest、ruff、mypy）
 ├── .editorconfig               # 编辑器配置
 ├── .pre-commit-config.yaml     # Git Hooks
 ├── .gitignore                  # Git 忽略配置
@@ -125,8 +127,8 @@
 
 ### 环境要求
 
-- **Python** 3.8 - 3.12
-- **Node.js** 16+
+- **Python** 3.11+
+- **Node.js** 20+
 - **MySQL** 5.7+ (推荐，但也支持调整 SQLAlchemy 连接任何通用库)
 
 ### 💻 Windows 一键启动 (推荐)
@@ -149,8 +151,9 @@
 
 ```bash
 # 激活环境并安装依赖
-pip install -r requirements.txt
-cp .env.example .env  # 记得配置数据库密码配置
+pip install -r requirements/requirements.txt
+pip install -r requirements/requirements-dev.txt  # 开发依赖（测试、lint）
+cp .env.example .env  # 记得配置数据库密码
 
 # 运行后端
 python run.py
@@ -161,8 +164,8 @@ python run.py
 
 ```bash
 cd frontend
-pnpm install
-pnpm dev
+npm install
+npm run dev
 # 浏览器访问 http://localhost:3000
 ```
 
@@ -228,12 +231,16 @@ docker compose down
 - 评论数据采集
 - 用户信息获取
 
+> **⚠️ 说明**：微博爬虫依赖 `WEIBO_COOKIE` 环境变量，属于灰色地带采集，生产使用请评估合规风险；并发模式会增加 IP 被封风险。
+
 ### 数据分析
 
-- 情感分析（正面/中性/负面）
+- 情感分析（正面/中性/负面）—— **默认使用 SnowNLP + 情感词典 + 启发式规则**，ML 模型（`src/model/trainModel.py`）为离线实验用，未接入线上默认链路
 - 热词提取
 - 地域分布分析
 - 时间趋势分析
+
+> **⚠️ 说明**：多平台监测（抖音/知乎/B站/微信）当前**均为模拟数据**，仅知乎预留了采集框架，其余平台 `NotImplementedError` 兜底返回 mock，前端展示时建议标注数据来源。
 
 ### 数据可视化
 
@@ -270,7 +277,7 @@ docker compose down
 | `GET /getAllData/getContentCloudData` | 词云数据 | 30分钟 |
 | `POST /getAllData/clearCache` | 清空缓存 | - |
 
-更完整的接口说明见 [docs/API.md](/D:/coding/Pycharm/基于python微博舆情分析可视化系统/docs/API.md)。
+更完整的接口说明见 [docs/API.md](docs/API.md)。
 
 ## 开发规范
 
@@ -316,7 +323,7 @@ ruff check src/
 
 ### 缓存策略
 
-- 内存缓存: 使用 `utils/cache.py` 实现
+- 内存缓存: 使用 `src/utils/cache.py` 实现
 - 缓存时间: 根据数据更新频率设置 3-30 分钟
 - 缓存清理: 通过 `/getAllData/clearCache` 接口手动清理
 
@@ -334,7 +341,4 @@ ruff check src/
 
 ## 联系方式
 
-如有问题或建议，欢迎提交 Issue 或 Pull Request。
-#    - w e i b o - s e n t i m e n t - a n a l y s i s 
- 
- 
+如有问题或建议，欢迎提交 Issue 或 Pull Request.

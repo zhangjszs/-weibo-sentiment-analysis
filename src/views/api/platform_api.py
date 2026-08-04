@@ -5,14 +5,16 @@
 """
 
 import logging
+import random
 from datetime import datetime, timedelta
 
 from flask import Blueprint, request
 
 from services.platform_collectors import PlatformCollectorFactory
 from utils.api_response import error, ok
-from utils.query import querys
+from utils.data_provenance import demo_meta, experimental_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
+from repositories.article_repository import ArticleRepository
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +44,10 @@ def _normalize_datetime(value) -> str:
     return str(value)
 
 
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
 def _load_platform_data(platform: str, count: int, demo_mode: bool, keyword: str = None):
     """加载平台数据：默认只返回真实数据，演示模式需显式开启。"""
     if demo_mode:
@@ -66,29 +72,21 @@ def _load_platform_data(platform: str, count: int, demo_mode: bool, keyword: str
                     return data, f"{platform}_collector", False
         except Exception as exc:
             logger.warning(f"从采集器加载 {platform} 数据失败: {exc}")
-            # 采集失败时降级到演示数据
-            return generate_demo_data(platform, count), f"{platform}_collector_fallback", True
+            # 采集失败时不降级到演示数据，返回空 experimental 结果
+            return [], f"{platform}_collector_error", False
 
     # 微博平台从文章表加载
     try:
-        rows = querys(
-            """SELECT id, authorName, isVip, content, likeNum, commentsLen, reposts_count,
-                      created_at, region
-               FROM article
-               ORDER BY created_at DESC
-               LIMIT %s""",
-            [max(1, min(count, 500))],
-            "select",
-        )
+        articles, _ = _article_repo().find_with_filter(limit=max(1, min(count, 500)), offset=0)
 
-        if not rows:
+        if not articles:
             logger.info("平台数据未查询到真实内容")
             return [], "article_table_empty", False
 
         platform_info = PLATFORM_META.get(platform, PLATFORM_META["weibo"])
         data = []
 
-        for idx, row in enumerate(rows):
+        for idx, row in enumerate(articles):
             like_count = int(row.get("likeNum") or 0)
             comment_count = int(row.get("commentsLen") or 0)
             repost_count = int(row.get("reposts_count") or 0)
@@ -229,7 +227,7 @@ def list_platforms():
     """获取平台列表"""
     # 使用采集器工厂获取支持的平台列表
     collector_platforms = PlatformCollectorFactory.get_platform_info()
-    
+
     # 添加微博（主平台，不走采集器）
     all_platforms = [
         {"id": "weibo", "name": "微博", "icon": "📱", "enabled": True},
@@ -262,7 +260,25 @@ def get_platform_data(platform: str):
     end = start + page_size
     page_data = all_data[start:end]
 
-    return ok(
+    # Build provenance meta.
+    if effective_demo_mode:
+        meta = demo_meta(
+            topic=platform,
+            data_count=len(all_data),
+        )
+    elif data_source.endswith("_fallback") or data_source.endswith("_error"):
+        meta = experimental_meta(
+            topic=platform,
+            data_count=len(all_data),
+            source_name=f"{platform}_fallback",
+        )
+    else:
+        meta = real_meta(
+            topic=platform,
+            data_count=len(all_data),
+        )
+
+    return provenance_response(
         {
             "platform": platform,
             "demo_mode": effective_demo_mode,
@@ -274,7 +290,8 @@ def get_platform_data(platform: str):
                 "total": len(all_data),
                 "total_pages": (len(all_data) + page_size - 1) // page_size,
             },
-        }
+        },
+        meta,
     ), 200
 
 

@@ -11,11 +11,15 @@ from flask import Blueprint, request
 from utils.api_response import error, ok
 from utils.authz import admin_required
 from utils.log_sanitizer import SafeLogger
-from utils.query import querys
+from repositories.audit_repository import AuditRepository
 
 logger = SafeLogger("audit_api", logging.INFO)
 
 audit_bp = Blueprint("audit", __name__, url_prefix="/api/audit")
+
+
+def _audit_repo() -> AuditRepository:
+    return AuditRepository()
 
 
 @audit_bp.route("/logs", methods=["GET"])
@@ -30,53 +34,16 @@ def get_audit_logs():
         action_filter = request.args.get("action", "").strip()
         username_filter = request.args.get("username", "").strip()
 
-        # Build query
-        where_clauses = []
-        params = []
-
-        if action_filter:
-            where_clauses.append("action = %s")
-            params.append(action_filter)
-
-        if username_filter:
-            where_clauses.append("username LIKE %s")
-            params.append(f"%{username_filter}%")
-
-        where_sql = (" WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
-
-        # Count
-        count_result = querys(
-            f"SELECT COUNT(*) as total FROM audit_log{where_sql}", params, "select"
+        items, total = _audit_repo().find_with_filter(
+            action=action_filter,
+            username=username_filter,
+            limit=limit,
+            offset=offset,
         )
-        total = count_result[0]["total"] if count_result else 0
-
-        # Data
-        items = querys(
-            f"""SELECT id, user_id, username, action, detail, ip, created_at
-                FROM audit_log{where_sql}
-                ORDER BY created_at DESC
-                LIMIT %s OFFSET %s""",
-            params + [limit, offset],
-            "select",
-        )
-
-        results = []
-        for item in items or []:
-            results.append(
-                {
-                    "id": item.get("id"),
-                    "user_id": item.get("user_id"),
-                    "username": item.get("username", ""),
-                    "action": item.get("action", ""),
-                    "detail": item.get("detail", ""),
-                    "ip": item.get("ip", ""),
-                    "created_at": str(item.get("created_at", "")),
-                }
-            )
 
         return ok(
             {
-                "items": results,
+                "items": items,
                 "total": total,
                 "page": page,
                 "limit": limit,

@@ -43,8 +43,9 @@ def _query_local_task(task_id: str) -> dict[str, Any]:
     elif state == "PROGRESS":
         info = result.info or {}
         current = int(info.get("current", 0) or 0)
-        total = int(info.get("total", 1) or 1)
-        payload["progress"] = int(current / max(total, 1) * 100)
+        total = int(info.get("total", 1) or 0)
+        # total=0 表示任务尚未开始处理，progress 应为 0 而非除零或超过 100%
+        payload["progress"] = int(current / total * 100) if total > 0 else 0
         payload["message"] = str(info.get("status", ""))
     elif state == "SUCCESS":
         payload["progress"] = 100

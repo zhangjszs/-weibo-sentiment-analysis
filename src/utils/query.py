@@ -11,13 +11,11 @@ from typing import Any
 
 import pandas as pd
 from sqlalchemy import text
+from sqlalchemy.exc import OperationalError
 
 from database import db_session, engine
 
 logger = logging.getLogger(__name__)
-
-
-# ── 兼容旧调用的查询函数 ───────────────────────────────────────────────────
 
 
 def _build_named_params(sql: str, params: list) -> tuple[str, dict[str, Any]]:
@@ -91,7 +89,6 @@ def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any
     # 非 select 类型统一按写操作处理（兼容 insert/update/delete/no_select）
     with engine.begin() as conn:
         result = conn.execute(stmt, named_params)
-
     logger.debug(
         "写操作完成: 影响 %d 行, 耗时 %.3fs",
         result.rowcount,
@@ -109,19 +106,15 @@ def query_dataframe(sql: str, params: list | None = None) -> pd.DataFrame:
         params: 参数列表
 
     Returns:
-        DataFrame，失败时返回空 DataFrame
+        DataFrame
     """
     start = time.time()
-    try:
-        named_sql, named_params = _build_named_params(sql, params or [])
-        df = pd.read_sql(text(named_sql), engine, params=named_params)
-        logger.debug(
-            "DataFrame 查询完成: %d 行, 耗时 %.3fs", len(df), time.time() - start
-        )
-        return df
-    except Exception as e:
-        logger.error("DataFrame 查询错误: %s", e, exc_info=True)
-        return pd.DataFrame()
+    named_sql, named_params = _build_named_params(sql, params or [])
+    df = pd.read_sql(text(named_sql), engine, params=named_params)
+    logger.debug(
+        "DataFrame 查询完成: %d 行, 耗时 %.3fs", len(df), time.time() - start
+    )
+    return df
 
 
 def get_database_stats() -> dict:

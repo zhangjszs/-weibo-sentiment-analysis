@@ -8,7 +8,7 @@ import time
 import requests
 from jsonpath import jsonpath
 
-from config import (
+from spider.config import (
     DEFAULT_DELAY,
     DEFAULT_TIMEOUT,
     get_random_headers,

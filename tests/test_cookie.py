@@ -6,6 +6,10 @@
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
+import pytest
+
 pytest.skip(
     "integration script (requires real weibo cookie/network)", allow_module_level=True
 )

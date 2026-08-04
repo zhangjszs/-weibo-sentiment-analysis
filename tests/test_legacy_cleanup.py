@@ -3,6 +3,10 @@
 旧兼容模块清理测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import importlib
 import os
 import sys

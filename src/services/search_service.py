@@ -238,9 +238,15 @@ class AdvancedSearchEngine:
                     ),
                 )
 
+                # FTS5 虚拟表以 rowid 为主键，id 只是普通列，INSERT OR REPLACE
+                # 按 rowid 匹配而非 id，重复插入会追加新条目导致旧内容仍可被搜到。
+                # 故先按 id 删除旧条目，再 INSERT。
+                conn.execute(
+                    "DELETE FROM search_fts WHERE id = ?", (doc_id,)
+                )
                 conn.execute(
                     """
-                    INSERT OR REPLACE INTO search_fts (id, title, content, author)
+                    INSERT INTO search_fts (id, title, content, author)
                     VALUES (?, ?, ?, ?)
                 """,
                     (doc_id, title, content, author),
@@ -281,9 +287,14 @@ class AdvancedSearchEngine:
                         ),
                     )
 
+                    # 同 index_document：先按 id 删除旧 FTS 条目再 INSERT，
+                    # 避免 FTS5 rowid 主键导致旧内容残留（见 index_document 注释）
+                    conn.execute(
+                        "DELETE FROM search_fts WHERE id = ?", (doc_id,)
+                    )
                     conn.execute(
                         """
-                        INSERT OR REPLACE INTO search_fts (id, title, content, author)
+                        INSERT INTO search_fts (id, title, content, author)
                         VALUES (?, ?, ?, ?)
                     """,
                         (doc_id, title, content, author),

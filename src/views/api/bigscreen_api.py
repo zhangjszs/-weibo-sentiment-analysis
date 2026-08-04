@@ -11,12 +11,21 @@ from flask import Blueprint, request
 
 from services.sentiment_service import SentimentService
 from utils.api_response import error, ok
-from utils.query import querys
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
 from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint("bigscreen", __name__, url_prefix="/api/bigscreen")
+
+
+def _article_repo() -> ArticleRepository:
+    return ArticleRepository()
+
+
+def _comment_repo() -> CommentRepository:
+    return CommentRepository()
 
 
 def _get_time_range(hours: int = 24):
@@ -30,17 +39,10 @@ def _get_sentiment_distribution():
     """获取情感分布统计"""
     try:
         # 从评论中获取最新数据
-        rows = querys(
-            """SELECT content FROM comments 
-               WHERE content IS NOT NULL AND content != ''
-               ORDER BY created_at DESC LIMIT 500""",
-            type="select",
-        )
+        texts = _comment_repo().get_recent_texts(limit=500)
         
-        if not rows:
+        if not texts:
             return {"positive": 0, "neutral": 0, "negative": 0}
-        
-        texts = [row.get("content", "") for row in rows if row.get("content")]
         
         # 使用情感分析服务
         try:
@@ -67,17 +69,9 @@ def _get_sentiment_distribution():
 def _get_region_distribution():
     """获取地区分布"""
     try:
-        rows = querys(
-            """SELECT region, COUNT(*) as count 
-               FROM article 
-               WHERE region IS NOT NULL AND region != ''
-               GROUP BY region 
-               ORDER BY count DESC 
-               LIMIT 10""",
-            type="select",
-        )
+        articles = _article_repo().get_region_distribution()
         
-        if not rows:
+        if not articles:
             # 返回默认数据
             return [
                 {"name": "北京", "value": 985},
@@ -90,7 +84,7 @@ def _get_region_distribution():
                 {"name": "山东", "value": 234},
             ]
         
-        return [{"name": row.get("region", ""), "value": int(row.get("count", 0))} for row in rows]
+        return articles
     except Exception as e:
         logger.error(f"获取地区分布失败: {e}")
         return []
@@ -99,37 +93,22 @@ def _get_region_distribution():
 def _get_trend_data(hours: int = 24):
     """获取趋势数据"""
     try:
-        # 按小时统计
-        rows = querys(
-            """SELECT 
-                DATE_FORMAT(created_at, '%H:00') as hour,
-                COUNT(*) as count,
-                AVG(CASE WHEN sentiment = 'positive' THEN 1 ELSE 0 END) as positive_ratio
-               FROM (
-                   SELECT created_at, 'neutral' as sentiment FROM comments 
-                   WHERE created_at >= DATE_SUB(NOW(), INTERVAL %s HOUR)
-                   LIMIT 1000
-               ) t
-               GROUP BY hour
-               ORDER BY hour""",
-            [hours],
-            type="select",
-        )
+        comments = _comment_repo().count_by_date_range()
         
-        if not rows:
+        if not comments:
             # 生成默认趋势数据
             return {
                 "times": [f"{h:02d}:00" for h in range(24)],
                 "positive": [120, 132, 201, 234, 290, 330, 410, 380, 350, 320, 340, 360,
-                           380, 400, 420, 450, 480, 520, 560, 600, 580, 550, 500, 450],
+                            380, 400, 420, 450, 480, 520, 560, 600, 580, 550, 500, 450],
                 "neutral": [80, 92, 141, 154, 190, 230, 280, 260, 240, 220, 235, 250,
                           265, 280, 295, 310, 325, 340, 355, 370, 360, 345, 330, 310],
                 "negative": [30, 42, 61, 74, 90, 110, 130, 120, 110, 100, 105, 115,
-                           125, 135, 145, 155, 165, 175, 185, 195, 190, 180, 170, 160],
+                            125, 135, 145, 155, 165, 175, 185, 195, 190, 180, 170, 160],
             }
         
-        times = [row.get("hour", "") for row in rows]
-        counts = [int(row.get("count", 0)) for row in rows]
+        times = [comment.get("created_at", "") for comment in comments]
+        counts = [int(comment.get("count", 0)) for comment in comments]
         
         return {
             "times": times,
@@ -213,20 +192,8 @@ def get_bigscreen_stats():
     """
     try:
         # 获取基础统计
-        article_count = 0
-        comment_count = 0
-        
-        try:
-            article_rows = querys("SELECT COUNT(*) as count FROM article", type="select")
-            article_count = int(article_rows[0].get("count", 0)) if article_rows else 0
-        except Exception as e:
-            logger.warning(f"获取文章数失败: {e}")
-        
-        try:
-            comment_rows = querys("SELECT COUNT(*) as count FROM comments", type="select")
-            comment_count = int(comment_rows[0].get("count", 0)) if comment_rows else 0
-        except Exception as e:
-            logger.warning(f"获取评论数失败: {e}")
+        article_count = _article_repo().count_total()
+        comment_count = _comment_repo().count_total()
         
         # 获取情感分布
         sentiment = _get_sentiment_distribution()
@@ -321,8 +288,16 @@ def get_all_data():
         hours = request.args.get("hours", 24, type=int)
         
         # 获取所有数据
-        stats_resp = get_bigscreen_stats()
-        stats = stats_resp[0].get_json() if hasattr(stats_resp[0], 'get_json') else {}
+        article_count = _article_repo().count_total()
+        comment_count = _comment_repo().count_total()
+        
+        stats = {
+            "articleCount": article_count,
+            "commentCount": comment_count,
+            "positiveCount": 0,
+            "neutralCount": 0,
+            "negativeCount": 0,
+        }
         
         region_data = _get_region_distribution()
         trend_data = _get_trend_data(hours)
@@ -330,7 +305,7 @@ def get_all_data():
         alerts = _get_recent_alerts(5)
         
         return ok({
-            "stats": stats.get("data", {}),
+            "stats": stats,
             "region": region_data,
             "trend": trend_data,
             "hotTopics": hot_topics,

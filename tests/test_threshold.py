@@ -3,6 +3,10 @@
 阈值触发机制单元测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 import sys
 
 import pytest
@@ -261,79 +265,69 @@ class TestThresholdChecker:
 
 
 class TestAlertRuleEngine:
-    """预警规则引擎测试"""
+    """预警规则引擎测试（DB 持久化）
 
-    def test_init_default_rules(self):
-        """测试默认规则初始化"""
-        from services.alert_service import AlertRuleEngine
+    依赖 conftest 的 ``alert_engine`` fixture：in-memory SQLite + scoped_session，
+    seed 5 条默认规则。每个用例拿到独立 DB 与全新 AlertRuleEngine 实例，
+    避免规则/预警历史跨用例污染。``engine.rules`` 内存缓存已移除，断言改走
+    ``get_rules()``（返回 list[dict]）/ ``get_rule()``（返回 ORM 对象或 None）。
+    """
 
-        engine = AlertRuleEngine()
+    def test_init_default_rules(self, alert_engine):
+        """测试默认规则初始化（DB seed 5 条）"""
+        rules = alert_engine.get_rules()
+        rule_ids = {r["id"] for r in rules}
 
-        assert len(engine.rules) >= 4
-        assert "negative_surge" in engine.rules
-        assert "volume_spike" in engine.rules
-        assert "sentiment_shift" in engine.rules
-        assert "hot_topic" in engine.rules
+        assert len(rules) >= 4
+        assert "negative_surge" in rule_ids
+        assert "volume_spike" in rule_ids
+        assert "sentiment_shift" in rule_ids
+        assert "hot_topic" in rule_ids
 
-    def test_check_alerts_negative_surge(self):
+    def test_check_alerts_negative_surge(self, alert_engine):
         """测试负面舆情激增检测"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-
         metrics = {"negative_count": 60, "total_count": 100, "time_window_minutes": 30}
 
-        alerts = engine.check_alerts(metrics)
+        alerts = alert_engine.check_alerts(metrics)
 
         negative_alerts = [a for a in alerts if a.rule_id == "negative_surge"]
         assert len(negative_alerts) > 0
 
-    def test_check_alerts_volume_spike(self):
+    def test_check_alerts_volume_spike(self, alert_engine):
         """测试讨论量异常检测"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-
         metrics = {
             "current_count": 100,
             "baseline_count": 20,
             "time_window_minutes": 60,
         }
 
-        alerts = engine.check_alerts(metrics)
+        alerts = alert_engine.check_alerts(metrics)
 
         volume_alerts = [a for a in alerts if a.rule_id == "volume_spike"]
         assert len(volume_alerts) > 0
 
-    def test_check_alerts_sentiment_shift(self):
+    def test_check_alerts_sentiment_shift(self, alert_engine):
         """测试情感突变检测"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-
         metrics = {
             "current_sentiment": 0.2,
             "previous_sentiment": 0.7,
             "time_window_minutes": 30,
         }
 
-        alerts = engine.check_alerts(metrics)
+        alerts = alert_engine.check_alerts(metrics)
 
         sentiment_alerts = [a for a in alerts if a.rule_id == "sentiment_shift"]
         assert len(sentiment_alerts) > 0
 
-    def test_priority_ordering(self):
-        """测试优先级排序"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-        rules = engine.get_rules()
+    def test_priority_ordering(self, alert_engine):
+        """测试优先级排序（get_rules 已按 priority desc 返回）"""
+        rules = alert_engine.get_rules()
 
         priorities = [r["priority"] for r in rules]
         assert priorities == sorted(priorities, reverse=True)
 
-    def test_add_rule(self):
-        """测试添加规则"""
+    def test_add_rule(self, alert_engine):
+        """测试添加规则（持久化到 DB）"""
         from models.alert import (
             AlertLevel,
             AlertRule,
@@ -341,9 +335,6 @@ class TestAlertRuleEngine:
             ThresholdConfig,
             ThresholdOperator,
         )
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
 
         rule = AlertRule(
             id="custom_rule",
@@ -359,43 +350,31 @@ class TestAlertRuleEngine:
             ],
         )
 
-        success, msg = engine.add_rule(rule)
+        success, msg = alert_engine.add_rule(rule)
         assert success is True
-        assert "custom_rule" in engine.rules
+        assert alert_engine.get_rule("custom_rule") is not None
 
-    def test_remove_rule(self):
-        """测试移除规则"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-
-        result = engine.remove_rule("hot_topic")
+    def test_remove_rule(self, alert_engine):
+        """测试移除规则（从 DB 删除）"""
+        result = alert_engine.remove_rule("hot_topic")
         assert result is True
-        assert "hot_topic" not in engine.rules
+        assert alert_engine.get_rule("hot_topic") is None
 
-    def test_cooldown(self):
-        """测试冷却时间"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-
+    def test_cooldown(self, alert_engine):
+        """测试冷却时间（首次触发后 last_triggered 落库，二次评估被冷却拦下）"""
         metrics = {"negative_count": 60, "total_count": 100, "time_window_minutes": 30}
 
-        engine.check_alerts(metrics)
+        alert_engine.check_alerts(metrics)
 
         metrics2 = {"negative_count": 70, "total_count": 100, "time_window_minutes": 30}
 
-        alerts2 = engine.check_alerts(metrics2)
+        alerts2 = alert_engine.check_alerts(metrics2)
         negative_alerts = [a for a in alerts2 if a.rule_id == "negative_surge"]
         assert len(negative_alerts) == 0
 
-    def test_get_stats(self):
-        """测试获取统计"""
-        from services.alert_service import AlertRuleEngine
-
-        engine = AlertRuleEngine()
-
-        stats = engine.get_stats()
+    def test_get_stats(self, alert_engine):
+        """测试获取统计（DB 聚合查询）"""
+        stats = alert_engine.get_stats()
 
         assert "total_alerts" in stats
         assert "unread_count" in stats

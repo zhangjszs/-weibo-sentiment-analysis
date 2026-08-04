@@ -3,6 +3,10 @@
 旧版模板页面回归测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.api
+
 import os
 import sys
 

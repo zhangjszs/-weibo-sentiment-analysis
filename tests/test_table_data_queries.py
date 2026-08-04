@@ -3,6 +3,10 @@
 表格数据查询优化测试
 """
 
+import pytest
+
+pytestmark = pytest.mark.integration
+
 import os
 import sys
 
