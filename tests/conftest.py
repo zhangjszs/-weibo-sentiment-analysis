@@ -12,8 +12,9 @@ import pytest
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SANDBOX_TEMP_DIR = PROJECT_ROOT / ".pytest_tmp" / "temp"
 
-# 添加 src 到路径
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
 
 
 def sandbox_mkdtemp(
@@ -59,11 +60,14 @@ def apply_sandbox_temp_dir() -> None:
 
 @pytest.fixture
 def app(monkeypatch):
-    """Flask应用fixture"""
+    """Flask应用fixture — 使用 SQLite 内存数据库。"""
     monkeypatch.setenv("AUTO_CREATE_DEMO_ADMIN", "False")
     monkeypatch.setenv("DEMO_ADMIN_RESET_PASSWORD", "False")
 
-    # 清除已导入的模块，确保使用新的环境变量
+    import database
+
+    database.reset()
+
     for mod in list(sys.modules.keys()):
         if mod.startswith("app") or mod.startswith("config") or mod.startswith("services.startup_service"):
             del sys.modules[mod]

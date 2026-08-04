@@ -8,7 +8,7 @@ class Comment(Base):
     __tablename__ = "comments"
     __table_args__ = (
         Index("idx_articleId", "articleId"),
-        Index("idx_created_at", "created_at"),
+        Index("idx_comment_created_at", "created_at"),
         {"extend_existing": True},
     )
 
