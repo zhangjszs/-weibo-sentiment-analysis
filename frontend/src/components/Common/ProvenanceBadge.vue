@@ -12,7 +12,10 @@
       placement="top"
       effect="dark"
     >
-      <el-icon class="provenance-badge__info" :size="14"><WarningFilled /></el-icon>
+      <el-icon
+        class="provenance-badge__info"
+        :size="14"
+      ><WarningFilled /></el-icon>
     </el-tooltip>
   </span>
 </template>

@@ -13,6 +13,7 @@
         >微博舆情分析</span>
       </transition>
     </div>
+
     <el-menu
       :default-active="activeMenu"
       :collapse="collapsed"
@@ -23,8 +24,14 @@
       active-text-color="var(--el-color-primary)"
       router
     >
+      <!-- Main analysis workflows -->
+      <template v-if="!collapsed">
+        <div class="menu-group-label">
+          主链路分析
+        </div>
+      </template>
       <template
-        v-for="route in menuRoutes"
+        v-for="route in analysisRoutes"
         :key="route.path"
       >
         <el-menu-item :index="route.path">
@@ -34,181 +41,125 @@
           </template>
         </el-menu-item>
       </template>
+
+      <!-- Lab / experimental features -->
+      <template v-if="labRoutes.length > 0 && !collapsed">
+        <div class="menu-group-label menu-group-label--lab">
+          实验 / 运维
+        </div>
+      </template>
+      <template
+        v-for="route in labRoutes"
+        :key="route.path"
+      >
+        <el-menu-item :index="route.path">
+          <el-icon><component :is="route.meta.icon" /></el-icon>
+          <template #title>
+            {{ route.meta.title }}
+            <el-tag
+              size="small"
+              type="warning"
+              class="lab-tag"
+            >
+              实验
+            </el-tag>
+          </template>
+        </el-menu-item>
+      </template>
     </el-menu>
   </div>
 </template>
 
 <script setup>
-  import { computed } from 'vue'
-  import { useRoute } from 'vue-router'
-  import { useUserStore } from '@/stores/user'
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
-  defineProps({
-    collapsed: {
-      type: Boolean,
-      default: false,
-    },
+defineProps({
+  collapsed: { type: Boolean, default: false },
+})
+
+const route = useRoute()
+const userStore = useUserStore()
+
+const allChildren = computed(() => {
+  const parent = route.matched.find((r) => r.children && r.children.some((c) => c.meta))
+  if (!parent) return []
+  return parent.children.filter((child) => {
+    if (!child.meta || child.meta.public) return false
+    if (child.meta.adminOnly && !userStore.isAdmin) return false
+    return true
   })
+})
 
-  const route = useRoute()
-  const userStore = useUserStore()
+const analysisRoutes = computed(() =>
+  allChildren.value.filter((r) => r.meta?.group === 'analysis')
+)
 
-  const menuRoutes = computed(() => {
-    const parentRoute = route.matched.find((r) => r.children)?.path
-    if (!parentRoute) return []
+const labRoutes = computed(() =>
+  allChildren.value.filter((r) => r.meta?.group === 'lab')
+)
 
-    const parent = route.matched.find((r) => r.children && r.children.some((c) => c.meta))
-    const isAdmin = userStore.isAdmin
-    return (
-      parent?.children.filter((child) => {
-        if (!child.meta || child.meta.public) return false
-        if (child.meta.adminOnly && !isAdmin) return false
-        return true
-      }) || []
-    )
-  })
-
-  const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => route.path)
 </script>
 
 <style lang="scss" scoped>
-  .sidebar-container {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    background: var(--el-gradient-surface);
-    border-right: 1px solid var(--el-border-color-light);
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.sidebar-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--el-gradient-surface);
+}
+
+.logo-container {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 0 16px;
+
+  .logo {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+    flex-shrink: 0;
   }
 
-  .logo-container {
-    height: 72px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 16px;
-    overflow: hidden;
-    border-bottom: 1px solid var(--el-border-color-light);
-    position: relative;
-
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 16px;
-      right: 16px;
-      height: 1px;
-      background: var(--el-gradient-primary);
-      opacity: 0.3;
-    }
-
-    .logo {
-      height: 36px;
-      width: auto;
-      flex-shrink: 0;
-      transition: transform 0.3s ease;
-
-      &:hover {
-        transform: scale(1.05);
-      }
-    }
-
-    .title {
-      margin-left: 16px;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--el-text-color-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      letter-spacing: 0.8px;
-      background: var(--el-gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      transition: all 0.3s ease;
-    }
+  .title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--el-text-color-primary);
+    white-space: nowrap;
   }
+}
 
-  .sidebar-menu {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    border-right: none;
-    padding: 16px 0;
+.sidebar-menu {
+  flex: 1;
+  overflow-y: auto;
+  border-right: none;
+  padding-top: 4px;
+}
 
-    &::-webkit-scrollbar {
-      width: 6px;
-    }
+.menu-group-label {
+  padding: 12px 20px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--el-text-color-placeholder);
 
-    &::-webkit-scrollbar-track {
-      background: var(--el-bg-color-page);
-      border-radius: 3px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: var(--el-border-color);
-      border-radius: 3px;
-      transition: background 0.3s ease;
-
-      &:hover {
-        background: var(--el-color-primary-light-3);
-      }
-    }
-
-    :deep(.el-menu-item) {
-      margin: 6px 16px;
-      height: 52px;
-      line-height: 52px;
-      border-radius: var(--el-border-radius-base);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      overflow: hidden;
-
-      &::before {
-        content: '';
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 4px;
-        height: 100%;
-        background: var(--el-gradient-primary);
-        transform: scaleY(0);
-        transition: transform 0.3s ease;
-        border-radius: var(--el-border-radius-small) 0 0 var(--el-border-radius-small);
-      }
-
-      &:hover {
-        background-color: var(--el-color-primary-light-9) !important;
-        color: var(--el-color-primary) !important;
-        transform: translateX(4px);
-
-        &::before {
-          transform: scaleY(1);
-        }
-      }
-
-      &.is-active {
-        background-color: var(--el-color-primary-light-9) !important;
-        color: var(--el-color-primary) !important;
-        font-weight: 600;
-        transform: translateX(4px);
-
-        &::before {
-          transform: scaleY(1);
-        }
-      }
-
-      .el-icon {
-        font-size: 20px;
-        margin-right: 16px;
-        transition: transform 0.3s ease;
-
-        &:hover {
-          transform: scale(1.1);
-        }
-      }
-    }
+  &--lab {
+    margin-top: 8px;
+    border-top: 1px solid var(--el-border-color-light);
+    padding-top: 16px;
   }
+}
+
+.lab-tag {
+  margin-left: 6px;
+  vertical-align: middle;
+}
 </style>

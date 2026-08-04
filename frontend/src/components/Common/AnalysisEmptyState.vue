@@ -10,11 +10,18 @@
       </template>
       <template #description>
         <div class="analysis-empty-state__content">
-          <p class="analysis-empty-state__title">{{ title }}</p>
-          <p class="analysis-empty-state__reason">{{ reason }}</p>
+          <p class="analysis-empty-state__title">
+            {{ title }}
+          </p>
+          <p class="analysis-empty-state__reason">
+            {{ reason }}
+          </p>
         </div>
       </template>
-      <template v-if="hasActions" #default>
+      <template
+        v-if="hasActions"
+        #default
+      >
         <div class="analysis-empty-state__actions">
           <slot name="actions">
             <el-button
