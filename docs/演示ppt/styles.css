@@ -1,0 +1,227 @@
+/* ========================================================================
+   Shared Presentation Styles
+   All slides reference this single stylesheet to ensure visual consistency.
+   ======================================================================== */
+
+/* --- Theme Variables --- */
+:root {
+    /* Edge Blue Palette */
+    --edge-blue: #00A1F1;
+    --edge-blue-dark: #007CDD;
+    --edge-gradient-end: #00D1ED;
+    --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
+
+    /* Light Mode Base Colors */
+    --bg-color: #FFFFFF;
+    --text-color-base: #1F2937;
+    --text-color-muted: #4B5563;
+    --text-color-caption: #6B7280;
+    --card-bg-color: #F9FAFB;
+    --card-border-color: #E5E7EB;
+
+    /* Chrome Dark Gray for title split effect */
+    --chrome-dark-gray: #303134;
+
+    /* Additional palette */
+    --accent-green: #10b981;
+    --accent-purple: #8b5cf6;
+    --accent-indigo: #6365f1;
+    --accent-orange: #fd7e14;
+    --accent-teal: #20c997;
+    --accent-yellow: #ffc107;
+
+    /* Progress indicator */
+    --progress-active: var(--edge-blue);
+    --progress-inactive: #d1d5db;
+}
+
+/* --- Base Body Styles --- */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color-base);
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- Utility Classes (Edge Blue) --- */
+.text-edge-blue { color: var(--edge-blue); }
+.border-edge-blue { border-color: var(--edge-blue); }
+
+/* --- Gradient Animation (shared) --- */
+@keyframes gradient-animation {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.animated-gradient-text {
+    background: var(--edge-style-gradient);
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: gradient-animation 4s linear infinite;
+}
+
+/* --- Fade-in-up animation (shared) --- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeInUp {
+    opacity: 0;
+    animation: fadeInUp 0.7s ease-out forwards;
+}
+
+/* --- Title Styles (character-split) --- */
+.main-title {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 900;
+    font-size: clamp(2.8rem, 6vw, 4.5rem);
+    line-height: 1.15;
+    margin-bottom: clamp(2rem, 5vw, 4rem);
+    text-align: center;
+    border-bottom: 2px solid var(--card-border-color);
+    padding-bottom: clamp(1rem, 2.5vw, 2rem);
+    color: inherit;
+}
+
+.title-black-part  { color: var(--chrome-dark-gray); }
+.title-gradient-part {
+    background: var(--edge-style-gradient);
+    background-size: 200% auto;
+    animation: gradient-animation 4s linear infinite;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.en-label-small {
+    font-family: 'Roboto', sans-serif;
+    font-weight: 300;
+    font-size: clamp(0.75rem, 1.3vw, 0.85rem);
+    color: var(--text-color-caption);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    line-height: 1.3;
+    white-space: normal;
+    word-break: break-word;
+    display: block;
+}
+
+/* --- Section Cards (Light Mode) --- */
+.section-card {
+    background-color: var(--card-bg-color);
+    border: 1px solid var(--card-border-color);
+    border-radius: 1rem;
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+.section-card:hover {
+    transform: translateY(-8px);
+    border-color: var(--edge-blue);
+    box-shadow: 0 10px 25px -5px rgba(0, 161, 241, 0.15), 0 8px 10px -6px rgba(0, 161, 241, 0.1);
+}
+
+.section-title { color: var(--text-color-base); }
+.section-title-icon, .section-title i { color: var(--edge-blue); }
+
+/* --- Navigation Styles (shared) --- */
+.slide-navigation {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    display: flex;
+    gap: 20px;
+}
+
+.nav-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 10px 25px;
+    background: var(--edge-blue);
+    color: #fff;
+    border: none;
+    border-radius: 9999px;
+    text-decoration: none;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 12px rgba(0, 161, 241, 0.25);
+    backdrop-filter: blur(4px);
+}
+
+.nav-button:hover:not(.disabled) {
+    background: var(--edge-blue-dark);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 161, 241, 0.35);
+}
+
+.nav-button.disabled {
+    background-color: #adb5bd;
+    color: #6c757d;
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none;
+    box-shadow: none;
+}
+
+/* --- Progress Indicator --- */
+.slide-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;;
+    height: 4px;
+    background: transparent;
+    z-index: 200;
+    display: flex;
+}
+
+.slide-progress-dot {
+    flex: 1;
+    height: 100%;
+    background: var(--progress-inactive);
+    transition: background 0.3s ease;
+    cursor: pointer;
+}
+
+.slide-progress-dot.active {
+    background: var(--progress-active);
+}
+
+.slide-progress-dot:hover {
+    background: var(--edge-blue-dark);
+}
+
+/* --- Reduced Motion Support --- */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fadeInUp,
+    .animated-gradient-text,
+    .nav-button {
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+    .slide-card {
+        transition: none !important;
+    }
+    [style*="animation-delay"] {
+        animation-delay: 0s !important;
+    }
+}

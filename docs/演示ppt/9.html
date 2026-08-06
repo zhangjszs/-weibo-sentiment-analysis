@@ -4,179 +4,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>总结与展望 - Slide 9 (Light Theme - Blue Split Title)</title>
+    <title>总结与展望</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
           integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"/>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
           rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        /* --- Theme Variables --- */
-        :root {
-            /* Edge Blue Palette */
-            --edge-blue: #00A1F1;
-            --edge-blue-dark: #007CDD;
-            --edge-gradient-end: #00D1ED;
-            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue));
-
-            /* Light Mode Base Colors */
-            --bg-color: #FFFFFF;
-            --text-color-base: #1F2937; /* gray-800 */
-            --text-color-muted: #4B5563; /* gray-600 */
-            --text-color-caption: #6B7280; /* gray-500 */
-            --card-bg-color: #F9FAFB; /* gray-50 */
-            --card-border-color: #E5E7EB; /* gray-200 */
-            --card-hover-bg: #FFFFFF; /* White or slightly off-white */
-            --progress-bg: #E5E7EB; /* gray-200 */
-
-            /* Chrome Dark Gray for Title Split */
-            --chrome-dark-gray: #303134;
-
-            /* Chart Colors (Adjusted for Light Mode) */
-            --chart-grid-color: rgba(0, 0, 0, 0.1); /* Lighter grid */
-            --chart-label-color: #555; /* Darker labels */
-            --chart-point-label-color: #333;
-            --chart-tick-color: #777;
-            --chart-title-color: #111;
-            --chart-tooltip-bg: rgba(0, 0, 0, 0.8); /* Keep tooltip dark */
-            --chart-tooltip-text: #fff;
-            --chart-dataset1-color: #36A2EB; /* Default Blue */
-            --chart-dataset2-color: var(--edge-blue); /* Use Edge Blue */
-        }
-
-        /* --- Base Body Styles --- */
-        body {
-            font-family: 'Noto Sans SC', 'Roboto', sans-serif;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            background-color: var(--bg-color);
-            color: var(--text-color-base); /* Default dark text */
-            overflow-x: hidden;
-        }
-
-        /* --- Utility Classes (Edge Blue) --- */
-        .text-edge-blue {
-            color: var(--edge-blue);
-        }
-
-        .border-edge-blue {
-            border-color: var(--edge-blue);
-        }
-
-        /* --- Layout & Main Title --- */
-        .content-wrapper {
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-            padding: clamp(50px, 10vw, 100px) clamp(20px, 4vw, 40px);
-        }
-
-        .main-title {
-            font-family: 'Noto Sans SC', sans-serif;
-            font-weight: 900;
-            font-size: clamp(2.8rem, 6vw, 4.5rem);
-            line-height: 1.15;
-            margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
-            text-align: center;
-            border-bottom: 2px solid var(--card-border-color); /* Light border */
-            padding-bottom: clamp(1rem, 2.5vw, 2rem);
-            /* text-shadow: none; */ /* Remove dark shadow */
-            color: inherit; /* Let spans control color */
-        }
-
-        /* Split title styles */
-        .title-black-part {
-            color: var(--chrome-dark-gray);
-        }
-
-        .title-gradient-part {
-            background: var(--edge-style-gradient);
-            background-size: 200% auto;
-            animation: gradient-animation 4s linear infinite;
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent;
-        }
-
-        @keyframes gradient-animation {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .en-label-small {
-            font-family: 'Roboto', sans-serif;
-            font-weight: 300;
-            font-size: clamp(0.75rem, 1.3vw, 0.85rem);
-            color: var(--text-color-caption); /* Use caption color */
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-top: 0.5rem; /* Adjusted margin */
-            line-height: 1.3;
-            white-space: normal;
-            word-break: break-word;
-            display: block;
-        }
-
-        /* --- Section & Card Styles (Light Mode) --- */
-        .sections-container { /* Added for clarity */
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-fadeInUp {
-            opacity: 0;
-            animation: fadeInUp 0.7s ease-out forwards;
-        }
+        .slide { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+        .content-wrapper { max-width: 1200px; margin: 0 auto; padding: clamp(50px, 10vw, 100px) clamp(20px, 4vw, 40px); }
 
         .section-card {
             background-color: var(--card-bg-color);
-            border: 1px solid var(--card-border-color); /* Add subtle border */
+            border: 1px solid var(--card-border-color);
             border-radius: 1rem;
             transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s ease-out;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); /* Subtle shadow */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
         }
 
         .section-card:hover {
             transform: translateY(-8px);
-            border-color: var(--edge-blue); /* Highlight border */
-            /* Update shadow for blue accent and light mode */
+            border-color: var(--edge-blue);
             box-shadow: 0 10px 20px -5px rgba(0, 161, 241, 0.15), 0 6px 10px -6px rgba(0, 161, 241, 0.1);
         }
 
-        .section-title-icon {
-            color: var(--edge-blue);
-        }
-
-        /* Use blue accent */
-        .section-title-text {
-            color: var(--text-color-base);
-        }
-
-        /* Dark text */
+        .section-title { color: var(--text-color-base); }
+        .section-title-icon, .section-title i { color: var(--edge-blue); }
 
         .chart-container {
             position: relative;
@@ -187,83 +45,48 @@
             align-items: center;
         }
 
-        .chart-container canvas {
-            max-width: 100%;
-            max-height: 100%;
-        }
+        .chart-container canvas { max-width: 100%; max-height: 100%; }
 
         .achievement-card {
-            background-color: var(--bg-color); /* Use main bg or card-bg */
+            background-color: var(--bg-color);
             border-radius: 0.75rem;
             transition: all 0.3s ease;
             border: 1px solid var(--card-border-color);
         }
 
         .achievement-card:hover {
-            background-color: var(--card-hover-bg);
+            background-color: var(--card-bg-color);
             transform: translateY(-5px);
-            border-color: var(--edge-blue); /* Blue border on hover */
+            border-color: var(--edge-blue);
         }
 
         .achievement-icon {
-            background-color: var(--card-bg-color); /* Light gray bg for icon circle */
+            background-color: var(--card-bg-color);
             border-radius: 0.5rem;
         }
+        .achievement-icon i { color: var(--edge-blue); }
+        .achievement-title { color: var(--text-color-base); }
+        .achievement-desc { color: var(--text-color-muted); line-height: 1.6; }
 
-        .achievement-icon i {
-            color: var(--edge-blue);
-        }
+        .progress-container { background-color: #d1d5db; border-radius: 9999px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 9999px; animation: progress-fill 1.5s 0.5s ease-out forwards; }
 
-        /* Blue icon */
-        .achievement-title {
-            color: var(--text-color-base);
-        }
-
-        /* Dark text */
-        .achievement-desc {
-            color: var(--text-color-muted);
-            line-height: 1.6;
-        }
-
-        /* Muted text */
-
-        .progress-container {
-            background-color: var(--progress-bg); /* Light gray background */
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            border-radius: 9999px;
-            animation: progress-fill 1.5s 0.5s ease-out forwards;
-        }
-
-        @keyframes progress-fill {
-            from {
-                width: 0%;
-            }
-        }
-
-        /* Keep animation */
-
-        /* Specific progress bar colors remain from inline styles */
+        @keyframes progress-fill { from { width: 0%; } }
 
         .future-item {
-            background-color: var(--bg-color); /* Match achievement cards */
+            background-color: var(--bg-color);
             border-radius: 0.75rem;
             transition: all 0.3s ease;
             border: 1px solid var(--card-border-color);
         }
 
         .future-item:hover {
-            background-color: var(--card-hover-bg);
+            background-color: var(--card-bg-color);
             transform: translateY(-5px);
-            border-color: var(--edge-blue); /* Blue border */
+            border-color: var(--edge-blue);
         }
 
         .future-icon {
-            /* Update background to blue gradient */
             background: linear-gradient(135deg, var(--edge-blue), var(--edge-blue-dark));
             border-radius: 9999px;
             display: flex;
@@ -271,97 +94,39 @@
             justify-content: center;
             flex-shrink: 0;
         }
+        .future-icon i { color: white; }
+        .future-title { color: var(--text-color-base); }
+        .future-desc { color: var(--text-color-muted); line-height: 1.6; }
 
-        .future-icon i {
-            color: white;
-        }
-
-        /* Keep icon white on blue bg */
-        .future-title {
-            color: var(--text-color-base);
-        }
-
-        /* Dark text */
-        .future-desc {
-            color: var(--text-color-muted);
-            line-height: 1.6;
-        }
-
-        /* Muted text */
-        .future-desc ul {
-            list-style-type: none;
-            padding-left: 0.5rem;
-            margin-top: 0.5rem;
-        }
-
+        .future-desc ul { list-style-type: none; padding-left: 0.5rem; margin-top: 0.5rem; }
         .future-desc ul li {
             position: relative;
             padding-left: 1.25rem;
             margin-bottom: 0.25rem;
         }
-
         .future-desc ul li::before {
             content: '';
             position: absolute;
-            left: 0;
-            top: 0.6em;
-            width: 6px;
-            height: 6px;
-            background-color: var(--edge-blue); /* Blue bullets */
+            left: 0; top: 0.6em;
+            width: 6px; height: 6px;
+            background-color: var(--edge-blue);
             border-radius: 50%;
             transform: translateY(-50%);
         }
-
-        /* --- Navigation Styles (Light Mode - Blue) --- */
-        .slide-navigation { /* Tailwind classes handle positioning */
-        }
-
-        .nav-button {
-            display: inline-block;
-            padding: 10px 25px;
-            background-color: var(--edge-blue); /* Blue background */
-            color: white;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            box-shadow: 0 2px 5px rgba(0, 161, 241, 0.2); /* Subtle blue shadow */
-        }
-
-        .nav-button:hover {
-            background-color: var(--edge-blue-dark); /* Darker blue */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3); /* Enhanced blue shadow */
-        }
-
-        .nav-button.disabled {
-            background-color: #adb5bd;
-            color: #6c757d;
-            opacity: 0.7;
-            cursor: not-allowed;
-            pointer-events: none;
-            box-shadow: none;
-            transform: none;
-        }
-
     </style>
 </head>
 
-<body class="">
+<body>
 <div class="slide">
     <div class="content-wrapper">
-        <h1 class="main-title">
+        <h1 class="main-title animate-fadeInUp">
             <span class="title-black-part">总结与</span><span class="title-gradient-part">展望</span>
-            <span class="block en-label-small mt-2">Conclusion & Outlook</span>
+            <span class="en-label-small mt-2">Conclusion & Outlook</span>
         </h1>
 
         <div class="sections-container flex flex-col lg:flex-row gap-8 md:gap-10">
 
-            <div class="section section-card flex-1 p-6 md:p-8 animate-fadeInUp flex flex-col"
-                 style="animation-delay: 0.2s;">
+            <div class="section section-card flex-1 p-6 md:p-8 animate-fadeInUp flex flex-col" style="animation-delay: 0.2s;">
                 <div class="section-title text-2xl md:text-3xl font-bold mb-5 flex items-center flex-shrink-0">
                     <i class="fas fa-award section-title-icon text-2xl md:text-3xl mr-4"></i>
                     <span class="section-title-text">项目成果</span>
@@ -370,10 +135,12 @@
                     <canvas id="resultsChart"></canvas>
                 </div>
                 <div class="space-y-4 mt-auto">
-                    <div class="achievement-card p-4">
+
+                    <div class="achievement-card p-4 animate-fadeInUp" style="animation-delay: 0.3s;">
                         <div class="achievement-header flex items-center mb-2">
-                            <div class="achievement-icon w-9 h-9 flex items-center justify-center mr-3 text-lg"><i
-                                    class="fas fa-tachometer-alt"></i></div>
+                            <div class="achievement-icon w-9 h-9 flex items-center justify-center mr-3 text-lg">
+                                <i class="fas fa-tachometer-alt"></i>
+                            </div>
                             <div class="achievement-title text-base font-semibold">数据处理效率提升</div>
                         </div>
                         <div class="achievement-desc text-sm mb-2">
@@ -383,23 +150,27 @@
                             <div class="progress-bar" style="width: 88%; background-color: #3b82f6;"></div>
                         </div>
                     </div>
-                    <div class="achievement-card p-4">
+
+                    <div class="achievement-card p-4 animate-fadeInUp" style="animation-delay: 0.4s;">
                         <div class="achievement-header flex items-center mb-2">
-                            <div class="achievement-icon w-9 h-9 flex items-center justify-center mr-3 text-lg"><i
-                                    class="fas fa-smile"></i></div>
+                            <div class="achievement-icon w-9 h-9 flex items-center justify-center mr-3 text-lg">
+                                <i class="fas fa-smile"></i>
+                            </div>
                             <div class="achievement-title text-base font-semibold">情感分析准确度</div>
                         </div>
-                        <div class="achievement-desc text-sm mb-2">情感分析模型准确度达到87% (F1:
-                            85.8%)，为舆情分析提供可靠支持。
+                        <div class="achievement-desc text-sm mb-2">
+                            情感分析模型准确度达到87% (F1: 85.8%)，为舆情分析提供可靠支持。
                         </div>
                         <div class="progress-container h-2">
                             <div class="progress-bar" style="width: 87%; background-color: #10b981;"></div>
                         </div>
                     </div>
-                    <div class="achievement-card p-4">
+
+                    <div class="achievement-card p-4 animate-fadeInUp" style="animation-delay: 0.5s;">
                         <div class="achievement-header flex items-center mb-2">
-                            <div class="achievement-icon w-9 h-9 flex items-center justify-center mr-3 text-lg"><i
-                                    class="fas fa-chart-pie"></i></div>
+                            <div class="achievement-icon w-9 h-9 flex items-center justify-center mr-3 text-lg">
+                                <i class="fas fa-chart-pie"></i>
+                            </div>
                             <div class="achievement-title text-base font-semibold">可视化效果直观</div>
                         </div>
                         <div class="achievement-desc text-sm mb-2">
@@ -418,7 +189,8 @@
                     <span class="section-title-text">未来改进方向</span>
                 </div>
                 <div class="space-y-5">
-                    <div class="future-item p-4 md:p-5 flex items-start gap-4">
+
+                    <div class="future-item p-4 md:p-5 flex items-start gap-4 animate-fadeInUp" style="animation-delay: 0.5s;">
                         <div class="future-icon w-12 h-12 text-2xl">
                             <i class="fas fa-database"></i>
                         </div>
@@ -434,7 +206,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="future-item p-4 md:p-5 flex items-start gap-4">
+
+                    <div class="future-item p-4 md:p-5 flex items-start gap-4 animate-fadeInUp" style="animation-delay: 0.6s;">
                         <div class="future-icon w-12 h-12 text-2xl">
                             <i class="fas fa-bolt"></i>
                         </div>
@@ -450,7 +223,8 @@
                             </div>
                         </div>
                     </div>
-                    <div class="future-item p-4 md:p-5 flex items-start gap-4">
+
+                    <div class="future-item p-4 md:p-5 flex items-start gap-4 animate-fadeInUp" style="animation-delay: 0.7s;">
                         <div class="future-icon w-12 h-12 text-2xl">
                             <i class="fas fa-brain"></i>
                         </div>
@@ -472,27 +246,23 @@
     </div>
 </div>
 
-<div class="slide-navigation fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 flex gap-5">
-    <a href="8.html" class="nav-button prev-button">上一页</a>
-    <a href="10.html" class="nav-button next-button">下一页</a>
-</div>
-
 <script>
-    window.addEventListener('DOMContentLoaded', () => {
-        const resultsCtx = document.getElementById('resultsChart')?.getContext('2d');
-        if (resultsCtx) {
-            // Use CSS variables for chart colors
-            const style = getComputedStyle(document.body);
-            const dataset1Color = style.getPropertyValue('--chart-dataset1-color').trim() || '#36A2EB';
-            const dataset2Color = style.getPropertyValue('--chart-dataset2-color').trim() || '#00A1F1'; // Edge Blue
-            const gridColor = style.getPropertyValue('--chart-grid-color').trim() || 'rgba(0, 0, 0, 0.1)';
-            const labelColor = style.getPropertyValue('--chart-label-color').trim() || '#555';
-            const pointLabelColor = style.getPropertyValue('--chart-point-label-color').trim() || '#333';
-            const tickColor = style.getPropertyValue('--chart-tick-color').trim() || '#777';
-            const titleColor = style.getPropertyValue('--chart-title-color').trim() || '#111';
-            const tooltipBg = style.getPropertyValue('--chart-tooltip-bg').trim() || 'rgba(0, 0, 0, 0.8)';
-            const tooltipText = style.getPropertyValue('--chart-tooltip-text').trim() || '#fff';
+    window.SLIDE_CONFIG = {
+        prevSlideURL: '8.html',
+        nextSlideURL: '10.html',
+        totalSlides: 11,
+        currentPage: 10,
+        onChartInit: () => {
+            const resultsCtx = document.getElementById('resultsChart')?.getContext('2d');
+            if (!resultsCtx) return;
 
+            const dataset1Color = '#36A2EB';
+            const dataset2Color = getComputedStyle(document.documentElement).getPropertyValue('--edge-blue').trim() || '#00A1F1';
+            const gridColor = 'rgba(0, 0, 0, 0.1)';
+            const labelColor = '#555';
+            const pointLabelColor = '#333';
+            const tickColor = '#777';
+            const titleColor = '#111';
 
             new Chart(resultsCtx, {
                 type: 'radar',
@@ -503,7 +273,7 @@
                             label: '项目初始',
                             data: [45, 60, 50, 70, 40, 55],
                             fill: true,
-                            backgroundColor: dataset1Color.replace(/[\d.]+\)$/g, '0.2)'), // Set alpha
+                            backgroundColor: dataset1Color.replace(/[\d.]+\)$/g, '0.2)'),
                             borderColor: dataset1Color,
                             pointBackgroundColor: dataset1Color,
                             pointBorderColor: '#fff',
@@ -515,8 +285,8 @@
                             label: '项目当前',
                             data: [88, 87, 92, 85, 75, 90],
                             fill: true,
-                            backgroundColor: dataset2Color.replace(/[\d.]+\)$/g, '0.2)'), // Set alpha
-                            borderColor: dataset2Color, // Use Edge Blue
+                            backgroundColor: dataset2Color.replace(/[\d.]+\)$/g, '0.2)'),
+                            borderColor: dataset2Color,
                             pointBackgroundColor: dataset2Color,
                             pointBorderColor: '#fff',
                             pointHoverBackgroundColor: '#fff',
@@ -537,73 +307,24 @@
                         }
                     },
                     plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {color: labelColor, font: {size: 11}, boxWidth: 15, padding: 15}
-                        },
+                        legend: {position: 'bottom', labels: {color: labelColor, font: {size: 11}, boxWidth: 15, padding: 15}},
                         title: {
                             display: true, text: '项目成果核心指标对比',
-                            color: titleColor,
-                            font: {size: 14, weight: 'bold'},
-                            padding: {bottom: 10}
+                            color: titleColor, font: {size: 14, weight: 'bold'}, padding: {bottom: 10}
                         },
                         tooltip: {
-                            backgroundColor: tooltipBg,
-                            titleColor: tooltipText, bodyColor: tooltipText,
+                            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                            titleColor: '#fff', bodyColor: '#fff',
                             padding: 10, cornerRadius: 4,
                             titleFont: {weight: 'bold'}, bodyFont: {size: 11}
                         }
                     }
                 }
             });
-        } else {
-            console.error("Canvas element #resultsChart not found.");
         }
-    });
+    };
 </script>
-<script>
-    // Navigation Script (Unchanged)
-    const prevSlideURL = '8.html';
-    const nextSlideURL = '10.html'; // Set to null if this is the last slide
-    function navigateTo(url) {
-        if (url) {
-            window.location.href = url;
-        }
-    }
+<script src="slide-nav.js"></script>
 
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'ArrowLeft' || event.keyCode === 37) {
-            navigateTo(prevSlideURL);
-        } else if (event.key === 'ArrowRight' || event.keyCode === 39) {
-            navigateTo(nextSlideURL);
-        }
-    });
-    const prevButton = document.querySelector('.prev-button');
-    const nextButton = document.querySelector('.next-button');
-    if (prevButton) {
-        if (prevSlideURL) {
-            prevButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                navigateTo(prevSlideURL);
-            });
-        } else {
-            prevButton.classList.add('disabled');
-            prevButton.href = '#';
-        }
-    }
-    if (nextButton) {
-        if (nextSlideURL) {
-            nextButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                navigateTo(nextSlideURL);
-            });
-            nextButton.classList.remove('disabled'); // Ensure not disabled if URL exists
-            nextButton.href = nextSlideURL; // Ensure href is set
-        } else {
-            nextButton.classList.add('disabled');
-            nextButton.href = '#';
-        }
-    }
-</script>
 </body>
 </html>

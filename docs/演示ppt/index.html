@@ -4,61 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>基于Python微博舆情系统设计与开发 (Animated Gradient Text)</title>
+    <title>基于Python微博舆情系统设计与开发</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
           integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
-          crossorigin="anonymous" referrerpolicy="no-referrer"/>
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/framer-motion/11.2.10/motion.umd.min.js"
             integrity="sha512-sCA9l6Ib8r5h6nLwVLPgT395a3XL+Se3+2yA1nruXh+6AMqEbF+gCdkfZ7L+kHDAqXb9Y1/4Iu5cET3h8U+G1A=="
             crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Roboto:wght@300;400;700;900&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
-        :root {
-            /* Edge Blue Palette */
-            --edge-blue: #00A1F1;
-            --edge-blue-dark: #007CDD;
-            --edge-gradient-end: #00D1ED;
-            --edge-style-gradient: linear-gradient(90deg, var(--edge-blue), var(--edge-gradient-end), var(--edge-blue)); /* Adjusted gradient for animation loop */
-            --highlight-gradient: linear-gradient(to bottom, rgba(0, 161, 241, 0.3), rgba(0, 161, 241, 0.05));
-
-            /* Light Mode Base Colors */
-            --bg-color: #FFFFFF;
-            --text-color-base: #1F2937;
-            --text-color-muted: #4B5563;
-            --text-color-caption: #6B7280;
-            --card-bg-color: #F9FAFB;
-            --card-border-color: #E5E7EB;
+        /* --- Index-specific styles (kept minimal) --- */
+        .chinese-title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            line-height: 1.2;
         }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color-base);
-            font-family: sans-serif;
-        }
-
-        .text-edge-blue {
-            color: var(--edge-blue);
-        }
-
-        .bg-edge-blue {
-            background-color: var(--edge-blue);
-        }
-
-        .hover\:bg-edge-blue-dark:hover {
-            background-color: var(--edge-blue-dark);
-        }
-
-        .border-edge-blue {
-            border-color: var(--edge-blue);
-        }
-
-        .highlight-gradient {
-            background: var(--highlight-gradient);
-        }
-
-        html {
-            scroll-behavior: smooth;
+        .chinese-subtitle {
+            font-size: 1.5rem;
+            font-weight: bold;
         }
 
         /* Bento Grid */
@@ -97,35 +64,11 @@
         }
 
         @media (min-width: 768px) {
-            .bento-item-large-v {
-                grid-row: span 2;
-            }
-
-            .bento-item-large-h {
-                grid-column: span 2;
-            }
+            .bento-item-large-v { grid-row: span 2; }
+            .bento-item-large-h { grid-column: span 2; }
         }
 
-        /* Base Font styles */
-        .chinese-title {
-            font-size: 2.5rem;
-            font-weight: bold;
-            line-height: 1.2;
-        }
-
-        .chinese-subtitle {
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        .english-caption {
-            font-size: 0.8rem;
-            color: var(--text-color-caption);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        /* Standard Oversized styles (color handled by animated class if applied) */
+        /* Oversized elements */
         .oversized-number-base {
             font-size: 6rem;
             font-weight: 900;
@@ -163,7 +106,6 @@
         /* Line graphic */
         .line-graphic {
             border: 1px solid var(--edge-blue);
-            opacity: 1;
             margin-top: 1rem;
             padding: 1rem;
             border-radius: 0.5rem;
@@ -185,75 +127,57 @@
             align-items: center;
         }
 
-        .sentiment-item .fa-smile {
-            color: #16a34a;
+        .sentiment-item .fa-smile { color: #16a34a; }
+        .sentiment-item .fa-meh    { color: #d97706; }
+        .sentiment-item .fa-frown { color: #dc2626; }
+
+        .highlight-gradient {
+            background: linear-gradient(to bottom, rgba(0, 161, 241, 0.3), rgba(0, 161, 241, 0.05));
         }
 
-        .sentiment-item .fa-meh {
-            color: #d97706;
-        }
-
-        .sentiment-item .fa-frown {
-            color: #dc2626;
-        }
-
-        /* --- Animated Gradient Text --- */
-        .animated-gradient-text {
-            background: var(--edge-style-gradient);
-            background-size: 200% auto; /* Make gradient wider than element */
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            color: transparent; /* Fallback */
-            animation: gradient-animation 4s linear infinite; /* Apply animation */
-        }
-
-        /* --- Keyframes for the animation --- */
-        @keyframes gradient-animation {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        /* Tech gradient background (remains largely the same) */
         .tech-gradient-bg {
             position: relative;
             border: 1px solid var(--card-border-color);
         }
 
-        .tech-gradient-bg:hover {
-            border-color: var(--edge-blue);
-        }
+        .tech-gradient-bg:hover { border-color: var(--edge-blue); }
 
         .tech-gradient-bg::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             border-radius: inherit;
-            background: var(--highlight-gradient);
+            background: linear-gradient(to bottom, rgba(0, 161, 241, 0.3), rgba(0, 161, 241, 0.05));
             z-index: 0;
             opacity: 0.6;
             transition: opacity 0.3s ease;
         }
 
-        .tech-gradient-bg:hover::before {
-            opacity: 0.8;
+        .tech-gradient-bg:hover::before { opacity: 0.8; }
+        .tech-gradient-bg > * { position: relative; z-index: 1; }
+
+        html { scroll-behavior: smooth; }
+
+        /* --- Start button --- */
+        .start-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--edge-blue);
+            color: #fff;
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            border-radius: 9999px;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(0, 161, 241, 0.3);
         }
 
-        .tech-gradient-bg > * {
-            position: relative;
-            z-index: 1;
+        .start-button:hover {
+            background: var(--edge-blue-dark);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 161, 241, 0.4);
         }
-
     </style>
 </head>
 
@@ -275,9 +199,8 @@
 <main class="p-8 md:p-16">
     <div class="bento-grid">
 
-        <motion.div class="bento-item bento-item-large-h tech-gradient-bg" initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, amount: 0.3 }} transition=
-                {{ duration: 0.5 }}>
+        <motion.div class="bento-item bento-item-large-h tech-gradient-bg animate-fadeInUp"
+                    style="animation-delay: 0.1s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">项目背景</h2>
             <p class="english-caption mb-4">Project Background</p>
             <p class="text-color-muted mb-4">
@@ -293,23 +216,21 @@
             <i class="fab fa-weibo icon-in-background"></i>
         </motion.div>
 
-        <motion.div class="bento-item" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.1 }}>
+        <motion.div class="bento-item animate-fadeInUp" style="animation-delay: 0.2s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">核心技术</h2>
             <p class="english-caption mb-4">Core Technologies</p>
             <div class="flex items-center mb-3 icon-list-item"><i class="fab fa-python text-2xl mr-3"></i><span
-                    class="font-semibold">Python & Flask</span></div>
+                        class="font-semibold">Python & Flask</span></div>
             <div class="flex items-center mb-3 icon-list-item"><i class="fas fa-database text-2xl mr-3"></i><span
-                    class="font-semibold">MySQL & Data Storage</span></div>
+                        class="font-semibold">MySQL & Data Storage</span></div>
             <div class="flex items-center mb-3 icon-list-item"><i class="fas fa-language text-2xl mr-3"></i><span
-                    class="font-semibold">NLP (jieba, TF-IDF)</span></div>
+                        class="font-semibold">NLP (jieba, TF-IDF)</span></div>
             <div class="flex items-center icon-list-item"><i class="fas fa-chart-line text-2xl mr-3"></i><span
-                    class="font-semibold">Visualization (Matplotlib, Seaborn)</span></div>
+                        class="font-semibold">Visualization (Matplotlib, Seaborn)</span></div>
             <i class="fas fa-cogs icon-in-background"></i>
         </motion.div>
 
-        <motion.div class="bento-item" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.2 }}>
+        <motion.div class="bento-item animate-fadeInUp" style="animation-delay: 0.3s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">数据采集</h2>
             <p class="english-caption mb-4">Data Acquisition</p>
             <div class="flex-grow flex items-center justify-center"><i class="fas fa-download oversized-icon mb-4"></i>
@@ -318,8 +239,7 @@
                 Acquiring massive data...ensuring comprehensiveness and timeliness.</p>
         </motion.div>
 
-        <motion.div class="bento-item" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.3 }}>
+        <motion.div class="bento-item animate-fadeInUp" style="animation-delay: 0.4s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">数据处理</h2>
             <p class="english-caption mb-4">Data Processing</p>
             <div class="flex-grow flex items-center justify-center"><i class="fas fa-filter oversized-icon mb-4"></i>
@@ -328,9 +248,7 @@
                 for denoising... enhance data quality.</p>
         </motion.div>
 
-        <motion.div class="bento-item bento-item-large-v" initial={{ opacity: 0, y: 50 }} whileInView=
-                {{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.3 }} transition=
-                {{ duration: 0.5, delay: 0.4 }}>
+        <motion.div class="bento-item bento-item-large-v animate-fadeInUp" style="animation-delay: 0.5s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">情感分析</h2>
             <p class="english-caption mb-4">Sentiment Analysis</p>
             <p class="text-color-muted mb-4">采用先进的自然语言处理(NLP)技术...识别情感倾向。 Adopting advanced NLP
@@ -344,8 +262,7 @@
             <i class="fas fa-comments icon-in-background"></i>
         </motion.div>
 
-        <motion.div class="bento-item" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.1 }}>
+        <motion.div class="bento-item animate-fadeInUp" style="animation-delay: 0.6s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">数据可视化</h2>
             <p class="english-caption mb-4">Data Visualization</p>
             <p class="text-color-muted mb-4">利用Matplotlib、Seaborn 等库...关键词云。 Using libraries like
@@ -357,8 +274,7 @@
             <i class="fas fa-chart-bar icon-in-background"></i>
         </motion.div>
 
-        <motion.div class="bento-item" initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.2 }}>
+        <motion.div class="bento-item animate-fadeInUp" style="animation-delay: 0.7s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">系统架构</h2>
             <p class="english-caption mb-4">System Architecture</p>
             <div class="flex-grow flex items-center justify-center"><i class="fas fa-sitemap oversized-icon mb-4"></i>
@@ -367,9 +283,8 @@
             <p class="mt-2 text-sm text-edge-blue font-semibold">主要模块：采集、处理、存储、可视化、交互</p>
         </motion.div>
 
-        <motion.div class="bento-item flex flex-col items-center justify-center text-center"
-                    initial={{ opacity: 0, y: 50 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.5, delay: 0.3 }}>
+        <motion.div class="bento-item flex flex-col items-center justify-center text-center animate-fadeInUp"
+                    style="animation-delay: 0.8s;">
             <p class="english-caption mb-2">Real-time Analysis</p>
             <div class="oversized-number-base animated-gradient-text">99%</div>
             <p class="chinese-subtitle animated-gradient-text mt-2">近实时舆情分析</p>
@@ -377,9 +292,8 @@
             <i class="fas fa-tachometer-alt icon-in-background"></i>
         </motion.div>
 
-        <motion.div class="bento-item bento-item-large-h tech-gradient-bg" initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true, amount: 0.3 }} transition=
-                {{ duration: 0.5, delay: 0.4 }}>
+        <motion.div class="bento-item bento-item-large-h tech-gradient-bg animate-fadeInUp"
+                    style="animation-delay: 0.9s;">
             <h2 class="chinese-subtitle animated-gradient-text mb-2">系统价值</h2>
             <p class="english-caption mb-4">System Value</p>
             <p class="text-color-muted mb-4">提升舆情分析效率与准确性...助力健康网络舆论环境。 Enhancing the
@@ -389,11 +303,11 @@
 
     </div>
     <div class="text-center mt-16 mb-12 px-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, amount: 0.5 }} transition={{ duration: 0.6 }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.3 }}>
             <a href="ppt.html"
-               class="inline-block bg-edge-blue text-white font-bold py-4 px-10 rounded-full hover:bg-edge-blue-dark transition duration-300 text-xl shadow-lg hover:shadow-xl transform hover:scale-105">
-                进入演示 <i class="fas fa-angle-double-right ml-2"></i>
+               class="start-button">
+                进入演示 <i class="fas fa-angle-double-right"></i>
             </a>
         </motion.div>
     </div>
@@ -404,10 +318,15 @@
     <p class="text-gray-500 text-xs mt-1">Based on team '微博舆情处小组'.</p>
 </footer>
 
-<script type="module">
-    const {motion} = Motion;
-    console.log("Framer Motion loaded:", typeof motion !== 'undefined');
+<script>
+    window.SLIDE_CONFIG = {
+        prevSlideURL: null,
+        nextSlideURL: 'ppt.html',
+        totalSlides: 11,
+        currentPage: 1
+    };
 </script>
+<script src="slide-nav.js"></script>
 
 </body>
 </html>
