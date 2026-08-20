@@ -42,3 +42,17 @@
 - Python: Black (line-length 88), isort (profile=black), Ruff (`E,W,F,I,B,C4,UP`; ignores `E501,B008,B905`).
 - Frontend: ESLint + Prettier + Vitest.
 - Pre-commit hooks are defined in `.pre-commit-config.yaml`; install with `pre-commit install`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default canonical labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout (`CONTEXT.md` at repo root + `docs/adr/`). See `docs/agents/domain.md`.
