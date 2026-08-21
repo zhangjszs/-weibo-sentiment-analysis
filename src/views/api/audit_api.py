@@ -8,6 +8,8 @@ import logging
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from utils.api_response import error, ok
 from utils.authz import admin_required
 from utils.log_sanitizer import SafeLogger
@@ -15,7 +17,7 @@ from repositories.audit_repository import AuditRepository
 
 logger = SafeLogger("audit_api", logging.INFO)
 
-audit_bp = Blueprint("audit", __name__, url_prefix="/api/audit")
+audit_bp = Blueprint("audit", __name__, url_prefix=API_PREFIX + "/audit")
 
 
 def _audit_repo() -> AuditRepository:

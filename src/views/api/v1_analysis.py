@@ -12,12 +12,16 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from services.analysis_pipeline import AnalysisPipeline
 from utils.api_response import error as api_error, ok as api_ok
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("v1_analysis", __name__, url_prefix="/api/v1")
+v1_analysis_bp = Blueprint("v1_analysis", __name__, url_prefix=API_PREFIX + "/v1")
+
+bp = v1_analysis_bp  # 兼容旧引用：from views.api.v1_analysis import bp
 
 
 def _parse_datetime(value: str | None) -> datetime | None:
@@ -35,7 +39,7 @@ def _parse_bool(value: str | None, default: bool = False) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-@bp.route("/analysis", methods=["GET"])
+@v1_analysis_bp.route("/analysis", methods=["GET"])
 def run_analysis():
     """Execute the analysis pipeline for a topic + time range.
 

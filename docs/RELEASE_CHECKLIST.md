@@ -16,10 +16,10 @@
 
 ## 2. 数据库
 
-### 2.1 迁移
+### 2.1 迁移（Alembic 单一真相，见 docs/database/README.md）
 - [ ] 运行所有等待中的 Alembic 迁移：`alembic upgrade head`
 - [ ] 验证新增字段和表结构：`python scripts/check_db.py`
-- [ ] 确认 `database/init_database.sql` 与当前 ORM 模型一致
+- [ ] 确认 `docs/database/init_database.sql`（已归档，只读）与当前 ORM/迁移一致（如不一致以 Alembic 为准）
 
 ### 2.2 备份
 - [ ] 备份生产数据库：`mysqldump -u root -p wb > backup_$(date +%Y%m%d).sql`

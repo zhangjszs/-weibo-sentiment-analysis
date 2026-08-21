@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from services.propagation_analyzer import PropagationAnalyzer
 from utils.api_response import error, ok
 from utils.data_provenance import demo_meta, provenance_response, real_meta
@@ -18,7 +20,9 @@ from repositories.repost_repository import RepostRepository
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("propagation", __name__, url_prefix="/api/propagation")
+propagation_bp = Blueprint("propagation", __name__, url_prefix=API_PREFIX + "/propagation")
+
+bp = propagation_bp  # 兼容旧引用：from views.api.propagation_api import bp
 _REPOSTS_TABLE_MISSING = False
 
 
@@ -156,7 +160,7 @@ def generate_demo_data(article_id: str, count: int = 100):
     return nodes
 
 
-@bp.route("/analyze/<article_id>", methods=["GET"])
+@propagation_bp.route("/analyze/<article_id>", methods=["GET"])
 def analyze_propagation(article_id: str):
     """
     分析文章传播路径
@@ -197,7 +201,7 @@ def analyze_propagation(article_id: str):
         return error("传播路径分析失败", code=500), 500
 
 
-@bp.route("/graph/<article_id>", methods=["GET"])
+@propagation_bp.route("/graph/<article_id>", methods=["GET"])
 def get_propagation_graph(article_id: str):
     """获取传播图数据（用于可视化）"""
     try:
@@ -225,7 +229,7 @@ def get_propagation_graph(article_id: str):
         return error("获取传播图失败", code=500), 500
 
 
-@bp.route("/kol/<article_id>", methods=["GET"])
+@propagation_bp.route("/kol/<article_id>", methods=["GET"])
 def get_kol_analysis(article_id: str):
     """获取KOL影响力分析"""
     try:
@@ -263,7 +267,7 @@ def get_kol_analysis(article_id: str):
         return error("KOL分析失败", code=500), 500
 
 
-@bp.route("/timeline/<article_id>", methods=["GET"])
+@propagation_bp.route("/timeline/<article_id>", methods=["GET"])
 def get_propagation_timeline(article_id: str):
     """获取传播时间线"""
     try:
@@ -296,7 +300,7 @@ def get_propagation_timeline(article_id: str):
         return error("获取传播时间线失败", code=500), 500
 
 
-@bp.route("/depth/<article_id>", methods=["GET"])
+@propagation_bp.route("/depth/<article_id>", methods=["GET"])
 def get_depth_distribution(article_id: str):
     """获取传播深度分布"""
     try:
@@ -333,7 +337,7 @@ def get_depth_distribution(article_id: str):
         return error("获取深度分布失败", code=500), 500
 
 
-@bp.route("/compare", methods=["POST"])
+@propagation_bp.route("/compare", methods=["POST"])
 @rate_limit(max_requests=10, window_seconds=60)
 def compare_propagation():
     """对比多条传播路径"""

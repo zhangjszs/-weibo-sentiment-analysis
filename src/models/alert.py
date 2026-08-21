@@ -4,7 +4,7 @@
 
 P0 #5：``Alert`` / ``AlertRule`` 由 ``@dataclass`` 改为 SQLAlchemy ORM，持久化到
 ``alerts`` / ``alert_rules`` 两张表（见 Alembic 迁移 ``b2d5a3f9c0e1`` 与
-init_database.sql）。``AlertHistory`` 合并入 ``alerts``（补 ``notes`` 列），其类与
+归档 SQL ``docs/database/`` 已冻结）。``AlertHistory`` 合并入 ``alerts``（补 ``notes`` 列），其类与
 ``alert_history_service.py`` 一并移除（死代码）。
 
 设计要点：

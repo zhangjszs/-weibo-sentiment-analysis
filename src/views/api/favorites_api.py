@@ -8,13 +8,15 @@ import logging
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from utils.api_response import error, ok
 from utils.log_sanitizer import SafeLogger
 from repositories.user_favorite_repository import UserFavoriteRepository
 
 logger = SafeLogger("favorites_api", logging.INFO)
 
-favorites_bp = Blueprint("favorites", __name__, url_prefix="/api/favorites")
+favorites_bp = Blueprint("favorites", __name__, url_prefix=API_PREFIX + "/favorites")
 
 
 def _fav_repo() -> UserFavoriteRepository:

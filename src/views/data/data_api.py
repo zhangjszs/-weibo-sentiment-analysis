@@ -2,7 +2,7 @@
 """
 数据 API 模块
 功能：提供数据可视化相关 JSON API 接口
-路由前缀: /getAllData
+路由前缀: /api
 """
 
 import hashlib
@@ -24,8 +24,8 @@ from repositories.comment_repository import CommentRepository
 
 logger = logging.getLogger(__name__)
 
-# 创建蓝图
-db = Blueprint("data", __name__, url_prefix="/getAllData")
+# 创建蓝图 - 已收敛至 /api，前缀单轨化（A1）
+db = Blueprint("data", __name__, url_prefix="/api")
 
 # API 响应缓存（简单内存缓存）
 _api_cache = {}

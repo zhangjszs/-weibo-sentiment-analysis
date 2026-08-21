@@ -15,7 +15,9 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database/init_database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      # C1 归档：database/*.sql 已冻结至 docs/database/，此挂载仅为历史兼容；
+      # 真实建表以 `alembic upgrade head`（或 Base.metadata.create_all）为准，见 docs/database/README.md
+      - ./docs/database/init_database.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
       interval: 10s

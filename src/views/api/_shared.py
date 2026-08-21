@@ -1,7 +1,7 @@
 """API 蓝图共享层。
 
 P2 拆分后，本模块持有所有路由子模块共享的对象：
-- ``bp``：唯一的 ``api`` Blueprint（name="api"，prefix="/api"）
+- ``bp``：唯一的 api 蓝图（name="api"，prefix="/api"）
 - ``logger``：统一日志器（保留 "api" logger 名以兼容现有日志过滤/告警）
 - 4 个 service/repo 实例：在进程内只创建一次，路由模块按引用导入。
   测试通过 ``monkeypatch.setattr(api_module.auth_service, "login", ...)``
@@ -21,6 +21,8 @@ from utils.api_response import error
 from utils.log_sanitizer import SafeLogger
 
 logger = SafeLogger("api", logging.INFO)
+
+API_PREFIX = "/api"
 
 # 服务实例（进程内单例，按引用共享给各路由子模块）
 article_service = ArticleService()

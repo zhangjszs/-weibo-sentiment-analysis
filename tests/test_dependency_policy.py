@@ -77,6 +77,10 @@ def test_celery_can_use_memory_backend(monkeypatch):
     """
     from tasks.celery_config import celery_app
 
+    # Settings.broker_url / result_backend 优先读环境变量（celery/app/utils.py），
+    # 仅改 conf 字典无法覆盖 .env 中的值，需同步覆盖环境变量。
+    monkeypatch.setenv("CELERY_BROKER_URL", "memory://")
+    monkeypatch.setenv("CELERY_RESULT_BACKEND", "cache+memory://")
     monkeypatch.setitem(celery_app.conf, "broker_url", "memory://")
     monkeypatch.setitem(celery_app.conf, "result_backend", "cache+memory://")
 

@@ -188,9 +188,9 @@ def schedule_startup_warmup(app) -> bool:
         return False
 
     warmup_paths = [
-        "/getAllData/getHomeData",
-        "/getAllData/getYuqingData",
-        "/getAllData/getContentCloudData?type=article",
+        "/api/getHomeData",
+        "/api/getYuqingData",
+        "/api/getContentCloudData?type=article",
         "/api/report/data",
     ]
 

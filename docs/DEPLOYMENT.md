@@ -39,11 +39,10 @@ source venv/bin/activate  # Linux/Mac
 # 2. 安装依赖
 pip install -r requirements/requirements.txt
 
-# 3. 数据库初始化
-# 登录本地 mysql 并执行数据库导入指令
-mysql -u root -p < database/new.sql
-mysql -u root -p < database/user.sql
-# （其它 sql 详见下文 数据库配置 章节）
+# 3. 数据库初始化（Alembic 单一真相，见 docs/database/README.md）
+# 归档 SQL 已冻结至 docs/database/，不再作为建表依据
+alembic upgrade head
+# 离线审计/种子（可选）：mysql -u root -p wb < docs/database/init_database.sql
 
 # 4. 配置环境变量
 cp .env.example .env
@@ -148,12 +147,11 @@ mysql -u root -p
 # 创建数据库
 CREATE DATABASE wb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 导入表结构
-USE wb;
-SOURCE database/new.sql;
-SOURCE database/user.sql;
-SOURCE database/article.sql;
-SOURCE database/comments.sql;
+# 建表（Alembic 单一真相，替代手写 SQL）
+# 在项目根目录执行：
+#   alembic upgrade head
+# 归档 SQL 仅作离线审计：docs/database/init_database.sql
+# 若需 MySQL 交互式建库，可直接 CREATE DATABASE 后执行上条 alembic 命令。
 
 # 创建用户（可选）
 CREATE USER 'weibo_user'@'localhost' IDENTIFIED BY 'your_password';

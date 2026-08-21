@@ -15,7 +15,10 @@ import sys
 src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src')
 sys.path.insert(0, src_path)
 
-from app import app
+from app import create_app
+
+# 组合根：急切构造仅发生于此（gunicorn 入口 `run:app` 指向此处）
+app = create_app()
 
 if __name__ == '__main__':
     app.run(

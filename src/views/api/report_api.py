@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request, send_file
 
+from ._shared import API_PREFIX
+
 from utils.api_response import error, ok
 from utils.data_provenance import demo_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
@@ -20,7 +22,9 @@ from repositories.comment_repository import CommentRepository
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("report", __name__, url_prefix="/api/report")
+report_bp = Blueprint("report", __name__, url_prefix=API_PREFIX + "/report")
+
+bp = report_bp  # 兼容旧引用：from views.api.report_api import bp
 
 
 def _coerce_bool(value, default: bool = False) -> bool:
@@ -229,7 +233,7 @@ def _build_report_data(demo_mode: bool = False):
         return _empty_report_data(), "real_error", False
 
 
-@bp.route("/generate", methods=["POST"])
+@report_bp.route("/generate", methods=["POST"])
 @rate_limit(max_requests=5, window_seconds=60)
 def generate_report():
     """
@@ -304,7 +308,7 @@ def generate_report():
         return error("报告生成失败", code=500), 500
 
 
-@bp.route("/generate-all", methods=["POST"])
+@report_bp.route("/generate-all", methods=["POST"])
 @rate_limit(max_requests=3, window_seconds=60)
 def generate_all_reports():
     """生成所有格式报告"""
@@ -360,7 +364,7 @@ def generate_all_reports():
         return error("报告生成失败", code=500), 500
 
 
-@bp.route("/download/<filename>", methods=["GET"])
+@report_bp.route("/download/<filename>", methods=["GET"])
 def download_report(filename: str):
     """下载报告文件"""
     try:
@@ -377,7 +381,7 @@ def download_report(filename: str):
         return error("文件下载失败", code=500), 500
 
 
-@bp.route("/preview/<filename>", methods=["GET"])
+@report_bp.route("/preview/<filename>", methods=["GET"])
 def preview_report(filename: str):
     """预览报告文件"""
     try:
@@ -394,7 +398,7 @@ def preview_report(filename: str):
         return error("文件预览失败", code=500), 500
 
 
-@bp.route("/templates", methods=["GET"])
+@report_bp.route("/templates", methods=["GET"])
 def get_templates():
     """获取报告模板列表"""
     templates = [
@@ -424,7 +428,7 @@ def get_templates():
     return ok({"templates": templates}), 200
 
 
-@bp.route("/demo-data", methods=["GET"])
+@report_bp.route("/demo-data", methods=["GET"])
 def get_demo_data():
     """获取演示数据"""
     report_data, data_source, effective_demo_mode = _build_report_data(True)
@@ -433,7 +437,7 @@ def get_demo_data():
     return ok(report_data), 200
 
 
-@bp.route("/data", methods=["GET"])
+@report_bp.route("/data", methods=["GET"])
 def get_report_data():
     """获取报告数据（默认真实数据，可通过 demo=true 强制演示数据）"""
     demo_mode = _parse_demo_mode(default=False)

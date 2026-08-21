@@ -108,7 +108,7 @@ jobs:
 
       - name: Initialize test database
         run: |
-          sed 's/`wb`/`weibo_test`/g' database/init_database.sql | mysql -h 127.0.0.1 -u root -proot
+          sed 's/`wb`/`weibo_test`/g' docs/database/init_database.sql | mysql -h 127.0.0.1 -u root -proot
 
       - name: Integration tests
         env:

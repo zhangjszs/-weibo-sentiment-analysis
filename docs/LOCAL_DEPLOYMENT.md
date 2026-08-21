@@ -146,15 +146,14 @@ SHOW DATABASES;
 EXIT;
 ```
 
-### 2.2 导入数据库结构
+### 2.2 导入数据库结构（Alembic 单一真相）
 
 ```bash
-# 使用初始化脚本（推荐）
-mysql -u root -p wb < database/init_database.sql
+# 推荐：Alembic 建表（唯一真相源，见 docs/database/README.md）
+alembic upgrade head
 
-# 或者分步导入
-# mysql -u root -p wb < database/new.sql
-# mysql -u root -p wb < database/user.sql
+# 离线审计/种子（可选，归档 SQL 已冻结至 docs/database/）：
+# mysql -u root -p wb < docs/database/init_database.sql
 ```
 
 ### 2.3 验证数据库
@@ -176,7 +175,7 @@ cd 基于python微博舆情分析可视化系统
 
 # 确认目录结构
 ls
-# 应该看到: src/, frontend/, database/, requirements/ 等
+# 应该看到: src/, frontend/, docs/database/（已归档 SQL）, requirements/ 等
 ```
 
 ### 3.2 创建Python虚拟环境
@@ -729,7 +728,7 @@ python -O src/app.py
 ├── frontend/                  # 前端代码
 │   ├── dist/                 # 构建输出
 │   └── ...
-├── database/                  # 数据库脚本
+├── docs/database/             # 已归档 SQL（只读，建表以 alembic 为准）
 │   └── init_database.sql
 ├── logs/                      # 日志目录
 ├── .env                       # 环境变量配置

@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from services.platform_collectors import PlatformCollectorFactory
 from utils.api_response import error, ok
 from utils.data_provenance import demo_meta, experimental_meta, provenance_response, real_meta
@@ -18,7 +20,9 @@ from repositories.article_repository import ArticleRepository
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("platform", __name__, url_prefix="/api/platform")
+platform_bp = Blueprint("platform", __name__, url_prefix=API_PREFIX + "/platform")
+
+bp = platform_bp  # 兼容旧引用：from views.api.platform_api import bp
 
 PLATFORM_META = {
     "weibo": {"name": "微博", "icon": "📱"},
@@ -222,7 +226,7 @@ def generate_demo_data(platform: str, count: int = 20):
     return data
 
 
-@bp.route("/list", methods=["GET"])
+@platform_bp.route("/list", methods=["GET"])
 def list_platforms():
     """获取平台列表"""
     # 使用采集器工厂获取支持的平台列表
@@ -238,7 +242,7 @@ def list_platforms():
     return ok({"platforms": all_platforms}), 200
 
 
-@bp.route("/data/<platform>", methods=["GET"])
+@platform_bp.route("/data/<platform>", methods=["GET"])
 @rate_limit(max_requests=30, window_seconds=60)
 def get_platform_data(platform: str):
     """获取指定平台数据"""
@@ -295,7 +299,7 @@ def get_platform_data(platform: str):
     ), 200
 
 
-@bp.route("/all", methods=["GET"])
+@platform_bp.route("/all", methods=["GET"])
 @rate_limit(max_requests=20, window_seconds=60)
 def get_all_platforms_data():
     """获取所有平台汇总数据"""
@@ -336,7 +340,7 @@ def get_all_platforms_data():
     ), 200
 
 
-@bp.route("/stats/<platform>", methods=["GET"])
+@platform_bp.route("/stats/<platform>", methods=["GET"])
 @rate_limit(max_requests=30, window_seconds=60)
 def get_platform_stats(platform: str):
     """获取平台统计数据"""
@@ -362,7 +366,7 @@ def get_platform_stats(platform: str):
     return ok(stats), 200
 
 
-@bp.route("/compare", methods=["POST"])
+@platform_bp.route("/compare", methods=["POST"])
 @rate_limit(max_requests=10, window_seconds=60)
 def compare_platforms():
     """对比多个平台数据"""

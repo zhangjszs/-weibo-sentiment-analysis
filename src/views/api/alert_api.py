@@ -9,6 +9,8 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from services.alert_service import AlertLevel, AlertRule, AlertType, alert_engine
 from utils.api_response import error, ok
 from utils.authz import admin_required
@@ -16,10 +18,12 @@ from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("alert", __name__, url_prefix="/api/alert")
+alert_bp = Blueprint("alert", __name__, url_prefix=API_PREFIX + "/alert")
+
+bp = alert_bp  # 兼容旧引用：from views.api.alert_api import bp
 
 
-@bp.route("/rules", methods=["GET"])
+@alert_bp.route("/rules", methods=["GET"])
 def get_rules():
     """获取所有预警规则"""
     try:
@@ -30,7 +34,7 @@ def get_rules():
         return error("获取预警规则失败", code=500), 500
 
 
-@bp.route("/rules", methods=["POST"])
+@alert_bp.route("/rules", methods=["POST"])
 @admin_required
 @rate_limit(max_requests=10, window_seconds=60)
 def create_rule():
@@ -71,7 +75,7 @@ def create_rule():
         return error("创建预警规则失败", code=500), 500
 
 
-@bp.route("/rules/<rule_id>", methods=["PUT"])
+@alert_bp.route("/rules/<rule_id>", methods=["PUT"])
 @admin_required
 @rate_limit(max_requests=20, window_seconds=60)
 def update_rule(rule_id: str):
@@ -97,7 +101,7 @@ def update_rule(rule_id: str):
         return error("更新预警规则失败", code=500), 500
 
 
-@bp.route("/rules/<rule_id>", methods=["DELETE"])
+@alert_bp.route("/rules/<rule_id>", methods=["DELETE"])
 @admin_required
 @rate_limit(max_requests=10, window_seconds=60)
 def delete_rule(rule_id: str):
@@ -115,7 +119,7 @@ def delete_rule(rule_id: str):
         return error("删除预警规则失败", code=500), 500
 
 
-@bp.route("/rules/<rule_id>/toggle", methods=["POST"])
+@alert_bp.route("/rules/<rule_id>/toggle", methods=["POST"])
 @admin_required
 @rate_limit(max_requests=20, window_seconds=60)
 def toggle_rule(rule_id: str):
@@ -138,7 +142,7 @@ def toggle_rule(rule_id: str):
         return error("操作失败", code=500), 500
 
 
-@bp.route("/history", methods=["GET"])
+@alert_bp.route("/history", methods=["GET"])
 def get_history():
     """获取预警历史"""
     try:
@@ -159,7 +163,7 @@ def get_history():
         return error("获取预警历史失败", code=500), 500
 
 
-@bp.route("/stats", methods=["GET"])
+@alert_bp.route("/stats", methods=["GET"])
 def get_stats():
     """获取预警统计"""
     try:
@@ -170,7 +174,7 @@ def get_stats():
         return error("获取预警统计失败", code=500), 500
 
 
-@bp.route("/unread-count", methods=["GET"])
+@alert_bp.route("/unread-count", methods=["GET"])
 def get_unread_count():
     """获取未读预警数量"""
     try:
@@ -181,7 +185,7 @@ def get_unread_count():
         return error("获取未读数量失败", code=500), 500
 
 
-@bp.route("/<alert_id>/read", methods=["POST"])
+@alert_bp.route("/<alert_id>/read", methods=["POST"])
 def mark_read(alert_id: str):
     """标记预警已读"""
     try:
@@ -197,7 +201,7 @@ def mark_read(alert_id: str):
         return error("操作失败", code=500), 500
 
 
-@bp.route("/read-all", methods=["POST"])
+@alert_bp.route("/read-all", methods=["POST"])
 @admin_required
 def mark_all_read():
     """标记所有预警已读"""
@@ -209,7 +213,7 @@ def mark_all_read():
         return error("操作失败", code=500), 500
 
 
-@bp.route("/test", methods=["POST"])
+@alert_bp.route("/test", methods=["POST"])
 @admin_required
 @rate_limit(max_requests=5, window_seconds=60)
 def test_alert():
@@ -243,7 +247,7 @@ def test_alert():
         return error("发送测试预警失败", code=500), 500
 
 
-@bp.route("/evaluate", methods=["POST"])
+@alert_bp.route("/evaluate", methods=["POST"])
 @admin_required
 @rate_limit(max_requests=30, window_seconds=60)
 def evaluate_data():

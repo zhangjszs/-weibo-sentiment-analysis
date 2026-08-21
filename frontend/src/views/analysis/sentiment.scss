@@ -1,0 +1,97 @@
+  .sentiment-analysis-container {
+    .stat-row {
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: $text-primary;
+      }
+    }
+
+    .keywords-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 16px;
+      padding: 32px;
+      min-height: 200px;
+
+      .keyword-item {
+        padding: 6px 16px;
+        border-radius: 20px;
+        background: rgba(241, 245, 249, 0.5); // Slate 100
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+
+        &:hover {
+          transform: scale(1.1) translateY(-2px);
+          background: #fff;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+      }
+    }
+
+    .text-success {
+      color: $success-color;
+      font-weight: bold;
+    }
+    .text-danger {
+      color: $danger-color;
+      font-weight: bold;
+    }
+    .text-muted {
+      color: $text-secondary;
+    }
+
+    .keywords-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      justify-content: center;
+    }
+
+    .keyword-tag {
+      margin: 2px 0;
+    }
+
+    .reasoning-text {
+      font-size: 13px;
+      line-height: 1.4;
+      color: $text-secondary;
+      cursor: help;
+      transition: color 0.3s;
+
+      &:hover {
+        color: $primary-color;
+      }
+    }
+
+    .pagination-wrapper {
+      margin-top: 24px;
+      display: flex;
+      justify-content: flex-end;
+    }
+  }

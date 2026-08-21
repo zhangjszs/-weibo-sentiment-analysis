@@ -105,9 +105,9 @@
 │   ├── package.json
 │   └── vite.config.js
 ├── docs/                       # 项目文档
+│   └── database/               # 已归档 SQL（只读参考，建表以 alembic 为准）
 ├── scripts/                    # 运维脚本（verify_project.ps1、healthcheck.py）
 ├── tests/                      # 测试用例（pytest）
-├── database/                   # 数据库初始化 SQL
 ├── data/                       # 数据文件目录
 ├── cache/                      # 缓存目录
 ├── logs/                       # 日志目录
@@ -136,7 +136,7 @@
 如果你在 Windows 环境下，我们在根目录提供了一个非常简单的自动化脚本：
 
 ```powershell
-# 1. 确保 MySQL 已运行，并且已经导入了根目录下 /database 中的 sql 数据表
+# 1. 确保 MySQL 已运行，已执行 alembic upgrade head 完成建表（归档 SQL 仅作参考：docs/database/init_database.sql）
 # 2. 确保在 `.env` 中按 `.env.example` 填好了数据库密码。
 
 # 3. 直接在项目根目录运行

@@ -1,6 +1,6 @@
 # 数据治理与合规 (Data Governance)
 
-> **最后更新**: 2026-08-03
+> **最后更新**: 2026-08-21（C1 归档：`database/*.sql` → `docs/database/`，Alembic 单一真相）
 
 本文档定义微博舆情分析系统的数据分类、保留策略、脱敏规则和合规要求。
 
@@ -64,6 +64,13 @@
 3. 生产环境必须配置 `ALLOWED_ORIGINS` 白名单
 4. 演示数据必须带 `is_demo: true` 标识和局限性说明
 5. 报告必须包含来源、数据范围、局限性和生成时间
+
+## Schema 真相源与归档策略（C1）
+
+- **单一真相**：`alembic` 为建表/变更唯一路径（`alembic upgrade head`）。`src/database.py:init_db()` 仅调用 `Base.metadata.create_all`，不再直读 SQL 文件。
+- **已归档**：原 `database/*.sql` 7 文件已冻结归档至 `docs/database/`（见 `docs/database/README.md`），仅作离线种子 / 审计对照，不再参与建表。
+- **冻结规则**：归档后禁止再改 `docs/database/*.sql`；后续变更只走 `alembic revision --autogenerate` 并保证幂等（`information_schema` 检查），由 C2 迁移 `align_legacy_sql` 对齐历史差异。
+- 参考：`docs/adr/0003-schema-single-truth-alembic.md`、`alembic/env.py`、`alembic.ini`。
 
 ## 配置项
 

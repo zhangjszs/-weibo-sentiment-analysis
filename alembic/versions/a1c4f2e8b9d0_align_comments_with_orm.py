@@ -47,8 +47,22 @@ _NEW_COLUMNS = [
 
 
 def _get_column_type(table_name: str, column_name: str) -> str:
-    """返回列的 DATA_TYPE（小写，如 'int'/'varchar'），不存在则返回空串。"""
+    """返回列的 DATA_TYPE（小写，如 'int'/'varchar'），不存在则返回空串。兼容 MySQL/SQLite。"""
     conn = op.get_bind()
+    if conn.dialect.name == "sqlite":
+        insp = sa.inspect(conn)
+        try:
+            cols = insp.get_columns(table_name)
+        except Exception:
+            return ""
+        for c in cols:
+            if c["name"] == column_name:
+                # SQLite 类型如 VARCHAR(64) -> 取首词小写
+                t = str(c["type"]).lower()
+                if "(" in t:
+                    t = t.split("(")[0]
+                return t.strip()
+        return ""
     return conn.execute(
         sa.text(
             """
@@ -66,6 +80,15 @@ def _column_exists(table_name: str, column_name: str) -> bool:
     return bool(_get_column_type(table_name, column_name))
 
 
+def _table_exists(table_name: str) -> bool:
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    try:
+        return insp.has_table(table_name)
+    except Exception:
+        return False
+
+
 def _convert_comment_id_to_varchar_pk() -> None:
     """将 comment_id 从 INT AUTO_INCREMENT PK 转为 VARCHAR(64) PK。
 
@@ -74,8 +97,20 @@ def _convert_comment_id_to_varchar_pk() -> None:
       2. DROP PRIMARY KEY
       3. MODIFY 改类型为 VARCHAR(64) NOT NULL
       4. ADD PRIMARY KEY
+
+    SQLite 无法 ALTER PRIMARY KEY 类型且无 information_schema，故直接跳过。
     """
     conn = op.get_bind()
+    if conn.dialect.name == "sqlite":
+        # SQLite 场景下若表不存在则跳过；若存在且已为 varchar 则无需处理
+        if not _table_exists("comments"):
+            return
+        current_type = _get_column_type("comments", "comment_id")
+        if current_type == "varchar":
+            return
+        # SQLite 无法在线修改 PK 类型，且全新库已由 Base.metadata 正确建表，故跳过
+        print(f"[skip] SQLite 下跳过 comment_id PK 类型转换 (当前类型 {current_type!r})")
+        return
     current_type = _get_column_type("comments", "comment_id")
 
     if current_type == "varchar":
@@ -105,6 +140,9 @@ def upgrade() -> None:
     _convert_comment_id_to_varchar_pk()
 
     # 2. 幂等补齐 8 个双写列
+    if not _table_exists("comments"):
+        # 空库场景由后续 align 迁移通过 Base.metadata.create_all 补齐
+        return
     conn = op.get_bind()
     for col_name, col_type in _NEW_COLUMNS:
         if _column_exists("comments", col_name):

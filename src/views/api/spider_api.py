@@ -11,6 +11,10 @@ from datetime import datetime
 
 from flask import Blueprint, request
 from requests import RequestException
+
+from config.settings import Config
+
+from ._shared import API_PREFIX
 from sqlalchemy.exc import SQLAlchemyError
 
 from services.spider_task_service import query_spider_task_progress, submit_spider_task
@@ -22,7 +26,7 @@ from repositories.user_repository import UserRepository
 
 logger = logging.getLogger(__name__)
 
-spider_bp = Blueprint("spider_api", __name__, url_prefix="/api/spider")
+spider_bp = Blueprint("spider", __name__, url_prefix=API_PREFIX + "/spider")
 
 
 def _article_repo() -> ArticleRepository:

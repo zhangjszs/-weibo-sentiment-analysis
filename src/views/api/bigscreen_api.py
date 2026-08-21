@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request
 
+from ._shared import API_PREFIX
+
 from services.sentiment_service import SentimentService
 from utils.api_response import error, ok
 from repositories.article_repository import ArticleRepository
@@ -17,7 +19,9 @@ from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint("bigscreen", __name__, url_prefix="/api/bigscreen")
+bigscreen_bp = Blueprint("bigscreen", __name__, url_prefix=API_PREFIX + "/bigscreen")
+
+bp = bigscreen_bp  # 兼容旧引用：from views.api.bigscreen_api import bp
 
 
 def _article_repo() -> ArticleRepository:
@@ -181,7 +185,7 @@ def _get_recent_alerts(limit: int = 5):
     ]
 
 
-@bp.route("/stats", methods=["GET"])
+@bigscreen_bp.route("/stats", methods=["GET"])
 @rate_limit(max_requests=30, window_seconds=60)
 def get_bigscreen_stats():
     """
@@ -212,7 +216,7 @@ def get_bigscreen_stats():
         return error("获取统计数据失败", code=500), 500
 
 
-@bp.route("/region", methods=["GET"])
+@bigscreen_bp.route("/region", methods=["GET"])
 @rate_limit(max_requests=20, window_seconds=60)
 def get_region_data():
     """获取地区分布数据"""
@@ -227,7 +231,7 @@ def get_region_data():
         return error("获取地区数据失败", code=500), 500
 
 
-@bp.route("/trend", methods=["GET"])
+@bigscreen_bp.route("/trend", methods=["GET"])
 @rate_limit(max_requests=20, window_seconds=60)
 def get_trend_data():
     """
@@ -248,7 +252,7 @@ def get_trend_data():
         return error("获取趋势数据失败", code=500), 500
 
 
-@bp.route("/hot-topics", methods=["GET"])
+@bigscreen_bp.route("/hot-topics", methods=["GET"])
 @rate_limit(max_requests=20, window_seconds=60)
 def get_hot_topics():
     """获取热门话题"""
@@ -264,7 +268,7 @@ def get_hot_topics():
         return error("获取热门话题失败", code=500), 500
 
 
-@bp.route("/alerts", methods=["GET"])
+@bigscreen_bp.route("/alerts", methods=["GET"])
 @rate_limit(max_requests=20, window_seconds=60)
 def get_recent_alerts():
     """获取最近预警"""
@@ -280,7 +284,7 @@ def get_recent_alerts():
         return error("获取预警数据失败", code=500), 500
 
 
-@bp.route("/all", methods=["GET"])
+@bigscreen_bp.route("/all", methods=["GET"])
 @rate_limit(max_requests=10, window_seconds=60)
 def get_all_data():
     """获取所有大屏数据（用于初始化）"""

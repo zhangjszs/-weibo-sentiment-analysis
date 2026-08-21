@@ -34,8 +34,9 @@ def csrf_app(monkeypatch):
         if mod.startswith("app") or mod.startswith("config.settings"):
             del sys.modules[mod]
 
-    from app import app, _validate_origin_for_state_change
+    from app import _validate_origin_for_state_change, create_app
 
+    app = create_app()
     app.config["TESTING"] = True
     return app, _validate_origin_for_state_change
 

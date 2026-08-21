@@ -110,7 +110,7 @@ def _save_comment_to_db(
     P1.2：CSV 仍是下游（spiderUserInfo / yuqing 模型 / main.py）依赖的数据源，
     DB 作为可靠副本以消除"CSV 写入失败静默丢数据"的风险。失败仅记录日志、不抛
     异常，不影响 CSV 主流程。schema 由 Alembic 迁移 a1c4f2e8b9d0 与
-    init_database.sql 统一管理（P0 #4 移除了运行时 ensure_comments_columns hack）。
+    归档 SQL（docs/database/，已冻结）统一管理（P0 #4 移除了运行时 ensure_comments_columns hack）。
     """
     try:
         from sqlalchemy.exc import IntegrityError

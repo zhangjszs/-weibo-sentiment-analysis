@@ -27,6 +27,12 @@ depends_on = None
 
 def _table_exists(table_name: str) -> bool:
     conn = op.get_bind()
+    if conn.dialect.name == "sqlite":
+        insp = sa.inspect(conn)
+        try:
+            return insp.has_table(table_name)
+        except Exception:
+            return False
     return bool(
         conn.execute(
             sa.text(

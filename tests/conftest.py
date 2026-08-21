@@ -73,7 +73,7 @@ def app(monkeypatch):
             del sys.modules[mod]
 
     app_module = importlib.import_module("app")
-    flask_app = app_module.app
+    flask_app = app_module.create_app()
     flask_app.config["TESTING"] = True
 
     # Celery result backend 默认 redis://localhost:6379，Redis 不可用时
@@ -82,6 +82,11 @@ def app(monkeypatch):
     try:
         from tasks.celery_config import celery_app
 
+        # Celery Settings 的 broker_url/result_backend 属性优先读环境变量
+        # （见 celery/app/utils.py:Settings.broker_url），仅改 conf 字典不足以覆盖
+        # .env 中的 CELERY_BROKER_URL，故需同步覆盖环境变量。
+        monkeypatch.setenv("CELERY_BROKER_URL", "memory://")
+        monkeypatch.setenv("CELERY_RESULT_BACKEND", "cache+memory://")
         monkeypatch.setitem(celery_app.conf, "result_backend", "cache+memory://")
         monkeypatch.setitem(celery_app.conf, "broker_url", "memory://")
         monkeypatch.setitem(celery_app.conf, "task_always_eager", True)
