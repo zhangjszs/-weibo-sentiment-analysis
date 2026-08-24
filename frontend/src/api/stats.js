@@ -2,7 +2,7 @@ import request from '@/api'
 
 export function getHomeStats() {
   return request({
-    url: '/getAllData/getHomeData',
+    url: '/api/getHomeData',
     method: 'get',
     loadingOptions: { text: '加载首页数据...' },
   })
@@ -27,7 +27,7 @@ export function refreshSpiderData(data = {}) {
 
 export function getHotWords(hotWord = '') {
   return request({
-    url: '/getAllData/getTableData',
+    url: '/api/getTableData',
     method: 'get',
     params: { hotWord },
     loadingOptions: hotWord ? { text: '搜索中...' } : { text: '加载热词数据...' },
@@ -36,7 +36,7 @@ export function getHotWords(hotWord = '') {
 
 export function getTableData(params = {}) {
   return request({
-    url: '/getAllData/getTableData',
+    url: '/api/getTableData',
     method: 'get',
     params,
     loadingOptions: { text: '加载表格数据...' },
@@ -45,7 +45,7 @@ export function getTableData(params = {}) {
 
 export function getArticleData(params = {}) {
   return request({
-    url: '/getAllData/getArticleData',
+    url: '/api/getArticleData',
     method: 'get',
     params,
     loadingOptions: { text: '加载文章分析数据...' },
@@ -54,7 +54,7 @@ export function getArticleData(params = {}) {
 
 export function getCommentData(params = {}) {
   return request({
-    url: '/getAllData/getCommentData',
+    url: '/api/getCommentData',
     method: 'get',
     params,
     loadingOptions: { text: '加载评论分析数据...' },
@@ -63,7 +63,7 @@ export function getCommentData(params = {}) {
 
 export function getIPData(params = {}) {
   return request({
-    url: '/getAllData/getIPData',
+    url: '/api/getIPData',
     method: 'get',
     params,
     loadingOptions: { text: '加载IP分析数据...' },
@@ -72,7 +72,7 @@ export function getIPData(params = {}) {
 
 export function getYuqingData(params = {}) {
   return request({
-    url: '/getAllData/getYuqingData',
+    url: '/api/getYuqingData',
     method: 'get',
     params,
     loadingOptions: { text: '加载舆情分析数据...' },
@@ -81,7 +81,7 @@ export function getYuqingData(params = {}) {
 
 export function getContentCloudData(params = {}) {
   return request({
-    url: '/getAllData/getContentCloudData',
+    url: '/api/getContentCloudData',
     method: 'get',
     params,
     loadingOptions: { text: '加载词云数据...' },
@@ -91,7 +91,7 @@ export function getContentCloudData(params = {}) {
 // 清空缓存
 export function clearCache() {
   return request({
-    url: '/getAllData/clearCache',
+    url: '/api/clearCache',
     method: 'post',
     loadingOptions: { text: '清空缓存...' },
   })

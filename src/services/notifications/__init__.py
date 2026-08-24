@@ -1,23 +1,14 @@
 #!/usr/bin/env python3
-"""
-预警通知服务模块 - shim for backward compatibility.
-Original file split into src/services/notifications/ package.
-"""
+"""Notifications package - re-exports for backward compatibility."""
 
-import logging
-from datetime import (
-    datetime,  # noqa: F401  # re-exported for tests patching `ns.datetime`
-)
-
-from .notifications import *  # noqa: F403,F401
-from .notifications.channels import (  # noqa: F401
+from .channels import (
     EmailSender,
     NotificationMessage,
     NotificationQueue,
     NotificationTemplate,
     SMSSender,
 )
-from .notifications.recipient_resolver import (  # noqa: F401
+from .recipient_resolver import (
     LEVEL_ORDER,
     NotificationChannel,
     NotificationLevel,
@@ -25,17 +16,14 @@ from .notifications.recipient_resolver import (  # noqa: F401
     NotificationStatus,
     _parse_level,
 )
-from .notifications.service import (  # noqa: F401
-    NotificationService,
-    notification_service,
-)
-
-logger = logging.getLogger(__name__)
+from .service import NotificationService, notification_service
 
 __all__ = [
     "NotificationChannel",
     "NotificationStatus",
     "NotificationLevel",
+    "LEVEL_ORDER",
+    "_parse_level",
     "NotificationRecipient",
     "NotificationMessage",
     "NotificationTemplate",

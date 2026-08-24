@@ -1,0 +1,94 @@
+  .tasks-page {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .header-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .status-text {
+    color: $text-secondary;
+    font-size: 13px;
+  }
+
+  .log-container {
+    height: 420px;
+    overflow: auto;
+    border: 1px solid $border-color-light;
+    border-radius: $border-radius-base;
+    background: $background-color;
+    padding: 12px;
+  }
+
+  .log-line {
+    font-family:
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+      monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: $text-regular;
+    word-break: break-word;
+  }
+
+  .log-info {
+    background: rgba(59, 130, 246, 0.06);
+  }
+
+  .log-warn {
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  .log-error {
+    background: rgba(239, 68, 68, 0.08);
+  }
+
+  .query-form {
+    margin-bottom: 12px;
+  }
+
+  .startup-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    color: $text-secondary;
+    font-size: 13px;
+  }
+
+  .task-result {
+    margin: 12px 0 16px;
+  }
+
+  .recent-title {
+    font-size: 13px;
+    color: $text-secondary;
+    margin-bottom: 8px;
+  }
+
+  .recent-tag {
+    cursor: pointer;
+  }

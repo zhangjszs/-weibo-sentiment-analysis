@@ -145,6 +145,7 @@ def alert_db(monkeypatch):
     from sqlalchemy.pool import StaticPool
 
     import database
+    import models  # noqa: F401  # ensure all ORM tables are registered before create_all
     from database import Base
 
     test_engine = create_engine(

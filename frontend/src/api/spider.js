@@ -41,7 +41,7 @@ export function quickCrawl(data = {}) {
 // 清空缓存
 export function clearCache() {
   return request({
-    url: '/getAllData/clearCache',
+    url: '/api/clearCache',
     method: 'post',
     loadingOptions: { text: '正在清空缓存...' },
   })

@@ -19,6 +19,18 @@ export default [
       'no-unused-vars': 'warn',
       // console 语句设为警告，生产环境应移除调试信息
       'no-console': 'warn',
+      // 禁止使用已废弃的 /getAllData 前缀（已收敛至 /api/*，见 ADR 0002）
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/getAllData/]',
+          message: 'Use /api/* instead of deprecated /getAllData/* (see ADR 0002).',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/getAllData/]',
+          message: 'Use /api/* instead of deprecated /getAllData/* (see ADR 0002).',
+        },
+      ],
     },
   },
   { ignores: ['dist/**', 'node_modules/**'] },

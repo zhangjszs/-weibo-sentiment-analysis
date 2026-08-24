@@ -1,7 +1,20 @@
 <template>
   <div class="predict-container">
-    <PredictInput v-model:predictMode="predictMode" v-model:predictForm="predictForm" :predicting="predicting" @predict="handlePredict" @clear="clearInput" @openBatch="showBatchDialog = true" />
-    <PredictResult :predictResult="predictResult" :getSentimentTagType="getSentimentTagType" :getSentimentLabel="getSentimentLabel" :getScoreColor="getScoreColor" :getEmotionTagType="getEmotionTagType" />
+    <PredictInput
+      v-model:predict-mode="predictMode"
+      v-model:predict-form="predictForm"
+      :predicting="predicting"
+      @predict="handlePredict"
+      @clear="clearInput"
+      @open-batch="showBatchDialog = true"
+    />
+    <PredictResult
+      :predict-result="predictResult"
+      :get-sentiment-tag-type="getSentimentTagType"
+      :get-sentiment-label="getSentimentLabel"
+      :get-score-color="getScoreColor"
+      :get-emotion-tag-type="getEmotionTagType"
+    />
     <el-row
       :gutter="24"
       class="mb-4"
@@ -301,7 +314,7 @@
 import PredictInput from '@/components/analysis/PredictInput.vue'
 import PredictResult from '@/components/analysis/PredictResult.vue'
 import { usePredict } from '@/composables/usePredict'
-const { predictMode, predictForm, predicting, predictResult, historyList, loadingModelInfo, modelInfo, gaugeChartRef, showBatchDialog, showBatchResultDialog, batchForm, batchPredicting, batchResults, uploadRef, gaugeChartOptions, getSentimentTagType, getSentimentLabel, getScoreColor, getEmotionTagType, handlePredict, clearInput, handleBatchPredict, handleFileUpload, loadModelInfo } = usePredict()
+const { predictMode, predictForm, predicting, predictResult, historyList, loadingModelInfo, modelInfo, gaugeChartRef, showBatchDialog, showBatchResultDialog, batchForm, batchPredicting, batchResults, uploadRef, gaugeChartOptions, getSentimentTagType, getSentimentLabel, getScoreColor, getScoreClass, getEmotionTagType, handlePredict, clearInput, clearHistory, retryPredict, handleBatchPredict, handleFileChange, exportBatchResults, loadModelInfo } = usePredict()
 </script>
 
 <style lang="scss" scoped src="./predict.scss"></style>

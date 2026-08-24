@@ -30,11 +30,8 @@ export default defineConfig(({ command, mode }) => {
           changeOrigin: true,
           secure: false
         },
-        '/getAllData': {
-          target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
-          changeOrigin: true,
-          secure: false
-        },
+        // deprecated: /getAllData proxy removed — frontend now uses /api/* (ADR 0002).
+        // Backend retains 307 /getAllData/* → /api/* alias for one version; will be removed in next major.
         '/static': {
           target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
           changeOrigin: true,

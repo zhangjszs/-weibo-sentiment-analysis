@@ -22,7 +22,7 @@ Content-Type: application/json
 
 ### 统一响应格式
 
-所有 `/api/*`、`/api/spider/*` 与 `/getAllData/*` 接口返回统一结构：
+所有 `/api/*`、`/api/spider/*` 接口（`/getAllData/*` 仅保留 307 重定向兼容，已废弃）返回统一结构：
 
 ```json
 {
@@ -231,16 +231,22 @@ GET /api/spider/status
 GET /api/spider/logs?lines=200
 ```
 
-## 🧩 兼容接口（/getAllData）
+## 🧩 兼容接口（/getAllData）⚠️ 已废弃（Deprecated — 307 重定向，将在 v2.0 移除）
 
-前端部分分析页面仍使用历史接口（目前也已统一为 `code/msg/data/timestamp`，仅路由前缀不同），例如：
-- `GET /getAllData/getHomeData`
-- `GET /getAllData/getArticleData`
-- `GET /getAllData/getCommentData`
-- `GET /getAllData/getIPData`
-- `GET /getAllData/getYuqingData`
-- `GET /getAllData/getContentCloudData`
-- `POST /getAllData/clearCache`
+> **废弃声明**：`/getAllData/*` 已收敛至 `/api/*`（见 ADR 0002）。当前仅保留 `307 Temporary Redirect` 至 `/api/*` 的兼容别名（保持路径后缀与查询串不变，307 保持请求方法），将在下一主版本 **v2.0** 移除。请全部迁移至 `/api/*`。
+> 对应关系：`/getAllData/<path>` → `/api/<path>`（如 `/getAllData/getHomeData` → `/api/getHomeData`）。
+> 前端 `frontend/src/api/stats.js:5-94` 已完成迁移至 `/api/*`；`frontend/vite.config.js:33-34` 中 `/getAllData` 代理已移除（仅保留后端 `src/app.py:302-327` 的 307 别名作过渡）。
+> 旧前缀请求不鉴权，重定向目标 `/api/*` 按 JWT 单轨鉴权（行为一致）。
+
+旧路由仅通过 307 跳转，请直接使用 `/api/*`（以下为废弃映射，仅作兼容参考）：
+- `GET /getAllData/getHomeData` → `GET /api/getHomeData` (307)
+- `GET /getAllData/getArticleData` → `GET /api/getArticleData` (307)
+- `GET /getAllData/getCommentData` → `GET /api/getCommentData` (307)
+- `GET /getAllData/getIPData` → `GET /api/getIPData` (307)
+- `GET /getAllData/getYuqingData` → `GET /api/getYuqingData` (307)
+- `GET /getAllData/getContentCloudData` → `GET /api/getContentCloudData` (307)
+- `GET /getAllData/getTableData` → `GET /api/getTableData` (307)
+- `POST /getAllData/clearCache` → `POST /api/clearCache` (307)
 
 ## 🔔 预警管理（/api/alert）
 

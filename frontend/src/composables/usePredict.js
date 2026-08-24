@@ -255,5 +255,5 @@ export function usePredict() {
     loadModelInfo()
   })
 
-  return { predictMode, predictForm, predicting, predictResult, historyList, loadingModelInfo, modelInfo, gaugeChartRef, showBatchDialog, showBatchResultDialog, batchForm, batchPredicting, batchResults, uploadRef, gaugeChartOptions, getSentimentTagType, getSentimentLabel, getScoreColor, handlePredict, clearInput, handleBatchPredict, handleFileUpload, loadModelInfo }
+  return { predictMode, predictForm, predicting, predictResult, historyList, loadingModelInfo, modelInfo, gaugeChartRef, showBatchDialog, showBatchResultDialog, batchForm, batchPredicting, batchResults, uploadRef, gaugeChartOptions, getSentimentTagType, getSentimentLabel, getSentimentClass, getScoreColor, getScoreClass, getEmotionTagType, handlePredict, clearInput, clearHistory, retryPredict, handleBatchPredict, handleFileChange, exportBatchResults, loadModelInfo }
 }

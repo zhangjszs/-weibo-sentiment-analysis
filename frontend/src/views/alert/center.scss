@@ -1,0 +1,117 @@
+  .alert-center-container {
+    .stat-card {
+      .stat-content {
+        display: flex;
+        align-items: center;
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          margin-right: 16px;
+
+          &.info {
+            background: var(--el-color-info-light-8);
+            color: var(--el-color-info);
+          }
+          &.warning {
+            background: var(--el-color-warning-light-8);
+            color: var(--el-color-warning);
+          }
+          &.danger {
+            background: var(--el-color-danger-light-8);
+            color: var(--el-color-danger);
+          }
+          &.success {
+            background: var(--el-color-success-light-8);
+            color: var(--el-color-success);
+          }
+        }
+
+        .stat-info {
+          .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+          }
+          .stat-label {
+            font-size: 14px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .header-actions {
+        display: flex;
+        gap: 12px;
+      }
+    }
+
+    .level-info {
+      color: var(--el-color-info);
+    }
+    .level-warning {
+      color: var(--el-color-warning);
+    }
+    .level-danger {
+      color: var(--el-color-danger);
+    }
+    .level-critical {
+      color: var(--el-color-danger);
+    }
+
+    .pagination-container {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .rules-list {
+      .rule-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border-bottom: 1px solid var(--el-border-color-lighter);
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .rule-info {
+          .rule-name {
+            font-weight: 500;
+          }
+          .rule-type {
+            font-size: 12px;
+            color: var(--el-text-color-secondary);
+          }
+        }
+      }
+    }
+
+    .data-json {
+      background: var(--el-fill-color-light);
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      max-height: 200px;
+      overflow: auto;
+    }
+
+    .mt-4 {
+      margin-top: 16px;
+    }
+    .mb-4 {
+      margin-bottom: 16px;
+    }
+  }
