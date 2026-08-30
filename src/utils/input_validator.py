@@ -29,12 +29,12 @@ class InputValidator:
     KEYWORD_MAX_LENGTH = 50
     KEYWORD_PATTERN = r"^[a-zA-Z0-9\u4e00-\u9fa5\s]+$"  # 允许字母、数字、中文和空格
 
-    # 危险的SQL关键词
+    # 危险的SQL关键词 —— 仅命中高风险 DDL/DML，常见词 or/and/where 等不再误杀
+    # 真正的防护由参数化查询承担，此处仅作纵深防御（--、;、/* 等 + 高危关键字组合）
     SQL_INJECTION_PATTERNS = [
-        r"(?i)\b(union|select|insert|update|delete|drop|alter|create|truncate|exec|execute)\b",
-        r"(?i)\b(or|and|where|join|having|group|order|by)\b",
-        r"(?i)(\-\-|\#|\/\*|;|\|)",
-        r"(?i)(\'|\"|\\x00|\\n|\\r)",
+        r"(?i)\b(union\s+select|select\s+.*\s+from|insert\s+into|update\s+.*\s+set|delete\s+from|drop\s+table|alter\s+table|create\s+table|truncate\s+table|exec\s*\(|execute\s*\()",
+        r"(?i)(\-\-|\#|\/\*|\*\/|;\s*(select|insert|update|delete|drop|union))",
+        r"(?i)(\'\s*or\s*\'|\'\s*or\s*\d|\"\s*or\s*\"|or\s+1\s*=\s*1|and\s+1\s*=\s*1)",
     ]
 
     # 危险的XSS模式
@@ -201,86 +201,48 @@ class InputValidator:
     @staticmethod
     def sanitize_html(text: str) -> str:
         """
-        清理HTML标签，防止XSS
-
-        Args:
-            text: 待清理的文本
-
-        Returns:
-            str: 清理后的文本
+        清理HTML标签，防止XSS — html.escape 已足够，额外标签移除在转义后无意义，
+        保留仅为防御未转义路径的纵深。
         """
         if not text or not isinstance(text, str):
             return ""
 
-        # 使用html模块转义HTML特殊字符
-        sanitized = html.escape(text)
-
-        # 移除危险的HTML标签
-        dangerous_tags = [
-            "<script",
-            "</script>",
-            "<iframe",
-            "</iframe>",
-            "<object",
-            "</object>",
-            "<embed",
-            "</embed>",
-        ]
-        for tag in dangerous_tags:
-            sanitized = sanitized.replace(tag, "")
-
+        sanitized = html.escape(text, quote=True)
         return sanitized
 
     @staticmethod
     def sanitize_sql(text: str) -> str:
         """
-        清理SQL注入风险
+        清理SQL注入风险 — 已弱化为最小破坏式处理。
 
-        Args:
-            text: 待清理的文本
-
-        Returns:
-            str: 清理后的文本
+        真正防护依赖参数化查询；此处仅去除显式注释符与危险拼接，避免
+        破坏正常文本（如 "select a book"）。
         """
         if not text or not isinstance(text, str):
             return ""
 
-        # 移除危险的SQL字符
-        sanitized = re.sub(r'[\'"\\;]', "", text)
-        sanitized = re.sub(
-            r"(?i)(union|select|insert|update|delete|drop|alter|create|truncate|exec|execute)",
-            "",
-            sanitized,
-        )
+        # 仅移除显式 SQL 注释/拼接符，保留正常单词
+        sanitized = re.sub(r"(--|#|/\*|\*/)", "", text)
+        # 去除连续危险分隔符 ;|
+        sanitized = re.sub(r"[;|]{2,}", "", sanitized)
 
         return sanitized
 
     @staticmethod
     def sanitize_input(text: str, max_length: int = 255) -> str:
         """
-        综合清理输入（HTML和SQL）
+        综合清理输入（HTML转义 + 最小化 SQL 清理 + 截断）。
 
-        Args:
-            text: 待清理的文本
-            max_length: 最大长度
-
-        Returns:
-            str: 清理后的文本
+        说明：用户名等字段已通过正则白名单校验，此处不再二次破坏性替换
+        正常单词；仅做长度截断与 HTML 转义。
         """
         if not text or not isinstance(text, str):
             return ""
 
-        # 截断到最大长度
-        sanitized = text[:max_length]
-
-        # 清理HTML
+        sanitized = text[:max_length].strip()
         sanitized = InputValidator.sanitize_html(sanitized)
-
-        # 清理SQL注入风险
-        sanitized = InputValidator.sanitize_sql(sanitized)
-
-        # 去除首尾空格
-        sanitized = sanitized.strip()
+        # SQL 清理已弱化，仅去注释符
+        sanitized = InputValidator.sanitize_sql(sanitized).strip()
 
         return sanitized
 

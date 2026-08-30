@@ -8,7 +8,7 @@ JWT Token 处理模块
 
 import logging
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from functools import wraps
 
 import jwt
@@ -18,10 +18,16 @@ from config.settings import Config
 
 logger = logging.getLogger(__name__)
 
-# JWT 配置
-JWT_SECRET_KEY = Config.JWT_SECRET_KEY
+# JWT 配置 — 密钥与过期时间不在 import 时快照，避免测试/配置热重载时签名与验签不一致
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_HOURS = Config.JWT_EXPIRATION_HOURS
+
+
+def _jwt_secret_key() -> str:
+    return Config.JWT_SECRET_KEY
+
+
+def _jwt_expiration_hours() -> int:
+    return Config.JWT_EXPIRATION_HOURS
 
 
 def create_token(user_id: int, username: str, expires_hours: int = None) -> str:
@@ -37,9 +43,9 @@ def create_token(user_id: int, username: str, expires_hours: int = None) -> str:
         str: JWT Token 字符串
     """
     if expires_hours is None:
-        expires_hours = JWT_EXPIRATION_HOURS
+        expires_hours = _jwt_expiration_hours()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     payload = {
         "user_id": user_id,
         "username": username,
@@ -48,7 +54,7 @@ def create_token(user_id: int, username: str, expires_hours: int = None) -> str:
         "exp": now + timedelta(hours=expires_hours),  # 过期时间
     }
 
-    token = jwt.encode(payload, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(payload, _jwt_secret_key(), algorithm=JWT_ALGORITHM)
     logger.info(f"为用户 {username} 生成 JWT Token")
     return token
 
@@ -64,11 +70,13 @@ def verify_token(token: str) -> dict:
         dict: 解析后的用户信息，验证失败返回 None
     """
     try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, _jwt_secret_key(), algorithms=[JWT_ALGORITHM])
         return {
             "user_id": payload.get("user_id"),
             "username": payload.get("username"),
+            "jti": payload.get("jti"),
             "exp": payload.get("exp"),
+            "iat": payload.get("iat"),
         }
     except jwt.ExpiredSignatureError:
         logger.warning("JWT Token 已过期")

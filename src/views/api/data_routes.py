@@ -11,7 +11,6 @@ from utils.api_response import error, ok
 
 from ._shared import article_service, bp, comment_service, logger
 
-
 _TIME_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$")
 
 
@@ -24,19 +23,19 @@ def _validate_search_param(value, field_label):
     """Validate a single search parameter against injection and keyword rules.
 
     Returns an error response tuple on failure, or None on success.
+
+    说明：validate_keyword 已内置 SQL 注入检测（纵深防御），此处不再二次
+    detect_sql_injection；参数化查询为主，黑名单为辅。
     """
-    from utils.input_validator import detect_sql_injection, validate_keyword
+    from utils.input_validator import validate_keyword
 
     if not value:
         return None
 
     validation = validate_keyword(value)
     if not validation["valid"]:
+        logger.warning("关键词校验失败: %s=%s 原因=%s", field_label, value[:50], validation["message"])
         return error(validation["message"], code=400), 400
-
-    if detect_sql_injection(value):
-        logger.warning("检测到SQL注入尝试: %s=%s", field_label, value[:50])
-        return error(f"{field_label}包含非法字符", code=400), 400
 
     return None
 
@@ -65,9 +64,10 @@ def _validate_time_range(start_time, end_time):
 
 
 def _parse_pagination():
-    """Extract and clamp page/limit from query string."""
-    page = int(request.args.get("page", 1))
-    limit = min(int(request.args.get("limit", 10)), 100)
+    """Extract and clamp page/limit from query string — 收敛到统一 pagination 工具。"""
+    from utils.pagination import get_pagination_params
+
+    page, limit, _ = get_pagination_params(request, default_limit=10, max_limit=100)
     return page, limit
 
 

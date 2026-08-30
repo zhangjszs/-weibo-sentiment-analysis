@@ -76,7 +76,9 @@ class LRUCache:
 
     def set(self, key, value, ttl=None):
         with self.lock:
-            ttl = ttl or self.default_ttl
+            # 区分 None（使用默认）与 0（立即过期），避免 `ttl or default` 误判 0
+            if ttl is None:
+                ttl = self.default_ttl
             expire_time = time.time() + ttl
             if key in self.cache:
                 self._remove_item(key)
@@ -134,36 +136,67 @@ class FileCache:
 
     def get(self, key):
         cache_path = self._get_cache_path(key)
-        if os.path.exists(cache_path):
-            if time.time() - os.path.getmtime(cache_path) < self.default_timeout:
+        if not os.path.exists(cache_path):
+            return None
+        try:
+            if time.time() - os.path.getmtime(cache_path) >= self.default_timeout:
                 try:
-                    with open(cache_path, encoding="utf-8") as f:
-                        payload = json.load(f)
-                    if isinstance(payload, dict) and "data" in payload:
-                        return payload["data"]
-                    return payload
-                except (json.JSONDecodeError, OSError, ValueError, TypeError):
                     os.remove(cache_path)
-            else:
+                except FileNotFoundError:
+                    pass
+                except OSError as e:
+                    logger.warning(f"清理过期缓存失败 {cache_path}: {e}")
+                return None
+            with open(cache_path, encoding="utf-8") as f:
+                payload = json.load(f)
+            if isinstance(payload, dict) and "data" in payload:
+                return payload["data"]
+            return payload
+        except (json.JSONDecodeError, OSError, ValueError, TypeError) as e:
+            logger.warning(f"读取缓存失败 {cache_path}: {e}")
+            try:
                 os.remove(cache_path)
-        return None
+            except FileNotFoundError:
+                pass
+            except OSError:
+                pass
+            return None
+        except Exception as e:
+            logger.warning(f"读取缓存异常 {cache_path}: {e}")
+            return None
 
     def set(self, key, value):
         cache_path = self._get_cache_path(key)
         temp_path = f"{cache_path}.tmp"
         try:
+            os.makedirs(os.path.dirname(cache_path) or ".", exist_ok=True)
             with open(temp_path, "w", encoding="utf-8") as f:
                 json.dump({"data": value}, f, ensure_ascii=False, default=str)
             os.replace(temp_path, cache_path)
         except Exception as e:
             logger.error(f"缓存写入失败: {e}")
-            if os.path.exists(temp_path):
-                os.remove(temp_path)
+            try:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            except OSError:
+                pass
 
     def clear(self):
-        for filename in os.listdir(self.cache_dir):
-            if filename.endswith(".cache"):
-                os.remove(os.path.join(self.cache_dir, filename))
+        try:
+            if not os.path.exists(self.cache_dir):
+                return
+            for filename in os.listdir(self.cache_dir):
+                if filename.endswith(".cache"):
+                    try:
+                        os.remove(os.path.join(self.cache_dir, filename))
+                    except FileNotFoundError:
+                        continue
+                    except OSError as e:
+                        logger.warning(f"清理缓存文件失败 {filename}: {e}")
+        except FileNotFoundError:
+            return
+        except OSError as e:
+            logger.warning(f"清理缓存目录失败 {self.cache_dir}: {e}")
 
 
 memory_cache = LRUCache(max_size=1000, default_ttl=300)
@@ -222,21 +255,31 @@ def cache_result(ttl=300, timeout=None, use_file_cache=False, key_func=None):
 
 
 def clear_all_cache():
-    """清空所有缓存"""
+    """清空所有缓存 — 兼容多 worker：当前进程内存 + 文件缓存"""
     memory_cache.clear()
-    file_cache.clear()
+    try:
+        file_cache.clear()
+    except Exception as e:
+        logger.warning(f"清空文件缓存失败: {e}")
     logger.info("所有缓存已清空")
 
 
 def get_cache_info():
-    """获取缓存信息"""
+    """获取缓存信息 — 文件缓存计数带容错（目录不存在时返回 0）"""
+    try:
+        file_count = len(
+            [f for f in os.listdir(file_cache.cache_dir) if f.endswith(".cache")]
+        )
+    except FileNotFoundError:
+        file_count = 0
+    except OSError as e:
+        logger.warning(f"读取缓存目录失败 {file_cache.cache_dir}: {e}")
+        file_count = 0
     return {
         "memory_cache_size": memory_cache.size(),
         "memory_cache_stats": memory_cache.get_stats(),
         "file_cache_dir": file_cache.cache_dir,
-        "file_cache_count": len(
-            [f for f in os.listdir(file_cache.cache_dir) if f.endswith(".cache")]
-        ),
+        "file_cache_count": file_count,
     }
 
 

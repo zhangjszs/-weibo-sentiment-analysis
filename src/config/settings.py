@@ -75,7 +75,11 @@ class Config:
 
     @classmethod
     def get_database_url(cls):
-        return f"mysql+pymysql://{cls.DB_USER}:{cls.DB_PASSWORD}@{cls.DB_HOST}:{cls.DB_PORT}/{cls.DB_NAME}?charset={cls.DB_CHARSET}"
+        from urllib.parse import quote_plus
+
+        user = quote_plus(cls.DB_USER)
+        password = quote_plus(cls.DB_PASSWORD)
+        return f"mysql+pymysql://{user}:{password}@{cls.DB_HOST}:{cls.DB_PORT}/{cls.DB_NAME}?charset={cls.DB_CHARSET}"
 
     @classmethod
     def get_redis_connection_params(cls) -> dict:
