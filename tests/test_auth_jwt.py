@@ -137,7 +137,9 @@ class TestLoginAPI:
         from conftest import set_auth_cookie
         set_auth_cookie(client, token)
 
-        response = client.post("/api/session/extend")
+        response = client.post(
+            "/api/session/extend", headers={"Origin": "http://localhost:3000"}
+        )
 
         assert response.status_code == 200
         data = response.get_json()

@@ -166,10 +166,14 @@ def _require_jwt_auth():
 def _validate_origin_for_state_change():
     """对 CSRF 豁免的 API 路径做 Origin 校验（defense-in-depth）。
 
-    SameSite=Strict cookie 是主防线，本检查是第二层：
-    - 浏览器 POST/PUT/PATCH/DELETE 会带 Origin 头 → 校验是否在 ALLOWED_ORIGINS
-    - 非浏览器客户端（curl、API SDK）不带 Origin → 放行（它们用 Bearer header）
-    - Origin 缺失时回退到 Referer 校验（部分隐私模式会去掉 Origin）
+    鉴权模型（Bearer 主轨 + Cookie 副轨）：
+    - Bearer（Authorization 头）是主轨：非 ambient 凭证，不依赖 Cookie，
+      不受 CSRF 影响；无 Origin 时放行（curl / API SDK / 服务间调用）。
+    - Cookie（AUTH_COOKIE_NAME 内为 JWT）是副轨，仅供前端同源 SPA 使用：
+      SameSite=Strict（生产）是主防线，本检查是第二层。浏览器 POST/PUT/
+      PATCH/DELETE 必然携带 Origin（fetch 规范），因此 Cookie 轨的状态变更
+      请求若既无 Origin 又无 Referer，视为可疑（可能被剥离头部的跨站请求），
+      直接 403。纯 Bearer 或无凭证请求不受此限（无凭证者由 JWT 层返回 401）。
 
     Returns:
         None 或 (error_response, status_code) 元组
@@ -199,7 +203,18 @@ def _validate_origin_for_state_change():
         )
         return error("跨站请求被拒绝", code=403), 403
 
-    # 既无 Origin 也无 Referer：视为非浏览器客户端 → 放行
+    # 既无 Origin 也无 Referer：
+    # - Cookie 副轨（带认证 Cookie 但无 Bearer 头）：浏览器必然带 Origin，
+    #   缺失即视为 CSRF 风险 → 403。
+    # - Bearer 主轨 / 无凭证：视为非浏览器客户端 → 放行（JWT 层会处理未认证）。
+    has_bearer = bool(_get_bearer_token())
+    has_auth_cookie = bool(request.cookies.get(Config.AUTH_COOKIE_NAME))
+    if has_auth_cookie and not has_bearer:
+        logger.warning(
+            "CSRF 校验失败: Cookie 状态变更请求缺失 Origin/Referer path=%s method=%s ip=%s",
+            request.path, request.method, get_client_ip(),
+        )
+        return error("跨站请求被拒绝", code=403), 403
     return None
 
 

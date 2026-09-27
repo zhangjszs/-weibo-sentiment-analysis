@@ -178,3 +178,49 @@ class TestOriginCheckIntegration:
             # 无 Origin、无 Referer、无 token
         )
         assert response.status_code == 401  # CSRF 通过，JWT 拦截
+
+    def test_cookie_track_without_origin_is_rejected(self, csrf_app):
+        """Cookie 副轨状态变更缺失 Origin/Referer → 403（浏览器必然带 Origin）"""
+        app, _ = csrf_app
+        client = app.test_client()
+        from utils.jwt_handler import create_token
+
+        token = create_token(1, "tester")
+        client.set_cookie("weibo_access_token", token)
+        response = client.post(
+            "/api/spider/quick-crawl",
+            json={"type": "hot"},
+            # 无 Origin、无 Referer，但带认证 Cookie
+        )
+        assert response.status_code == 403
+        assert response.get_json().get("code") == 403
+
+    def test_bearer_track_without_origin_passes_csrf(self, csrf_app, monkeypatch):
+        """Bearer 主轨无 Origin → 放行 CSRF（非 ambient 凭证，不受 CSRF 影响）"""
+        import views.api.spider_api as spider_api
+
+        monkeypatch.setattr(
+            spider_api,
+            "dispatch_spider_task",
+            lambda *a, **k: {
+                "task_id": "fake-bearer",
+                "task_label": "fake",
+                "crawl_type": "hot",
+                "keyword": "",
+                "page_num": 1,
+                "article_limit": 50,
+            },
+        )
+        monkeypatch.setattr(spider_api, "register_submitted_task", lambda r: None)
+        app, _ = csrf_app
+        client = app.test_client()
+        from utils.jwt_handler import create_token
+
+        token = create_token(1, "tester")
+        response = client.post(
+            "/api/spider/quick-crawl",
+            json={"type": "hot"},
+            headers={"Authorization": f"Bearer {token}"},
+            # 无 Origin、无 Referer、无 Cookie
+        )
+        assert response.status_code not in (401, 403)

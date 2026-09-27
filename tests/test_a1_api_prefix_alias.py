@@ -99,7 +99,11 @@ class TestApiPrefixAlias:
 
     def test_legacy_post_clearCache_redirect(self, authed_client):
         """POST /getAllData/clearCache 应 307 到 /api/clearCache"""
-        resp = authed_client.post("/getAllData/clearCache", follow_redirects=False)
+        resp = authed_client.post(
+            "/getAllData/clearCache",
+            follow_redirects=False,
+            headers={"Origin": "http://localhost:3000"},
+        )
         assert resp.status_code == 307
         loc = resp.headers.get("Location", "")
         assert "/api/clearCache" in loc
@@ -110,7 +114,11 @@ class TestApiPrefixAlias:
             if method == "GET":
                 resp = authed_client.get(f"/getAllData{suffix}", follow_redirects=False)
             else:
-                resp = authed_client.post(f"/getAllData{suffix}", follow_redirects=False)
+                resp = authed_client.post(
+                    f"/getAllData{suffix}",
+                    follow_redirects=False,
+                    headers={"Origin": "http://localhost:3000"},
+                )
             assert resp.status_code == 307, f"legacy {suffix} should 307"
             loc = resp.headers.get("Location", "")
             assert f"/api{suffix}" in loc, f"{suffix} redirect target mismatch: {loc}"
@@ -173,7 +181,9 @@ class TestApiPrefixAlias:
             if method == "GET":
                 resp = authed_client.get(f"/api{suffix}")
             else:
-                resp = authed_client.post(f"/api{suffix}")
+                resp = authed_client.post(
+                    f"/api{suffix}", headers={"Origin": "http://localhost:3000"}
+                )
             assert resp.status_code == 200, f"new /api{suffix} should 200, got {resp.status_code} {resp.get_data(as_text=True)[:200]}"
             assert resp.headers.get("Location") is None
 
@@ -204,7 +214,11 @@ class TestApiPrefixAlias:
 
     def test_legacy_307_preserves_method(self, authed_client):
         """307 应保持方法，POST 重定向后仍为 POST（验证 Location 即可，客户端需手动跟随）"""
-        resp = authed_client.post("/getAllData/clearCache", follow_redirects=False)
+        resp = authed_client.post(
+            "/getAllData/clearCache",
+            follow_redirects=False,
+            headers={"Origin": "http://localhost:3000"},
+        )
         assert resp.status_code == 307
         # 确保新端点的 POST 也需要鉴权（未鉴权应 401）
         import app as app_module

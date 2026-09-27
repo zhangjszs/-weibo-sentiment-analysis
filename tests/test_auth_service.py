@@ -381,7 +381,7 @@ class TestRegister:
     def test_repo_create_exception_returns_failure(
         self, mock_user_repo, patched_collaborators, patched_admin_users
     ):
-        """仓储 create 抛异常 → 捕获并返回 (False, '注册失败: ...')"""
+        """仓储 create 抛异常 → 捕获并返回通用失败信息（不泄露 DB 原文）"""
         mock_user_repo.find_by_username.return_value = None
         mock_user_repo.create.side_effect = RuntimeError("DB down")
         service = AuthService()
@@ -390,7 +390,7 @@ class TestRegister:
 
         assert success is False
         assert "注册失败" in message
-        assert "DB down" in message
+        assert "DB down" not in message
 
     def test_hash_password_called_with_plaintext(
         self, mock_user_repo, patched_collaborators, patched_admin_users
