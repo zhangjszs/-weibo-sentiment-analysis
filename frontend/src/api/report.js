@@ -38,9 +38,9 @@ export function getDemoData() {
 }
 
 export function downloadReport(filename) {
-  return `/api/report/download/${filename}`
+  return `/api/report/download/${encodeURIComponent(filename)}`
 }
 
 export function previewReport(filename) {
-  return `/api/report/preview/${filename}`
+  return `/api/report/preview/${encodeURIComponent(filename)}`
 }

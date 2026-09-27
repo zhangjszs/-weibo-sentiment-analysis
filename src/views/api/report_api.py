@@ -6,7 +6,10 @@
 
 import logging
 import os
+import re
 import tempfile
+import time
+import uuid
 from datetime import datetime, timedelta
 
 from flask import Blueprint, request, send_file
@@ -25,6 +28,85 @@ logger = logging.getLogger(__name__)
 report_bp = Blueprint("report", __name__, url_prefix=API_PREFIX + "/report")
 
 bp = report_bp  # 兼容旧引用：from views.api.report_api import bp
+
+_ALLOWED_REPORT_EXTENSIONS = {".pdf", ".pptx"}
+# 仅允许本系统生成的文件名前缀，防止指向任意系统文件
+_ALLOWED_REPORT_BASENAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.\-]*$")
+
+
+def _resolve_report_path(filename: str) -> str | None:
+    """校验下载/预览文件名并解析为 tmp 目录内的绝对路径。
+
+    防护：basename 收敛 + 扩展名白名单 + 解析后路径仍在 tmp 内。
+    不合法或不存在返回 None（调用方统一返回 404 JSON）。
+    """
+    if not filename or not isinstance(filename, str):
+        return None
+    # 拒绝路径分隔符与遍历序列
+    if "/" in filename or "\\" in filename:
+        return None
+    basename = os.path.basename(filename)
+    if basename != filename or basename in ("", ".", ".."):
+        return None
+    if basename.startswith("report_") is False and basename.startswith("reports_") is False:
+        # 兼容历史文件：仅放行 report_ 前缀；目录形式一律拒绝
+        return None
+    if not _ALLOWED_REPORT_BASENAME_RE.match(basename):
+        return None
+    _, ext = os.path.splitext(basename)
+    if ext.lower() not in _ALLOWED_REPORT_EXTENSIONS:
+        return None
+    temp_dir = os.path.realpath(tempfile.gettempdir())
+    candidate = os.path.realpath(os.path.join(temp_dir, basename))
+    if os.path.dirname(candidate) != temp_dir:
+        return None
+    return candidate
+
+
+def _unique_report_filename(prefix: str, ext: str) -> str:
+    """秒级 timestamp + 随机后缀，避免并发覆盖。"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{prefix}_{timestamp}_{uuid.uuid4().hex[:8]}{ext}"
+
+
+def cleanup_expired_reports(max_age_hours: float | None = None) -> int:
+    """删除 tmp 内超期的本系统报告文件/目录，消费 REPORT_TEMP_CLEANUP_HOURS。
+
+    Returns: 清理的文件/目录数量（best-effort，失败跳过单个条目）。
+    """
+    from config.settings import Config
+
+    hours = max_age_hours if max_age_hours is not None else Config.REPORT_TEMP_CLEANUP_HOURS
+    try:
+        cutoff = time.time() - float(hours) * 3600
+    except (TypeError, ValueError):
+        cutoff = time.time() - 3600
+    temp_dir = tempfile.gettempdir()
+    removed = 0
+    try:
+        entries = os.listdir(temp_dir)
+    except OSError:
+        return 0
+    for entry in entries:
+        if not (entry.startswith("report_") or entry.startswith("reports_")):
+            continue
+        path = os.path.join(temp_dir, entry)
+        try:
+            if os.path.getmtime(path) > cutoff:
+                continue
+            if os.path.isdir(path):
+                import shutil
+
+                shutil.rmtree(path, ignore_errors=True)
+            else:
+                _, ext = os.path.splitext(entry)
+                if ext.lower() not in _ALLOWED_REPORT_EXTENSIONS:
+                    continue
+                os.remove(path)
+            removed += 1
+        except OSError:
+            continue
+    return removed
 
 
 def _coerce_bool(value, default: bool = False) -> bool:
@@ -272,12 +354,15 @@ def generate_report():
         )
 
         temp_dir = tempfile.gettempdir()
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        try:
+            cleanup_expired_reports()
+        except Exception:
+            pass
 
         if format_type == "pdf":
-            output_path = os.path.join(temp_dir, f"report_{timestamp}.pdf")
+            output_path = os.path.join(temp_dir, _unique_report_filename("report", ".pdf"))
         else:
-            output_path = os.path.join(temp_dir, f"report_{timestamp}.pptx")
+            output_path = os.path.join(temp_dir, _unique_report_filename("report", ".pptx"))
 
         result_path = report_generator.generate_report(
             report_data, format=format_type, output_path=output_path, config=config
@@ -330,8 +415,12 @@ def generate_all_reports():
         )
 
         temp_dir = tempfile.gettempdir()
+        try:
+            cleanup_expired_reports()
+        except Exception:
+            pass
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = os.path.join(temp_dir, f"reports_{timestamp}")
+        output_dir = os.path.join(temp_dir, f"reports_{timestamp}_{uuid.uuid4().hex[:8]}")
 
         results = report_generator.generate_all(report_data, output_dir, config)
 
@@ -368,13 +457,11 @@ def generate_all_reports():
 def download_report(filename: str):
     """下载报告文件"""
     try:
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, filename)
-
-        if not os.path.exists(file_path):
+        file_path = _resolve_report_path(filename)
+        if not file_path or not os.path.isfile(file_path):
             return error("文件不存在", code=404), 404
 
-        return send_file(file_path, as_attachment=True, download_name=filename)
+        return send_file(file_path, as_attachment=True, download_name=os.path.basename(file_path))
 
     except Exception as e:
         logger.error(f"文件下载失败: {e}")
@@ -385,10 +472,8 @@ def download_report(filename: str):
 def preview_report(filename: str):
     """预览报告文件"""
     try:
-        temp_dir = tempfile.gettempdir()
-        file_path = os.path.join(temp_dir, filename)
-
-        if not os.path.exists(file_path):
+        file_path = _resolve_report_path(filename)
+        if not file_path or not os.path.isfile(file_path):
             return error("文件不存在", code=404), 404
 
         return send_file(file_path)
