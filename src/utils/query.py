@@ -27,32 +27,89 @@ def _build_named_params(sql: str, params: list) -> tuple[str, dict[str, Any]]:
     转换为：
         SELECT * FROM t WHERE a=:p0 AND b=:p1
 
-    安全校验：
-        - 统计字符串字面量外的 %s 数量，必须与参数列表长度一致
-        - 防止 SQL 字面量（如 LIKE '%s%'）中的 %s 被误替换
+    安全校验（单遍扫描，正确处理转义引号/双引号标识符/字面量内 %s）：
+        - 单引号字面量内的 `%s` 不计数、不替换（支持 ``\\'`` 转义与 ``''`` 转义）
+        - 双引号标识符内的 `%s` 不计数、不替换
+        - 字面量外的 `%%` 视为转义的百分号，原样保留、不计数
+        - 字面量外的 `%s` 数量必须与参数列表长度一致，否则抛 ValueError
     """
     if not params:
         return sql, {}
 
-    # 按单引号分割，统计字符串字面量外的 %s 数量
-    parts = sql.split("'")
-    placeholders_outside_strings = sum(part.count("%s") for i, part in enumerate(parts) if i % 2 == 0)
+    out: list[str] = []
+    named_params: dict[str, Any] = {}
+    param_index = 0
+    i = 0
+    n = len(sql)
 
-    if placeholders_outside_strings != len(params):
+    while i < n:
+        ch = sql[i]
+        # 单引号字符串字面量：原样透传，支持 \' 与 '' 转义
+        if ch == "'":
+            out.append(ch)
+            i += 1
+            while i < n:
+                c = sql[i]
+                out.append(c)
+                if c == "\\" and i + 1 < n:
+                    out.append(sql[i + 1])
+                    i += 2
+                    continue
+                if c == "'":
+                    if i + 1 < n and sql[i + 1] == "'":
+                        out.append(sql[i + 1])
+                        i += 2
+                        continue
+                    i += 1
+                    break
+                i += 1
+            continue
+        # 双引号标识符：原样透传
+        if ch == '"':
+            out.append(ch)
+            i += 1
+            while i < n:
+                c = sql[i]
+                out.append(c)
+                if c == "\\" and i + 1 < n:
+                    out.append(sql[i + 1])
+                    i += 2
+                    continue
+                i += 1
+                if c == '"':
+                    break
+            continue
+        # 占位符 / 转义百分号（仅字面量外）
+        if ch == "%" and i + 1 < n:
+            nxt = sql[i + 1]
+            if nxt == "s":
+                if param_index >= len(params):
+                    raise ValueError(
+                        f"SQL 占位符数量不匹配：参数仅 {len(params)} 个，"
+                        f"但在字符串字面量外发现更多 %s。"
+                    )
+                param_name = f"p{param_index}"
+                out.append(f":{param_name}")
+                named_params[param_name] = params[param_index]
+                param_index += 1
+                i += 2
+                continue
+            if nxt == "%":
+                # 转义的百分号：原样保留，不计数
+                out.append("%%")
+                i += 2
+                continue
+        out.append(ch)
+        i += 1
+
+    if param_index != len(params):
         raise ValueError(
             f"SQL 占位符数量不匹配：期望 {len(params)} 个参数，"
-            f"在字符串字面量外找到 {placeholders_outside_strings} 个 %s。"
+            f"在字符串字面量外找到 {param_index} 个 %s。"
             f"请确保 LIKE 等子句中的 % 使用 %% 转义，且参数占位符与参数数量一致。"
         )
 
-    named_sql = sql
-    named_params: dict[str, Any] = {}
-    for idx, value in enumerate(params):
-        param_name = f"p{idx}"
-        named_sql = named_sql.replace("%s", f":{param_name}", 1)
-        named_params[param_name] = value
-
-    return named_sql, named_params
+    return "".join(out), named_params
 
 
 def querys(sql: str, params: list | None = None, type: str = "no_select") -> Any:

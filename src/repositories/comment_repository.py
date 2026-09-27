@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Tuple
 from sqlalchemy import desc, func, or_
 
 from models.comment import Comment
+from utils.sql_safety import coerce_positive_int, escape_like
 
 from .base_repository import BaseRepository
 
@@ -27,10 +28,14 @@ class CommentRepository(BaseRepository):
             query = query.filter(Comment.articleId == article_id)
 
         if user:
-            query = query.filter(Comment.user.like(f"%{user}%"))
+            query = query.filter(
+                Comment.user.like(f"%{escape_like(user)}%", escape="\\")
+            )
 
         if keyword:
-            query = query.filter(Comment.content.like(f"%{keyword}%"))
+            query = query.filter(
+                Comment.content.like(f"%{escape_like(keyword)}%", escape="\\")
+            )
 
         if start_time and end_time:
             query = query.filter(Comment.created_at.between(start_time, end_time))
@@ -147,7 +152,7 @@ class CommentRepository(BaseRepository):
                 Comment.authorAddress,
                 Comment.authorAvatar,
             )
-            .filter(Comment.content.like(f"%{keyword}%"))
+            .filter(Comment.content.like(f"%{escape_like(keyword)}%", escape="\\"))
             .order_by(Comment.created_at.desc())
             .limit(limit)
             .all()
@@ -201,6 +206,8 @@ class CommentRepository(BaseRepository):
         评论点赞数直方图
         使用 CASE WHEN 分桶
         """
+        range_num = coerce_positive_int(range_num, 20, maximum=100000)
+        bucket_count = coerce_positive_int(bucket_count, 99, maximum=100)
         labels = [f"{range_num * i}-{range_num * (i + 1)}" for i in range(1, bucket_count + 1)]
         counts = [0] * len(labels)
 

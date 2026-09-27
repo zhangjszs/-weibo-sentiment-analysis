@@ -3,8 +3,16 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy import desc, func
 
 from models.article import Article
+from utils.sql_safety import (
+    coerce_positive_int,
+    escape_like,
+    validate_identifier,
+)
 
 from .base_repository import BaseRepository
+
+# 直方图允许的数值列白名单（原生 SQL 拼接前必须校验）
+ARTICLE_HISTOGRAM_COLUMNS = frozenset({"likeNum", "commentsLen"})
 
 
 class ArticleRepository(BaseRepository):
@@ -24,13 +32,17 @@ class ArticleRepository(BaseRepository):
         query = self.session.query(Article)
 
         if keyword:
-            query = query.filter(Article.content.like(f"%{keyword}%"))
+            query = query.filter(
+                Article.content.like(f"%{escape_like(keyword)}%", escape="\\")
+            )
 
         if article_type:
             query = query.filter(Article.type == article_type)
 
         if region:
-            query = query.filter(Article.region.like(f"%{region}%"))
+            query = query.filter(
+                Article.region.like(f"%{escape_like(region)}%", escape="\\")
+            )
 
         if start_time and end_time:
             query = query.filter(Article.created_at.between(start_time, end_time))
@@ -161,6 +173,9 @@ class ArticleRepository(BaseRepository):
         文章数值直方图（likeNum / commentsLen）
         使用 CASE WHEN 分桶
         """
+        validate_identifier(column, ARTICLE_HISTOGRAM_COLUMNS)
+        range_num = coerce_positive_int(range_num, 1000, maximum=100000)
+        bucket_count = coerce_positive_int(bucket_count, 14, maximum=100)
         labels = [f"{range_num * i}-{range_num * (i + 1)}" for i in range(1, bucket_count + 1)]
         counts = [0] * len(labels)
 
@@ -173,10 +188,10 @@ class ArticleRepository(BaseRepository):
             )
 
         where_clause = "WHERE type IS NOT NULL AND type != ''"
-        params = []
+        params: dict[str, Any] = {}
         if exclude_type:
             where_clause += " AND type <> :exclude_type"
-            params.append(exclude_type)
+            params["exclude_type"] = exclude_type
 
         sql = f"""
             SELECT bucket_index, COUNT(*) AS count
