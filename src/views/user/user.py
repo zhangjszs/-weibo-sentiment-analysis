@@ -16,6 +16,7 @@ from utils.errorResponse import errorResponse
 from utils.input_validator import sanitize_input, validate_password, validate_username
 from utils.jwt_handler import jwt_required
 from utils.log_sanitizer import SafeLogger
+from utils.request_validation import get_bounded_str, get_json_body
 
 logger = SafeLogger("user_auth", logging.INFO)
 auth_service = AuthService()
@@ -37,13 +38,13 @@ def login():
         ).startswith("application/json")
         # 支持 JSON 和表单两种格式
         if request.is_json:
-            data = request.get_json() or {}
-            username_raw = data.get("username", "").strip()
-            password_raw = data.get("password", "").strip()
+            data = get_json_body()
+            username_raw = get_bounded_str(data.get("username"), max_length=64)
+            password_raw = get_bounded_str(data.get("password"), max_length=128)
         else:
             request.form = dict(request.form)
-            username_raw = request.form.get("username", "").strip()
-            password_raw = request.form.get("password", "").strip()
+            username_raw = get_bounded_str(request.form.get("username"), max_length=64)
+            password_raw = get_bounded_str(request.form.get("password"), max_length=128)
 
         # 输入验证
         username_validation = validate_username(username_raw)
@@ -100,12 +101,13 @@ def register():
             "Accept", ""
         ).startswith("application/json")
         if request.is_json:
-            data = request.get_json()
-            username_raw = data.get("username", "").strip()
-            password_raw = data.get("password", "").strip()
-            confirm_raw = (
-                data.get("confirmPassword", "") or data.get("passwordCheked", "")
-            ).strip()
+            data = get_json_body()
+            username_raw = get_bounded_str(data.get("username"), max_length=64)
+            password_raw = get_bounded_str(data.get("password"), max_length=128)
+            confirm_raw = get_bounded_str(
+                data.get("confirmPassword") or data.get("passwordCheked"),
+                max_length=128,
+            )
         else:
             request.form = dict(request.form)
             username_raw = request.form.get("username", "").strip()

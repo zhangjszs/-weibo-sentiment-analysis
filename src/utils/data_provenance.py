@@ -20,8 +20,7 @@ Typical usage::
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
-from typing import Any, List, Tuple
+from datetime import UTC, datetime
 
 # Default model identity — populated from the running config or fallback.
 _DEFAULT_MODEL_NAME = os.getenv("ANALYSIS_MODEL_NAME", "snownlp + rule-based")
@@ -56,7 +55,7 @@ class AnalysisMeta:
         is_demo: bool,
         model_name: str,
         model_version: str,
-        time_range: Tuple[datetime, datetime],
+        time_range: tuple[datetime, datetime],
         data_count: int,
         generated_at: datetime,
         limitations: list[str],
@@ -102,7 +101,7 @@ class AnalysisMeta:
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _validate(
@@ -199,15 +198,13 @@ def provenance_response(
     *,
     msg: str = "success",
     code: int = 200,
-) -> tuple:
+):
     """Wrap ``ok()`` with provenance metadata.
 
-    This is the recommended way to return analysis responses::
-
-        from utils.data_provenance import real_meta, provenance_response
-
-        meta = real_meta(topic="test", data_count=42, ...)
-        return provenance_response({"articles": [...]}, meta)
+    返回单个 ``Response``（HTTP 状态已设为 ``code``），调用方可直接
+    ``return provenance_response(...)``，也可再拼 ``, 200``——两种写法都合法。
+    之前返回 ``(Response, code)`` 元组，调用方再拼 ``, 200`` 会形成嵌套元组，
+    Flask 直接 500（HTML），故收敛为单 Response。
     """
     # Late import to avoid circular dependency at module level.
     from utils.api_response import ok as _ok
@@ -215,7 +212,9 @@ def provenance_response(
     payload = {"meta": meta.to_dict()}
     if data is not None:
         payload["data"] = data
-    return _ok(payload, msg=msg, code=code), code
+    response = _ok(payload, msg=msg, code=code)
+    response.status_code = code
+    return response
 
 
 def experimental_meta(

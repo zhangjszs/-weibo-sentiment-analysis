@@ -20,6 +20,7 @@ from utils.api_response import error, ok
 from utils.data_provenance import demo_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
 from utils.report_generator import ReportConfig, report_generator
+from utils.request_validation import get_bounded_str, get_json_body, sanitize_text
 
 from ._shared import API_PREFIX
 
@@ -327,11 +328,15 @@ def generate_report():
         data: 报告数据 (可选，不提供则使用演示数据)
     """
     try:
-        data = request.json or {}
+        data = get_json_body()
 
-        format_type = data.get("format", "pdf").lower()
-        title = data.get("title", "舆情分析报告")
+        format_type = get_bounded_str(data.get("format", "pdf"), max_length=10).lower()
+        title = sanitize_text(data.get("title", "舆情分析报告"), max_length=100)
         input_report_data = data.get("data")
+        if input_report_data is not None and not isinstance(input_report_data, dict):
+            return error("data 必须为对象", code=400), 400
+        if isinstance(input_report_data, dict) and len(str(input_report_data)) > 500000:
+            return error("data 数据过大", code=400), 400
         request_demo_mode = _coerce_bool(data.get("demo_mode"), False)
         report_data = input_report_data
         if not report_data:
@@ -342,8 +347,16 @@ def generate_report():
         if format_type not in ["pdf", "ppt"]:
             return error("不支持的报告格式，请选择 pdf 或 ppt", code=400), 400
 
-        template = data.get("template", "standard")
+        template = get_bounded_str(data.get("template", "standard"), max_length=20) or "standard"
+        if template not in ("brief", "standard", "detailed"):
+            return error("不支持的报告模板", code=400), 400
         sections = data.get("sections", None)
+        if sections is not None and (
+            not isinstance(sections, list)
+            or len(sections) > 20
+            or not all(isinstance(x, str) for x in sections)
+        ):
+            return error("sections 必须为字符串数组（最多 20 项）", code=400), 400
 
         config = ReportConfig(
             title=title,
@@ -398,9 +411,11 @@ def generate_report():
 def generate_all_reports():
     """生成所有格式报告"""
     try:
-        data = request.json or {}
-        title = data.get("title", "舆情分析报告")
+        data = get_json_body()
+        title = sanitize_text(data.get("title", "舆情分析报告"), max_length=100)
         input_report_data = data.get("data")
+        if input_report_data is not None and not isinstance(input_report_data, dict):
+            return error("data 必须为对象", code=400), 400
         request_demo_mode = _coerce_bool(data.get("demo_mode"), False)
         report_data = input_report_data
         if not report_data:

@@ -9,6 +9,7 @@ from services.audit_service import audit_log
 from utils.api_response import error, ok
 from utils.authz import is_admin_user
 from utils.input_validator import validate_password
+from utils.request_validation import get_bounded_str, sanitize_text
 
 from ._shared import (
     _require_authenticated_user,
@@ -17,7 +18,6 @@ from ._shared import (
     user_repo,
 )
 
-
 # ---------------------------------------------------------------------------
 # Profile / password helpers
 # ---------------------------------------------------------------------------
@@ -25,15 +25,27 @@ from ._shared import (
 
 def _validate_email(email):
     """Return True if *email* looks valid, False otherwise."""
-    return not email or "@" in email
+    if not email:
+        return True
+    if len(email) > 100 or email.count("@") != 1:
+        return False
+    local, _, domain = email.partition("@")
+    if not local or not domain or "." not in domain:
+        return False
+    if " " in email or "<" in email or ">" in email:
+        return False
+    return True
 
 
 def _parse_avatar_color(raw):
     """Return a validated avatar_color string or None."""
     color = str(raw).strip()
-    if len(color) == 7 and color.startswith("#"):
-        return color
-    return None
+    if len(color) != 7 or not color.startswith("#"):
+        return None
+    hexpart = color[1:]
+    if not all(c in "0123456789abcdefABCDEF" for c in hexpart):
+        return None
+    return color
 
 
 def _parse_profile_updates(data):
@@ -45,7 +57,7 @@ def _parse_profile_updates(data):
 
     nickname = data.get("nickname")
     if nickname is not None:
-        updates["nickname"] = str(nickname).strip()[:50]
+        updates["nickname"] = sanitize_text(nickname, max_length=50)
 
     email = data.get("email")
     if email is not None:
@@ -56,7 +68,7 @@ def _parse_profile_updates(data):
 
     bio = data.get("bio")
     if bio is not None:
-        updates["bio"] = str(bio).strip()[:200]
+        updates["bio"] = sanitize_text(bio, max_length=200)
 
     avatar_color = data.get("avatar_color")
     if avatar_color is not None:
@@ -65,7 +77,7 @@ def _parse_profile_updates(data):
             updates["avatar_color"] = parsed
 
     if not updates:
-        return None, error("没有需要更新的字段", code=400), 400
+        return None, (error("没有需要更新的字段", code=400), 400)
 
     return updates, None
 
@@ -83,19 +95,19 @@ def _parse_password_change_data(data):
 
     Returns ((old_pw, new_pw), error_response).  On success error_response is None.
     """
-    old_password = (data.get("oldPassword") or "").strip()
-    new_password = (data.get("newPassword") or "").strip()
-    confirm_password = (data.get("confirmPassword") or "").strip()
+    old_password = get_bounded_str(data.get("oldPassword"), max_length=128)
+    new_password = get_bounded_str(data.get("newPassword"), max_length=128)
+    confirm_password = get_bounded_str(data.get("confirmPassword"), max_length=128)
 
     if not old_password or not new_password:
-        return None, error("请填写完整的密码信息", code=400), 400
+        return None, (error("请填写完整的密码信息", code=400), 400)
 
     if new_password != confirm_password:
-        return None, error("两次输入的新密码不一致", code=400), 400
+        return None, (error("两次输入的新密码不一致", code=400), 400)
 
     validation = validate_password(new_password)
     if not validation["valid"]:
-        return None, error(validation["message"], code=400), 400
+        return None, (error(validation["message"], code=400), 400)
 
     return (old_password, new_password), None
 

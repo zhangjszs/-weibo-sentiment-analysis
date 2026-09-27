@@ -15,9 +15,9 @@ from services.nlp_task_service import (
 from utils.api_response import error, ok
 from utils.authz import admin_required
 from utils.rate_limiter import rate_limit
+from utils.request_validation import get_bounded_str, require_json_body
 
 from ._shared import bp, logger
-
 
 # ---------------------------------------------------------------------------
 # Route handlers – sentiment analysis
@@ -37,19 +37,25 @@ def analyze_sentiment():
         async: 是否异步执行（默认false）
     """
     try:
-        data = request.json
-        text = data.get("text", "")
-        mode = data.get("mode", "simple")
+        data, err = require_json_body()
+        if err is not None:
+            return err
+        raw_text = data.get("text", "")
+        if not isinstance(raw_text, str):
+            return error("text 必须为字符串", code=400), 400
+        text = get_bounded_str(raw_text, max_length=2000)
+        mode = get_bounded_str(data.get("mode", "simple"), max_length=20) or "simple"
         is_async = data.get("async", False)
 
         if not text:
             return error("text is required", code=400), 400
 
-        from utils.input_validator import validate_keyword
+        if mode not in ("simple", "smart", "custom"):
+            return error("不支持的分析模式", code=400), 400
 
-        validation = validate_keyword(text[:50])  # 只校验前50字符
-        if not validation["valid"]:
-            return error(validation["message"], code=400), 400
+        # 注意：此处不使用 validate_keyword——它是搜索关键词校验器
+        #（仅允许字母数字中文空格、限长 50），会误杀带标点的正常长文本；
+        # 情感文本仅需限长（防 DoS）+ 类型收敛，分析链路不拼接 SQL。
 
         if is_async:
             dispatch_result = submit_analyze_task(text=text, mode=mode)
@@ -88,15 +94,30 @@ def predict_batch():
         mode: 分析模式 (simple/smart/custom)，默认 custom
     """
     try:
-        data = request.json
+        data, err = require_json_body()
+        if err is not None:
+            return err
         texts = data.get("texts", [])
-        mode = data.get("mode", "custom")
+        mode = get_bounded_str(data.get("mode", "custom"), max_length=20) or "custom"
 
         if not texts or not isinstance(texts, list):
             return error("texts 必须是非空数组", code=400), 400
 
         if len(texts) > 100:
             return error("单次最多预测100条文本", code=400), 400
+
+        if mode not in ("simple", "smart", "custom"):
+            return error("不支持的分析模式", code=400), 400
+
+        # 逐条校验类型与长度：非字符串/空串/超长一律 400，防 DoS 与下游 TypeError
+        clean_texts = []
+        for item in texts:
+            if not isinstance(item, str) or not item.strip():
+                return error("texts 须为非空字符串数组", code=400), 400
+            if len(item) > 2000:
+                return error("单条文本最长 2000 字符", code=400), 400
+            clean_texts.append(item)
+        texts = clean_texts
 
         results = analyze_batch(texts=texts, mode=mode)
         return ok({"total": len(results), "results": results}), 200

@@ -8,11 +8,12 @@ import logging
 
 from flask import Blueprint, request
 
-from ._shared import API_PREFIX
-
+from repositories.user_favorite_repository import UserFavoriteRepository
 from utils.api_response import error, ok
 from utils.log_sanitizer import SafeLogger
-from repositories.user_favorite_repository import UserFavoriteRepository
+from utils.pagination import get_pagination_params
+
+from ._shared import API_PREFIX
 
 logger = SafeLogger("favorites_api", logging.INFO)
 
@@ -87,9 +88,7 @@ def list_favorites():
         return error("未认证", code=401), 401
 
     try:
-        page = max(1, int(request.args.get("page", 1)))
-        limit = min(50, max(1, int(request.args.get("limit", 10))))
-        offset = (page - 1) * limit
+        page, limit, offset = get_pagination_params(request, max_limit=50)
 
         items, total = _fav_repo().find_with_article(
             user_id=user["user_id"], limit=limit, offset=offset

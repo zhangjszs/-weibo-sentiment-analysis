@@ -9,20 +9,20 @@ import os
 import threading
 from datetime import datetime
 
-from flask import Blueprint, request
+from flask import Blueprint
 from requests import RequestException
-
-from config.settings import Config
-
-from ._shared import API_PREFIX
 from sqlalchemy.exc import SQLAlchemyError
 
-from services.spider_task_service import query_spider_task_progress, submit_spider_task
-from utils.api_response import error, ok
-from utils.authz import admin_required
+from config.settings import Config
 from repositories.article_repository import ArticleRepository
 from repositories.comment_repository import CommentRepository
 from repositories.user_repository import UserRepository
+from services.spider_task_service import query_spider_task_progress, submit_spider_task
+from utils.api_response import error, ok
+from utils.authz import admin_required
+from utils.request_validation import get_bounded_str, get_int_arg, get_json_body
+
+from ._shared import API_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -308,11 +308,17 @@ def spider_crawl():
                 code=409,
             ), 409
 
-    data = request.json or {}
-    crawl_type = data.get("type", "hot")
-    keyword = data.get("keyword", "")
-    page_num = data.get("pageNum", 3)
-    article_limit = data.get("article_limit", 50)
+    data = get_json_body()
+    crawl_type = get_bounded_str(data.get("type", "hot"), max_length=20) or "hot"
+    keyword = get_bounded_str(data.get("keyword", ""), max_length=100)
+    try:
+        page_num = max(1, min(int(data.get("pageNum", 3)), 10))
+    except (TypeError, ValueError):
+        return error("pageNum 必须为整数", code=400), 400
+    try:
+        article_limit = max(1, min(int(data.get("article_limit", 50)), 200))
+    except (TypeError, ValueError):
+        return error("article_limit 必须为整数", code=400), 400
 
     try:
         dispatch_result = dispatch_spider_task(
@@ -366,10 +372,13 @@ def spider_quick_crawl():
                 code=409,
             ), 409
 
-    data = request.json or {}
-    crawl_type = data.get("type", "hot")
-    keyword = data.get("keyword", "")
-    page_num = data.get("pageNum", 3)
+    data = get_json_body()
+    crawl_type = get_bounded_str(data.get("type", "hot"), max_length=20) or "hot"
+    keyword = get_bounded_str(data.get("keyword", ""), max_length=100)
+    try:
+        page_num = max(1, min(int(data.get("pageNum", 3)), 10))
+    except (TypeError, ValueError):
+        return error("pageNum 必须为整数", code=400), 400
 
     try:
         dispatch_result = dispatch_spider_task(
@@ -410,7 +419,7 @@ def _read_log_tail(path: str, lines_num: int) -> list[str]:
 @admin_required
 def spider_logs():
     """获取爬虫运行日志（读取日志文件最近 N 行）"""
-    lines_num = min(int(request.args.get("lines", 100)), 500)
+    lines_num = get_int_arg("lines", 100, min_value=1, max_value=500)
 
     log_paths = [
         os.path.join(Config.LOG_DIR, "app.log"),

@@ -9,12 +9,13 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
-from ._shared import API_PREFIX
-
 from services.alert_service import AlertLevel, AlertRule, AlertType, alert_engine
 from utils.api_response import error, ok
 from utils.authz import admin_required
 from utils.rate_limiter import rate_limit
+from utils.request_validation import get_bounded_str, get_json_body, sanitize_text
+
+from ._shared import API_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -44,17 +45,24 @@ def get_rules():
 def create_rule():
     """创建预警规则"""
     try:
-        data = request.json
+        data = get_json_body()
 
         rule_id = data.get("id")
         name = data.get("name")
-        alert_type = data.get("alert_type", "custom")
-        level = data.get("level", "warning")
-        conditions = data.get("conditions", {})
-        cooldown_minutes = data.get("cooldown_minutes", 30)
+        alert_type = get_bounded_str(data.get("alert_type", "custom"), max_length=20)
+        level = get_bounded_str(data.get("level", "warning"), max_length=20)
 
+        rule_id = get_bounded_str(rule_id, max_length=64)
+        name = sanitize_text(name, max_length=100)
         if not rule_id or not name:
             return error("规则ID和名称不能为空", code=400), 400
+        conditions = data.get("conditions", {})
+        if not isinstance(conditions, dict):
+            return error("conditions 必须为对象", code=400), 400
+        try:
+            cooldown_minutes = max(1, min(int(data.get("cooldown_minutes", 30)), 10080))
+        except (TypeError, ValueError):
+            return error("cooldown_minutes 必须为整数", code=400), 400
 
         if alert_engine.get_rule(rule_id):
             return error("规则ID已存在", code=400), 400
@@ -85,13 +93,25 @@ def create_rule():
 def update_rule(rule_id: str):
     """更新预警规则"""
     try:
-        data = request.json
+        data = get_json_body()
 
         allowed_fields = ["name", "enabled", "conditions", "cooldown_minutes", "level"]
         update_data = {k: v for k, v in data.items() if k in allowed_fields}
 
         if "level" in update_data:
-            update_data["level"] = AlertLevel(update_data["level"])
+            try:
+                update_data["level"] = AlertLevel(update_data["level"])
+            except ValueError:
+                return error("level 取值不正确", code=400), 400
+        if "name" in update_data:
+            update_data["name"] = sanitize_text(update_data["name"], max_length=100)
+        if "cooldown_minutes" in update_data:
+            try:
+                update_data["cooldown_minutes"] = max(
+                    1, min(int(update_data["cooldown_minutes"]), 10080)
+                )
+            except (TypeError, ValueError):
+                return error("cooldown_minutes 必须为整数", code=400), 400
 
         success = alert_engine.update_rule(rule_id, **update_data)
 
@@ -227,9 +247,9 @@ def mark_all_read():
 def test_alert():
     """测试预警功能"""
     try:
-        data = request.json
-        alert_type = data.get("type", "info")
-        message = data.get("message", "这是一条测试预警")
+        data = get_json_body()
+        alert_type = get_bounded_str(data.get("type", "info"), max_length=20)
+        message = sanitize_text(data.get("message", "这是一条测试预警"), max_length=500)
 
         from utils.websocket_server import ws_manager
 
@@ -267,7 +287,7 @@ def evaluate_data():
     alert_type 唯一，匹配的就是目标规则）。
     """
     try:
-        data = request.json
+        data = get_json_body()
         eval_type = data.get("type")
 
         # 构造 metrics：字段名与 _evaluate_* 期望的 metrics key 对齐

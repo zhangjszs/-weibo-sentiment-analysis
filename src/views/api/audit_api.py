@@ -8,12 +8,13 @@ import logging
 
 from flask import Blueprint, request
 
-from ._shared import API_PREFIX
-
+from repositories.audit_repository import AuditRepository
 from utils.api_response import error, ok
 from utils.authz import admin_required
 from utils.log_sanitizer import SafeLogger
-from repositories.audit_repository import AuditRepository
+from utils.pagination import get_pagination_params
+
+from ._shared import API_PREFIX
 
 logger = SafeLogger("audit_api", logging.INFO)
 
@@ -29,9 +30,7 @@ def _audit_repo() -> AuditRepository:
 def get_audit_logs():
     """获取审计日志列表（分页，仅管理员）"""
     try:
-        page = max(1, int(request.args.get("page", 1)))
-        limit = min(100, max(1, int(request.args.get("limit", 20))))
-        offset = (page - 1) * limit
+        page, limit, offset = get_pagination_params(request, default_limit=20, max_limit=100)
 
         action_filter = request.args.get("action", "").strip()
         username_filter = request.args.get("username", "").strip()

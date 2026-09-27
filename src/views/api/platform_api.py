@@ -10,13 +10,19 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request
 
-from ._shared import API_PREFIX
-
+from repositories.article_repository import ArticleRepository
 from services.platform_collectors import PlatformCollectorFactory
 from utils.api_response import error, ok
-from utils.data_provenance import demo_meta, experimental_meta, provenance_response, real_meta
+from utils.data_provenance import (
+    demo_meta,
+    experimental_meta,
+    provenance_response,
+    real_meta,
+)
 from utils.rate_limiter import rate_limit
-from repositories.article_repository import ArticleRepository
+from utils.request_validation import get_int_arg
+
+from ._shared import API_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -251,9 +257,8 @@ def get_platform_data(platform: str):
     if platform not in valid_platforms:
         return error("无效的平台ID", code=400), 400
 
-    page = request.args.get("page", 1, type=int)
-    page_size = request.args.get("page_size", 20, type=int)
-    page_size = min(page_size, 100)
+    page = get_int_arg("page", 1, min_value=1, max_value=10000)
+    page_size = get_int_arg("page_size", 20, min_value=1, max_value=100)
 
     demo_mode = _parse_demo_mode(default=False)
     all_data, data_source, effective_demo_mode = _load_platform_data(
@@ -303,8 +308,13 @@ def get_platform_data(platform: str):
 @rate_limit(max_requests=20, window_seconds=60)
 def get_all_platforms_data():
     """获取所有平台汇总数据"""
-    platforms = request.args.get("platforms", "weibo,wechat,douyin,zhihu").split(",")
-    page_size = request.args.get("page_size", 10, type=int)
+    _valid_platforms = {"weibo", "wechat", "douyin", "zhihu", "bilibili"}
+    platforms = [
+        p.strip()
+        for p in request.args.get("platforms", "weibo,wechat,douyin,zhihu").split(",")
+        if p.strip() in _valid_platforms
+    ] or ["weibo"]
+    page_size = get_int_arg("page_size", 10, min_value=1, max_value=100)
     demo_mode = _parse_demo_mode(default=False)
 
     results = {}

@@ -10,13 +10,19 @@ from datetime import datetime, timedelta
 
 from flask import Blueprint, request
 
-from ._shared import API_PREFIX
-
+from repositories.repost_repository import RepostRepository
 from services.propagation_analyzer import PropagationAnalyzer
 from utils.api_response import error, ok
 from utils.data_provenance import demo_meta, provenance_response, real_meta
 from utils.rate_limiter import rate_limit
-from repositories.repost_repository import RepostRepository
+from utils.request_validation import (
+    get_bounded_str,
+    get_int_arg,
+    get_json_body,
+    is_valid_article_id,
+)
+
+from ._shared import API_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -168,11 +174,13 @@ def analyze_propagation(article_id: str):
     Args:
         article_id: 文章ID
     """
+    if not is_valid_article_id(article_id):
+        return error("文章ID格式不正确", code=400), 400
     try:
         analyzer = PropagationAnalyzer()
 
         demo_mode = _parse_demo_mode(default=False)
-        node_count = request.args.get("count", 100, type=int)
+        node_count = get_int_arg("count", 100, min_value=1, max_value=500)
         reposts, data_source, effective_demo_mode = _load_reposts(
             article_id, node_count, demo_mode
         )
@@ -204,11 +212,13 @@ def analyze_propagation(article_id: str):
 @propagation_bp.route("/graph/<article_id>", methods=["GET"])
 def get_propagation_graph(article_id: str):
     """获取传播图数据（用于可视化）"""
+    if not is_valid_article_id(article_id):
+        return error("文章ID格式不正确", code=400), 400
     try:
         analyzer = PropagationAnalyzer()
 
         demo_mode = _parse_demo_mode(default=False)
-        node_count = request.args.get("count", 80, type=int)
+        node_count = get_int_arg("count", 80, min_value=1, max_value=500)
         reposts, data_source, effective_demo_mode = _load_reposts(
             article_id, node_count, demo_mode
         )
@@ -232,11 +242,13 @@ def get_propagation_graph(article_id: str):
 @propagation_bp.route("/kol/<article_id>", methods=["GET"])
 def get_kol_analysis(article_id: str):
     """获取KOL影响力分析"""
+    if not is_valid_article_id(article_id):
+        return error("文章ID格式不正确", code=400), 400
     try:
         analyzer = PropagationAnalyzer()
 
         demo_mode = _parse_demo_mode(default=False)
-        node_count = request.args.get("count", 100, type=int)
+        node_count = get_int_arg("count", 100, min_value=1, max_value=500)
         reposts, data_source, effective_demo_mode = _load_reposts(
             article_id, node_count, demo_mode
         )
@@ -270,12 +282,14 @@ def get_kol_analysis(article_id: str):
 @propagation_bp.route("/timeline/<article_id>", methods=["GET"])
 def get_propagation_timeline(article_id: str):
     """获取传播时间线"""
+    if not is_valid_article_id(article_id):
+        return error("文章ID格式不正确", code=400), 400
     try:
         analyzer = PropagationAnalyzer()
 
-        interval = request.args.get("interval", 60, type=int)
+        interval = get_int_arg("interval", 60, min_value=1, max_value=1440)
         demo_mode = _parse_demo_mode(default=False)
-        node_count = request.args.get("count", 100, type=int)
+        node_count = get_int_arg("count", 100, min_value=1, max_value=500)
         reposts, data_source, effective_demo_mode = _load_reposts(
             article_id, node_count, demo_mode
         )
@@ -303,10 +317,12 @@ def get_propagation_timeline(article_id: str):
 @propagation_bp.route("/depth/<article_id>", methods=["GET"])
 def get_depth_distribution(article_id: str):
     """获取传播深度分布"""
+    if not is_valid_article_id(article_id):
+        return error("文章ID格式不正确", code=400), 400
     try:
         analyzer = PropagationAnalyzer()
         demo_mode = _parse_demo_mode(default=False)
-        node_count = request.args.get("count", 100, type=int)
+        node_count = get_int_arg("count", 100, min_value=1, max_value=500)
         reposts, data_source, effective_demo_mode = _load_reposts(
             article_id, node_count, demo_mode
         )
@@ -342,8 +358,14 @@ def get_depth_distribution(article_id: str):
 def compare_propagation():
     """对比多条传播路径"""
     try:
-        data = request.json
+        data = get_json_body()
         article_ids = data.get("article_ids", [])
+        if not isinstance(article_ids, list):
+            return error("article_ids 必须为数组", code=400), 400
+        article_ids = [get_bounded_str(a, max_length=64) for a in article_ids]
+        for aid in article_ids:
+            if not is_valid_article_id(aid):
+                return error("文章ID格式不正确", code=400), 400
 
         if not article_ids or len(article_ids) < 2:
             return error("请提供至少2个文章ID", code=400), 400
