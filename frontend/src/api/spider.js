@@ -28,7 +28,7 @@ export function getSpiderStatus() {
   })
 }
 
-// 快速爬取（普通用户可用）
+// 快速爬取（仅管理员可用，与 /crawl 权限一致）
 export function quickCrawl(data = {}) {
   return request({
     url: '/api/spider/quick-crawl',

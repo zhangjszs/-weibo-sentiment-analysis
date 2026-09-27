@@ -18,12 +18,16 @@ from utils.rate_limiter import rate_limit
 
 logger = logging.getLogger(__name__)
 
+# 权限矩阵（alert 引擎为进程全局内存、无用户隔离，故读/写统一收紧为 admin）：
+# - 读：GET /rules|history|stats|unread-count、POST /<id>/read → admin
+# - 写：POST/PUT/DELETE /rules*、POST /read-all|test|evaluate → admin
 alert_bp = Blueprint("alert", __name__, url_prefix=API_PREFIX + "/alert")
 
 bp = alert_bp  # 兼容旧引用：from views.api.alert_api import bp
 
 
 @alert_bp.route("/rules", methods=["GET"])
+@admin_required
 def get_rules():
     """获取所有预警规则"""
     try:
@@ -143,6 +147,7 @@ def toggle_rule(rule_id: str):
 
 
 @alert_bp.route("/history", methods=["GET"])
+@admin_required
 def get_history():
     """获取预警历史"""
     try:
@@ -164,6 +169,7 @@ def get_history():
 
 
 @alert_bp.route("/stats", methods=["GET"])
+@admin_required
 def get_stats():
     """获取预警统计"""
     try:
@@ -175,6 +181,7 @@ def get_stats():
 
 
 @alert_bp.route("/unread-count", methods=["GET"])
+@admin_required
 def get_unread_count():
     """获取未读预警数量"""
     try:
@@ -186,6 +193,7 @@ def get_unread_count():
 
 
 @alert_bp.route("/<alert_id>/read", methods=["POST"])
+@admin_required
 def mark_read(alert_id: str):
     """标记预警已读"""
     try:

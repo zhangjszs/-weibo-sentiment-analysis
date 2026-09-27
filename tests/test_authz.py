@@ -235,3 +235,50 @@ def test_alert_rule_creation_allows_admin(alert_client_with_mock_user):
     assert response.status_code == 201
     payload = response.get_json()
     assert payload["msg"] == "预警规则创建成功"
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "payload"),
+    [
+        ("get", "/api/alert/rules", None),
+        ("get", "/api/alert/history", None),
+        ("get", "/api/alert/stats", None),
+        ("get", "/api/alert/unread-count", None),
+        ("post", "/api/alert/some-id/read", None),
+    ],
+)
+def test_alert_read_endpoints_block_non_admin(
+    alert_client_with_mock_user, method, path, payload
+):
+    """#9：预警读接口同样收紧为 admin（引擎无用户隔离，普通用户可读即越权）"""
+    request_func = getattr(alert_client_with_mock_user, method)
+    response = request_func(path, json=payload, headers={"X-Test-User": "user"})
+    assert response.status_code == 403
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("get", "/api/alert/rules"),
+        ("get", "/api/alert/history"),
+        ("get", "/api/alert/stats"),
+        ("get", "/api/alert/unread-count"),
+    ],
+)
+def test_alert_read_endpoints_allow_admin(
+    alert_client_with_mock_user, method, path
+):
+    """管理员可正常读取预警数据"""
+    request_func = getattr(alert_client_with_mock_user, method)
+    response = request_func(path, headers={"X-Test-User": "admin"})
+    assert response.status_code == 200
+
+
+def test_quick_crawl_blocks_non_admin(spider_client_with_mock_user):
+    """#9：quick-crawl 与 /crawl 一致，仅 admin 可触发"""
+    response = spider_client_with_mock_user.post(
+        "/api/spider/quick-crawl",
+        json={"type": "hot", "pageNum": 1},
+        headers={"X-Test-User": "user"},
+    )
+    assert response.status_code == 403

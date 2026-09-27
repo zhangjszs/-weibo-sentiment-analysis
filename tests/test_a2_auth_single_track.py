@@ -125,6 +125,10 @@ class TestApiJwtRequiredRegardlessOfOrigin:
 
         # 避免真实提交爬虫任务污染全局 _spider_state（会导致后续测试 409）
         import views.api.spider_api as spider_api
+        import utils.authz as _authz
+
+        # quick-crawl 仅 admin 可用：测试账号提权以便聚焦 Origin 校验层
+        monkeypatch.setattr(_authz.Config, "ADMIN_USERS", {"tester"})
 
         monkeypatch.setattr(
             spider_api,
@@ -156,6 +160,10 @@ class TestApiJwtRequiredRegardlessOfOrigin:
         from tests.conftest import set_auth_cookie
 
         import views.api.spider_api as spider_api
+        import utils.authz as _authz
+
+        # quick-crawl 仅 admin 可用：测试账号提权以便聚焦 Origin 校验层
+        monkeypatch.setattr(_authz.Config, "ADMIN_USERS", {"tester"})
 
         monkeypatch.setattr(
             spider_api,

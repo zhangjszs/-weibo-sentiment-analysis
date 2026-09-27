@@ -343,9 +343,11 @@ def spider_crawl():
 
 
 @spider_bp.route("/quick-crawl", methods=["POST"])
+@admin_required
 def spider_quick_crawl():
     """
-    快速爬取接口（所有已登录用户可用）
+    快速爬取接口（仅管理员可用，与 /crawl 一致）。
+    触发爬虫消耗服务端资源，未收紧前任意登录用户可调用，现已收敛为 admin。
     Body:
         type: 'hot' | 'search' | 'comments'
         keyword: 搜索关键词（type=search 时必填）
