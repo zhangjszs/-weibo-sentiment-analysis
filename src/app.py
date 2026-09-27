@@ -489,13 +489,14 @@ def create_app() -> Flask:
         if request.path.startswith("/static"):
             return None
         # A2 JWT 单轨：白名单直通，其余均需 JWT（/page/* 仅保留登录/注册页直出，其余 401）
+        # 注意：/user/info 必须经过 JWT 鉴权，不得加入白名单；
+        # /getAllData/* 旧别名同样先鉴权再 307，保证与 /api/* 行为一致。
         public_endpoints = [
             "/",
             "/health",
             "/ready",
             "/user/login",
             "/user/register",
-            "/user/info",
         ]
         if request.path in public_endpoints:
             return None
@@ -512,11 +513,10 @@ def create_app() -> Flask:
             if request.path == "/api/session/check":
                 _attach_current_user_from_token()
             return None
-        # A1: /getAllData/* 已收敛至 /api/*，旧前缀仅作 307 重定向别名，本身不鉴权
-        # 真实鉴权由重定向目标 /api/* 承担，保证“鉴权行为一致”
-        if request.path.startswith("/getAllData"):
-            return None
-        # JWT 单轨：其余所有路径（含 /page/*、/api/*、/user/* 等）均需 JWT
+        # A1: /getAllData/* 已收敛至 /api/*，旧前缀为 307 重定向别名。
+        # 安全起见别名本身同样要求 JWT（先鉴权再重定向），避免不跟随跳转的客户端裸奔。
+        # 鉴权失败一律 401；通过后再由别名视图 307 到 /api/*（目标处会再次鉴权，结果一致）。
+        # JWT 单轨：其余所有路径（含 /page/*、/api/*、/user/*、/getAllData/* 等）均需 JWT
         # 保留 SameSite+Origin 双层防护，但收敛调用点：先做 JWT，再做 Origin
         # 这样未认证时一律 401（不受 Origin 影响），已认证跨站再 403
         auth_result = _require_jwt_auth()

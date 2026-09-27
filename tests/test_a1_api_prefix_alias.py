@@ -3,8 +3,8 @@
 A1 API 前缀收敛测试：/getAllData → /api 别名过渡
 验收：
 - 新前缀 /api/* 可用（需 JWT）
-- 旧前缀 /getAllData/* 307 重定向到 /api/*（保留查询串，307 保持方法）
-- 鉴权行为一致：新旧路径均需 JWT（旧路径重定向本身不鉴权，重定向目标鉴权）
+- 旧前缀 /getAllData/* 先鉴权再 307 重定向到 /api/*（保留查询串，307 保持方法）
+- 鉴权行为一致：新旧路径均需 JWT（未带 token 均 401）
 - grep -r "Blueprint.*getAllData" src 仅剩别名一处（手动检查）
 """
 
@@ -71,11 +71,12 @@ class TestApiPrefixAlias:
         assert "data" in payload
 
     def test_legacy_path_returns_307_without_auth(self, client):
-        """未认证访问旧前缀应 307 重定向到新前缀（不直接 401）"""
+        """未认证访问旧前缀应 401（先鉴权再重定向，与 /api/* 一致）"""
         resp = client.get("/getAllData/getHomeData", follow_redirects=False)
-        assert resp.status_code == 307
-        loc = resp.headers.get("Location", "")
-        assert "/api/getHomeData" in loc
+        assert resp.status_code == 401
+        data = resp.get_json()
+        assert data is not None
+        assert data.get("code") == 401
 
     def test_legacy_path_returns_307_with_auth(self, authed_client):
         """认证访问旧前缀也应 307"""
