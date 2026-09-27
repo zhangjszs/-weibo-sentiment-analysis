@@ -178,10 +178,8 @@ class ConfigValidator:
         if key in cls.SENSITIVE_CONFIGS:
             if not value:
                 return "[未设置]"
-            elif len(value) <= 8:
-                return "***"
-            else:
-                return f"{value[:4]}...{value[-4:]}"
+            # 敏感值仅展示长度掩码，不泄露前后字符
+            return f"[已设置 len={len(value)}]"
         return value or "[未设置]"
 
     @classmethod

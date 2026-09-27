@@ -58,6 +58,8 @@ class Config:
     )
     ADMIN_USERS = set(_parse_csv_env("ADMIN_USERS"))
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or SECRET_KEY
+    # 是否显式配置了 JWT_SECRET_KEY（用于生产环境密钥隔离校验）
+    JWT_SECRET_KEY_EXPLICIT = bool(os.getenv("JWT_SECRET_KEY"))
     JWT_EXPIRATION_HOURS = int(os.getenv("JWT_EXPIRATION_HOURS", 24))
     AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "weibo_access_token")
 
@@ -189,8 +191,10 @@ class Config:
     REPORT_TEMP_CLEANUP_HOURS = int(os.getenv("REPORT_TEMP_CLEANUP_HOURS", "1"))
 
     # Demo / Bootstrap
+    # 注意：DEMO_ADMIN_PASSWORD 默认留空，避免误开 AUTO_CREATE_DEMO_ADMIN 时落入弱口令后门；
+    # 需要演示账号时请显式配置足够强度的密码。
     DEMO_ADMIN_USERNAME = os.getenv("DEMO_ADMIN_USERNAME", "admin")
-    DEMO_ADMIN_PASSWORD = os.getenv("DEMO_ADMIN_PASSWORD", "Admin123!")
+    DEMO_ADMIN_PASSWORD = os.getenv("DEMO_ADMIN_PASSWORD", "")
     AUTO_CREATE_DEMO_ADMIN = _parse_bool_env(
         "AUTO_CREATE_DEMO_ADMIN", default=False
     )
@@ -207,9 +211,14 @@ class Config:
         if cls.FLASK_ENV == "production":
             if not cls.SECRET_KEY:
                 raise RuntimeError("SECRET_KEY must be set in production")
-            if not cls.JWT_SECRET_KEY:
+            if not cls.JWT_SECRET_KEY_EXPLICIT or not cls.JWT_SECRET_KEY:
                 raise RuntimeError(
-                    "JWT_SECRET_KEY must be set in production (or reuse SECRET_KEY)"
+                    "JWT_SECRET_KEY must be set in production (key isolation: "
+                    "it must differ from SECRET_KEY)"
+                )
+            if cls.JWT_SECRET_KEY == cls.SECRET_KEY:
+                raise RuntimeError(
+                    "JWT_SECRET_KEY must differ from SECRET_KEY in production"
                 )
             if not cls.ALLOWED_ORIGINS:
                 raise RuntimeError("ALLOWED_ORIGINS must be set in production")

@@ -612,11 +612,11 @@ def getAllCommentsData():
 
 @cache_result(timeout=600)  # 缓存10分钟
 def getAllUserData():
-    """获取所有用户数据"""
+    """获取所有用户数据（已脱敏：不含 password 哈希列）"""
     try:
         users = _user_repo().get_all_for_export()
         return [
-            [u["id"], u["username"], u["password"], u["create_time"],
+            [u["id"], u["username"], u["create_time"],
              u["nickname"], u["email"], u["bio"], u["avatar_color"]]
             for u in users
         ]

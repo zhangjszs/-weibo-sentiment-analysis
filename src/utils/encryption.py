@@ -14,50 +14,55 @@ from cryptography.fernet import Fernet, InvalidToken
 
 def _get_key():
     """
-    从环境变量或 SECRET_KEY 生成加密密钥。
+    从 SECRET_KEY 生成加密密钥。
     Fernet 要求 32 bytes base64 编码的密钥。
+    无可用密钥时抛异常（禁止回退到硬编码默认密钥，避免加密旁路）。
     """
     try:
         from config.settings import Config
 
         secret = Config.SECRET_KEY
     except Exception:
-        secret = os.environ.get("SECRET_KEY", "default-fallback-key")
+        secret = os.environ.get("SECRET_KEY")
+
+    if not secret:
+        raise RuntimeError("加密密钥不可用：SECRET_KEY 未设置")
 
     # Derive a 32-byte key from SECRET_KEY using SHA-256
     key_bytes = hashlib.sha256(secret.encode("utf-8")).digest()
     return base64.urlsafe_b64encode(key_bytes)
 
 
-_fernet = None
+_fernet_cache: dict[bytes, Fernet] = {}
 
 
 def _get_fernet():
-    global _fernet
-    if _fernet is None:
-        _fernet = Fernet(_get_key())
-    return _fernet
+    """按派生密钥缓存 Fernet 实例，密钥轮换时自动使用新实例。"""
+    key = _get_key()
+    fernet = _fernet_cache.get(key)
+    if fernet is None:
+        fernet = Fernet(key)
+        _fernet_cache[key] = fernet
+    return fernet
 
 
 def encrypt_value(plaintext):
     """
     加密明文字符串，返回 base64 编码的密文字符串。
     如果输入为空，返回空字符串。
+    加密失败时抛异常（禁止静默返回明文，避免加密旁路）。
     """
     if not plaintext:
         return ""
-    try:
-        f = _get_fernet()
-        token = f.encrypt(plaintext.encode("utf-8"))
-        return token.decode("utf-8")
-    except Exception:
-        return plaintext  # 加密失败时返回原文，不影响业务
+    f = _get_fernet()
+    token = f.encrypt(plaintext.encode("utf-8"))
+    return token.decode("utf-8")
 
 
 def decrypt_value(ciphertext):
     """
     解密密文字符串，返回明文。
-    如果解密失败（如数据未加密），返回原文。
+    解密失败时抛 ValueError（禁止静默返回原文，避免加密旁路）。
     """
     if not ciphertext:
         return ""
@@ -65,8 +70,8 @@ def decrypt_value(ciphertext):
         f = _get_fernet()
         plaintext = f.decrypt(ciphertext.encode("utf-8"))
         return plaintext.decode("utf-8")
-    except (InvalidToken, Exception):
-        return ciphertext  # 解密失败返回原文（兼容未加密数据）
+    except InvalidToken as exc:
+        raise ValueError("解密失败：密文无效或密钥不匹配") from exc
 
 
 def is_encrypted(value):

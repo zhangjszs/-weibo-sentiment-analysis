@@ -72,5 +72,5 @@ class AuthService:
             logger.info(f"User registration success: {username}")
             return True, "注册成功"
         except Exception as e:
-            logger.error(f"Registration failed for {username}: {str(e)}")
-            return False, f"注册失败: {str(e)}"
+            logger.error(f"Registration failed for {username}: {type(e).__name__}")
+            return False, "注册失败，请稍后重试"

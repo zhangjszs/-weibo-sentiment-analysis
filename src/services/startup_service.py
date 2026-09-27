@@ -126,6 +126,11 @@ def ensure_demo_admin() -> dict[str, Any]:
         _set_admin_bootstrap_state(result)
         return result
 
+    if password in {"Admin123!", "admin", "password", "123456"}:
+        logger.warning(
+            "演示管理员账号使用了弱口令，请通过 DEMO_ADMIN_PASSWORD 配置强密码"
+        )
+
     try:
         Config.ADMIN_USERS.add(username)
         user_rows = querys(
