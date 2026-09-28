@@ -149,9 +149,9 @@ class ConfigValidator:
             messages.append("❌ SPIDER_TIMEOUT 不是有效数字")
             is_valid = False
 
-        # 验证爬虫延迟
+        # 验证爬虫延迟（与 settings 一致：float，允许 1.5 这样的小数）
         try:
-            delay = int(os.getenv("SPIDER_DELAY", "15"))
+            delay = float(os.getenv("SPIDER_DELAY", "15"))
             if delay < 5:
                 messages.append("⚠️  SPIDER_DELAY 过小，可能触发反爬机制")
         except ValueError:

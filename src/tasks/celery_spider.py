@@ -127,7 +127,10 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
     task_id = self.request.id
     page_num = max(1, min(int(page_num), 10))
 
-    cookie = os.getenv("WEIBO_COOKIE", "")
+    # 统一走 Config（与应用其余部分一致，便于 mock/测试），延迟导入避免循环依赖
+    from config.settings import Config
+
+    cookie = Config.WEIBO_COOKIE or ""
     if not cookie:
         return {"status": "failed", "task_id": task_id, "error": "WEIBO_COOKIE未配置"}
 
