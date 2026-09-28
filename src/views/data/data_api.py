@@ -223,7 +223,7 @@ def _build_yuqing_sentiment_and_trend(comments):
     comment_texts = [
         str(c[1]) for c in comments if len(c) > 1 and c[1]
     ]
-    results = SentimentService.analyze_batch(comment_texts, mode="simple")
+    results = SentimentService.analyze_batch_cached(comment_texts, mode="simple")
     sentiment_list = []
     trend_counts = defaultdict(lambda: {"positive": 0, "neutral": 0, "negative": 0})
 
@@ -495,7 +495,7 @@ def _compute_comment_sentiment(time_distribution):
         from services.sentiment_service import SentimentService
 
         comment_texts = _get_recent_comment_texts()
-        return SentimentService.analyze_distribution(
+        return SentimentService.analyze_distribution_cached(
             comment_texts, mode="simple", sample_size=100,
         )
     except (ImportError, ConnectionError, OSError) as e:

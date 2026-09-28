@@ -63,6 +63,13 @@ def _repost_repo() -> RepostRepository:
     return RepostRepository()
 
 
+# 传播数据短 TTL 缓存（#14）：同文章 60s 内复用，避免 compare 等接口串行建图时重复全量查询。
+# 注意：缓存值为 (reposts, source, demo) 元组，调用方只读不改。
+_REPOSTS_CACHE: dict[tuple, tuple[float, tuple]] = {}
+_REPOSTS_CACHE_TTL = 60.0
+_REPOSTS_CACHE_MAX = 128
+
+
 def _load_reposts(article_id: str, count: int, demo_mode: bool):
     """加载传播数据：默认只返回真实数据，演示模式需显式开启。"""
     global _REPOSTS_TABLE_MISSING
@@ -73,6 +80,13 @@ def _load_reposts(article_id: str, count: int, demo_mode: bool):
     if _REPOSTS_TABLE_MISSING:
         return [], "reposts_table_missing", False
 
+    import time as _time
+
+    cache_key = (article_id, count)
+    entry = _REPOSTS_CACHE.get(cache_key)
+    if entry is not None and _time.time() < entry[0]:
+        return entry[1]
+
     try:
         rows = _repost_repo().find_with_users(article_id, limit=max(1, min(count, 500)))
 
@@ -80,7 +94,11 @@ def _load_reposts(article_id: str, count: int, demo_mode: bool):
             logger.info("传播数据未查询到真实内容")
             return [], "reposts_empty", False
 
-        return _normalize_reposts(rows), "reposts_table", False
+        result = (_normalize_reposts(rows), "reposts_table", False)
+        while len(_REPOSTS_CACHE) >= _REPOSTS_CACHE_MAX:
+            _REPOSTS_CACHE.pop(next(iter(_REPOSTS_CACHE)))
+        _REPOSTS_CACHE[cache_key] = (_time.time() + _REPOSTS_CACHE_TTL, result)
+        return result
     except Exception as exc:
         error_text = str(exc)
         if "doesn't exist" in error_text and "reposts" in error_text:

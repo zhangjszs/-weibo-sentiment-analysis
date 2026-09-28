@@ -37,8 +37,13 @@ def getTypeList():
     try:
         return _article_repo().get_distinct_types()
     except Exception as e:
-        logger.warning(f"获取文章类型列表失败，降级到全量读取: {e}")
-        return list({x[8] for x in getAllData()})
+        logger.warning(f"获取文章类型列表失败，降级到有界读取: {e}")
+        try:
+            rows, _ = _article_repo().find_with_filter(limit=1000, offset=0)
+            return sorted({str(r.get("type", "")) for r in rows if r.get("type")})
+        except Exception as e2:
+            logger.warning(f"有界回退仍失败，返回空类型列表: {e2}")
+            return []
 
 
 def _build_bucket_labels(range_num: int, bucket_count: int):
@@ -255,10 +260,10 @@ def getYuQingCharDataTwo():
     comment_texts = _comment_repo().get_recent_texts(limit=200)
     article_texts = _article_repo().get_recent_texts(limit=200)
 
-    comment_counts = SentimentService.analyze_distribution(
+    comment_counts = SentimentService.analyze_distribution_cached(
         comment_texts, mode="simple", sample_size=200
     )
-    article_counts = SentimentService.analyze_distribution(
+    article_counts = SentimentService.analyze_distribution_cached(
         article_texts, mode="simple", sample_size=200
     )
 

@@ -20,6 +20,47 @@ from .strategies import SnowNLPStrategy, LLMStrategy, CustomModelStrategy
 logger = logging.getLogger(__name__)
 
 
+# 进程内短 TTL 备忘（#14）：无 Redis 的默认本地环境同样一次计算多处复用。
+# key 为文本摘要哈希，有界 64 项、TTL 300s，避免内存无界增长。
+_LOCAL_MEMO: dict[tuple, tuple[float, object]] = {}
+_LOCAL_MEMO_MAX = 64
+_LOCAL_MEMO_TTL = 300.0
+
+
+def _memo_key(kind: str, texts: list | None, mode: str, sample_size: int) -> tuple:
+    digest = hashlib.sha256()
+    digest.update(f"{kind}|{mode}|{sample_size}|".encode())
+    for text in (texts or [])[:200]:
+        digest.update(str(text)[:200].encode(errors="ignore"))
+        digest.update(b"\0")
+    return (kind, digest.hexdigest())
+
+
+def _memo_get(key: tuple):
+    import time
+
+    entry = _LOCAL_MEMO.get(key)
+    if entry is None:
+        return None, False
+    expires, value = entry
+    if time.time() > expires:
+        _LOCAL_MEMO.pop(key, None)
+        return None, False
+    return value, True
+
+
+def _memo_set(key: tuple, value: object) -> None:
+    import time
+
+    while len(_LOCAL_MEMO) >= _LOCAL_MEMO_MAX:
+        _LOCAL_MEMO.pop(next(iter(_LOCAL_MEMO)))
+    _LOCAL_MEMO[key] = (time.time() + _LOCAL_MEMO_TTL, value)
+
+
+def _memo_clear() -> None:
+    _LOCAL_MEMO.clear()
+
+
 class SentimentService:
     """情感分析服务工厂"""
 
@@ -214,6 +255,30 @@ class SentimentService:
                 logger.warning(f"情感分布缓存写入失败: {e}")
 
         return sentiment_counts
+
+    @staticmethod
+    def analyze_batch_cached(texts: list, mode: str = "smart") -> list:
+        """analyze_batch 的进程内备忘版本（同输入 300s 内只计算一次）。"""
+        key = _memo_key("batch", texts, mode, len(texts or []))
+        cached, hit = _memo_get(key)
+        if hit:
+            return cached
+        results = SentimentService.analyze_batch(texts, mode)
+        _memo_set(key, results)
+        return results
+
+    @staticmethod
+    def analyze_distribution_cached(
+        texts: list, mode: str = "simple", sample_size: int = 100
+    ) -> dict:
+        """analyze_distribution 的进程内备忘版本（同输入 300s 内只计算一次）。"""
+        key = _memo_key("distribution", texts, mode, sample_size)
+        cached, hit = _memo_get(key)
+        if hit:
+            return cached
+        counts = SentimentService.analyze_distribution(texts, mode, sample_size)
+        _memo_set(key, counts)
+        return counts
 
     @staticmethod
     def get_cache_stats() -> dict:

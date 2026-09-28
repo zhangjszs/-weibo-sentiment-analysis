@@ -39,6 +39,12 @@ class LRUCache:
         return time.time() > self.expire_times[key]
 
     def _evict_expired(self):
+        # 摊销：每 64 次操作才全量扫描一次（逐 key 过期在 get/set 内已单独判断）。
+        # 高频 get 不再每次 O(n) 扫描。
+        self._ops_since_sweep = getattr(self, "_ops_since_sweep", 0) + 1
+        if self._ops_since_sweep < 64 and len(self.cache) <= self.max_size:
+            return
+        self._ops_since_sweep = 0
         current_time = time.time()
         expired_keys = [
             key

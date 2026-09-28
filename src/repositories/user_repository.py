@@ -52,9 +52,9 @@ class UserRepository(BaseRepository):
             self.session.rollback()
             return False
 
-    def get_all_for_export(self) -> List[Dict[str, Any]]:
-        """导出所有用户（兼容旧 querys('select * from user')）"""
-        rows = self.session.query(User).all()
+    def get_all_for_export(self, limit: int = 10000) -> List[Dict[str, Any]]:
+        """导出用户（SQL 侧 LIMIT，避免全量 .all() OOM）"""
+        rows = self.session.query(User).limit(max(1, min(limit, 10000))).all()
         return [self._user_to_dict(u) for u in rows]
 
     @staticmethod

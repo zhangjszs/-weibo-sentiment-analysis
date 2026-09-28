@@ -19,8 +19,13 @@ logger = logging.getLogger(__name__)
 class RateLimiter:
     """滑动窗口限流器"""
 
+    # 空闲键驱逐：key 数量超阈值时采样清扫，避免 requests 字典只增不减
+    _MAX_KEYS = 10000
+    _IDLE_SECONDS = 3600
+
     def __init__(self):
         self.requests: Dict[str, list] = defaultdict(list)
+        self._last_seen: Dict[str, float] = {}
         self.lock = threading.Lock()
 
     def _clean_old_requests(self, key: str, window_seconds: int):
@@ -28,6 +33,21 @@ class RateLimiter:
         now = time.time()
         cutoff = now - window_seconds
         self.requests[key] = [t for t in self.requests[key] if t > cutoff]
+        self._last_seen[key] = now
+        if len(self.requests) > self._MAX_KEYS:
+            self._evict_idle_keys(now)
+
+    def _evict_idle_keys(self, now: float) -> int:
+        """驱逐超过 _IDLE_SECONDS 未访问的 key（调用方需持有锁）。"""
+        idle = [
+            key
+            for key, seen in self._last_seen.items()
+            if now - seen > self._IDLE_SECONDS
+        ]
+        for key in idle:
+            self.requests.pop(key, None)
+            self._last_seen.pop(key, None)
+        return len(idle)
 
     def is_allowed(self, key: str, max_requests: int, window_seconds: int) -> tuple:
         """
@@ -69,6 +89,9 @@ class RateLimiter:
 class TokenBucket:
     """令牌桶限流器"""
 
+    _MAX_KEYS = 10000
+    _IDLE_SECONDS = 3600
+
     def __init__(self, rate: float = 10, capacity: int = 100):
         """
         Args:
@@ -83,6 +106,13 @@ class TokenBucket:
     def _init_bucket(self, key: str):
         """初始化令牌桶"""
         if key not in self.tokens:
+            if len(self.tokens) >= self._MAX_KEYS:
+                now = time.time()
+                for other in list(self.tokens.keys()):
+                    if now - self.tokens[other].get("last_update", 0) > self._IDLE_SECONDS:
+                        del self.tokens[other]
+                    if len(self.tokens) < self._MAX_KEYS:
+                        break
             self.tokens[key] = {"tokens": self.capacity, "last_update": time.time()}
 
     def consume(self, key: str, tokens: int = 1) -> bool:

@@ -102,18 +102,20 @@ class CommentRepository(BaseRepository):
         ]
 
     def count_by_date_range(self) -> List[Dict[str, Any]]:
-        """按日期分组统计"""
+        """按日期分组统计（created_at 为文本：按前 10 位截断分组，避免按秒 GROUP BY）"""
+        day = func.substr(Comment.created_at, 1, 10).label("day")
         rows = (
-            self.session.query(Comment.created_at, func.count(Comment.comment_id).label("count"))
-            .group_by(Comment.created_at)
-            .order_by(Comment.created_at.desc())
+            self.session.query(day, func.count(Comment.comment_id).label("count"))
+            .filter(Comment.created_at.isnot(None))
+            .group_by(day)
+            .order_by(day.desc())
             .all()
         )
-        return [{"created_at": str(r.created_at), "count": r.count} for r in rows]
+        return [{"created_at": str(r.day), "count": r.count} for r in rows]
 
-    def get_all_for_export(self) -> List[Dict[str, Any]]:
-        """导出所有评论（兼容旧 querys('select * from comments')）"""
-        rows = self.session.query(Comment).all()
+    def get_all_for_export(self, limit: int = 1000) -> List[Dict[str, Any]]:
+        """导出评论（SQL 侧 LIMIT，默认 1000，避免全量 .all() OOM）"""
+        rows = self.session.query(Comment).limit(max(1, min(limit, 10000))).all()
         return [
             {
                 "comment_id": c.comment_id,
@@ -259,24 +261,24 @@ class CommentRepository(BaseRepository):
 
     # === data_api 专用 ===
 
-    def get_hour_distribution(self) -> Dict[str, List[Any]]:
-        """评论小时分布（0-23点）"""
+    def get_hour_distribution(self, limit: int = 5000) -> Dict[str, List[Any]]:
+        """评论小时分布（0-23点，Python 侧分桶：跨方言，不用 func.hour MySQL 方言）"""
         rows = (
-            self.session.query(
-                func.hour(Comment.created_at).label("hour_bucket"),
-                func.count(Comment.comment_id).label("count")
-            )
+            self.session.query(Comment.created_at)
             .filter(Comment.created_at.isnot(None))
-            .group_by(func.hour(Comment.created_at))
-            .order_by(func.hour(Comment.created_at))
+            .order_by(Comment.created_at.desc())
+            .limit(max(1, min(limit, 20000)))
             .all()
         )
         hours = [f"{h}:00" for h in range(24)]
         counts = [0] * 24
-        for r in rows:
-            hour = r.hour_bucket
-            if hour is not None and 0 <= hour < 24:
-                counts[hour] = r.count
+        for (created_at,) in rows:
+            try:
+                hour = int(str(created_at).split(" ")[1].split(":")[0])
+            except (IndexError, ValueError, AttributeError):
+                continue
+            if 0 <= hour < 24:
+                counts[hour] += 1
         return {"hours": hours, "counts": counts}
 
     def get_top_active_users(self, limit: int = 10) -> Dict[str, List[Any]]:

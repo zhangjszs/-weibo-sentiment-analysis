@@ -128,14 +128,15 @@ class ArticleRepository(BaseRepository):
         return row[0] if row else None
 
     def count_by_date_range(self) -> List[Dict[str, Any]]:
-        """按日期分组统计（用于趋势图）"""
+        """按日期分组统计（用于趋势图，按 DATE 截断分组，避免按秒 GROUP BY）"""
+        day = func.date(Article.created_at).label("day")
         rows = (
-            self.session.query(Article.created_at, func.count(Article.id).label("count"))
-            .group_by(Article.created_at)
-            .order_by(Article.created_at.desc())
+            self.session.query(day, func.count(Article.id).label("count"))
+            .group_by(day)
+            .order_by(day.desc())
             .all()
         )
-        return [{"created_at": str(r.created_at), "count": r.count} for r in rows]
+        return [{"created_at": str(r.day), "count": r.count} for r in rows]
 
     def get_distinct_types(self) -> List[str]:
         """获取所有文章类型"""

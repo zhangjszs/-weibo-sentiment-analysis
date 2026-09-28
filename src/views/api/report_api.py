@@ -226,7 +226,7 @@ def _build_report_data(demo_mode: bool = False):
         try:
             from services.sentiment_service import SentimentService
 
-            sentiment_counts = SentimentService.analyze_distribution(
+            sentiment_counts = SentimentService.analyze_distribution_cached(
                 _comment_repo().get_recent_texts(limit=200),
                 mode="simple",
                 sample_size=200,

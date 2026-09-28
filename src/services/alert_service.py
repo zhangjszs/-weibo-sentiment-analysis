@@ -327,6 +327,7 @@ class AlertRuleEngine:
 
             db_session.add(rule)
             db_session.commit()
+            self._invalidate_rules_cache()
             logger.info(f"添加预警规则: {rule.name} (优先级: {rule.priority})")
             return True, "规则添加成功"
         except Exception as e:
@@ -347,6 +348,7 @@ class AlertRuleEngine:
                 return False
             db_session.delete(rule)
             db_session.commit()
+            self._invalidate_rules_cache()
             self.suppression.reset(rule_id)
             logger.info(f"移除预警规则: {rule_id}")
             return True
@@ -379,6 +381,7 @@ class AlertRuleEngine:
                 return False, "; ".join(errors)
 
             db_session.commit()
+            self._invalidate_rules_cache()
             logger.info(f"更新预警规则: {rule_id}")
             return True, "规则更新成功"
         except Exception as e:
@@ -757,17 +760,35 @@ class AlertRuleEngine:
             logger.error(f"获取规则失败: {e}")
             return None
 
+    # 规则读缓存（#14）：API 读路径 15s 复用，写操作即时失效。
+    # check_alerts 评估路径仍直读 DB（保正确性，不在此缓存）。
+    _RULES_CACHE_TTL = 15.0
+
+    def _invalidate_rules_cache(self) -> None:
+        self.__dict__.pop("_rules_cache", None)
+
     def get_rules(self) -> List[Dict]:
-        """获取所有规则（从 DB 加载，按优先级降序）"""
+        """获取所有规则（从 DB 加载，按优先级降序，15s 缓存）"""
         self._ensure_defaults_seeded()
+        cached = self.__dict__.get("_rules_cache")
+        if cached is not None:
+            expires, rules = cached
+            import time as _time
+
+            if _time.time() < expires:
+                return rules
         try:
             from database import db_session
 
+            import time as _time
+
             rules = db_session.query(AlertRule).all()
-            return [
+            result = [
                 r.to_dict()
                 for r in sorted(rules, key=lambda r: r.priority, reverse=True)
             ]
+            self.__dict__["_rules_cache"] = (_time.time() + self._RULES_CACHE_TTL, result)
+            return result
         except Exception as e:
             logger.error(f"加载规则失败: {e}")
             return []
