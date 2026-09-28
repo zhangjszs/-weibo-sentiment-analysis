@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from utils.data_provenance import (
     AnalysisMeta,
     demo_meta,

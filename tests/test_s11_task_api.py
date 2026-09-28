@@ -3,11 +3,19 @@
 import sys
 from unittest.mock import MagicMock, patch
 
-# Mock celery 依赖，使测试环境无需安装 celery
-celery_mock = MagicMock()
-celery_mock.current_task = MagicMock()
-sys.modules.setdefault("celery", celery_mock)
-sys.modules.setdefault("celery.result", MagicMock())
+import pytest
+
+pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _mock_celery_modules(monkeypatch):
+    """用 monkeypatch 隔离 celery mock（替代模块级 sys.modules.setdefault，
+    后者在同一 worker 内污染后续采集到的其他测试文件）。"""
+    celery_mock = MagicMock()
+    celery_mock.current_task = MagicMock()
+    monkeypatch.setitem(sys.modules, "celery", celery_mock)
+    monkeypatch.setitem(sys.modules, "celery.result", MagicMock())
 
 
 def _make_mock_result(state, info=None, result=None):

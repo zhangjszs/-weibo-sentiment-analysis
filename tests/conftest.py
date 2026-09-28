@@ -58,6 +58,30 @@ def apply_sandbox_temp_dir() -> None:
     configure_sandbox_temp_dir()
 
 
+@pytest.fixture(autouse=True)
+def _reset_spider_state():
+    """每个测试后重置爬虫全局运行态（#22 测试隔离）。
+
+    某些测试（如空 body 受控性测试）会以 admin 身份真实触发爬虫任务，
+    使 ``_spider_state["running"]`` 置 True；若不清理，后续文件中的
+    quick-crawl/crawl 提交测试会因 409 而误失败（顺序相关）。
+    只在 teardown 重置，不影响单个测试内部的启动→查状态流程。
+    """
+    yield
+    try:
+        from views.api import spider_api
+
+        # 必须连 current_task_id 一起清：否则下个请求入口的
+        # _refresh_task_state() 会凭残留 task_id 查回 PENDING 并把
+        # running 重新置 True（跨文件 409 污染的真正链路）。
+        spider_api._spider_state["running"] = False
+        spider_api._clear_current_task()
+        spider_api._spider_state["progress"] = 0
+        spider_api._spider_state["message"] = ""
+    except Exception:
+        pass
+
+
 @pytest.fixture
 def app(monkeypatch):
     """Flask应用fixture — 使用 SQLite 内存数据库。"""

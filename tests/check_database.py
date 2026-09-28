@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
+"""手动数据库巡检脚本（不参与 pytest 采集）。连接信息全部走环境变量。"""
 
+import os
 
 import pandas as pd
 from sqlalchemy import create_engine
 
 
+def _database_url() -> str:
+    user = os.getenv("DB_USER", "root")
+    password = os.getenv("DB_PASSWORD", "root")
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "3306")
+    name = os.getenv("DB_NAME", "weibo_analysis")
+    return f"mysql+pymysql://{user}:{password}@{host}:{port}/{name}?charset=utf8mb4"
+
+
 def check_database():
     """检查数据库中的数据"""
     # 配置数据库连接
-    engine = create_engine("mysql+pymysql://root:123456@127.0.0.1/wb?charset=utf8mb4")
+    engine = create_engine(_database_url())
 
     try:
         # 查询文章表

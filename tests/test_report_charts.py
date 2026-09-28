@@ -8,6 +8,8 @@ import tempfile
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from utils.report_generator import PDFReportGenerator, PPTReportGenerator, ReportConfig
 
 

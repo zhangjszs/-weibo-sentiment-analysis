@@ -10,6 +10,8 @@ from datetime import datetime, timezone
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from services.report_contracts import ReportMeta, build_report_meta
 
 

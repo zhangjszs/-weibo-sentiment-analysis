@@ -1,19 +1,25 @@
 #!/usr/bin/env python3
 """
-情感分析性能测试脚本
-测试响应时间、吞吐量和缓存命中率
+情感分析性能测试脚本（手动运行，不参与 pytest 采集）。
+测试响应时间、吞吐量和缓存命中率。
+
+文件名以 benchmark_ 开头：pytest.ini 的 python_files 只收 test_*.py，
+因此本文件永远不会被 pytest 采集，请用以下方式手动运行：
+
+    python tests/benchmark_sentiment.py
 """
 
-import pytest
+import os
+import sys
 
-pytestmark = pytest.mark.slow
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import time
 import statistics
 from concurrent.futures import ThreadPoolExecutor
 import logging
 
-from src.services.sentiment_service import SentimentService
+from services.sentiment_service import SentimentService
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')

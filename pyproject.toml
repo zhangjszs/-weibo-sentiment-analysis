@@ -47,31 +47,9 @@ known_first_party = ["config", "model", "spider", "utils", "views", "services", 
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
 
 # ===== pytest 测试配置 =====
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-python_files = ["test_*.py", "*_test.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-addopts = [
-    "-v",
-    "--tb=short",
-    "--strict-markers",
-]
-markers = [
-    "unit: 纯逻辑，无外部服务（默认门禁）",
-    "api: Flask client 测试，使用内存应用（默认门禁）",
-    "integration: 需要真实数据库（SQLite 或 MySQL）",
-    "external: 需要 Redis、微博 Cookie 或远程 NLP 服务",
-    "slow: 性能/压力测试（每条 >2s）",
-    "database: 涉及数据库层的测试",
-]
-# 不再一刀切忽略所有 DeprecationWarning，只忽略已知第三方 noise
-filterwarnings = [
-    "ignore::DeprecationWarning:celery.*",
-    "ignore::DeprecationWarning:pkg_resources.*",
-    "ignore::DeprecationWarning:google.*",
-    "ignore::PendingDeprecationWarning:celery.*",
-]
+# 注意：pytest 只读取 pytest.ini（仓库根目录），此处故意不保留
+# [tool.pytest.ini_options]，以 pytest.ini 为唯一真相来源（见 #22）。
+# 如需改标记/门禁语义，请改 pytest.ini 并同步 AGENTS.md。
 
 # ===== Coverage 覆盖率配置 =====
 [tool.coverage.run]

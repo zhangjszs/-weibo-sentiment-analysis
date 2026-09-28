@@ -32,6 +32,7 @@ def test_platform_data_does_not_silent_demo_fallback(authed_client, monkeypatch)
     assert payload["data"]["data"] == []
 
 
+@pytest.mark.api
 def test_platform_stats_use_loaded_data(authed_client, monkeypatch):
     import views.api.platform_api as platform_api
 
@@ -74,6 +75,7 @@ def test_platform_stats_use_loaded_data(authed_client, monkeypatch):
     assert payload["top_keywords"][0]["count"] == 2
 
 
+@pytest.mark.api
 def test_propagation_analyze_returns_404_without_real_data(authed_client, monkeypatch):
     import views.api.propagation_api as propagation_api
 
@@ -90,6 +92,7 @@ def test_propagation_analyze_returns_404_without_real_data(authed_client, monkey
     assert payload["code"] == 404
 
 
+@pytest.mark.api
 def test_get_article_data_uses_aggregated_type_query(authed_client, monkeypatch):
     import views.data.data_api as data_api
     import utils.getPublicData as public_data
@@ -110,15 +113,17 @@ def test_get_article_data_uses_aggregated_type_query(authed_client, monkeypatch)
         "getAllData",
         lambda: (_ for _ in ()).throw(AssertionError("should not full scan article table")),
     )
+    monkeypatch.setattr(data_api, "get_cached_data", lambda cache_key, timeout: None)
+    monkeypatch.setattr(
+        data_api, "set_cached_data", lambda cache_key, data, timeout: None
+    )
     monkeypatch.setattr(
         data_api,
-        "query_dataframe",
-        lambda sql, params=None: pd.DataFrame(
-            [{"type": "news", "count": 3}, {"type": "blog", "count": 1}]
-        ),
+        "_build_article_type_data",
+        lambda: [{"name": "news", "value": 3}, {"name": "blog", "value": 1}],
     )
 
-    response = authed_client.get("/getAllData/getArticleData")
+    response = authed_client.get("/api/getArticleData")
 
     assert response.status_code == 200
     payload = response.get_json()
@@ -128,6 +133,7 @@ def test_get_article_data_uses_aggregated_type_query(authed_client, monkeypatch)
     ]
 
 
+@pytest.mark.api
 def test_get_ip_data_does_not_invent_private_ips(authed_client, monkeypatch):
     import views.data.data_api as data_api
 
@@ -137,22 +143,25 @@ def test_get_ip_data_does_not_invent_private_ips(authed_client, monkeypatch):
         lambda: [{"name": "北京", "value": 3}],
     )
     monkeypatch.setattr(data_api.getEchartsData, "getGeoCharDataTwo", lambda: [])
+    monkeypatch.setattr(data_api, "get_cached_data", lambda cache_key, timeout: None)
+    monkeypatch.setattr(
+        data_api, "set_cached_data", lambda cache_key, data, timeout: None
+    )
     monkeypatch.setattr(
         data_api,
-        "query_dataframe",
-        lambda sql, params=None: pd.DataFrame(
-            [
-                {
-                    "authorName": "测试用户",
-                    "authorAddress": "北京",
-                    "count": 3,
-                    "last_time": "2026-03-20 10:00:00",
-                }
-            ]
-        ),
+        "_build_ip_list",
+        lambda: [
+            {
+                "ip": "",
+                "location": "北京",
+                "count": 3,
+                "lastTime": "2026-03-20 10:00:00",
+                "user": "测试用户",
+            }
+        ],
     )
 
-    response = authed_client.get("/getAllData/getIPData")
+    response = authed_client.get("/api/getIPData")
 
     assert response.status_code == 200
     ip_list = response.get_json()["data"]["ipList"]
@@ -160,6 +169,7 @@ def test_get_ip_data_does_not_invent_private_ips(authed_client, monkeypatch):
     assert ip_list[0]["location"] == "北京"
 
 
+@pytest.mark.api
 def test_get_yuqing_data_uses_real_batch_sentiment_results(authed_client, monkeypatch):
     import services.sentiment_service as sentiment_service
     import views.data.data_api as data_api
@@ -179,25 +189,16 @@ def test_get_yuqing_data_uses_real_batch_sentiment_results(authed_client, monkey
     )
     monkeypatch.setattr(
         data_api,
-        "query_dataframe",
-        lambda sql, params=None: pd.DataFrame(
-            [
-                {"created_at": "2026-03-20 10:00:00", "content": "很好"},
-                {"created_at": "2026-03-20 11:00:00", "content": "一般"},
-                {"created_at": "2026-03-19 09:00:00", "content": "很差"},
-            ]
-        )
-        if "FROM comments" in sql
-        else pd.DataFrame(),
+        "_get_recent_comments",
+        lambda limit=100: [
+            ("2026-03-20 10:00:00", "很好"),
+            ("2026-03-20 11:00:00", "一般"),
+            ("2026-03-19 09:00:00", "很差"),
+        ],
     )
     monkeypatch.setattr(
         sentiment_service.SentimentService,
-        "analyze_distribution",
-        lambda texts, mode="simple", sample_size=100: {"正面": 1, "中性": 1, "负面": 1},
-    )
-    monkeypatch.setattr(
-        sentiment_service.SentimentService,
-        "analyze_batch",
+        "analyze_batch_cached",
         lambda texts, mode="simple": [
             {"label": "positive", "score": 0.9},
             {"label": "neutral", "score": 0.5},
@@ -205,7 +206,7 @@ def test_get_yuqing_data_uses_real_batch_sentiment_results(authed_client, monkey
         ][: len(texts)],
     )
 
-    response = authed_client.get("/getAllData/getYuqingData")
+    response = authed_client.get("/api/getYuqingData")
 
     assert response.status_code == 200
     payload = response.get_json()["data"]
@@ -217,6 +218,7 @@ def test_get_yuqing_data_uses_real_batch_sentiment_results(authed_client, monkey
     assert payload["trend"]["negative"] == [1, 0]
 
 
+@pytest.mark.api
 def test_get_yuqing_data_does_not_full_scan_comments(authed_client, monkeypatch):
     import services.sentiment_service as sentiment_service
     import utils.getPublicData as public_data
@@ -238,20 +240,16 @@ def test_get_yuqing_data_does_not_full_scan_comments(authed_client, monkeypatch)
     monkeypatch.setattr(data_api.getEchartsData, "getYuQingCharDataThree", lambda: [[], []])
     monkeypatch.setattr(
         data_api,
-        "query_dataframe",
-        lambda sql, params=None: pd.DataFrame(
-            [
-                {"created_at": "2026-03-20 10:00:00", "content": "很好"},
-                {"created_at": "2026-03-20 11:00:00", "content": "一般"},
-                {"created_at": "2026-03-19 09:00:00", "content": "很差"},
-            ]
-        )
-        if "FROM comments" in sql
-        else pd.DataFrame(),
+        "_get_recent_comments",
+        lambda limit=100: [
+            ("2026-03-20 10:00:00", "很好"),
+            ("2026-03-20 11:00:00", "一般"),
+            ("2026-03-19 09:00:00", "很差"),
+        ],
     )
     monkeypatch.setattr(
         sentiment_service.SentimentService,
-        "analyze_batch",
+        "analyze_batch_cached",
         lambda texts, mode="simple": [
             {"label": "positive", "score": 0.9},
             {"label": "neutral", "score": 0.5},
@@ -259,7 +257,7 @@ def test_get_yuqing_data_does_not_full_scan_comments(authed_client, monkeypatch)
         ],
     )
 
-    response = authed_client.get("/getAllData/getYuqingData")
+    response = authed_client.get("/api/getYuqingData")
 
     assert response.status_code == 200
     payload = response.get_json()["data"]
@@ -267,6 +265,7 @@ def test_get_yuqing_data_does_not_full_scan_comments(authed_client, monkeypatch)
     assert payload["list"][2]["sentiment"] == "负面"
 
 
+@pytest.mark.api
 def test_get_comment_data_uses_query_aggregations(authed_client, monkeypatch):
     import services.sentiment_service as sentiment_service
     import utils.getPublicData as public_data
@@ -286,40 +285,48 @@ def test_get_comment_data_uses_query_aggregations(authed_client, monkeypatch):
         lambda: [{"name": "女", "value": 2}],
     )
 
-    def fake_query_dataframe(sql, params=None):
-        if "GROUP BY hour_bucket" in sql:
-            return pd.DataFrame([{"hour_bucket": 9, "count": 2}, {"hour_bucket": 13, "count": 1}])
-        if "GROUP BY authorName" in sql:
-            return pd.DataFrame([{"authorName": "用户A", "count": 5}, {"authorName": "用户B", "count": 3}])
-        if "ORDER BY like_counts DESC" in sql:
-            return pd.DataFrame(
-                [
-                    {
-                        "created_at": "2026-03-20 10:00:00",
-                        "like_counts": 12,
-                        "content": "评论一",
-                        "authorName": "用户A",
-                    },
-                    {
-                        "created_at": "2026-03-20 08:00:00",
-                        "like_counts": 8,
-                        "content": "评论二",
-                        "authorName": "用户B",
-                    },
-                ]
-            )
-        if "SELECT content" in sql and "FROM comments" in sql:
-            return pd.DataFrame([{"content": "很好"}, {"content": "一般"}, {"content": "较差"}])
-        return pd.DataFrame()
+    def fake_hour_distribution():
+        counts = [0] * 24
+        counts[9] = 2
+        counts[13] = 1
+        return {"hours": [f"{h}:00" for h in range(24)], "counts": counts}
 
-    monkeypatch.setattr(data_api, "query_dataframe", fake_query_dataframe)
+    monkeypatch.setattr(data_api, "_get_comment_hour_distribution", fake_hour_distribution)
+    monkeypatch.setattr(
+        data_api,
+        "_get_comment_user_activity",
+        lambda limit=10: {"users": ["用户A", "用户B"], "counts": [5, 3]},
+    )
+    monkeypatch.setattr(
+        data_api, "_get_recent_comment_texts", lambda limit=200: ["很好", "一般", "较差"]
+    )
+    monkeypatch.setattr(
+        data_api,
+        "_get_hot_comments",
+        lambda limit=5: [
+            {
+                "user": "用户A",
+                "time": "2026-03-20 10:00:00",
+                "content": "评论一",
+                "likes": 12,
+                "replies": 0,
+            },
+            {
+                "user": "用户B",
+                "time": "2026-03-20 08:00:00",
+                "content": "评论二",
+                "likes": 8,
+                "replies": 0,
+            },
+        ],
+    )
     monkeypatch.setattr(
         sentiment_service.SentimentService,
-        "analyze_distribution",
+        "analyze_distribution_cached",
         lambda texts, mode="simple", sample_size=100: {"正面": 1, "中性": 1, "负面": 1},
     )
 
-    response = authed_client.get("/getAllData/getCommentData")
+    response = authed_client.get("/api/getCommentData")
 
     assert response.status_code == 200
     payload = response.get_json()["data"]

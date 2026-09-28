@@ -2,6 +2,10 @@
 
 import inspect
 
+import pytest
+
+pytestmark = pytest.mark.unit
+
 
 def test_query_dataframe_uses_engine():
     """query_dataframe 应使用 SQLAlchemy engine，不依赖 pymysql"""

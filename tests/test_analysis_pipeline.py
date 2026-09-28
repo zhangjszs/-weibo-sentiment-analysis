@@ -10,6 +10,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 from services.analysis_pipeline import AnalysisPipeline, AnalysisSnapshot
 
 

@@ -14,6 +14,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+pytestmark = pytest.mark.unit
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.sentiment_backend import (  # noqa: E402

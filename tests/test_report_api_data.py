@@ -9,6 +9,8 @@ import importlib
 
 import pytest
 
+pytestmark = pytest.mark.api
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from utils.jwt_handler import create_token
@@ -56,10 +58,10 @@ def test_report_data_demo_mode_explicit(client):
 def test_report_data_does_not_silent_demo_fallback(client, monkeypatch):
     import views.api.report_api as report_api
 
-    def fake_querys(sql, params=None, type=None):
+    def _db_offline():
         raise RuntimeError("db offline")
 
-    monkeypatch.setattr(report_api, "querys", fake_querys)
+    monkeypatch.setattr(report_api, "_article_repo", _db_offline)
 
     response = client.get("/api/report/data", headers=_auth_headers())
 
@@ -75,34 +77,32 @@ def test_report_data_does_not_silent_demo_fallback(client, monkeypatch):
 def test_report_data_uses_real_sentiment_distribution(client, monkeypatch):
     import views.api.report_api as report_api
 
-    query_results = {
-        "SELECT COUNT(*) AS count FROM article": [{"count": 5}],
-        "SELECT COUNT(*) AS count FROM comments": [{"count": 3}],
-        "FROM comments": [
-            {"date": "2026-03-18", "count": 1},
-            {"date": "2026-03-19", "count": 2},
-        ],
-    }
+    class _FakeArticleRepo:
+        def count_total(self):
+            return 5
 
-    def fake_querys(sql, params=None, type=None):
-        for key, value in query_results.items():
-            if key in sql:
-                return value
-        return []
+    class _FakeCommentRepo:
+        def count_total(self):
+            return 3
 
-    monkeypatch.setattr(report_api, "querys", fake_querys)
+        def get_recent_texts(self, limit=200):
+            return ["很好", "一般", "很差"]
+
+        def get_recent_trend(self, days=7):
+            return [
+                {"date": "2026-03-18", "count": 1},
+                {"date": "2026-03-19", "count": 2},
+            ]
+
+    monkeypatch.setattr(report_api, "_article_repo", lambda: _FakeArticleRepo())
+    monkeypatch.setattr(report_api, "_comment_repo", lambda: _FakeCommentRepo())
 
     import services.sentiment_service as sentiment_service
 
     monkeypatch.setattr(
-        report_api,
-        "_load_recent_comment_texts",
-        lambda limit=200: ["很好", "一般", "很差"],
-    )
-    monkeypatch.setattr(
         sentiment_service.SentimentService,
-        "analyze_distribution",
-        lambda texts, mode="simple", sample_size=100: {"正面": 1, "中性": 1, "负面": 1},
+        "analyze_distribution_cached",
+        lambda texts, mode="simple", sample_size=200: {"正面": 1, "中性": 1, "负面": 1},
     )
 
     response = client.get("/api/report/data", headers=_auth_headers())
