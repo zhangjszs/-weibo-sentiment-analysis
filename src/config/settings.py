@@ -46,6 +46,42 @@ def _parse_float_env(name: str, default: float) -> float:
         return default
 
 
+def _inject_redis_password(url: str, password: str) -> str:
+    """把 REDIS_PASSWORD 回填进 broker/backend URL（#23）。
+
+    Celery 只认 URL 内密码，而直接 redis 客户端走
+    ``get_redis_connection_params``（独立读取 REDIS_PASSWORD）。
+    仅当 password 非空、URL 自身无密码、且 scheme 为 redis(s) 时注入；
+    其余情况原样返回（显式密码优先，"disabled" 等非 URL 不动）。
+    """
+    if not url or not password:
+        return url
+    try:
+        from urllib.parse import quote, urlunparse
+
+        parsed = urlparse(url)
+        if parsed.scheme not in ("redis", "rediss") or parsed.password:
+            return url
+        userinfo = f":{quote(password, safe='')}"
+        if parsed.username:
+            userinfo = f"{parsed.username}{userinfo}"
+        netloc = f"{userinfo}@{parsed.hostname or 'localhost'}"
+        if parsed.port:
+            netloc += f":{parsed.port}"
+        return urlunparse(
+            (
+                parsed.scheme,
+                netloc,
+                parsed.path or "",
+                parsed.params,
+                parsed.query,
+                parsed.fragment,
+            )
+        )
+    except (ValueError, TypeError):
+        return url
+
+
 def _get_secret_key() -> str | None:
     value = os.getenv("SECRET_KEY")
     if value:
@@ -130,8 +166,12 @@ class Config:
     REDIS_DB = _parse_int_env("REDIS_DB", int(_REDIS_PARSED["db"]))
     REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", str(_REDIS_PARSED["password"]))
 
-    CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", REDIS_URL)
-    CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", REDIS_URL)
+    CELERY_BROKER_URL = _inject_redis_password(
+        os.getenv("CELERY_BROKER_URL", REDIS_URL), REDIS_PASSWORD
+    )
+    CELERY_RESULT_BACKEND = _inject_redis_password(
+        os.getenv("CELERY_RESULT_BACKEND", REDIS_URL), REDIS_PASSWORD
+    )
 
     # LLM Settings
     LLM_API_KEY = os.getenv("LLM_API_KEY", "")
