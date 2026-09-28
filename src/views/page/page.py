@@ -109,7 +109,7 @@ def tableDataArticle():
 def articleChar():
     username = session.get("username")
     typeList = getEchartsData.getTypeList()
-    defaultType = typeList[0]
+    defaultType = typeList[0] if typeList else ""
     if request.args.get("type"):
         defaultType = request.args.get("type")
     xData, yData = getEchartsData.getArticleCharOneData(defaultType)

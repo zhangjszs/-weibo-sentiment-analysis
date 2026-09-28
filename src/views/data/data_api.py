@@ -8,19 +8,19 @@
 import hashlib
 import logging
 import threading
-from datetime import datetime, timedelta
-from urllib.parse import unquote
 from collections import defaultdict
+from datetime import datetime
+from urllib.parse import unquote
 
 from flask import Blueprint, request
 
+from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
 from utils import getEchartsData, getHomeData, getTableData
 from utils.api_response import error, ok
 from utils.authz import is_admin_user
 from utils.cache import memory_cache
 from utils.data_provenance import provenance_response, real_meta
-from repositories.article_repository import ArticleRepository
-from repositories.comment_repository import CommentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -297,7 +297,7 @@ def _build_ip_list():
     """从数据库查询评论 IP/地区分布列表。"""
     try:
         return _comment_repo().get_ip_list()
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.warning("查询IP数据失败，返回空列表: %s", e)
         return []
 
@@ -306,7 +306,7 @@ def _build_article_type_data():
     """查询文章类型分布，返回饼图格式数据。"""
     try:
         return _article_repo().get_type_distribution()
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.warning("查询文章类型分布失败: %s", e)
         return []
 
@@ -349,7 +349,7 @@ def get_home_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["home"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取首页数据失败: %s", e)
         return error_response(f"获取首页数据失败: {e}")
 
@@ -390,7 +390,7 @@ def get_table_data():
         data = _build_table_response(ciping_total, table_data, x_data, y_data, hot_word_num, emotion_value)
         set_cached_data(cache_key, data, CACHE_TIMEOUT["table"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取表格数据失败: %s", e)
         return error_response(f"获取表格数据失败: {e}")
 
@@ -448,7 +448,7 @@ def get_article_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["article"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取文章数据失败: %s", e)
         return error_response(f"获取文章数据失败: {e}")
 
@@ -484,7 +484,7 @@ def get_comment_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["comment"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取评论数据失败: %s", e)
         return error_response(f"获取评论数据失败: {e}")
 
@@ -534,7 +534,7 @@ def get_ip_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["ip"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取IP数据失败: %s", e)
         return error_response(f"获取IP数据失败: {e}")
 
@@ -573,7 +573,7 @@ def get_yuqing_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["yuqing"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取舆情数据失败: %s", e)
         return error_response(f"获取舆情数据失败: {e}")
 
@@ -610,7 +610,7 @@ def get_content_cloud_data():
 
         set_cached_data(cache_key, data, CACHE_TIMEOUT["cloud"])
         return success_response(data)
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("获取词云数据失败: %s", e)
         return error_response(f"获取词云数据失败: {e}")
 
@@ -648,6 +648,6 @@ def clear_cache():
     try:
         memory_cache.clear()
         return success_response({"message": "缓存已清空"})
-    except (ConnectionError, OSError) as e:
+    except Exception as e:
         logger.error("清空缓存失败: %s", e)
         return error_response(f"清空缓存失败: {e}")

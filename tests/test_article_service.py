@@ -275,6 +275,21 @@ class TestGetTodayStats:
         assert len(date_arg) == 10
 
     @patch("utils.query.querys")
+    def test_today_uses_dialect_free_range(self, mock_querys, mock_article_repo):
+        """跨方言：不用 DATE() 函数，用 [today, tomorrow) 范围（SQLite/MySQL 通用）"""
+        mock_querys.side_effect = [[{"count": 0}], [{"count": 0}]]
+        mock_article_repo.get_latest_update_time.return_value = None
+        service = ArticleService()
+
+        service.get_today_stats()
+
+        sql = mock_querys.call_args_list[0].args[0]
+        assert "DATE(" not in sql
+        assert "created_at >= %s AND created_at < %s" in sql
+        params = mock_querys.call_args_list[0].args[1]
+        assert len(params) == 2 and params[1] > params[0]
+
+    @patch("utils.query.querys")
     def test_empty_article_rows_falls_back_to_zero(self, mock_querys, mock_article_repo):
         """article_rows 为空列表 → today_articles=0"""
         mock_querys.side_effect = [
@@ -366,7 +381,7 @@ class TestGetTodayStats:
 
     @patch("utils.query.querys")
     def test_article_query_uses_date_function(self, mock_querys, mock_article_repo):
-        """article 查询应使用 DATE(created_at) 过滤"""
+        """article 查询使用跨方言范围过滤（不再依赖 DATE() 函数）"""
         mock_querys.side_effect = [[{"count": 0}], [{"count": 0}]]
         mock_article_repo.get_latest_update_time.return_value = None
         service = ArticleService()
@@ -374,12 +389,12 @@ class TestGetTodayStats:
         service.get_today_stats()
 
         article_sql = mock_querys.call_args_list[0].args[0]
-        assert "DATE(created_at)" in article_sql
+        assert "DATE(created_at)" not in article_sql
         assert "article" in article_sql
 
     @patch("utils.query.querys")
     def test_comment_query_uses_date_function(self, mock_querys, mock_article_repo):
-        """comment 查询应使用 DATE(created_at) 过滤"""
+        """comment 查询使用跨方言范围过滤（不再依赖 DATE() 函数）"""
         mock_querys.side_effect = [[{"count": 0}], [{"count": 0}]]
         mock_article_repo.get_latest_update_time.return_value = None
         service = ArticleService()
@@ -387,5 +402,5 @@ class TestGetTodayStats:
         service.get_today_stats()
 
         comment_sql = mock_querys.call_args_list[1].args[0]
-        assert "DATE(created_at)" in comment_sql
+        assert "DATE(created_at)" not in comment_sql
         assert "comments" in comment_sql

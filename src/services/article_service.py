@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from repositories.article_repository import ArticleRepository
 
@@ -16,7 +16,7 @@ class ArticleService:
         end_time: str,
         article_type: str = "",
         region: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         offset = (page - 1) * limit
         articles, total = self.article_repo.find_with_filter(
             keyword, start_time, end_time, article_type, region, limit, offset
@@ -29,7 +29,7 @@ class ArticleService:
 
         return {"total": total, "page": page, "limit": limit, "list": articles}
 
-    def get_stats_summary(self) -> Dict[str, int]:
+    def get_stats_summary(self) -> dict[str, int]:
         # This assumes other repositories exist, for now we use ArticleRepository as the entry point
         # In a full refactor, we'd inject other repos or have a dedicated StatsService
         from utils.query import (
@@ -50,22 +50,27 @@ class ArticleService:
             "users": user_count,
         }
 
-    def get_today_stats(self) -> Dict[str, Any]:
+    def get_today_stats(self) -> dict[str, Any]:
         """获取今日新增统计与最新更新时间。"""
-        from datetime import date
+        from datetime import date, timedelta
 
         from utils.query import querys
 
-        today = date.today().strftime("%Y-%m-%d")
+        today = date.today()
+        tomorrow = today + timedelta(days=1)
+        today_str = today.strftime("%Y-%m-%d")
+        tomorrow_str = tomorrow.strftime("%Y-%m-%d")
 
+        # 跨方言今日范围（MySQL DATETIME 与 SQLite ISO 文本均可比）：
+        # 不用 DATE(created_at) MySQL 方言函数，避免 SQLite 回退失败。
         article_rows = querys(
-            "SELECT count(*) as count FROM article WHERE DATE(created_at) = %s",
-            [today],
+            "SELECT count(*) as count FROM article WHERE created_at >= %s AND created_at < %s",
+            [today_str, tomorrow_str],
             type="select",
         )
         comment_rows = querys(
-            "SELECT count(*) as count FROM comments WHERE DATE(created_at) = %s",
-            [today],
+            "SELECT count(*) as count FROM comments WHERE created_at >= %s AND created_at < %s",
+            [today_str, tomorrow_str],
             type="select",
         )
         latest = self.article_repo.get_latest_update_time()

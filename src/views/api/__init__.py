@@ -42,9 +42,14 @@ def register_api(app, csrf=None):  # type: ignore[no-untyped-def]
     # isort: on
 
     # 数据蓝图（A1 已收敛至 /api，保留在此统一注册以便后续进一步合并到单蓝图）
+    # 注意：导入失败不再静默跳过——ImportError 打 ERROR 日志后降级，
+    # 其他异常直接抛给 create_app fail-fast，避免整组接口消失无告警。
     try:
         from views.data.data_api import db as data_bp
-    except Exception:  # pragma: no cover - 导入失败时降级为不注册
+    except ImportError as exc:  # pragma: no cover - 缺失依赖时降级为不注册
+        import logging as _logging
+
+        _logging.getLogger(__name__).exception("数据蓝图导入失败，已跳过注册: %s", exc)
         data_bp = None
 
     # 注册顺序保持与原 src/app.py 一致，便于 diff 与日志比对
