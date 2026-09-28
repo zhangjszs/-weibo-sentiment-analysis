@@ -82,33 +82,39 @@ request.interceptors.response.use(
     if (loadingInstance) hideLoading()
     const res = response.data
 
-    if (res.code === 200) {
+    // 成功：2xx 包络直接透出（含 201 Created / 202 Accepted），调用方按 res.code 分流。
+    // 后端包络 code 与 HTTP 状态对齐：alert 创建→201、ML 异步任务→202。
+    if (res.code >= 200 && res.code < 300) {
       return res
-    } else {
-      // 业务错误处理
-      const errorMsg = res.msg || '请求失败'
-
-      // 根据错误码处理
-      switch (res.code) {
-        case 401:
-          ElMessage.warning('登录已过期，请重新登录')
-          forceLogoutAndRedirect()
-          break
-        case 403:
-          ElMessage.error('没有权限访问该资源')
-          break
-        case 404:
-          ElMessage.error('请求的资源不存在')
-          break
-        case 500:
-          ElMessage.error('服务器内部错误，请稍后重试')
-          break
-        default:
-          ElMessage.error(errorMsg)
-      }
-
-      return Promise.reject(new Error(errorMsg))
     }
+
+    // 业务冲突（409，如爬虫任务运行中）：不弹全局错误，由调用方按 res.code 分支处理。
+    if (res.code === 409) {
+      return res
+    }
+    // 业务错误处理
+    const errorMsg = res.msg || '请求失败'
+
+    // 根据错误码处理
+    switch (res.code) {
+      case 401:
+        ElMessage.warning('登录已过期，请重新登录')
+        forceLogoutAndRedirect()
+        break
+      case 403:
+        ElMessage.error('没有权限访问该资源')
+        break
+      case 404:
+        ElMessage.error('请求的资源不存在')
+        break
+      case 500:
+        ElMessage.error('服务器内部错误，请稍后重试')
+        break
+      default:
+        ElMessage.error(errorMsg)
+    }
+
+    return Promise.reject(new Error(errorMsg))
   },
   (error) => {
     if (loadingInstance) hideLoading()
