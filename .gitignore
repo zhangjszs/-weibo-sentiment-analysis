@@ -186,6 +186,7 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 frontend/.env.*
+!frontend/.env.example
 
 # Project specific - Cache files
 cache/

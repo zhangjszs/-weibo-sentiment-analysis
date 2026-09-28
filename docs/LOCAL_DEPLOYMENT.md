@@ -399,11 +399,8 @@ yarn install
 编辑 `frontend/.env` 或 `frontend/.env.local`:
 
 ```ini
-# API 基础地址
-VITE_API_BASE_URL=http://localhost:5000
-
-# WebSocket 地址（如使用）
-VITE_WS_URL=ws://localhost:5000
+# API 基础地址（需与 vite.config.js 读取的变量名一致）
+VITE_APP_API_BASE_URL=http://localhost:5000
 ```
 
 ### 5.3 开发模式启动
@@ -658,7 +655,7 @@ kill -9 <PID>
 curl http://localhost:5000/health
 
 # 检查前端配置
-# 确认 frontend/.env 中的 VITE_API_BASE_URL 正确
+# 确认 frontend/.env 中的 VITE_APP_API_BASE_URL 正确
 
 # 检查 CORS 配置
 # 确认 .env 中的 ALLOWED_ORIGINS 包含前端地址
