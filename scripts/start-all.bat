@@ -22,6 +22,7 @@ exit /b 0
 :start
 echo ================================================
 echo   Weibo Sentiment System - Quick Start
+echo   (Celery/Redis path is OPTIONAL, only for async tasks)
 echo ================================================
 echo.
 
@@ -39,7 +40,7 @@ start "Backend - Flask" cmd /k "cd /d %~dp0.. && python run.py"
 
 echo [2/3] Starting Celery Worker...
 timeout /t 2 /nobreak >nul
-start "Celery Worker" cmd /k "cd /d %~dp0..\src && celery -A tasks.celery_worker worker --loglevel=info --pool=solo"
+start "Celery Worker" cmd /k "cd /d %~dp0..\src && celery -A tasks.celery_config:celery_app worker --loglevel=info --pool=solo"
 
 echo [3/3] Starting Frontend Server (Vite, Port 3000)...
 timeout /t 2 /nobreak >nul

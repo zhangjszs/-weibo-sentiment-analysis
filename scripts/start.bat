@@ -25,11 +25,11 @@ echo   (No Redis / No Celery Mode)
 echo ================================================
 echo.
 echo [1/2] Starting Backend Server (Flask, Port 5000)...
-start "Backend - Flask" cmd /k "cd /d %~dp0 && python run.py"
+start "Backend - Flask" cmd /k "cd /d %~dp0.. && python run.py"
 
 echo [2/2] Starting Frontend Server (Vite, Port 3000)...
 timeout /t 2 /nobreak >nul
-start "Frontend - Vite" cmd /k "cd /d %~dp0frontend && npm run dev"
+start "Frontend - Vite" cmd /k "cd /d %~dp0..\frontend && npm run dev"
 
 echo.
 echo ================================================

@@ -366,14 +366,15 @@ curl http://localhost:5000/health
 cd 基于python微博舆情分析可视化系统
 .\venv\Scripts\activate
 
-# 启动 Celery Worker
-celery -A src.tasks.celery_config worker --loglevel=info -Q spider,sentiment,default
+# 启动 Celery Worker（src/ 非包，需先 cd src；应用对象为 celery_app）
+cd src
+celery -A tasks.celery_config:celery_app worker --loglevel=info -Q spider,sentiment,default
 ```
 
 **终端2：启动 Beat（定时任务）**
 ```bash
-# 激活虚拟环境
-celery -A src.tasks.celery_config beat --loglevel=info
+# 激活虚拟环境（接上节，仍在 src/ 下；beat 同理需应用对象名）
+celery -A tasks.celery_config:celery_app beat --loglevel=info
 ```
 
 ---

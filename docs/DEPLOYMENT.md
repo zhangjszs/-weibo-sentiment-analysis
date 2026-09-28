@@ -50,7 +50,7 @@ cp .env.example .env
 
 # 5. 分别启动应用
 python run.py  # 后端
-# 在新终端中：cd frontend && pnpm install && pnpm dev  # 前端
+# 在新终端中：cd frontend && npm ci && npm run dev  # 前端（无 pnpm-lock，必须用 npm）
 ```
 
 ### 容器化编排（全栈）
@@ -94,10 +94,10 @@ NLP_SERVICE_BASE_URL=http://localhost:8091
 - **磁盘**: 至少 2GB 可用空间
 
 ### 软件要求
-- **Python**: 3.8 - 3.12
+- **Python**: 3.11+（开发锁定 3.12，见 `mise.toml`；容器镜像为 3.11，见 `Dockerfile`）
 - **MySQL**: 5.7+ (推荐 8.0+)
 - **Git**: 2.0+
-- **Node.js**: 14+ (可选，用于前端构建)
+- **Node.js**: 20+（`frontend/package.json engines` 要求 >=20；开发锁定 22，见 `mise.toml`）
 
 ### Python 依赖包
 主要依赖包已在 `requirements/requirements.txt` 中列出：
@@ -293,7 +293,8 @@ pip install gunicorn
 
 # 启动应用 (-w 4 代表 4 个子进程并发)
 # 请确保生产环境的 .env 里已经修改了复杂的 SECRET_KEY 与数据库生产机密
-gunicorn -w 4 -b 0.0.0.0:5000 "src.app:app"
+# 入口为 run:app（run.py），src/app.py 只有 create_app 工厂
+gunicorn -w 4 -b 0.0.0.0:5000 "run:app"
 ```
 
 ### 前端 Nginx（SPA 路由回退）
@@ -318,7 +319,7 @@ pip install uwsgi
 
 # 创建配置文件 uwsgi.ini
 [uwsgi]
-module = src.app:app
+module = run:app
 master = true
 processes = 4
 socket = 127.0.0.1:5000
@@ -382,7 +383,7 @@ User=www-data
 Group=www-data
 WorkingDirectory=/path/to/your/project
 Environment="PATH=/path/to/your/venv/bin"
-ExecStart=/path/to/your/venv/bin/gunicorn -w 4 -b 127.0.0.1:5000 "src.app:app"
+ExecStart=/path/to/your/venv/bin/gunicorn -w 4 -b 127.0.0.1:5000 "run:app"
 Restart=always
 
 [Install]
