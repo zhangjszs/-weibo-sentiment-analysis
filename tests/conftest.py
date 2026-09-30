@@ -100,8 +100,21 @@ def app(monkeypatch):
     monkeypatch.setenv("DEMO_ADMIN_RESET_PASSWORD", "False")
 
     import database
+    import models  # noqa: F401  # ensure all ORM tables are registered before create_all
 
-    database.reset()
+    # 每个测试一个干净的库，但**不走 database.reset()**：reset() 会 dispose
+    # engine 并把 _engine/_db_session 置空，而 repositories 等模块在首次 import
+    # 时已用 `from database import db_session` 捕获旧的 scoped_session——engine
+    # 被丢弃后，旧 session 的下一条连接是一个**空的** :memory: 库，第二个测试起
+    # 所有仓储查询全部 no such table（#30：bigscreen /all 单独跑绿、同文件排在
+    # 别人后面就 500 的根因）。改为全进程复用同一个 engine，测试间重建全部表：
+    # - sqlite :memory:：先 drop 再 create，等价于每个测试拿到全新库；
+    # - MySQL（CI 集成库）：schema 归 init_database.sql + alembic 管，只补缺表
+    #   （create_all 默认 checkfirst，不 drop 已有表，避免破坏迁移建的索引/列）。
+    _test_engine = database.get_engine()
+    if _test_engine.url.get_backend_name() == "sqlite":
+        database.Base.metadata.drop_all(_test_engine)
+    database.Base.metadata.create_all(_test_engine)
 
     for mod in list(sys.modules.keys()):
         if mod.startswith("app") or mod.startswith("config") or mod.startswith("services.startup_service"):
