@@ -5,105 +5,85 @@
 
 ## 上一棒是谁
 
-Agent `DeepSeek-V4.1-Flash-20260930T000000Z`，UTC 2026-09-29T23:28 ~ 2026-09-30T02:00。
-这是本仓库启用 `.agent/` 接力机制后的**第一棒**（此前没有 STATE/HANDOFF）。
+Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T00:4x。
+第二棒。第一棒（DeepSeek-V4.1-Flash）解开了积压的 17 个 commit 并把
+fast gate 清绿，留下 #30 作为当前活跃任务。
 
 ## 做了什么
 
 ### 一句话
 
-把**卡了一个月的主干解开了**：接手时本地领先远端 17 个 commit 且从未推送，
-主干 CI 自 2026-08-30 起一直红。根因是 `ruff check src/ tests/` 有 1609 个
-错误（#29）——门禁从来没绿过，于是 #5~#26 一整串修复全卡在本地。
-本轮清零门禁并修掉后续暴露的层层问题，**backend-fast / frontend-fast 现已全绿**。
+修完 **#30 的全部三类 integration 失效**（27 failed → 0），
+**CI 三 job 首次全绿**（含 integration/MySQL），#30 已关闭。
 
-### 1. #29 Ruff 清零（1609 → 0）
+### 细节（三类根因互不相同，三个 commit）
 
-批量自动修复（UP006/UP035/UP045/I001/W293/W292/F401），再逐条处理
-E402/F841/B007/E741/B027。全部是等价改写，没借机重构。
+1. **`test_nlp_service_passthrough.py` sys.modules 污染（16 个）→ 7a093e5**
+   模块顶层 pop `app*`、插 nlp_service path，导致 conftest `app` fixture
+   重导入 `src/app.py` 后，测试里 `patch("app.tasks.*")` 解析到单模块 `app`
+   （没有 tasks 属性）→ 16 个用例顺序敏感失败。改为 importlib 以私有名
+   `_nlp_tasks_under_test` 从文件路径加载，patch 点同步改名。
 
-- `tests/` 的 183 处 E402 按 issue #29 自己给的范围约定设了 per-file baseline
-  （测试需要先 monkeypatch 环境再导入被测模块）；`src/` 唯一一处是把 import
-  提到文件顶部。
-- 顺带清死代码（均为 F841 报出、从未被读取）：`contextual_sentiment` 的
-  `base_weight`、`sentiment_backend` 的 `last_error`、
-  `sentiment_strategy_selector` 未用的 `performance` 查询、
-  `model_version_manager` 的 `recent_performance`。
+2. **echarts/table patch 目标消失（9 个）→ 4819d75**
+   #14 重构删了 `query_dataframe`，用例改 patch `ArticleRepository` /
+   `CommentRepository` 具体方法；直方图类在 `database.engine` 边界注入假
+   连接（生产端 CASE WHEN 分桶 + 标签构建真实执行）。原断言与"不全表扫描"
+   守卫全部保留。另发现 getHomeData 带 `@cache_result` 的函数会把 fake
+   结果缓存泄漏给后续用例，进出各清一次 `clear_all_cache()`。
 
-### 2. 门禁红了之后，一层层往下挖
+3. **bigscreen 500（2 个）→ 7b9d4b4（最重要的发现）**
+   不是生产缺陷，是**两层测试基建缺陷**：
+   - 测试会话从没人建表（schema 归 init_database.sql + alembic）；
+   - fixture 调 `database.reset()` 会 dispose engine，而 `repositories/`
+     在首次 import 时已 `from database import db_session` **捕获旧
+     scoped_session**——第二个测试起全部仓储查询打到空库。
+   修法：fixture 不再调 reset()，全进程复用同一 engine；sqlite 每测试
+   drop+create，MySQL 只 create_all 补缺表（checkfirst 幂等）。
+   **⚠️ 勿轻易回退此改动**：任何想恢复 "每测试 reset" 的做法都会复活
+   顺序敏感失败；若嫌 drop+create 慢，先想清楚 stale binding 问题。
 
-清零 Ruff 只是起点，后面每修一处就暴露下一处：
+### 验证
 
-- **`test_staging_is_protected`**（#29）：子进程继承 CI 的
-  `SECRET_KEY`/`JWT_SECRET_KEY`/`ALLOWED_ORIGINS`，staging 下 `validate()`
-  合法通过，用例前提不成立 → CI 同款 env 下 4/4 稳定失败。改成显式置空四个键。
-- **CI 的 `pytest` 入口脚本**（#25）：不像 `python -m pytest` 那样把 cwd 放进
-  `sys.path`，`import run` 和 `from tests.conftest import ...` 只在本地过、
-  在 CI 上抛 `ModuleNotFoundError`。改为在 conftest 统一兜底，而不是把
-  `PYTHONPATH` 塞回 CI 配置。
-- **MySQL TEXT 列建索引**（#27）：`alembic upgrade head` 整链失败，报 1170。
-  这个坑前后踩了三次才对：
-  1. 前缀用字符串 `"authorName(100)"` → alembic 当成**列名**，渲染成
-     `` `authorName(100)` ``，MySQL 视为带引号的列名，照样报错；
-  2. 改用 `sa.text(...)` 对了，但列类型按 `str(col["type"])` 判定在 MySQL 上
-     漏判 TEXT，前缀根本没加上（日志里下发的 SQL 完全没有前缀）；
-  3. 改查 `information_schema.columns.DATA_TYPE` 才对。
-  然后发现 `align_legacy_sql` 上有同一个坑，遂提取
-  `alembic/index_helpers.py` 供两处共用，并加守护用例防止将来又绕开。
-- **集成测试其实跑在 SQLite 上**（#25）：conftest 无条件覆盖
-  `TEST_DATABASE_URL`，CI 拉起的 MySQL 形同虚设（表现为
-  `no such table: article`）。改为仅在未指定时回退，CI 侧显式导出指向 MySQL。
+- 本地 `pytest -m integration`：**189 passed, 5 skipped**（修复前 27 failed）
+- 顺序无关：正序 / 乱序 / 倒序文件顺序结果一致；4 个文件单独跑均绿
+- fast gate 无回退：1263 passed, 3 skipped；ruff 0
+- CI run 36741984139：backend-fast / frontend-fast / integration(MySQL) 全绿
 
-### 3. 推送
+## 额外收获
 
-接手时积压 17 个 commit，本轮共推 23 个（17 积压 + 6 新增）。
+- **Security Scan 首次转绿**（7b9d4b4 上 success）。第一棒记录它"每次都红"，
+  本次推 main 后通过。只有一次样本，是否稳定待下一棒观察；若又红，看
+  `.github/workflows/security-scan.yml`。
 
-## 没做完什么
+## 本轮遇到的遗留物（已处理）
 
-**CI 的 `integration` job 仍然是红的**，27 failed / 162 passed。
-本轮已确认这三类失败**全部是既有问题**（在未打补丁的基线 76629c3 上同样复现），
-且与本轮改动无关，已立项为 **#30**，本轮未动这些测试：
-
-1. `test_echarts_data_queries.py`（8）+ `test_table_data_queries.py`（1）：
-   #14 把 `query_dataframe` 换成了 `ArticleRepository`，这些用例仍在 patch
-   旧符号。**意图仍有效**（断言"不要全表扫描"），要改写而非删除。
-2. `test_nlp_service_passthrough.py`（16）：模块顶层改 `sys.modules` 造成污染，
-   单独跑 30 passed，排在 `test_bigscreen_api` 后面就 18 failed。
-3. `test_bigscreen_api.py`（2）：500，尚未定位。
-
-另有一处**刻意未动**：`contextual_sentiment._adjust_score` 里被删掉的
-`base_weight`（`1.0 - trend_weight - shift_weight`）看起来像没写完的归一化
-意图——趋势/突变权重之和是 `relation*0.5`，base 是否该按剩余权重缩放存疑。
-擅自改会动线上打分行为，只删了未使用变量，留给人工判断。
+- 工作区有一处**未记录在 STATE/HANDOFF 的 pytest.ini 改动**（addopts 加
+  `-p no:launch_testing -p no:launch_ros`，注释说是屏蔽 ROS 2 插件）。
+  实测本环境撤销它 pytest 照常收集，非必需。按协议保存到本地分支
+  `wip/20260930T154700Z`（commit 73cd2a7，未推送）。若那是人工有意改动，
+  请人工确认后自行处理；无关本轮，勿混入任务 commit。
 
 ## 下一步建议
 
-1. **#30（新建，P1）** —— 先修第 2 类污染：影响面最大，且会掩盖其他失败。
-   再修第 1 类，patch 点应落在 `ArticleRepository` 的具体方法上。
-   验收看 `pytest -m integration` 是否退出码 0 且与执行顺序无关。
-2. #14（High，性能）—— 本轮修的 integration 正是在测它；但 #30 未清前，
-   它的验证还不可靠。
-3. #19 / #20（High，前端 Loading 与 WebSocket 死链）。
-4. #15（Medium，JWT aud/iss、jti、logout、extend 旋转）。
-5. #16 / #21 / #27（#27 的"镜像与运行时"部分尚未处理，只修了 schema 双真相那半）。
+1. **#19（High，前端）**：Loading 永不触发 + 大面积静默失败 + 空状态缺失。
+   纯前端任务，验证走 `cd frontend && npm run test:run` + `npm run lint`
+   + `npm run build`（注意 mise node PATH，见 ENV.md）。
+2. #20（High，前端）：WebSocket 死链 + SW 缓存鉴权接口 + 裸 fetch。
+   与 #19 都在 frontend/，可一并熟悉代码后顺序处理。
+3. #15（Medium，后端 JWT）：aud/iss、jti 校验、logout 作废、extend 旋转。
+4. #21（Medium，前端死依赖）/ #16（Low，文档漂移）/ #28（Low，alembic 杂项）。
 
 ## 阻塞 / 风险
 
 - 无环境阻塞。
-- **风险：CI 的 Security Scan 每次都红**（早于本轮，且每周定时任务也红）。
-  本轮未处理，需要单独看 `.github/workflows/security-scan.yml`。
-- 风险：本机无 MySQL/Docker，migration 在真实 MySQL 上的行为只由 CI 复验过
-  一次（chain 跑通、随后暴露出测试层问题）。#30 修完后应再看一次 run 日志。
+- 风险：integration 在 CI 的 MySQL 上只验证了一次（绿）。conftest 的
+  create_all 在 MySQL 上是 checkfirst 补缺表，不会破坏迁移 schema；
+  若未来 CI 突然红，先对比本地 SQLite 与 CI MySQL 的差异。
 
 ## 环境备注
 
-- 后端一切可跑，`.venv` 依赖齐全，Python 3.12。
-- fast gate 全绿：`ruff check src tests` 为 0；`pytest -m "unit or api"`
-  1263 passed, 3 skipped。
-- **前端 node 必须走 mise 的 PATH**，系统 PATH 里没有 node/npm。
-- 想看全部失败用例要 `-o addopts="-q"`，因为 `pytest.ini` 的 `addopts`
-  自带 `--maxfail=1`。
-- 本地有真实 `.env`（含密钥，**勿提交**），它会影响起子进程的用例——
-  本轮在 `test_staging_is_protected` 上踩过。
-- 本地 `pytest -m integration` 默认走 SQLite；要复现 CI 的 MySQL 行为，
-  需让 `TEST_DATABASE_URL` 指向真实 MySQL。
+- 后端 `.venv` 齐全（Python 3.12），fast gate 与 integration 本地均可跑。
+- **前端 node 必须走 mise 的 PATH**：`export PATH="$HOME/.local/share/mise/installs/node/22.23.2/bin:$PATH"`。
+- 想看全部失败用例要 `-o addopts="-q"`（pytest.ini 的 addopts 自带 `--maxfail=1`）。
+- 本地有真实 `.env`（含密钥，**勿提交**），会影响起子进程的用例。
+- gh 可用（账号 zhangjszs）。
