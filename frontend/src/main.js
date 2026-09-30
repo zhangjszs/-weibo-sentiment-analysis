@@ -3,6 +3,14 @@ import { createPinia } from 'pinia'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 
+// Inter 本地字体（#20）：替代 Google Fonts 外链，与 CSP 一致且离线可用
+import '@fontsource/inter/300.css'
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
+import '@fontsource/inter/800.css'
+
 import App from './App.vue'
 import router from './router'
 import { installElementPlus } from './plugins/elementPlus'

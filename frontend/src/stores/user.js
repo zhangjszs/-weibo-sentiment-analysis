@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { checkSession, extendSession, getUserInfo, login, logout } from '@/api/auth'
 import router from '@/router'
+import { useTabsStore } from '@/stores/tabs'
 import {
   clearSessionState,
   getAuthToken,
@@ -31,6 +32,12 @@ export const useUserStore = defineStore('user', () => {
     clearSessionState()
     token.value = ''
     userInfo.value = {}
+    // 登出同步清工作区 tab（内存 + localStorage），多用户共机不串数据（#20）
+    try {
+      useTabsStore().resetTabs()
+    } catch (e) {
+      // pinia 尚未就绪的极端时序下忽略
+    }
   }
 
   async function doLogin(username, password) {

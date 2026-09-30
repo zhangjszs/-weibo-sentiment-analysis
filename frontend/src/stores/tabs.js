@@ -173,5 +173,22 @@ export const useTabsStore = defineStore('tabs', () => {
     setActiveTab,
     reorderTabs,
     updateTabPath,
+    resetTabs,
+  }
+
+  /**
+   * 登出时调用：清空工作区 tab（内存 + localStorage 持久化）。
+   * tab 记录含有用户浏览过的路由与查询串（可能带敏感参数），多用户共机
+   * 时不能让下一个账号看到上一个账号的工作区（#20 敏感缓存清理）。
+   */
+  function resetTabs() {
+    tabs.value = [{ ...HOME_TAB }]
+    activeTab.value = HOME_TAB.name
+    try {
+      localStorage.removeItem(STORAGE_TABS_KEY)
+      localStorage.removeItem(STORAGE_ACTIVE_KEY)
+    } catch (e) {
+      // ignore
+    }
   }
 })

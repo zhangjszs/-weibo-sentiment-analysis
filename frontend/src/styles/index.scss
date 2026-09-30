@@ -1,7 +1,8 @@
 @use 'sass:color';
 
-// Google Fonts - Inter for Modern Typography
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+// Inter 字体已本地化（@fontsource/inter，见 main.js 的 css import）：
+// 此前的 Google Fonts 外链与后端 CSP 冲突（style-src/font-src 未放行
+// fonts.googleapis.com / fonts.gstatic.com），且离线时会卡住渲染（#20）。
 
 // Animations and Interactions
 @import './animations.scss';
