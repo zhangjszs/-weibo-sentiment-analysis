@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
 表格数据查询优化测试
+
+#14 重构后，utils.getTableData 不再经过 utils.query_dataframe 裸 SQL，
+而是委托 ArticleRepository.find_with_filter（#30：旧测试 patch 的
+query_dataframe 符号已不存在）。patch 点相应改为 Repository 方法，
+测试意图不变：断言表格路径不做全表扫描、不做逐行情感分析。
 """
 
 import pytest
@@ -8,29 +13,28 @@ import pytest
 pytestmark = pytest.mark.integration
 
 
-import pandas as pd
+def _forbid(monkeypatch, module, name, message):
+    monkeypatch.setattr(
+        module, name, lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError(message))
+    )
 
 
 def test_article_table_sentiment_rows_do_not_full_scan(monkeypatch):
     import utils.getPublicData as public_data
     import utils.getTableData as table_data
+    from repositories.article_repository import ArticleRepository
     from services.sentiment_service import SentimentService
 
-    monkeypatch.setattr(
-        public_data,
-        "getAllData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load full article rows")),
-    )
-    monkeypatch.setattr(
-        table_data,
-        "SnowNLP",
-        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("should not analyze row by row")),
-    )
+    # 双重守卫：public_data 命名空间的 getAllData，以及 getTableData 模块
+    # 顶层 `from utils.getPublicData import getAllData` 带入的降级路径别名
+    _forbid(monkeypatch, public_data, "getAllData", "should not load full article rows")
+    _forbid(monkeypatch, table_data, "getAllData", "should not fallback to full article rows")
+    _forbid(monkeypatch, table_data, "SnowNLP", "should not analyze row by row")
 
     monkeypatch.setattr(
-        table_data,
-        "query_dataframe",
-        lambda sql, params=None: pd.DataFrame(
+        ArticleRepository,
+        "find_with_filter",
+        lambda self, **kwargs: (
             [
                 {
                     "id": "a1",
@@ -39,14 +43,13 @@ def test_article_table_sentiment_rows_do_not_full_scan(monkeypatch):
                     "reposts_count": 1,
                     "region": "北京",
                     "content": "很好",
-                    "content_len": 2,
+                    "contentLen": 2,
                     "created_at": "2026-03-20 10:00:00",
                     "type": "news",
                     "detailUrl": "https://example.com/1",
                     "authorName": "作者A",
                     "authorDetail": "详情A",
                     "isVip": 1,
-                    "vipLevel": 3,
                 },
                 {
                     "id": "a2",
@@ -55,16 +58,16 @@ def test_article_table_sentiment_rows_do_not_full_scan(monkeypatch):
                     "reposts_count": 0,
                     "region": "上海",
                     "content": "一般",
-                    "content_len": 2,
+                    "contentLen": 2,
                     "created_at": "2026-03-19 09:00:00",
                     "type": "blog",
                     "detailUrl": "https://example.com/2",
                     "authorName": "作者B",
                     "authorDetail": "详情B",
                     "isVip": 0,
-                    "vipLevel": 0,
                 },
-            ]
+            ],
+            2,
         ),
     )
     monkeypatch.setattr(

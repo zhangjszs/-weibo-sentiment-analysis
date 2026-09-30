@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
 ECharts 数据查询优化测试
+
+#14 重构后，utils.getEchartsData / utils.getHomeData 不再经过
+utils.query_dataframe 裸 SQL，而是委托 ArticleRepository / CommentRepository
+的聚合方法（#30：旧测试 patch 的 query_dataframe 符号已不存在）。
+patch 点相应改为 Repository 的具体方法；直方图类查询改在 database.engine
+边界注入假连接，让生产端的 CASE WHEN 分桶 + 标签构建逻辑真实执行。
+测试意图不变：断言图表路径不做全表扫描。
 """
 
 import pytest
@@ -8,26 +15,65 @@ import pytest
 pytestmark = pytest.mark.integration
 
 
-import pandas as pd
-import pytest
+# ---------------------------------------------------------------------------
+# 直方图假 engine：get_histogram / get_like_histogram 在函数体内
+# `from database import engine`，替换该属性即可拦截，SQL 构建仍走生产代码。
+# ---------------------------------------------------------------------------
+
+
+class _FakeResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def __iter__(self):
+        return iter(self._rows)
+
+
+class _FakeConnection:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def execute(self, statement, params=None):
+        return _FakeResult(self._rows)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+
+class _FakeEngine:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def connect(self):
+        return _FakeConnection(self._rows)
+
+
+def _patch_histogram_engine(monkeypatch, rows):
+    import database
+
+    monkeypatch.setattr(database, "engine", _FakeEngine(rows))
+
+
+def _forbid(monkeypatch, module, name, message):
+    monkeypatch.setattr(
+        module, name, lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError(message))
+    )
 
 
 def test_article_chart_queries_do_not_call_full_article_scan(monkeypatch):
     import utils.getEchartsData as echarts
     import utils.getPublicData as public_data
+    from repositories.article_repository import ArticleRepository
 
+    _forbid(monkeypatch, public_data, "getAllData", "should not load full article rows")
     monkeypatch.setattr(
-        public_data,
-        "getAllData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load full article rows")),
+        ArticleRepository, "get_distinct_types", lambda self: ["news", "blog"]
     )
-
-    def fake_query_dataframe(sql, params=None):
-        if "SELECT DISTINCT type" in sql:
-            return pd.DataFrame([{"type": "news"}, {"type": "blog"}])
-        return pd.DataFrame([{"bucket_index": 0, "count": 2}, {"bucket_index": 2, "count": 1}])
-
-    monkeypatch.setattr(echarts, "query_dataframe", fake_query_dataframe)
+    # 聚合返回 (bucket_index, count)，标签与填零由生产代码完成
+    _patch_histogram_engine(monkeypatch, [(0, 2), (2, 1)])
 
     assert echarts.getTypeList() == ["news", "blog"]
 
@@ -48,31 +94,22 @@ def test_article_chart_queries_do_not_call_full_article_scan(monkeypatch):
 def test_yuqing_distribution_uses_recent_text_queries(monkeypatch):
     import utils.getEchartsData as echarts
     import utils.getPublicData as public_data
+    from repositories.article_repository import ArticleRepository
+    from repositories.comment_repository import CommentRepository
     from services.sentiment_service import SentimentService
 
+    _forbid(monkeypatch, public_data, "getAllCommentsData", "should not load all comments")
+    _forbid(monkeypatch, public_data, "getAllData", "should not load all articles")
     monkeypatch.setattr(
-        public_data,
-        "getAllCommentsData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all comments")),
+        CommentRepository, "get_recent_texts", lambda self, limit=200: ["很好", "一般"]
     )
     monkeypatch.setattr(
-        public_data,
-        "getAllData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all articles")),
+        ArticleRepository, "get_recent_texts", lambda self, limit=200: ["积极", "消极"]
     )
-
-    def fake_query_dataframe(sql, params=None):
-        if "FROM comments" in sql:
-            return pd.DataFrame([{"content": "很好"}, {"content": "一般"}])
-        if "FROM article" in sql:
-            return pd.DataFrame([{"content": "积极"}, {"content": "消极"}])
-        return pd.DataFrame()
-
-    monkeypatch.setattr(echarts, "query_dataframe", fake_query_dataframe)
     monkeypatch.setattr(
         SentimentService,
-        "analyze_distribution",
-        lambda texts, mode="simple", sample_size=100: {
+        "analyze_distribution_cached",
+        lambda texts, mode="simple", sample_size=200: {
             "正面": 1,
             "中性": 1,
             "负面": max(len(texts) - 2, 0),
@@ -87,43 +124,57 @@ def test_yuqing_distribution_uses_recent_text_queries(monkeypatch):
     assert article_dist[1]["value"] == 1
 
 
-def test_home_data_queries_use_aggregations(monkeypatch):
+def test_home_data_queries_use_aggregations(monkeypatch, request):
     import utils.getHomeData as home_data
     import utils.getPublicData as public_data
+    from repositories.article_repository import ArticleRepository
+    from repositories.comment_repository import CommentRepository
+    from utils.cache import clear_all_cache
 
+    # getHomeData 的函数带 @cache_result：进出各清一次，
+    # 防止跨测试污染（fake 结果泄漏给后续用例 / 上个用例残留命中本用例）。
+    clear_all_cache()
+    request.addfinalizer(clear_all_cache)
+
+    _forbid(monkeypatch, public_data, "getArticleDataFrame", "should not load article dataframe")
+    _forbid(monkeypatch, public_data, "getCommentsDataFrame", "should not load comments dataframe")
     monkeypatch.setattr(
-        public_data,
-        "getArticleDataFrame",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load article dataframe")),
+        CommentRepository,
+        "get_top_liked_comments",
+        lambda self, limit=4: [
+            {
+                "articleId": "a1",
+                "created_at": "2026-03-20 10:00:00",
+                "like_counts": 9,
+                "region": "北京",
+                "content": "很好",
+                "authorName": "用户A",
+                "authorGender": "女",
+                "authorAddress": "北京",
+                "authorAvatar": "a.png",
+            }
+        ],
+    )
+    monkeypatch.setattr(ArticleRepository, "count_total", lambda self: 7)
+    monkeypatch.setattr(ArticleRepository, "get_top_liked_author", lambda self: "作者A")
+    monkeypatch.setattr(
+        ArticleRepository, "count_by_region", lambda self, limit=1: [{"region": "北京", "count": 7}]
     )
     monkeypatch.setattr(
-        public_data,
-        "getCommentsDataFrame",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load comments dataframe")),
+        ArticleRepository,
+        "count_by_date_range",
+        lambda self: [{"created_at": "2026-03-20", "count": 4}, {"created_at": "2026-03-19", "count": 3}],
     )
-
-    def fake_query_dataframe(sql, params=None):
-        if "ORDER BY like_counts DESC" in sql:
-            return pd.DataFrame(
-                [{"articleId": "a1", "created_at": "2026-03-20 10:00:00", "like_counts": 9}]
-            )
-        if "COUNT(*) AS article_count" in sql:
-            return pd.DataFrame(
-                [{"article_count": 7, "maxLikeAuthorName": "作者A", "maxCity": "北京"}]
-            )
-        if "FROM article" in sql and "GROUP BY created_at" in sql:
-            return pd.DataFrame(
-                [{"created_at": "2026-03-20", "count": 4}, {"created_at": "2026-03-19", "count": 3}]
-            )
-        if "FROM article" in sql and "GROUP BY type" in sql:
-            return pd.DataFrame([{"type": "news", "count": 5}, {"type": "blog", "count": 2}])
-        if "FROM comments" in sql and "GROUP BY created_at" in sql:
-            return pd.DataFrame(
-                [{"created_at": "2026-03-20", "count": 6}, {"created_at": "2026-03-19", "count": 1}]
-            )
-        return pd.DataFrame()
-
-    monkeypatch.setattr(home_data, "query_dataframe", fake_query_dataframe)
+    monkeypatch.setattr(
+        ArticleRepository,
+        "count_by_type",
+        lambda self: [{"type": "news", "count": 5}, {"type": "blog", "count": 2}],
+    )
+    monkeypatch.setattr(
+        CommentRepository,
+        "count_by_date_range",
+        lambda self: [{"created_at": "2026-03-20", "count": 6}, {"created_at": "2026-03-19", "count": 1}],
+    )
 
     top_comments = home_data.getHomeTopLikeCommentsData()
     assert top_comments[0][2] == 9
@@ -147,24 +198,25 @@ def test_home_data_queries_use_aggregations(monkeypatch):
     ]
 
 
-def test_home_data_does_not_fallback_to_full_scans_on_empty_results(monkeypatch):
+def test_home_data_does_not_fallback_to_full_scans_on_empty_results(monkeypatch, request):
     import utils.getHomeData as home_data
     import utils.getPublicData as public_data
+    from repositories.article_repository import ArticleRepository
+    from repositories.comment_repository import CommentRepository
     from utils.cache import clear_all_cache
 
     clear_all_cache()
-    monkeypatch.setattr(
-        public_data,
-        "getAllCommentsData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all comments")),
-    )
-    monkeypatch.setattr(
-        public_data,
-        "getAllData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all articles")),
-    )
+    request.addfinalizer(clear_all_cache)
 
-    monkeypatch.setattr(home_data, "query_dataframe", lambda sql, params=None: pd.DataFrame())
+    _forbid(monkeypatch, public_data, "getAllCommentsData", "should not load all comments")
+    _forbid(monkeypatch, public_data, "getAllData", "should not load all articles")
+    monkeypatch.setattr(CommentRepository, "get_top_liked_comments", lambda self, limit=4: [])
+    monkeypatch.setattr(ArticleRepository, "count_total", lambda self: 0)
+    monkeypatch.setattr(ArticleRepository, "get_top_liked_author", lambda self: None)
+    monkeypatch.setattr(ArticleRepository, "count_by_region", lambda self, limit=1: [])
+    monkeypatch.setattr(ArticleRepository, "count_by_date_range", lambda self: [])
+    monkeypatch.setattr(ArticleRepository, "count_by_type", lambda self: [])
+    monkeypatch.setattr(CommentRepository, "count_by_date_range", lambda self: [])
 
     assert home_data.getHomeTopLikeCommentsData() == []
     assert home_data.getTagData() == (0, "", "")
@@ -173,22 +225,17 @@ def test_home_data_does_not_fallback_to_full_scans_on_empty_results(monkeypatch)
     assert home_data.getCommentsUserCratedNumEchartsData() == []
 
 
-def test_user_name_word_cloud_does_not_fallback_to_full_comment_scan(monkeypatch):
+def test_user_name_word_cloud_does_not_fallback_to_full_comment_scan(monkeypatch, request):
     import utils.getHomeData as home_data
     import utils.getPublicData as public_data
+    from repositories.comment_repository import CommentRepository
     from utils.cache import clear_all_cache
 
     clear_all_cache()
-    monkeypatch.setattr(
-        public_data,
-        "getCommentsDataFrame",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load comments dataframe")),
-    )
-    monkeypatch.setattr(
-        public_data,
-        "getAllCommentsData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all comments")),
-    )
+    request.addfinalizer(clear_all_cache)
+
+    _forbid(monkeypatch, public_data, "getCommentsDataFrame", "should not load comments dataframe")
+    _forbid(monkeypatch, public_data, "getAllCommentsData", "should not load all comments")
 
     generated_texts = []
 
@@ -200,9 +247,9 @@ def test_user_name_word_cloud_does_not_fallback_to_full_comment_scan(monkeypatch
             generated_texts.append(text)
 
     monkeypatch.setattr(
-        home_data,
-        "query_dataframe",
-        lambda sql, params=None: pd.DataFrame([{"authorName": "用户A"}, {"authorName": "用户B"}]),
+        CommentRepository,
+        "get_all_for_export",
+        lambda self: [{"authorName": "用户A"}, {"authorName": "用户B"}],
     )
     monkeypatch.setattr(home_data, "stopwordslist", lambda: [])
     monkeypatch.setattr(home_data.jieba, "cut", lambda text: text.split())
@@ -223,26 +270,17 @@ def test_user_name_word_cloud_does_not_fallback_to_full_comment_scan(monkeypatch
 def test_geo_data_queries_use_sql_grouping(monkeypatch):
     import utils.getEchartsData as echarts
     import utils.getPublicData as public_data
+    from repositories.article_repository import ArticleRepository
+    from repositories.comment_repository import CommentRepository
 
+    _forbid(monkeypatch, public_data, "getAllCommentsData", "should not load all comments")
+    _forbid(monkeypatch, public_data, "getAllData", "should not load all articles")
     monkeypatch.setattr(
-        public_data,
-        "getAllCommentsData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all comments")),
+        CommentRepository, "get_region_distribution", lambda self: [{"name": "北京", "value": 3}]
     )
     monkeypatch.setattr(
-        public_data,
-        "getAllData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all articles")),
+        ArticleRepository, "get_region_distribution", lambda self: [{"name": "上海", "value": 2}]
     )
-
-    def fake_query_dataframe(sql, params=None):
-        if "FROM comments" in sql:
-            return pd.DataFrame([{"name": "北京", "value": 3}])
-        if "FROM article" in sql:
-            return pd.DataFrame([{"name": "上海", "value": 2}])
-        return pd.DataFrame()
-
-    monkeypatch.setattr(echarts, "query_dataframe", fake_query_dataframe)
 
     assert echarts.getGeoCharDataOne() == [{"name": "北京", "value": 3}]
     assert echarts.getGeoCharDataTwo() == [{"name": "上海", "value": 2}]
@@ -251,23 +289,15 @@ def test_geo_data_queries_use_sql_grouping(monkeypatch):
 def test_comment_chart_queries_do_not_call_full_comment_scan(monkeypatch):
     import utils.getEchartsData as echarts
     import utils.getPublicData as public_data
+    from repositories.comment_repository import CommentRepository
 
+    _forbid(monkeypatch, public_data, "getAllCommentsData", "should not load all comments")
+    _patch_histogram_engine(monkeypatch, [(0, 3), (2, 1)])
     monkeypatch.setattr(
-        public_data,
-        "getAllCommentsData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all comments")),
+        CommentRepository,
+        "get_gender_distribution",
+        lambda self: [{"name": "女", "value": 4}, {"name": "男", "value": 2}],
     )
-
-    def fake_query_dataframe(sql, params=None):
-        if "authorGender" in sql:
-            return pd.DataFrame(
-                [{"name": "女", "value": 4}, {"name": "男", "value": 2}]
-            )
-        return pd.DataFrame(
-            [{"bucket_index": 0, "count": 3}, {"bucket_index": 2, "count": 1}]
-        )
-
-    monkeypatch.setattr(echarts, "query_dataframe", fake_query_dataframe)
 
     x_data, y_data = echarts.getCommetCharDataOne()
     assert x_data[0] == "20-40"
@@ -281,17 +311,11 @@ def test_comment_chart_queries_do_not_call_full_comment_scan(monkeypatch):
 def test_word_cloud_queries_do_not_call_full_scans(monkeypatch):
     import utils.getEchartsData as echarts
     import utils.getPublicData as public_data
+    from repositories.article_repository import ArticleRepository
+    from repositories.comment_repository import CommentRepository
 
-    monkeypatch.setattr(
-        public_data,
-        "getAllData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all articles")),
-    )
-    monkeypatch.setattr(
-        public_data,
-        "getAllCommentsData",
-        lambda: (_ for _ in ()).throw(AssertionError("should not load all comments")),
-    )
+    _forbid(monkeypatch, public_data, "getAllData", "should not load all articles")
+    _forbid(monkeypatch, public_data, "getAllCommentsData", "should not load all comments")
 
     generated_texts = []
 
@@ -302,14 +326,12 @@ def test_word_cloud_queries_do_not_call_full_scans(monkeypatch):
         def generate_from_text(self, text):
             generated_texts.append(text)
 
-    def fake_query_dataframe(sql, params=None):
-        if "FROM article" in sql:
-            return pd.DataFrame([{"content": "alpha"}, {"content": "beta"}])
-        if "FROM comments" in sql:
-            return pd.DataFrame([{"content": "gamma"}, {"content": "delta"}])
-        return pd.DataFrame()
-
-    monkeypatch.setattr(echarts, "query_dataframe", fake_query_dataframe)
+    monkeypatch.setattr(
+        ArticleRepository, "get_recent_texts", lambda self, limit=1000: ["alpha", "beta"]
+    )
+    monkeypatch.setattr(
+        CommentRepository, "get_recent_texts", lambda self, limit=1000: ["gamma", "delta"]
+    )
     monkeypatch.setattr(echarts, "stopwordslist", lambda: [])
     monkeypatch.setattr(echarts.jieba, "cut", lambda text: text.split())
     monkeypatch.setattr(echarts.Image, "open", lambda path: object())
