@@ -63,7 +63,18 @@ class TestImportNeverCrashes:
         assert "DB_PORT" in proc.stderr
 
     def test_staging_is_protected(self):
-        proc = _run_with_env({"FLASK_ENV": "staging"})
+        # 必须显式清空密钥：子进程会继承 CI/本机的 SECRET_KEY、JWT_SECRET_KEY、
+        # ALLOWED_ORIGINS（backend-fast job 正是这么设的），若不清理，staging 下
+        # validate() 会合法通过，本用例的前提（staging 缺生产密钥应被阻断）就不成立。
+        proc = _run_with_env(
+            {
+                "FLASK_ENV": "staging",
+                "SECRET_KEY": "",
+                "JWT_SECRET_KEY": "",
+                "ALLOWED_ORIGINS": "",
+                "ADMIN_USERS": "",
+            }
+        )
         # staging 无生产密钥 → validate 应阻断（与 production 一致）
         assert proc.returncode != 0
         assert "SECRET_KEY" in proc.stderr
