@@ -175,6 +175,17 @@ def api_me():
 
 @bp.route("/auth/logout", methods=["POST"])
 def api_logout():
+    # 作废当前 token（#15）：此前仅删 Cookie，token 在自然过期前始终有效，
+    # 复制走仍可继续调用 API
+    from utils.jwt_handler import revoke_token
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        revoke_token(auth_header[7:].strip())
+    cookie_token = request.cookies.get(Config.AUTH_COOKIE_NAME)
+    if cookie_token:
+        revoke_token(cookie_token)
+
     response = ok()
     _clear_auth_cookie(response)
     response.status_code = 200

@@ -25,6 +25,18 @@ auth_service = AuthService()
 ub = Blueprint("user", __name__, url_prefix="/user", template_folder="templates")
 
 
+def _safe_redirect_url(raw_url: str, default: str = "/home") -> str:
+    """站内重定向白名单校验（#15）。
+
+    仅接受本站绝对路径；``//evil.com``（协议相对 URL）与带 scheme 的地址
+    都会跳到站外——此前只查 startswith("/")，开放重定向。
+    """
+    if raw_url and raw_url.startswith("/") and not raw_url.startswith("//"):
+        if "\\" not in raw_url:
+            return raw_url
+    return default
+
+
 @ub.route("/login", methods=["GET", "POST"])
 def login():
     """
@@ -76,10 +88,8 @@ def login():
             if is_api_request:
                 return ok(data, msg=msg), 200
             else:
-                redirect_url = request.args.get("redirect", "/home")
-                return redirect(
-                    redirect_url if redirect_url.startswith("/") else "/home", 301
-                )
+                redirect_url = _safe_redirect_url(request.args.get("redirect", ""))
+                return redirect(redirect_url, 301)
         else:
             if is_api_request:
                 return error(msg, code=401), 401
@@ -145,6 +155,16 @@ def logOut():
     """
     current_user = session.get("username", "Unknown")
     session.clear()
+    # 作废 JWT 并清 Cookie（#15）：此前只清 session，JWT 在过期前始终有效
+    from config.settings import Config as _Config
+    from utils.jwt_handler import revoke_token
+
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        revoke_token(auth_header[7:].strip())
+    cookie_token = request.cookies.get(_Config.AUTH_COOKIE_NAME)
+    if cookie_token:
+        revoke_token(cookie_token)
     logger.info(f"用户登出: {current_user}")
 
     is_api_request = request.is_json or request.headers.get("Accept", "").startswith(
