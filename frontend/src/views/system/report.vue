@@ -341,6 +341,12 @@
   }
 
   const handleGenerate = async () => {
+    // 空导出拦截：报告数据未加载成功（如 fetchReportData 失败只 console.error
+    // 时 demoData 仍为空对象）就生成，只会产出一份空报告（#19）
+    if (!demoData.value || Object.keys(demoData.value).length === 0) {
+      ElMessage.warning('报告数据未加载，请先等待数据加载成功后再生成')
+      return
+    }
     generating.value = true
     try {
       const res = await generateReport({
@@ -366,6 +372,10 @@
   }
 
   const handleGenerateAll = async () => {
+    if (!demoData.value || Object.keys(demoData.value).length === 0) {
+      ElMessage.warning('报告数据未加载，请先等待数据加载成功后再生成')
+      return
+    }
     generatingAll.value = true
     try {
       const res = await generateAllReports({

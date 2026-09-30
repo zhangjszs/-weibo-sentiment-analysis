@@ -1,5 +1,8 @@
 <template>
-  <div class="home-container">
+  <div
+    v-loading="searching"
+    class="home-container"
+  >
     <!-- Analysis filters -->
     <AnalysisFilters
       v-model="filters"
@@ -89,12 +92,17 @@ const filters = reactive({
 })
 
 const snapshot = ref(null)
+const searching = ref(false)
 
 const trendStatus = ref('empty')
 const sentimentStatus = ref('empty')
 const propagationStatus = ref('empty')
 
 async function onSearch(value) {
+  // 防连点：请求进行中忽略新的点击。否则慢响应晚到会用旧 snapshot 覆盖
+  // 新结果，且并发请求互相覆盖 loading/状态位（#19）。
+  if (searching.value) return
+  searching.value = true
   snapshot.value = null
   try {
     const params = { topic: value.topic }
@@ -128,6 +136,8 @@ async function onSearch(value) {
     }
   } catch (err) {
     ElMessage.error('分析请求失败: ' + (err.message || '未知错误'))
+  } finally {
+    searching.value = false
   }
 }
 </script>
