@@ -79,6 +79,7 @@
 import { reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 
+import { http } from '@/api/request'
 import AnalysisFilters from '@/components/Analysis/AnalysisFilters.vue'
 import AnalysisSummary from '@/components/Analysis/AnalysisSummary.vue'
 import AnalysisSection from '@/components/Analysis/AnalysisSection.vue'
@@ -110,10 +111,9 @@ async function onSearch(value) {
     if (value.endAt) params.end_at = `${value.endAt}T23:59:59`
     if (value.demo) params.demo = 'true'
 
-    const resp = await fetch(`/api/v1/analysis?${new URLSearchParams(params)}`, {
-      credentials: 'include',
-    })
-    const body = await resp.json()
+    // 走统一的 axios 实例：带超时/Authorization/统一 401 处理（#20），
+    // 此前裸 fetch 无超时也无统一鉴权
+    const body = await http.get('/api/v1/analysis', { params })
     if (!body?.data) {
       ElMessage.warning(body?.msg || '分析请求失败')
       return
@@ -135,7 +135,8 @@ async function onSearch(value) {
       console.info('Analysis limitations:', meta.limitations)
     }
   } catch (err) {
-    ElMessage.error('分析请求失败: ' + (err.message || '未知错误'))
+    // HTTP/网络错误已由 request.js 拦截器全局 toast，这里不再重复弹
+    console.error('分析请求失败:', err)
   } finally {
     searching.value = false
   }

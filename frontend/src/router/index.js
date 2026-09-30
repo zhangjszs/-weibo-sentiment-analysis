@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'
 import {
   Bell,
   ChatDotRound,
@@ -188,38 +189,30 @@ const router = createRouter({
   routes,
 })
 
-const buildAuthHeaders = () => {
-  const headers = {
-    Accept: 'application/json',
-  }
-
-  const token = getAuthToken()
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-
-  return headers
-}
+// 路由守卫专用 axios 实例：不复用 @/api/request——后者 import 了本 router
+// 模块（401 跳转用），会形成环。这里只做 me 查询：带超时与 Authorization，
+// 401/网络错误统一按异常 → null（守卫按未登录处理）。
+const meClient = axios.create({
+  timeout: 8000,
+  withCredentials: true,
+})
 
 const fetchCurrentUser = async () => {
   try {
-    const response = await fetch('/api/auth/me', {
-      method: 'GET',
-      credentials: 'include',
-      headers: buildAuthHeaders(),
-    })
-
-    if (!response.ok) {
-      return null
+    const headers = { Accept: 'application/json' }
+    const token = getAuthToken()
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
     }
 
-    const payload = await response.json()
+    const response = await meClient.get('/api/auth/me', { headers })
+    const payload = response.data
     if (!payload || payload.code !== 200) {
       return null
     }
 
     return payload.data || null
-  } catch (error) {
+  } catch {
     return null
   }
 }
