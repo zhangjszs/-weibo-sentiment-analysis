@@ -13,6 +13,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 SANDBOX_TEMP_DIR = PROJECT_ROOT / ".pytest_tmp" / "temp"
 
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
+# 仓库根目录同样需要：`run.py` 是 gunicorn 入口（测试要 import run:app），
+# `tests` 目录也要能作为命名空间包被引用。
+# `python -m pytest` 会隐式把 cwd 放进 sys.path，但 CI 用的 `pytest` 入口脚本不会，
+# 于是这两种 import 在本地过、在 CI 上抛 ModuleNotFoundError。统一在此处兜底，
+# 避免依赖调用方式。
+sys.path.insert(0, str(PROJECT_ROOT))
 
 os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
 
@@ -137,6 +143,18 @@ def set_auth_cookie(client, token):
     else:
         # Werkzeug 3.x: set_cookie(key, value, *, domain="localhost", ...)
         client.set_cookie("weibo_access_token", token)
+
+
+@pytest.fixture
+def auth_cookie_setter():
+    """暴露 set_auth_cookie，避免测试 `from tests.conftest import ...`。
+
+    `tests/` 没有 __init__.py，依赖 cwd 在 sys.path 上才能作为命名空间包导入：
+    `python -m pytest` 会把 cwd 放进去，但 CI 用的 `pytest` 入口脚本不会，
+    于是 `from tests.conftest import ...` 在 CI 上抛
+    ModuleNotFoundError: No module named 'tests'。改用 fixture 消除该耦合。
+    """
+    return set_auth_cookie
 
 
 @pytest.fixture
