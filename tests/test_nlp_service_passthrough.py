@@ -5,52 +5,47 @@ Phase 3.8: nlp_service HTTP 透传单元测试。
 验证 nlp_service/app/tasks.py 不再做任何本地 NLP 计算，而是通过 requests
 POST 到主后端的 /api/sentiment/analyze、/api/predict/batch、/api/model/retrain。
 
-注意：nlp_service 的 `app` 包与 src/app.py 存在命名冲突，因此本测试文件
-临时将 nlp_service/ 加入 sys.path 完成导入后立即移除；conftest.py 的 `app`
-fixture 会清理 sys.modules["app*"]，其他测试不受影响。
+注意：nlp_service 的 `app` 包与 src/app.py 存在命名冲突，因此**不能**让
+`app` / `app.tasks` 进入 sys.modules —— conftest 的 `app` fixture 会删除
+`app*` 并重新导入 src 的 `app`（单模块，没有 tasks 属性），此后任何按
+`app.tasks.*` 解析的 patch 都会 AttributeError（#30 的顺序敏感失败）。
+这里改用 importlib 以私有模块名 `_nlp_tasks_under_test` 直接从文件路径
+加载被测模块，不触碰 `app*` 命名空间，与执行顺序无关。
 """
 
 from __future__ import annotations
 
-import pytest
-
-pytestmark = pytest.mark.integration
-
+import importlib.util
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+pytestmark = pytest.mark.integration
+
 # ---------------------------------------------------------------------------
-# 隔离导入 nlp_service.app.tasks（避免与 src/app.py 冲突）
+# 隔离导入 nlp_service/app/tasks.py（避免与 src/app.py 冲突）
 # ---------------------------------------------------------------------------
 
-_NLP_DIR = str(Path(__file__).resolve().parent.parent / "nlp_service")
+_NLP_TASKS_PATH = Path(__file__).resolve().parent.parent / "nlp_service" / "app" / "tasks.py"
+_NLP_TASKS_MODULE = "_nlp_tasks_under_test"
 
-# 清除可能存在的 src/app.py 缓存，确保 from app.tasks import ... 能找到 nlp_service/app/
-_saved_app_mods: dict[str, object] = {}
-for _mod in list(sys.modules):
-    if _mod == "app" or _mod.startswith("app."):
-        _saved_app_mods[_mod] = sys.modules.pop(_mod)
+_spec = importlib.util.spec_from_file_location(_NLP_TASKS_MODULE, _NLP_TASKS_PATH)
+_nlp_tasks = importlib.util.module_from_spec(_spec)
+# 注册到 sys.modules：一是让模块内相对语义正常，二是让下方
+# patch(f"{_NLP_TASKS_MODULE}.requests.post") 在运行期可解析。
+sys.modules[_NLP_TASKS_MODULE] = _nlp_tasks
+_spec.loader.exec_module(_nlp_tasks)
 
-sys.path.insert(0, _NLP_DIR)
-try:
-    from app.tasks import (  # type: ignore[import-not-found]
-        DEFAULT_BACKEND_URL,
-        _auth_headers,
-        _backend_timeout,
-        _backend_url,
-        _post,
-        analyze_batch_sync,
-        analyze_sequence_sync,
-        analyze_text_sync,
-    )
-finally:
-    # 移除 path，但保留 nlp_service 的 app.tasks 在 sys.modules 中
-    # conftest.py 的 app fixture 会通过 del sys.modules["app*"] 清理
-    if _NLP_DIR in sys.path:
-        sys.path.remove(_NLP_DIR)
+DEFAULT_BACKEND_URL = _nlp_tasks.DEFAULT_BACKEND_URL
+_auth_headers = _nlp_tasks._auth_headers
+_backend_timeout = _nlp_tasks._backend_timeout
+_backend_url = _nlp_tasks._backend_url
+_post = _nlp_tasks._post
+analyze_batch_sync = _nlp_tasks.analyze_batch_sync
+analyze_sequence_sync = _nlp_tasks.analyze_sequence_sync
+analyze_text_sync = _nlp_tasks.analyze_text_sync
 
 
 # ---------------------------------------------------------------------------
@@ -120,7 +115,7 @@ class TestBackendConfig:
 class TestPost:
     def test_returns_data_on_success(self):
         resp = _make_response({"code": 200, "msg": "ok", "data": {"label": "positive"}})
-        with patch("app.tasks.requests.post", return_value=resp) as mock_post:
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp) as mock_post:
             data = _post("/api/sentiment/analyze", {"text": "hello"})
         assert data == {"label": "positive"}
         mock_post.assert_called_once()
@@ -130,33 +125,33 @@ class TestPost:
 
     def test_returns_empty_dict_when_data_missing(self):
         resp = _make_response({"code": 200, "msg": "ok"})
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             data = _post("/api/sentiment/analyze", {"text": "hello"})
         assert data == {}
 
     def test_raises_on_http_error_status(self):
         resp = _make_response({"code": 500, "msg": "server error"}, status_code=500)
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             with pytest.raises(RuntimeError, match="server error"):
                 _post("/api/sentiment/analyze", {"text": "hello"})
 
     def test_raises_on_api_error_code(self):
         """HTTP 200 但 body.code >= 400 也应报错。"""
         resp = _make_response({"code": 400, "msg": "bad request"}, status_code=200)
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             with pytest.raises(RuntimeError, match="bad request"):
                 _post("/api/sentiment/analyze", {"text": "hello"})
 
     def test_raises_on_request_exception(self):
         import requests as _requests
 
-        with patch("app.tasks.requests.post", side_effect=_requests.ConnectionError("refused")):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", side_effect=_requests.ConnectionError("refused")):
             with pytest.raises(RuntimeError, match="主后端不可用"):
                 _post("/api/sentiment/analyze", {"text": "hello"})
 
     def test_raises_on_non_json_response(self):
         resp = _make_response(status_code=200, text="<html>error</html>")
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             with pytest.raises(RuntimeError, match="主后端响应解析失败"):
                 _post("/api/sentiment/analyze", {"text": "hello"})
 
@@ -177,7 +172,7 @@ class TestAnalyzeTextSync:
 
     def test_posts_correct_payload(self):
         resp = _make_response({"code": 200, "data": {"label": "positive", "score": 0.9}})
-        with patch("app.tasks.requests.post", return_value=resp) as mock_post:
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp) as mock_post:
             result = analyze_text_sync("好开心", mode="custom")
         assert result == {"label": "positive", "score": 0.9}
         args, kwargs = mock_post.call_args
@@ -186,7 +181,7 @@ class TestAnalyzeTextSync:
 
     def test_strips_text_before_sending(self):
         resp = _make_response({"code": 200, "data": {}})
-        with patch("app.tasks.requests.post", return_value=resp) as mock_post:
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp) as mock_post:
             analyze_text_sync("  hello  ", mode="simple")
         kwargs = mock_post.call_args.kwargs
         assert kwargs["json"]["text"] == "hello"
@@ -215,7 +210,7 @@ class TestAnalyzeBatchSync:
         resp = _make_response(
             {"code": 200, "data": {"total": 2, "results": [{"label": "positive"}, {"label": "negative"}]}}
         )
-        with patch("app.tasks.requests.post", return_value=resp) as mock_post:
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp) as mock_post:
             results = analyze_batch_sync(["好", "差"], mode="custom")
         assert len(results) == 2
         assert results[0]["label"] == "positive"
@@ -226,7 +221,7 @@ class TestAnalyzeBatchSync:
 
     def test_returns_empty_list_when_no_results(self):
         resp = _make_response({"code": 200, "data": {"total": 0}})
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             results = analyze_batch_sync(["x"], mode="custom")
         assert results == []
 
@@ -250,7 +245,7 @@ class TestAnalyzeSequenceSync:
             _make_response({"code": 200, "data": {"score": 0.9, "label": "positive", "emotion": "喜悦"}}),
             _make_response({"code": 200, "data": {"score": 0.1, "label": "negative", "emotion": "愤怒"}}),
         ]
-        with patch("app.tasks.requests.post", side_effect=responses):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", side_effect=responses):
             result = analyze_sequence_sync(["好开心", "太差了"], mode="custom")
         assert result["analysis_count"] == 2
         assert result["sequence_analysis"][0]["sentiment"]["label"] == "positive"
@@ -264,7 +259,7 @@ class TestAnalyzeSequenceSync:
             _make_response({"code": 200, "data": {"score": 0.9, "label": "positive", "emotion": "喜悦"}}),
             _make_response({"code": 200, "data": {"score": 0.1, "label": "negative", "emotion": "悲伤"}}),
         ]
-        with patch("app.tasks.requests.post", side_effect=responses):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", side_effect=responses):
             result = analyze_sequence_sync(["好", "差"], mode="custom")
         assert len(result["sentiment_changes"]) == 1
         change = result["sentiment_changes"][0]
@@ -279,7 +274,7 @@ class TestAnalyzeSequenceSync:
             _make_response({"code": 200, "data": {"score": 0.5, "label": "neutral", "emotion": "平静"}}),
             _make_response({"code": 200, "data": {"score": 0.5, "label": "neutral", "emotion": "焦虑"}}),
         ]
-        with patch("app.tasks.requests.post", side_effect=responses):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", side_effect=responses):
             result = analyze_sequence_sync(["ok", "worried"], mode="custom")
         assert len(result["emotion_transitions"]) == 1
         assert result["emotion_transitions"][0]["from_emotion"] == "平静"
@@ -290,7 +285,7 @@ class TestAnalyzeSequenceSync:
     def test_fallback_on_analysis_error(self):
         """单条分析失败应回退中性，不中断序列。"""
         resp = _make_response({"code": 200, "data": {"score": 0.9, "label": "positive", "emotion": "喜悦"}})
-        with patch("app.tasks.requests.post", side_effect=[RuntimeError("backend down"), resp]):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", side_effect=[RuntimeError("backend down"), resp]):
             result = analyze_sequence_sync(["fail", "ok"], mode="custom")
         assert result["analysis_count"] == 2
         assert result["sequence_analysis"][0]["sentiment"]["label"] == "neutral"
@@ -299,12 +294,12 @@ class TestAnalyzeSequenceSync:
 
     def test_overall_label_positive(self):
         resp = _make_response({"code": 200, "data": {"score": 0.9, "label": "positive", "emotion": "喜悦"}})
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             result = analyze_sequence_sync(["好", "棒"], mode="custom")
         assert result["overall_sentiment"]["label"] == "positive"
 
     def test_overall_label_negative(self):
         resp = _make_response({"code": 200, "data": {"score": 0.1, "label": "negative", "emotion": "悲伤"}})
-        with patch("app.tasks.requests.post", return_value=resp):
+        with patch(f"{_NLP_TASKS_MODULE}.requests.post", return_value=resp):
             result = analyze_sequence_sync(["差", "烂"], mode="custom")
         assert result["overall_sentiment"]["label"] == "negative"
