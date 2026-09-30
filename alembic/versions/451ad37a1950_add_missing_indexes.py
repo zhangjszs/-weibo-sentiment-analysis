@@ -79,26 +79,38 @@ def _with_mysql_prefix_length(conn, table_name: str, columns: list[str]) -> list
 
     注意必须用 ``sa.text("col(100)")`` 而不是字符串 ``"col(100)"``：
     alembic 的 ``_textual_index_column`` 收到普通 str 时会把它当成**列名**
-    建成 ``Column("authorName(100)")``，渲染出的 SQL 语义完全不对；
-    只有 TextClause 才会被原样渲染成带前缀长度的表达式。
+    建成 ``Column("authorName(100)")``，渲染出 `` `authorName(100)` ``，
+    MySQL 会当成一个带引号的列名而非前缀索引；只有 TextClause 才会被
+    原样渲染成 ``authorName(100)``。
+
+    列类型直接查 information_schema：不同 dialect / 驱动对
+    ``inspect().get_columns()`` 里 ``type`` 的字符串化结果不一致
+    （实测 MySQL 上按 ``str(type)`` 判断会漏掉 TEXT 列，导致前缀没加上、
+    仍报 1170），而 DATA_TYPE 是权威且稳定的。
     """
     if conn.dialect.name != "mysql":
         return list(columns)
 
-    from sqlalchemy import inspect
-
+    data_types: dict[str, str] = {}
     try:
-        inspector = inspect(conn)
-        col_types = {
-            c["name"]: str(c["type"]).upper() for c in inspector.get_columns(table_name)
-        }
+        rows = conn.execute(
+            sa.text(
+                """
+                SELECT column_name, data_type
+                FROM information_schema.columns
+                WHERE table_schema = DATABASE()
+                  AND table_name = :table_name
+                """
+            ),
+            {"table_name": table_name},
+        ).fetchall()
+        data_types = {str(r[0]).upper(): str(r[1]).upper() for r in rows}
     except Exception:
         return list(columns)
 
     result = []
     for column in columns:
-        base_type = col_types.get(column, "").split("(")[0].strip()
-        if base_type in _TEXT_TYPES:
+        if data_types.get(column.upper(), "") in _TEXT_TYPES:
             result.append(sa.text(f"{column}({_PREFIX_LENGTH})"))
         else:
             result.append(column)

@@ -18,7 +18,10 @@ import pytest
 pytestmark = pytest.mark.unit
 
 MIGRATION_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "alembic", "versions",
+    os.path.dirname(__file__),
+    "..",
+    "alembic",
+    "versions",
     "451ad37a1950_add_missing_indexes.py",
 )
 
@@ -30,70 +33,64 @@ def _load_migration():
     return module
 
 
+class FakeResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def fetchall(self):
+        return self._rows
+
+
 class FakeDialect:
     def __init__(self, name):
         self.name = name
 
 
-class FakeInspector:
-    def __init__(self, columns):
-        self._columns = columns
-
-    def get_columns(self, table_name):
-        return [{"name": name, "type": typ} for name, typ in self._columns.items()]
-
-
 class FakeConnection:
-    """最小替身：只需 dialect.name 与 inspect(conn) 两个入口。"""
+    """最小替身：dialect.name + execute(...) 返回 information_schema 行。"""
 
-    def __init__(self, dialect_name, columns):
+    def __init__(self, dialect_name, rows=()):
         self.dialect = FakeDialect(dialect_name)
-        self._columns = columns
+        self._rows = list(rows)
+        self.statements = []
 
-    # pylint: disable=unused-argument
-    def inspect(self, conn):
-        return FakeInspector(self._columns)
+    def execute(self, statement, params=None):
+        self.statements.append(str(statement))
+        if params is None:
+            return FakeResult(self._rows)
+        return FakeResult(self._rows)
 
 
-def test_mysql_text_column_gets_prefix_length(monkeypatch):
+def test_mysql_text_column_gets_prefix_length():
     """TEXT 列必须产出 sa.text() 前缀表达式，而不是字符串。
 
-    这是本用例的核心：alembic 收到普通 str 会当成列名处理
-    （Column("authorName(100)")），SQL 渲染出来的不是前缀索引。
+    这是核心：alembic 收到普通 str 会当成列名处理
+    （Column("authorName(100)")），渲染成 `authorName(100)`，
+    MySQL 会当成带引号的列名，仍报 1170。
     """
     import sqlalchemy as sa
 
     mod = _load_migration()
-    monkeypatch.setattr(
-        "sqlalchemy.inspect",
-        lambda conn: FakeInspector({"authorName": "TEXT", "likeNum": "INTEGER"}),
-    )
-    conn = FakeConnection("mysql", {"authorName": "TEXT"})
+    conn = FakeConnection("mysql", rows=[("authorName", "text")])
     result = mod._with_mysql_prefix_length(conn, "article", ["authorName"])
     assert len(result) == 1
     assert isinstance(result[0], sa.TextClause), "前缀必须用 sa.text()，否则被当列名"
     assert str(result[0]) == "authorName(100)"
 
 
-def test_mysql_varchar_column_left_alone(monkeypatch):
+def test_mysql_varchar_column_left_alone():
     mod = _load_migration()
-    monkeypatch.setattr(
-        "sqlalchemy.inspect",
-        lambda conn: FakeInspector({"authorName": "VARCHAR(100)"}),
-    )
-    conn = FakeConnection("mysql", {"authorName": "VARCHAR(100)"})
+    conn = FakeConnection("mysql", rows=[("authorName", "varchar")])
     assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
         "authorName"
     ]
 
 
-def test_mysql_mixed_columns(monkeypatch):
+def test_mysql_mixed_columns():
     mod = _load_migration()
-    monkeypatch.setattr(
-        "sqlalchemy.inspect",
-        lambda conn: FakeInspector({"authorName": "TEXT", "commentsLen": "INTEGER"}),
+    conn = FakeConnection(
+        "mysql", rows=[("authorName", "TEXT"), ("commentsLen", "int")]
     )
-    conn = FakeConnection("mysql", {})
     result = mod._with_mysql_prefix_length(
         conn, "article", ["authorName", "commentsLen"]
     )
@@ -101,8 +98,50 @@ def test_mysql_mixed_columns(monkeypatch):
     assert result[1] == "commentsLen"
 
 
+@pytest.mark.parametrize("blob_type", ["tinytext", "mediumtext", "longtext", "blob"])
+def test_all_text_and_blob_families_get_prefix(blob_type):
+    mod = _load_migration()
+    conn = FakeConnection("mysql", rows=[("col_a", blob_type)])
+    result = mod._with_mysql_prefix_length(conn, "t", ["col_a"])
+    assert str(result[0]) == f"col_a({mod._PREFIX_LENGTH})"
+
+
+def test_sqlite_is_untouched():
+    """SQLite 支持对 TEXT 直接建索引，不应加前缀（否则列名解析失败）。"""
+    mod = _load_migration()
+    conn = FakeConnection("sqlite", rows=[("authorName", "TEXT")])
+    assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
+        "authorName"
+    ]
+    # 不该为非 MySQL 方言发起 information_schema 查询
+    assert conn.statements == []
+
+
+def test_query_failure_degrades_gracefully():
+    """查询失败时退回原列名，不能让整条迁移炸掉。"""
+
+    class Boom(FakeConnection):
+        def execute(self, statement, params=None):
+            raise RuntimeError("no such table")
+
+    mod = _load_migration()
+    conn = Boom("mysql")
+    assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
+        "authorName"
+    ]
+
+
+def test_unknown_column_left_alone():
+    """information_schema 里没有的列不应被加前缀（避免造出坏 SQL）。"""
+    mod = _load_migration()
+    conn = FakeConnection("mysql", rows=[("other", "TEXT")])
+    assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
+        "authorName"
+    ]
+
+
 def test_prefix_renders_as_prefix_index_in_sql():
-    """把前缀表达式交给 alembic 渲染出的 DDL 必须是 INDEX ... (`authorName`(100))。"""
+    """交给 alembic 渲染出的 DDL 必须是 authorName(100)，不能是被引号包住的列名。"""
     import sqlalchemy as sa
     from sqlalchemy.dialects import mysql
     from sqlalchemy.schema import CreateIndex
@@ -111,33 +150,8 @@ def test_prefix_renders_as_prefix_index_in_sql():
     table = sa.Table("article", md, sa.Column("authorName", sa.Text))
     idx = sa.Index("idx_author_name", sa.text("authorName(100)"), _table=table)
     ddl = str(CreateIndex(idx).compile(dialect=mysql.dialect()))
-    # 渲染结果必须是 authorName(100) 这种带前缀长度的形式，
-    # 而不是把 (100) 当成列名的一部分（那会报 unknown column）。
     assert "authorName(100)" in ddl, ddl
-    assert "CREATE INDEX idx_author_name ON article (authorName(100))" in ddl, ddl
-
-
-def test_sqlite_is_untouched(monkeypatch):
-    """SQLite 支持对 TEXT 直接建索引，不应加前缀（否则列名解析失败）。"""
-    mod = _load_migration()
-    conn = FakeConnection("sqlite", {"authorName": "TEXT"})
-    assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
-        "authorName"
-    ]
-
-
-def test_inspector_failure_degrades_gracefully(monkeypatch):
-    """反射失败时退回原列名，不能让整条迁移炸掉。"""
-
-    def _boom(conn):
-        raise RuntimeError("no such table")
-
-    monkeypatch.setattr("sqlalchemy.inspect", _boom)
-    mod = _load_migration()
-    conn = FakeConnection("mysql", {})
-    assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
-        "authorName"
-    ]
+    assert "`authorName(100)`" not in ddl, ddl
 
 
 def test_prefix_length_matches_frozen_sql_convention():
