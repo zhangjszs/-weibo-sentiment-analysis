@@ -62,7 +62,39 @@ def _create_index_if_not_exists(index_name: str, table_name: str, columns: list[
                 return
         except Exception:
             pass
-    op.create_index(index_name, table_name, columns)
+    op.create_index(index_name, table_name, _with_mysql_prefix_length(conn, table_name, columns))
+
+
+# MySQL 不允许对 TEXT/BLOB 列直接建索引，必须给前缀长度，否则报 1170
+# "BLOB/TEXT column used in key specification without a key length"。
+# ORM（src/models/article.py）把 authorName 声明为 String(100)，而冻结 SQL
+# （docs/database/init_database.sql）声明为 text —— schema 双真相，见 #27。
+# 此处按实际列类型决定是否加前缀，使两种 schema 下都能建成索引。
+_TEXT_TYPES = {"TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT", "BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB"}
+_PREFIX_LENGTH = 100
+
+
+def _with_mysql_prefix_length(conn, table_name: str, columns: list[str]) -> list[str]:
+    """MySQL 上把 TEXT/BLOB 列换成 ``col(100)`` 前缀形式；其他方言原样返回。"""
+    if conn.dialect.name != "mysql":
+        return columns
+
+    from sqlalchemy import inspect
+
+    try:
+        inspector = inspect(conn)
+        col_types = {
+            c["name"]: str(c["type"]).upper() for c in inspector.get_columns(table_name)
+        }
+    except Exception:
+        return columns
+
+    result = []
+    for column in columns:
+        col_type = col_types.get(column, "")
+        base_type = col_type.split("(")[0].strip()
+        result.append(f"{column}({_PREFIX_LENGTH})" if base_type in _TEXT_TYPES else column)
+    return result
 
 
 def upgrade() -> None:
