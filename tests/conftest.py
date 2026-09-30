@@ -20,7 +20,12 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 # 避免依赖调用方式。
 sys.path.insert(0, str(PROJECT_ROOT))
 
-os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
+# 默认用内存 SQLite，让 unit/api 门禁无需外部数据库即可跑。
+# 但**只在调用方没有指定时**才设默认值：CI 的 integration job 会导出
+# TEST_DATABASE_URL 指向它拉起的 MySQL 服务，若这里无条件覆盖，集成测试就会
+# 悄悄跑在 SQLite 上（表现为 `no such table: article` 之类），MySQL 服务形同虚设。
+if not os.environ.get("TEST_DATABASE_URL"):
+    os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
 
 
 def sandbox_mkdtemp(

@@ -138,6 +138,9 @@ jobs:
           DB_USER: root
           DB_PASSWORD: root
           DB_NAME: weibo_test
+          # 必须显式导出：conftest 只在未指定时才回退到内存 SQLite。
+          # 不给这行，集成测试会悄悄跑在 SQLite 上，MySQL 服务形同虚设。
+          TEST_DATABASE_URL: mysql+pymysql://root:root@127.0.0.1:3306/weibo_test?charset=utf8mb4
           SECRET_KEY: ci-test-secret-key-must-be-at-least-32-characters-long
           JWT_SECRET_KEY: ci-test-jwt-secret-key-must-be-at-least-32-characters-long
           ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
