@@ -1,6 +1,5 @@
-const CACHE_NAME = 'weibo-analytics-v1';
-const STATIC_CACHE = 'static-v1';
-const API_CACHE = 'api-v1';
+const CACHE_NAME = 'weibo-analytics-v2';
+const STATIC_CACHE = 'static-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -22,7 +21,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE && name !== API_CACHE)
+          .filter((name) => name !== CACHE_NAME && name !== STATIC_CACHE)
           .map((name) => caches.delete(name))
       );
     })
@@ -34,9 +33,15 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkFirst(request, API_CACHE));
-  } else if (request.method === 'GET') {
+  // API 与 Socket.IO 一律不经过 SW：v1 曾对 /api/* networkFirst +
+  // cache.put，把带鉴权的响应写进 CacheStorage，多用户共机会串数据，
+  // 离线还会返回他人/过期的旧数据（#20）。浏览器默认行为（axios 统一
+  // 处理 401/超时）比缓存更正确。
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/')) {
+    return;
+  }
+
+  if (request.method === 'GET') {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
   }
 });
@@ -54,26 +59,15 @@ async function cacheFirst(request, cacheName) {
     }
     return response;
   } catch (error) {
+    // SPA 导航离线时回退到缓存的 index.html，而不是 503 白屏（#20）；
+    // 静态资源本身带 hash 指纹，v2 起新名字会随发版自然更新。
+    if (request.mode === 'navigate') {
+      const shell = await caches.match('/index.html');
+      if (shell) {
+        return shell;
+      }
+    }
     return new Response('Offline', { status: 503 });
-  }
-}
-
-async function networkFirst(request, cacheName) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(cacheName);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch (error) {
-    const cached = await caches.match(request);
-    if (cached) {
-      return cached;
-    }
-    return new Response(JSON.stringify({ error: 'Offline' }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
   }
 }
 
