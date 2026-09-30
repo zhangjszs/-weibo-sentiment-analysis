@@ -17,6 +17,11 @@ export function useTable(fetchData, options = {}) {
   const tableData = ref([])
   const loading = ref(false)
   const total = ref(0)
+  // 失败态：区分「真无数据」与「加载失败」。失败时保留旧数据（避免瞬时
+  // 错误清空视图），但显式标记，供视图提示重试，而不是静默用旧数据误导（#19）。
+  const loadError = ref(false)
+  // 请求序号：慢的旧响应不得覆盖新响应（快速翻页/连续搜索场景）
+  let loadSeq = 0
 
   // 分页状态
   const pagination = reactive({
@@ -43,17 +48,24 @@ export function useTable(fetchData, options = {}) {
   const loadData = async () => {
     if (!fetchData) return
 
+    const seq = ++loadSeq
     loading.value = true
     try {
       const result = await fetchData(queryParams.value)
+      if (seq !== loadSeq) return
       if (result.code === 200) {
         tableData.value = result.data?.list || result.data || []
         total.value = result.data?.total || tableData.value.length
+        loadError.value = false
       }
     } catch (error) {
+      if (seq !== loadSeq) return
+      loadError.value = true
       console.error('加载表格数据失败:', error)
     } finally {
-      loading.value = false
+      if (seq === loadSeq) {
+        loading.value = false
+      }
     }
   }
 
@@ -114,6 +126,7 @@ export function useTable(fetchData, options = {}) {
     tableData,
     loading,
     total,
+    loadError,
     pagination,
     searchParams,
     sortParams,
