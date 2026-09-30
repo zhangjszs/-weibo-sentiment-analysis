@@ -56,15 +56,23 @@ class FakeConnection:
 
 
 def test_mysql_text_column_gets_prefix_length(monkeypatch):
+    """TEXT 列必须产出 sa.text() 前缀表达式，而不是字符串。
+
+    这是本用例的核心：alembic 收到普通 str 会当成列名处理
+    （Column("authorName(100)")），SQL 渲染出来的不是前缀索引。
+    """
+    import sqlalchemy as sa
+
     mod = _load_migration()
     monkeypatch.setattr(
         "sqlalchemy.inspect",
         lambda conn: FakeInspector({"authorName": "TEXT", "likeNum": "INTEGER"}),
     )
     conn = FakeConnection("mysql", {"authorName": "TEXT"})
-    assert mod._with_mysql_prefix_length(conn, "article", ["authorName"]) == [
-        "authorName(100)"
-    ]
+    result = mod._with_mysql_prefix_length(conn, "article", ["authorName"])
+    assert len(result) == 1
+    assert isinstance(result[0], sa.TextClause), "前缀必须用 sa.text()，否则被当列名"
+    assert str(result[0]) == "authorName(100)"
 
 
 def test_mysql_varchar_column_left_alone(monkeypatch):
@@ -86,9 +94,27 @@ def test_mysql_mixed_columns(monkeypatch):
         lambda conn: FakeInspector({"authorName": "TEXT", "commentsLen": "INTEGER"}),
     )
     conn = FakeConnection("mysql", {})
-    assert mod._with_mysql_prefix_length(
+    result = mod._with_mysql_prefix_length(
         conn, "article", ["authorName", "commentsLen"]
-    ) == ["authorName(100)", "commentsLen"]
+    )
+    assert str(result[0]) == "authorName(100)"
+    assert result[1] == "commentsLen"
+
+
+def test_prefix_renders_as_prefix_index_in_sql():
+    """把前缀表达式交给 alembic 渲染出的 DDL 必须是 INDEX ... (`authorName`(100))。"""
+    import sqlalchemy as sa
+    from sqlalchemy.dialects import mysql
+    from sqlalchemy.schema import CreateIndex
+
+    md = sa.MetaData()
+    table = sa.Table("article", md, sa.Column("authorName", sa.Text))
+    idx = sa.Index("idx_author_name", sa.text("authorName(100)"), _table=table)
+    ddl = str(CreateIndex(idx).compile(dialect=mysql.dialect()))
+    # 渲染结果必须是 authorName(100) 这种带前缀长度的形式，
+    # 而不是把 (100) 当成列名的一部分（那会报 unknown column）。
+    assert "authorName(100)" in ddl, ddl
+    assert "CREATE INDEX idx_author_name ON article (authorName(100))" in ddl, ddl
 
 
 def test_sqlite_is_untouched(monkeypatch):

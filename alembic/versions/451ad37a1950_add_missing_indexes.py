@@ -74,10 +74,16 @@ _TEXT_TYPES = {"TEXT", "TINYTEXT", "MEDIUMTEXT", "LONGTEXT", "BLOB", "TINYBLOB",
 _PREFIX_LENGTH = 100
 
 
-def _with_mysql_prefix_length(conn, table_name: str, columns: list[str]) -> list[str]:
-    """MySQL 上把 TEXT/BLOB 列换成 ``col(100)`` 前缀形式；其他方言原样返回。"""
+def _with_mysql_prefix_length(conn, table_name: str, columns: list[str]) -> list:
+    """MySQL 上把 TEXT/BLOB 列换成 ``col(100)`` 前缀形式；其他方言原样返回。
+
+    注意必须用 ``sa.text("col(100)")`` 而不是字符串 ``"col(100)"``：
+    alembic 的 ``_textual_index_column`` 收到普通 str 时会把它当成**列名**
+    建成 ``Column("authorName(100)")``，渲染出的 SQL 语义完全不对；
+    只有 TextClause 才会被原样渲染成带前缀长度的表达式。
+    """
     if conn.dialect.name != "mysql":
-        return columns
+        return list(columns)
 
     from sqlalchemy import inspect
 
@@ -87,13 +93,15 @@ def _with_mysql_prefix_length(conn, table_name: str, columns: list[str]) -> list
             c["name"]: str(c["type"]).upper() for c in inspector.get_columns(table_name)
         }
     except Exception:
-        return columns
+        return list(columns)
 
     result = []
     for column in columns:
-        col_type = col_types.get(column, "")
-        base_type = col_type.split("(")[0].strip()
-        result.append(f"{column}({_PREFIX_LENGTH})" if base_type in _TEXT_TYPES else column)
+        base_type = col_types.get(column, "").split("(")[0].strip()
+        if base_type in _TEXT_TYPES:
+            result.append(sa.text(f"{column}({_PREFIX_LENGTH})"))
+        else:
+            result.append(column)
     return result
 
 
