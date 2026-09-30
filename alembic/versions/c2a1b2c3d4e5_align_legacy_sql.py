@@ -11,6 +11,13 @@ Create Date: 2026-08-21 23:30:00
 from alembic import op
 import sqlalchemy as sa
 
+import os as _os
+import sys as _sys
+
+# 复用共用的 MySQL TEXT 前缀处理（见 issue #27）
+_sys.path.insert(0, _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))))
+from index_helpers import mysql_index_columns  # noqa: E402
+
 # revision identifiers, used by Alembic.
 revision = "c2a1b2c3d4e5"
 down_revision = "b2d5a3f9c0e1"
@@ -61,7 +68,7 @@ def _create_index_if_not_exists(index_name: str, table_name: str, columns: list[
                 return
         except Exception:
             pass
-    op.create_index(index_name, table_name, columns)
+    op.create_index(index_name, table_name, mysql_index_columns(conn, table_name, columns))
 
 
 def upgrade() -> None:
