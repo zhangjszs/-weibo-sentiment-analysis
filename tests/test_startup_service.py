@@ -105,7 +105,13 @@ def test_schedule_startup_warmup_disabled(monkeypatch):
     assert started is False
 
 
-def test_schedule_startup_warmup_records_status(monkeypatch):
+def test_schedule_startup_warmup_records_status(monkeypatch, alert_db):
+    # #15：预热改用真实存在的用户签发 token（不再伪造 user_id=0），需先种用户
+    from models.user import User
+
+    alert_db.add(User(username="admin", password="x"))
+    alert_db.commit()
+
     monkeypatch.setattr(Config, "ENABLE_STARTUP_WARMUP", True)
     monkeypatch.setattr(Config, "STARTUP_WARMUP_DELAY", 0.0)
     monkeypatch.setattr(Config, "DEMO_ADMIN_USERNAME", "admin")
