@@ -3,9 +3,10 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#15 [Medium] 会话/JWT：无 aud/iss、jti 不校验、logout 不作废、
-  extend 无旋转；鉴权三套重复
-- 状态：待办（下一棒从这里接）
+- 任务：#15 [Medium] 会话/JWT（已部分完成并 reopen，见已完成区）
+- 状态：进行中——下一棒接剩余子项：统一三套 JWT 校验（require_jwt /
+  app._require_jwt_auth / jwt_handler.jwt_required）、登录更严限流+锁定、
+  关键接口审计、ADMIN_USERS 为空启动告警
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 连续三次全绿。
@@ -13,7 +14,10 @@
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
 - **commit message 里 `fix: #N` 会自动关闭 issue**（GitHub closing keyword）；
-  #19、#20 都因此自动关（评论事后补发即close 后补发也正常显示）
+  #19/#20/#15 都因此自动关；部分完成的 issue 在评论后 `gh issue reopen` 即可
+- app fixture 会删 config* 模块重导入：测试里 monkeypatch Config 必须**在
+  fixture 之后** `import config.settings` 取新类，顶层 import 到的是旧类
+- Werkzeug 测试客户端在 HTTP 边界就拒绝带换行的头值（测日志注入用超长值）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
 - Security Scan 连续三次转绿——"每次都红"的旧记录已过时
 - 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
@@ -30,6 +34,12 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #15 部分（reopen）：jti 黑名单（Redis 优先/内存兜底）+ aud/iss 验签、
+  两处 logout 作废 token、extend 旋转、预热不再伪造 user_id=0 管理员
+  token、admin_required 401/403 区分、g.user_id 使限流 user 键生效、
+  登录 redirect 白名单（//evil.com）、X-Request-Id 消毒（4 commits +
+  11 新测试；fast gate 1274、integration 189、CI 绿；commit fix: #15
+  自动关闭后已 reopen）
 - #20 关闭：WS 接入 socket.io-client + vite/nginx /socket.io 通道 + 抖动
   退避；SW 不缓存 /api/*、离线回退 index.html；裸 fetch 统一 axios；登出
   清 tab 持久化；Inter 字体本地化（4 commits，67 前端测试，CI 绿）
