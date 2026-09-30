@@ -20,7 +20,13 @@ import {
   User,
 } from '@element-plus/icons-vue'
 import { useTabsStore } from '@/stores/tabs'
-import { clearSessionState, getAuthToken, setCachedUser } from '@/utils/authSession'
+import {
+  clearSessionState,
+  getAuthToken,
+  getCachedCurrentUser,
+  setCachedUser,
+  setCachedCurrentUser,
+} from '@/utils/authSession'
 
 const routes = [
   {
@@ -218,30 +224,42 @@ const fetchCurrentUser = async () => {
   }
 }
 
+// /api/auth/me 结果的短 TTL：此前每次 beforeEach 都真实发请求，路由间
+// 快速切换会放大 QPS（#19）。登出/401 走 clearSessionState 统一失效缓存。
+const ME_CACHE_TTL_MS = 60 * 1000
+
 router.beforeEach(async (to, from, next) => {
   if (to.meta.title) {
     document.title = `${to.meta.title} - 微博舆情分析系统`
   }
 
+  // 404 是 catch-all 路由，to.path 是原始未匹配路径（如 /no-such-page），
+  // 白名单 includes('/404') 永不命中——改为以 meta.public 判定，登录页与
+  // 错误页（均标 public）一律放行，不再要求先登录才能看 404/403/500（#19）。
   const whiteList = ['/login', '/register', '/404', '/403', '/500']
-  if (whiteList.includes(to.path)) {
+  if (to.meta?.public || whiteList.includes(to.path)) {
     next()
     return
   }
 
-  const user = await fetchCurrentUser()
+  const cachedUser = getCachedCurrentUser(ME_CACHE_TTL_MS)
+  const user = cachedUser || (await fetchCurrentUser())
   if (!user) {
     clearSessionState()
     next(`/login?redirect=${to.fullPath}`)
     return
   }
-
-  setCachedUser(user)
+  if (!cachedUser) {
+    setCachedCurrentUser(user)
+    setCachedUser(user)
+  }
 
   if (to.meta.adminOnly) {
     if (user?.is_admin !== true) {
       ElMessage.warning('没有权限访问该页面')
-      next('/home')
+      // 跳 /403 而不是 /home：/home 对非管理员可进，用户会误以为权限没问题，
+      // 403 页面从此成为死页面（#19）
+      next('/403')
       return
     }
   }

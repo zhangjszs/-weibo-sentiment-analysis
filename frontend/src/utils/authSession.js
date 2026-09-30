@@ -3,6 +3,29 @@ export const USER_CACHE_KEY = 'weibo_user'
 
 let authToken = ''
 
+// /api/auth/me 的进程内缓存（带 TTL，见 getCachedCurrentUser）。仅存内存、
+// 不落 localStorage：避免 TTL 过期后仍被复用。登出与 401 都经过
+// clearSessionState，缓存随之失效，不会出现登出后守卫仍放行的问题（#19）。
+let currentUserCache = { user: null, fetchedAt: 0 }
+
+export const getCachedCurrentUser = (maxAgeMs = 0) => {
+  if (!currentUserCache.user) {
+    return null
+  }
+  if (Date.now() - currentUserCache.fetchedAt > maxAgeMs) {
+    return null
+  }
+  return currentUserCache.user
+}
+
+export const setCachedCurrentUser = (user) => {
+  currentUserCache = { user: user && typeof user === 'object' ? user : null, fetchedAt: user ? Date.now() : 0 }
+}
+
+export const clearCurrentUserCache = () => {
+  currentUserCache = { user: null, fetchedAt: 0 }
+}
+
 const resolveStorage = (storage) => {
   if (storage) {
     return storage
@@ -60,6 +83,7 @@ export const setCachedUser = (user, storage) => {
 
 export const clearSessionState = (storage) => {
   authToken = ''
+  clearCurrentUserCache()
 
   const targetStorage = resolveStorage(storage)
   if (!targetStorage) {
