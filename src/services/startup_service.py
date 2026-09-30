@@ -207,7 +207,17 @@ def schedule_startup_warmup(app) -> bool:
                 time.sleep(delay)
 
             username = (Config.DEMO_ADMIN_USERNAME or "system").strip() or "system"
-            token = create_token(0, username, expires_hours=1)
+            # 用真实存在的用户签发（#15）：此前伪造 user_id=0 的 1h token，
+            # 凭 username 享受管理员待遇，泄露即提权
+            from database import db_session
+            from models.user import User
+
+            row = db_session.query(User).filter_by(username=username).first()
+            if row is None:
+                logger.warning("启动预热跳过：用户 %s 不存在（未创建演示管理员？）", username)
+                _warmup_finish(0.0, "warmup skipped: user not found")
+                return
+            token = create_token(row.id, username, expires_hours=1)
             headers = {"Authorization": f"Bearer {token}"}
 
             with app.test_client() as client:

@@ -18,6 +18,10 @@ def admin_required(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         user = getattr(request, "current_user", None) or {}
+        if not user:
+            # 未认证 401、已认证但无权限 403：两者混为 403 时前端无法区分
+            # 「该去登录」还是「该去找管理员」（#15）
+            return error("未认证", code=401), 401
         if not is_admin_user(user):
             return error("权限不足", code=403), 403
         return func(*args, **kwargs)

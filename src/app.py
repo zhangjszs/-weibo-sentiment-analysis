@@ -141,6 +141,8 @@ def _attach_current_user_from_token():
         return None
     request.current_user = user_info
     g.current_user = user_info
+    # rate_limiter 的 user 键读 g.user_id；此前从未设置，限流按 IP 走（#15）
+    g.user_id = user_info.get("user_id")
     return user_info
 
 
@@ -483,6 +485,13 @@ def create_app() -> Flask:
             if not user:
                 return error("未认证或登录已过期", code=401), 401
             username = user.get("username", "")
+            # 旋转（#15）：新 token 签发的同时撤销旧 token，旧 token 泄露后
+            # 不能再靠 extend 前的窗口继续使用
+            old_token = _get_auth_token()
+            if old_token:
+                from utils.jwt_handler import revoke_token
+
+                revoke_token(old_token)
             refreshed_token = create_token(user.get("user_id"), username)
             logger.info(f"用户 {username} 延长会话（JWT） | IP: {get_client_ip()}")
             response = ok(
@@ -500,7 +509,12 @@ def create_app() -> Flask:
     @app.before_request
     def before_request():
         log_request_info()
-        g.request_id = request.headers.get("X-Request-Id") or uuid.uuid4().hex
+        # 客户端提供的 X-Request-Id 只接受受限字符集，防止日志注入/伪造（#15）
+        client_request_id = request.headers.get("X-Request-Id") or ""
+        if re.fullmatch(r"[A-Za-z0-9_-]{1,64}", client_request_id):
+            g.request_id = client_request_id
+        else:
+            g.request_id = uuid.uuid4().hex
         if request.path.startswith("/static"):
             return None
         # A2 JWT 单轨：白名单直通，其余均需 JWT（/page/* 仅保留登录/注册页直出，其余 401）
