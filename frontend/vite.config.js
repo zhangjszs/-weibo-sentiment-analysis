@@ -38,6 +38,14 @@ export default defineConfig(({ command, mode }) => {
           target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
           changeOrigin: true,
           secure: false
+        },
+        // Socket.IO（Flask-SocketIO 服务端在 /socket.io 路径）：无此代理时
+        // dev 环境的 WS 握手会打到 vite 自身，必然失败（#20）
+        '/socket.io': {
+          target: env.VITE_APP_API_BASE_URL || 'http://127.0.0.1:5000',
+          changeOrigin: true,
+          secure: false,
+          ws: true
         }
       }
     },

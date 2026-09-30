@@ -4,9 +4,12 @@
  */
 
 import { ref } from 'vue'
+import { io } from 'socket.io-client'
+import { getAuthToken } from '@/utils/authSession'
 
 const RECONNECT_DELAY = 5000
 const MAX_RECONNECT_ATTEMPTS = 10
+const MAX_RECONNECT_DELAY = 60000
 
 class WebSocketClient {
   constructor() {
@@ -31,77 +34,76 @@ class WebSocketClient {
       return
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}`
+    // socket.io-client 直接 import：此前依赖全局 window.io，但 index.html
+    // 从未引入 socket.io 脚本，永远走「Socket.IO 未加载」分支（#20）。
+    // 同源连接走 /socket.io 默认路径（vite/nginx 均已配代理与 Upgrade）。
+    const wsUrl = `${window.location.protocol}//${window.location.host}`
+    const authToken = token || getAuthToken()
 
     try {
-      if (window.io) {
-        this.socket = window.io(wsUrl, {
-          transports: ['websocket', 'polling'],
-          reconnection: false,
-          autoConnect: true,
-        })
+      this.socket = io(wsUrl, {
+        transports: ['websocket', 'polling'],
+        reconnection: false,
+        autoConnect: true,
+      })
 
-        this.socket.on('connect', () => {
-          console.log('WebSocket 连接成功')
-          this.connected.value = true
-          this.reconnectAttempts = 0
+      this.socket.on('connect', () => {
+        console.log('WebSocket 连接成功')
+        this.connected.value = true
+        this.reconnectAttempts = 0
 
-          if (token) {
-            this.authenticate(token)
-          }
-        })
+        if (authToken) {
+          this.authenticate(authToken)
+        }
+      })
 
-        this.socket.on('disconnect', (reason) => {
-          console.log('WebSocket 断开连接:', reason)
-          this.connected.value = false
-          this.authenticated = false
-          this.scheduleReconnect(token)
-        })
+      this.socket.on('disconnect', (reason) => {
+        console.log('WebSocket 断开连接:', reason)
+        this.connected.value = false
+        this.authenticated = false
+        this.scheduleReconnect(authToken)
+      })
 
-        this.socket.on('connect_error', (error) => {
-          console.error('WebSocket 连接错误:', error)
-          this.scheduleReconnect(token)
-        })
+      this.socket.on('connect_error', (error) => {
+        console.error('WebSocket 连接错误:', error)
+        this.scheduleReconnect(authToken)
+      })
 
-        this.socket.on('message', (data) => {
-          this.handleMessage(data)
-        })
+      this.socket.on('message', (data) => {
+        this.handleMessage(data)
+      })
 
-        this.socket.on('connected', (data) => {
-          console.log('WebSocket 已连接:', data)
-        })
+      this.socket.on('connected', (data) => {
+        console.log('WebSocket 已连接:', data)
+      })
 
-        this.socket.on('auth_success', (data) => {
-          console.log('WebSocket 认证成功:', data)
-          this.authenticated = true
-        })
+      this.socket.on('auth_success', (data) => {
+        console.log('WebSocket 认证成功:', data)
+        this.authenticated = true
+      })
 
-        this.socket.on('auth_error', (data) => {
-          console.error('WebSocket 认证失败:', data)
-        })
+      this.socket.on('auth_error', (data) => {
+        console.error('WebSocket 认证失败:', data)
+      })
 
-        this.socket.on('subscribed', (data) => {
-          console.log('WebSocket 订阅成功:', data)
-        })
+      this.socket.on('subscribed', (data) => {
+        console.log('WebSocket 订阅成功:', data)
+      })
 
-        this.socket.on('unsubscribed', (data) => {
-          console.log('WebSocket 取消订阅:', data)
-        })
+      this.socket.on('unsubscribed', (data) => {
+        console.log('WebSocket 取消订阅:', data)
+      })
 
-        this.socket.on('subscribe_error', (data) => {
-          console.error('WebSocket 订阅失败:', data)
-        })
+      this.socket.on('subscribe_error', (data) => {
+        console.error('WebSocket 订阅失败:', data)
+      })
 
-        this.socket.on('pong', (data) => {
-          console.debug('WebSocket Pong:', data)
-        })
-      } else {
-        console.error('Socket.IO 未加载')
-      }
+      this.socket.on('pong', (data) => {
+        console.debug('WebSocket Pong:', data)
+      })
     } catch (error) {
       console.error('WebSocket 连接异常:', error)
-      this.scheduleReconnect(token)
+      this.scheduleReconnect(authToken)
     }
   }
 
@@ -181,10 +183,13 @@ class WebSocketClient {
     }
 
     this.reconnectAttempts++
-    const delay = RECONNECT_DELAY * this.reconnectAttempts
+    // 指数退避 + 抖动：固定间隔会让断线服务恢复瞬间的所有客户端同时重连
+    // （惊群），抖动把重连打散（#20）
+    const exponential = Math.min(RECONNECT_DELAY * 2 ** (this.reconnectAttempts - 1), MAX_RECONNECT_DELAY)
+    const delay = exponential * (0.5 + Math.random())
 
     console.log(
-      `WebSocket ${delay / 1000}秒后尝试重连 (${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
+      `WebSocket 约${Math.round(delay / 1000)}秒后尝试重连 (${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
     )
 
     this.reconnectTimer = setTimeout(() => {
