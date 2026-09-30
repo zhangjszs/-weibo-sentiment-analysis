@@ -58,20 +58,23 @@ request.interceptors.request.use(
     }
 
     const loadingOptions = config.loadingOptions
+    // 显式传了 loadingOptions（如 { text: '加载中' }）即展示全局 loading，
+    // 不再要求 fullscreen === true——全仓没有任何调用方传过该字段，导致
+    // ElLoading 永不触发（#19）。不传 loadingOptions 或传 false 仍静默。
     const shouldShowLoading =
-      !config.hideLoading &&
-      loadingOptions &&
-      loadingOptions !== false &&
-      loadingOptions.fullscreen === true
+      !config.hideLoading && loadingOptions && loadingOptions !== false
 
     if (shouldShowLoading) {
+      // 标记到本次请求的 config 上：hide 只由真正展示过 loading 的请求触发，
+      // 否则并发下未展示的请求会偷减计数，把别人的 loading 提前关掉或漏关。
+      config._loadingShown = true
       showLoading(loadingOptions)
     }
 
     return config
   },
   (error) => {
-    if (loadingInstance) hideLoading()
+    if (error?.config?._loadingShown) hideLoading()
     return Promise.reject(error)
   }
 )
@@ -79,7 +82,7 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   (response) => {
-    if (loadingInstance) hideLoading()
+    if (response.config?._loadingShown) hideLoading()
     const res = response.data
 
     // 成功：2xx 包络直接透出（含 201 Created / 202 Accepted），调用方按 res.code 分流。
@@ -117,7 +120,7 @@ request.interceptors.response.use(
     return Promise.reject(new Error(errorMsg))
   },
   (error) => {
-    if (loadingInstance) hideLoading()
+    if (error?.config?._loadingShown) hideLoading()
 
     // 网络错误处理
     if (error.response) {
