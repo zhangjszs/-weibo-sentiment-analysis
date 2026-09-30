@@ -16,13 +16,9 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 from datetime import datetime, timedelta
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.propagation_analyzer import (
     KOLDetector,
@@ -31,7 +27,6 @@ from services.propagation_analyzer import (
     PropagationNode,
     PropagationPath,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

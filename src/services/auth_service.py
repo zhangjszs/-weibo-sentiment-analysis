@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Any, Dict, Tuple
+from typing import Any
 
 from config.settings import Config
 from repositories.user_repository import UserRepository
@@ -19,7 +19,7 @@ class AuthService:
     def __init__(self):
         self.user_repo = UserRepository()
 
-    def login(self, username: str, password: str) -> Tuple[bool, str, Dict[str, Any]]:
+    def login(self, username: str, password: str) -> tuple[bool, str, dict[str, Any]]:
         """
         Authenticate user.
         Returns: (success, message, data)
@@ -47,7 +47,7 @@ class AuthService:
 
     def register(
         self, username: str, password: str, confirm_password: str
-    ) -> Tuple[bool, str]:
+    ) -> tuple[bool, str]:
         """
         Register new user.
         Returns: (success, message)

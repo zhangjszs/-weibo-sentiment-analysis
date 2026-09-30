@@ -18,6 +18,13 @@ P2 按业务域拆分为 ``_shared`` + 5 个 ``*_routes`` 子模块。
 - ``spider_routes.py``  ``/api/spider/*``、``/api/tasks/<task_id>/status``
 """
 
+from . import (  # noqa: F401  导入即注册路由
+    auth_routes,
+    data_routes,
+    ml_routes,
+    spider_routes,
+    user_routes,
+)
 from ._shared import (
     article_service,
     auth_service,
@@ -25,13 +32,6 @@ from ._shared import (
     comment_service,
     logger,
     user_repo,
-)
-from . import (  # noqa: F401  导入即注册路由
-    auth_routes,
-    data_routes,
-    ml_routes,
-    spider_routes,
-    user_routes,
 )
 
 __all__ = [

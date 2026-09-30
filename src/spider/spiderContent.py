@@ -14,7 +14,7 @@ import sys
 import threading
 import time
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 
@@ -146,7 +146,7 @@ def init():
             )
 
 
-def writerRow(row: List[Any]) -> bool:
+def writerRow(row: list[Any]) -> bool:
     """
     线程安全的CSV行写入
 
@@ -171,8 +171,8 @@ def writerRow(row: List[Any]) -> bool:
 
 
 def get_json(
-    url: str, params: Dict[str, Any], retries: int = MAX_RETRIES
-) -> Optional[Dict]:
+    url: str, params: dict[str, Any], retries: int = MAX_RETRIES
+) -> dict | None:
     """
     发送GET请求并返回JSON数据（带重试机制）
 
@@ -253,7 +253,7 @@ def extract_at_users(text: str) -> str:
     return ",".join(at_users) if at_users else ""
 
 
-def extract_pic_urls(article: Dict) -> str:
+def extract_pic_urls(article: dict) -> str:
     """提取图片URL列表"""
     pic_urls = []
 
@@ -273,7 +273,7 @@ def extract_pic_urls(article: Dict) -> str:
     return "|".join(pic_urls) if pic_urls else ""
 
 
-def extract_video_url(article: Dict) -> str:
+def extract_video_url(article: dict) -> str:
     """提取视频URL"""
     try:
         page_info = article.get("page_info", {})
@@ -324,7 +324,7 @@ def parse_created_time(created_at: str) -> str:
     return created_at
 
 
-def parse_json(response: List[Dict], type_name: str) -> int:
+def parse_json(response: list[dict], type_name: str) -> int:
     """
     解析微博JSON数据，提取完整字段
 
@@ -528,7 +528,7 @@ def start(
     typeNum: int = 10,
     pageNum: int = 5,
     mode: str = "category",
-    keyword: Optional[str] = None,
+    keyword: str | None = None,
 ) -> int:
     """
     启动爬虫

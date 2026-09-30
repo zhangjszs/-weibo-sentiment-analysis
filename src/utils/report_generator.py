@@ -9,7 +9,7 @@ import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class ReportConfig:
     include_tables: bool = True
     page_size: str = "A4"
     template: str = "standard"
-    sections: Optional[List[str]] = None
+    sections: list[str] | None = None
 
 
 class PDFReportGenerator:
@@ -110,7 +110,7 @@ class PDFReportGenerator:
                 self.chinese_font = "Chinese"
             else:
                 self.chinese_font = "Helvetica"
-        except (OSError, IOError):
+        except OSError:
             self.chinese_font = "Helvetica"
 
         self.styles.add(
@@ -146,7 +146,7 @@ class PDFReportGenerator:
             )
         )
 
-    def _find_chinese_font(self) -> Optional[str]:
+    def _find_chinese_font(self) -> str | None:
         """查找中文字体"""
         font_paths = [
             "C:/Windows/Fonts/simhei.ttf",
@@ -161,7 +161,7 @@ class PDFReportGenerator:
                 return path
         return None
 
-    def _resolve_sections(self, config: ReportConfig) -> List[str]:
+    def _resolve_sections(self, config: ReportConfig) -> list[str]:
         """从配置中解析要包含的章节列表"""
         if config.sections:
             return config.sections
@@ -180,7 +180,7 @@ class PDFReportGenerator:
         story.append(Spacer(1, 20))
 
     def _build_summary_section(
-        self, story: list, data: Dict[str, Any], config: ReportConfig
+        self, story: list, data: dict[str, Any], config: ReportConfig
     ) -> None:
         """构建数据概览章节"""
         story.append(Paragraph("一、数据概览", self.styles["ChineseHeading"]))
@@ -219,7 +219,7 @@ class PDFReportGenerator:
         story.append(Spacer(1, 12))
 
     def _build_topics_section(
-        self, story: list, data: Dict[str, Any], config: ReportConfig
+        self, story: list, data: dict[str, Any], config: ReportConfig
     ) -> None:
         """构建热门话题章节"""
         story.append(Paragraph("二、热门话题", self.styles["ChineseHeading"]))
@@ -258,7 +258,7 @@ class PDFReportGenerator:
         story.append(Spacer(1, 12))
 
     def _build_trend_section(
-        self, story: list, data: Dict[str, Any], config: ReportConfig
+        self, story: list, data: dict[str, Any], config: ReportConfig
     ) -> None:
         """构建舆情趋势章节"""
         story.append(Paragraph("三、舆情趋势", self.styles["ChineseHeading"]))
@@ -269,7 +269,7 @@ class PDFReportGenerator:
         story.append(Spacer(1, 12))
 
     def _build_alerts_section(
-        self, story: list, data: Dict[str, Any], config: ReportConfig
+        self, story: list, data: dict[str, Any], config: ReportConfig
     ) -> None:
         """构建预警记录章节"""
         story.append(Paragraph("四、预警记录", self.styles["ChineseHeading"]))
@@ -299,8 +299,8 @@ class PDFReportGenerator:
         )
 
     def generate(
-        self, data: Dict[str, Any], output_path: str = None, config: ReportConfig = None
-    ) -> Optional[str]:
+        self, data: dict[str, Any], output_path: str = None, config: ReportConfig = None
+    ) -> str | None:
         """
         生成PDF报告
 
@@ -364,13 +364,13 @@ class PPTReportGenerator:
     def __init__(self):
         self.prs = None
 
-    def _render_chart(self, render_func, config: ReportConfig, data: Dict[str, Any]) -> Optional[bytes]:
+    def _render_chart(self, render_func, config: ReportConfig, data: dict[str, Any]) -> bytes | None:
         """安全地渲染图表，返回字节数据或None"""
         if not (config.include_charts and _chart_renderer):
             return None
         return render_func(data)
 
-    def _resolve_sections(self, config: ReportConfig) -> List[str]:
+    def _resolve_sections(self, config: ReportConfig) -> list[str]:
         """从配置中解析要包含的章节列表"""
         if config.sections:
             return config.sections
@@ -411,7 +411,7 @@ class PPTReportGenerator:
         p.font.size = Pt(20)
         p.alignment = PP_ALIGN.CENTER
 
-    def _add_summary_slide(self, summary: Dict, chart_bytes: bytes = None):
+    def _add_summary_slide(self, summary: dict, chart_bytes: bytes = None):
         """添加概览幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -453,7 +453,7 @@ class PPTReportGenerator:
                 Inches(3.5),
             )
 
-    def _add_sentiment_slide(self, sentiment: Dict):
+    def _add_sentiment_slide(self, sentiment: dict):
         """添加情感分析幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -471,7 +471,7 @@ class PPTReportGenerator:
             p.font.size = Pt(20)
             p.space_after = Pt(12)
 
-    def _add_topics_slide(self, topics: List[Dict], chart_bytes: bytes = None):
+    def _add_topics_slide(self, topics: list[dict], chart_bytes: bytes = None):
         """添加热门话题幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -508,7 +508,7 @@ class PPTReportGenerator:
                 Inches(6.0),
             )
 
-    def _add_alerts_slide(self, alerts: List[Dict], chart_bytes: bytes = None):
+    def _add_alerts_slide(self, alerts: list[dict], chart_bytes: bytes = None):
         """添加预警幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -543,7 +543,7 @@ class PPTReportGenerator:
                 Inches(4.5),
             )
 
-    def _add_trend_slide(self, trend: List[Dict], chart_bytes: bytes = None):
+    def _add_trend_slide(self, trend: list[dict], chart_bytes: bytes = None):
         """添加趋势幻灯片"""
         slide_layout = self.prs.slide_layouts[6]
         slide = self.prs.slides.add_slide(slide_layout)
@@ -585,8 +585,8 @@ class PPTReportGenerator:
         p.alignment = PP_ALIGN.CENTER
 
     def generate(
-        self, data: Dict[str, Any], output_path: str = None, config: ReportConfig = None
-    ) -> Optional[str]:
+        self, data: dict[str, Any], output_path: str = None, config: ReportConfig = None
+    ) -> str | None:
         """
         生成PPT报告
         """
@@ -654,11 +654,11 @@ class ReportGenerator:
 
     def generate_report(
         self,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         format: str = "pdf",
         output_path: str = None,
         config: ReportConfig = None,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         生成报告
 
@@ -680,8 +680,8 @@ class ReportGenerator:
             return None
 
     def generate_all(
-        self, data: Dict[str, Any], output_dir: str = None, config: ReportConfig = None
-    ) -> Dict[str, str]:
+        self, data: dict[str, Any], output_dir: str = None, config: ReportConfig = None
+    ) -> dict[str, str]:
         """
         生成所有格式报告
 

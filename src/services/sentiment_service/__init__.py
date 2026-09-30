@@ -18,30 +18,29 @@
 导入本包会触发 Redis 连接尝试（与原模块行为一致）。
 """
 
-from .models import SentimentResult, SentimentSchema
-from .monitoring import (
-    _StatsManager,
-    _stats,
-    MEMORY_CACHE_MAX_SIZE,
-    MEMORY_CACHE_TTL,
-    performance_monitor,
-    cleanup_memory_cache,
-)
 from .cache import (
     REDIS_AVAILABLE,
-    redis_client,
     get_cache_key,
-    _build_sentiment_from_cache_data,
     get_from_cache,
+    redis_client,
     save_to_cache,
 )
-from .strategies import (
-    SentimentStrategy,
-    SnowNLPStrategy,
-    LLMStrategy,
-    CustomModelStrategy,
+from .models import SentimentResult, SentimentSchema
+from .monitoring import (
+    MEMORY_CACHE_MAX_SIZE,
+    MEMORY_CACHE_TTL,
+    _stats,
+    _StatsManager,
+    cleanup_memory_cache,
+    performance_monitor,
 )
 from .service import SentimentService
+from .strategies import (
+    CustomModelStrategy,
+    LLMStrategy,
+    SentimentStrategy,
+    SnowNLPStrategy,
+)
 
 __all__ = [
     "SentimentService",

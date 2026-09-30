@@ -6,7 +6,6 @@
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Dict, List
 
 from models.platform import ContentType, Platform, PlatformContent
 
@@ -22,10 +21,10 @@ class BasePlatformCollector(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse(self, raw: Dict) -> PlatformContent:
+    def parse(self, raw: dict) -> PlatformContent:
         raise NotImplementedError
 
-    def collect(self, keyword: str, limit: int = 20) -> List[PlatformContent]:
+    def collect(self, keyword: str, limit: int = 20) -> list[PlatformContent]:
         """采集数据（子类可覆盖实现真实爬取）"""
         logger.info(f"[{self.platform.value}] 采集关键词: {keyword}, limit={limit}")
         return []
@@ -38,7 +37,7 @@ class WechatCollector(BasePlatformCollector):
     def platform(self) -> Platform:
         return Platform.WECHAT
 
-    def parse(self, raw: Dict) -> PlatformContent:
+    def parse(self, raw: dict) -> PlatformContent:
         return PlatformContent.from_wechat(raw)
 
 
@@ -49,7 +48,7 @@ class DouyinCollector(BasePlatformCollector):
     def platform(self) -> Platform:
         return Platform.DOUYIN
 
-    def parse(self, raw: Dict) -> PlatformContent:
+    def parse(self, raw: dict) -> PlatformContent:
         return PlatformContent.from_douyin(raw)
 
 
@@ -60,7 +59,7 @@ class ZhihuCollector(BasePlatformCollector):
     def platform(self) -> Platform:
         return Platform.ZHIHU
 
-    def parse(self, raw: Dict) -> PlatformContent:
+    def parse(self, raw: dict) -> PlatformContent:
         return PlatformContent.from_zhihu(raw)
 
 
@@ -71,7 +70,7 @@ class BilibiliCollector(BasePlatformCollector):
     def platform(self) -> Platform:
         return Platform.BILIBILI
 
-    def parse(self, raw: Dict) -> PlatformContent:
+    def parse(self, raw: dict) -> PlatformContent:
         return PlatformContent(
             platform=Platform.BILIBILI,
             content_id=raw.get("bvid", ""),
@@ -90,7 +89,7 @@ class BilibiliCollector(BasePlatformCollector):
 class PlatformCollectorFactory:
     """平台采集器工厂"""
 
-    _registry: Dict[Platform, type] = {
+    _registry: dict[Platform, type] = {
         Platform.WECHAT: WechatCollector,
         Platform.DOUYIN: DouyinCollector,
         Platform.ZHIHU: ZhihuCollector,
@@ -110,5 +109,5 @@ class PlatformCollectorFactory:
         return collector_cls()
 
     @classmethod
-    def list_supported(cls) -> List[Platform]:
+    def list_supported(cls) -> list[Platform]:
         return list(cls._registry.keys())

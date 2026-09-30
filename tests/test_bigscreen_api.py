@@ -8,7 +8,6 @@ import pytest
 pytestmark = pytest.mark.integration
 
 import json
-from unittest import mock
 
 import pytest
 
@@ -70,6 +69,6 @@ class TestBigScreenAPI:
         """测试速率限制"""
         # 快速发送多个请求
         for _ in range(35):
-            response = authed_client.get('/api/bigscreen/stats')
+            authed_client.get('/api/bigscreen/stats')
         # 第35个请求应该被限流
         # 注意：实际限流阈值是30，但这取决于测试环境的限流实现

@@ -2,14 +2,10 @@
 
 from __future__ import annotations
 
-import os
-import sys
-
 import pytest
 
 pytestmark = pytest.mark.unit
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from utils.sentiment import (  # noqa: E402
     LABEL_NEGATIVE,

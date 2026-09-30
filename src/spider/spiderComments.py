@@ -12,7 +12,7 @@ import re
 import sys
 import threading
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import requests
 
@@ -75,7 +75,7 @@ def init():
             )
 
 
-def writerRow(row: List[Any]) -> bool:
+def writerRow(row: list[Any]) -> bool:
     """
     线程安全的CSV行写入
 
@@ -166,8 +166,8 @@ def _save_comment_to_db(
 
 
 def _build_request_params(
-    article_id: str, uid: Optional[str], max_id: int
-) -> Dict[str, str]:
+    article_id: str, uid: str | None, max_id: int
+) -> dict[str, str]:
     """构建请求参数字典"""
     params = {
         "is_reload": "1",
@@ -186,10 +186,10 @@ def _build_request_params(
 
 def _execute_single_request(
     url: str,
-    headers: Dict[str, str],
-    params: Dict[str, str],
-    proxy: Optional[Dict],
-) -> Optional[Dict]:
+    headers: dict[str, str],
+    params: dict[str, str],
+    proxy: dict | None,
+) -> dict | None:
     """
     执行单次HTTP请求并解析响应
 
@@ -228,10 +228,10 @@ def _execute_single_request(
 def get_json(
     url: str,
     article_id: str,
-    uid: Optional[str] = None,
+    uid: str | None = None,
     max_id: int = 0,
     retries: int = MAX_RETRIES,
-) -> Optional[Dict]:
+) -> dict | None:
     """
     获取评论JSON数据（带重试机制）
 
@@ -321,7 +321,7 @@ def parse_created_time(created_at_raw: str) -> str:
 # ========== 评论处理 ==========
 
 
-def _extract_user_info(user: Dict) -> Dict[str, Any]:
+def _extract_user_info(user: dict) -> dict[str, Any]:
     """从评论user字段中提取用户信息"""
     author_address = "Unknown"
     location = user.get("location", "")
@@ -339,7 +339,7 @@ def _extract_user_info(user: Dict) -> Dict[str, Any]:
     }
 
 
-def _extract_reply_to_user(comment: Dict) -> str:
+def _extract_reply_to_user(comment: dict) -> str:
     """提取回复目标用户名称"""
     reply_comment = comment.get("reply_comment")
     if not reply_comment:
@@ -351,7 +351,7 @@ def _extract_reply_to_user(comment: Dict) -> str:
 
 
 def _process_sub_comments(
-    comment: Dict, article_id: str, parent_id: str
+    comment: dict, article_id: str, parent_id: str
 ) -> None:
     """处理子回复（楼中楼）"""
     reply_count = comment.get("total_number", 0)
@@ -362,7 +362,7 @@ def _process_sub_comments(
 
 
 def process_comment(
-    comment: Dict, article_id: str, is_hot: bool = False, parent_id: str = ""
+    comment: dict, article_id: str, is_hot: bool = False, parent_id: str = ""
 ) -> bool:
     """
     处理每条评论的逻辑
@@ -465,7 +465,7 @@ def process_comment(
 # ========== JSON解析 ==========
 
 
-def _validate_response(response: Optional[Dict]) -> Optional[str]:
+def _validate_response(response: dict | None) -> str | None:
     """
     校验API响应的基本结构
 
@@ -491,8 +491,8 @@ def _validate_response(response: Optional[Dict]) -> Optional[str]:
 
 
 def _process_hot_comments(
-    hot_comments: List[Dict], article_id: str
-) -> Tuple[int, set]:
+    hot_comments: list[dict], article_id: str
+) -> tuple[int, set]:
     """
     处理热评列表
 
@@ -513,7 +513,7 @@ def _process_hot_comments(
 
 
 def _process_regular_comments(
-    comment_list: List[Dict], hot_comment_ids: set, article_id: str
+    comment_list: list[dict], hot_comment_ids: set, article_id: str
 ) -> int:
     """
     处理普通评论列表（排除已处理的热评）
@@ -534,7 +534,7 @@ def _process_regular_comments(
     return processed
 
 
-def parse_json(response: Optional[Dict], article_id: str) -> str:
+def parse_json(response: dict | None, article_id: str) -> str:
     """
     解析评论JSON数据
 
@@ -576,7 +576,7 @@ def parse_json(response: Optional[Dict], article_id: str) -> str:
 # ========== 文章遍历 ==========
 
 
-def _extract_uid(detail_url: str) -> Optional[str]:
+def _extract_uid(detail_url: str) -> str | None:
     """从文章详情URL中提取用户uid"""
     if not detail_url or "weibo.com" not in detail_url:
         return None
@@ -588,7 +588,7 @@ def _extract_uid(detail_url: str) -> Optional[str]:
         return None
 
 
-def _parse_article_row(article: List[str], row_index: int) -> Optional[Tuple[str, Optional[str], int]]:
+def _parse_article_row(article: list[str], row_index: int) -> tuple[str, str | None, int] | None:
     """
     解析CSV的一行文章数据
 
@@ -649,8 +649,8 @@ def _handle_parse_result(parse_result: str, article_id: str) -> bool:
 
 
 def _fetch_page_comments(
-    url: str, article_id: str, uid: Optional[str], max_id: int
-) -> Tuple[Optional[Dict], str]:
+    url: str, article_id: str, uid: str | None, max_id: int
+) -> tuple[dict | None, str]:
     """
     获取并解析一页评论
 
@@ -668,7 +668,7 @@ def _fetch_page_comments(
 def _process_single_article(
     url: str,
     article_id: str,
-    uid: Optional[str],
+    uid: str | None,
     comments_count: int,
     max_comment_pages: int,
 ) -> bool:

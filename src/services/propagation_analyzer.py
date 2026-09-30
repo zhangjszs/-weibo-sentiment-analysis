@@ -9,7 +9,7 @@ import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +27,12 @@ class PropagationNode:
     comment_count: int = 0
     like_count: int = 0
     depth: int = 0
-    parent_id: Optional[str] = None
-    children: List[str] = field(default_factory=list)
+    parent_id: str | None = None
+    children: list[str] = field(default_factory=list)
     influence_score: float = 0.0
     is_kol: bool = False
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "user_id": self.user_id,
@@ -59,9 +59,9 @@ class PropagationEdge:
     source: str
     target: str
     weight: float = 1.0
-    propagation_time: Optional[float] = None
+    propagation_time: float | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "source": self.source,
             "target": self.target,
@@ -80,10 +80,10 @@ class PropagationPath:
     total_nodes: int
     total_reposts: int
     propagation_speed: float
-    key_nodes: List[str]
-    kol_nodes: List[str]
+    key_nodes: list[str]
+    kol_nodes: list[str]
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "origin_id": self.origin_id,
             "origin_user": self.origin_user,
@@ -99,7 +99,7 @@ class PropagationPath:
 class KOLDetector:
     """KOL（关键意见领袖）检测器"""
 
-    def __init__(self, thresholds: Dict[str, float] = None):
+    def __init__(self, thresholds: dict[str, float] = None):
         self.thresholds = thresholds or {
             "min_followers": 10000,
             "min_reposts": 100,
@@ -165,10 +165,10 @@ class PropagationAnalyzer:
     """传播路径分析器"""
 
     def __init__(self):
-        self.nodes: Dict[str, PropagationNode] = {}
-        self.edges: List[PropagationEdge] = []
+        self.nodes: dict[str, PropagationNode] = {}
+        self.edges: list[PropagationEdge] = []
         self.kol_detector = KOLDetector()
-        self._node_index: Dict[str, Set[str]] = defaultdict(set)
+        self._node_index: dict[str, set[str]] = defaultdict(set)
 
     def add_node(self, node: PropagationNode):
         """添加传播节点"""
@@ -195,7 +195,7 @@ class PropagationAnalyzer:
                 )
             )
 
-    def build_from_reposts(self, reposts: List[Dict]) -> int:
+    def build_from_reposts(self, reposts: list[dict]) -> int:
         """
         从转发数据构建传播图
 
@@ -226,7 +226,7 @@ class PropagationAnalyzer:
 
         return len(self.nodes)
 
-    def get_origin_node(self) -> Optional[PropagationNode]:
+    def get_origin_node(self) -> PropagationNode | None:
         """获取原始节点（深度为0的节点）"""
         for node in self.nodes.values():
             if node.depth == 0:
@@ -251,14 +251,14 @@ class PropagationAnalyzer:
 
         return len(self.nodes) / hours
 
-    def get_depth_distribution(self) -> Dict[int, int]:
+    def get_depth_distribution(self) -> dict[int, int]:
         """获取传播深度分布"""
         distribution = defaultdict(int)
         for node in self.nodes.values():
             distribution[node.depth] += 1
         return dict(sorted(distribution.items()))
 
-    def get_key_nodes(self, top_n: int = 10) -> List[PropagationNode]:
+    def get_key_nodes(self, top_n: int = 10) -> list[PropagationNode]:
         """获取关键传播节点"""
         sorted_nodes = sorted(
             self.nodes.values(),
@@ -267,7 +267,7 @@ class PropagationAnalyzer:
         )
         return sorted_nodes[:top_n]
 
-    def get_kol_nodes(self) -> List[PropagationNode]:
+    def get_kol_nodes(self) -> list[PropagationNode]:
         """获取KOL节点"""
         return [n for n in self.nodes.values() if n.is_kol]
 
@@ -288,7 +288,7 @@ class PropagationAnalyzer:
             kol_nodes=[n.id for n in kol_nodes],
         )
 
-    def get_graph_data(self) -> Dict[str, Any]:
+    def get_graph_data(self) -> dict[str, Any]:
         """获取图可视化数据"""
         nodes = []
         for node in self.nodes.values():
@@ -310,7 +310,7 @@ class PropagationAnalyzer:
             ],
         }
 
-    def get_user_influence_ranking(self, top_n: int = 20) -> List[Dict]:
+    def get_user_influence_ranking(self, top_n: int = 20) -> list[dict]:
         """获取用户影响力排名"""
         user_stats = defaultdict(
             lambda: {
@@ -344,7 +344,7 @@ class PropagationAnalyzer:
 
         return ranking[:top_n]
 
-    def get_time_distribution(self, interval_minutes: int = 60) -> List[Dict]:
+    def get_time_distribution(self, interval_minutes: int = 60) -> list[dict]:
         """获取时间分布"""
         if not self.nodes:
             return []
@@ -370,7 +370,7 @@ class PropagationAnalyzer:
 
         return distribution
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """获取传播分析摘要"""
         path = self.analyze_propagation_path()
         depth_dist = self.get_depth_distribution()

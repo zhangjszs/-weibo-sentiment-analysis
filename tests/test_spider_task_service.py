@@ -23,16 +23,11 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from config.settings import Config
-from services import spider_task_service
 from services.spider_task_service import (
     _default_task_label,
     _extract_remote_data,
@@ -46,7 +41,6 @@ from services.spider_task_service import (
     query_spider_task_progress,
     submit_spider_task,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

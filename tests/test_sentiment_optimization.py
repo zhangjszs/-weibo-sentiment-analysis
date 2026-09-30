@@ -9,9 +9,9 @@ import pytest
 pytestmark = pytest.mark.unit
 
 import time
-import json
-from services.sentiment_service import SentimentService
+
 from services.sentiment_dictionaries import sentiment_dict
+from services.sentiment_service import SentimentService
 
 
 def test_basic_sentiment():
@@ -22,12 +22,12 @@ def test_basic_sentiment():
         ("产品质量很差，客服也不回复。", "negative"),
         ("今天天气一般。", "neutral"),
     ]
-    
+
     for text, expected_label in test_cases:
         start_time = time.time()
         result = SentimentService.analyze(text, mode="simple")
         end_time = time.time()
-        
+
         print(f"文本: {text}")
         print(f"预测: {result['label']}, 得分: {result['score']:.2f}, 情感: {result['emotion']}")
         print(f"预期: {expected_label}")
@@ -46,12 +46,12 @@ def test_internet_slang():
         "破防了，今天遇到了很多烦心事",
         "无语，这个服务态度太差了",
     ]
-    
+
     for text in test_cases:
         start_time = time.time()
         result = SentimentService.analyze(text, mode="simple")
         end_time = time.time()
-        
+
         print(f"文本: {text}")
         print(f"预测: {result['label']}, 得分: {result['score']:.2f}, 情感: {result['emotion']}")
         print(f"耗时: {end_time - start_time:.4f}s")
@@ -69,12 +69,12 @@ def test_emoji():
         "收到了礼物🎁，好开心！",
         "工作压力好大😫",
     ]
-    
+
     for text in test_cases:
         start_time = time.time()
         result = SentimentService.analyze(text, mode="simple")
         end_time = time.time()
-        
+
         print(f"文本: {text}")
         print(f"预测: {result['label']}, 得分: {result['score']:.2f}, 情感: {result['emotion']}")
         print(f"耗时: {end_time - start_time:.4f}s")
@@ -91,12 +91,12 @@ def test_negation():
         "我没有失望",
         "他不是不开心",
     ]
-    
+
     for text in test_cases:
         start_time = time.time()
         result = SentimentService.analyze(text, mode="simple")
         end_time = time.time()
-        
+
         print(f"文本: {text}")
         print(f"预测: {result['label']}, 得分: {result['score']:.2f}, 情感: {result['emotion']}")
         print(f"耗时: {end_time - start_time:.4f}s")
@@ -114,12 +114,12 @@ def test_sarcasm():
         "一点都不麻烦",
         "可真是个好主意",
     ]
-    
+
     for text in test_cases:
         start_time = time.time()
         result = SentimentService.analyze(text, mode="simple")
         end_time = time.time()
-        
+
         print(f"文本: {text}")
         print(f"预测: {result['label']}, 得分: {result['score']:.2f}, 情感: {result['emotion']}")
         print(f"耗时: {end_time - start_time:.4f}s")
@@ -137,21 +137,21 @@ def test_sequence_analysis():
         "不过同事们都很帮忙，很感动",
         "最后问题解决了，很开心",
     ]
-    
+
     start_time = time.time()
     result = SentimentService.analyze_sequence(test_sequence, mode="custom")
     end_time = time.time()
-    
+
     print(f"序列分析耗时: {end_time - start_time:.4f}s")
     print(f"整体情感: {result['overall_sentiment']['label']}, 得分: {result['overall_sentiment']['score']:.2f}")
     print(f"情感突变次数: {len(result['sentiment_changes'])}")
     print(f"情感类型变化次数: {len(result['emotion_transitions'])}")
-    
+
     print("\n序列分析结果:")
     for i, item in enumerate(result['sequence_analysis']):
         print(f"{i+1}. {item['text']}")
         print(f"   情感: {item['sentiment']['label']}, 得分: {item['sentiment']['score']:.2f}, 情绪: {item['sentiment']['emotion']}")
-    
+
     if result['sentiment_changes']:
         print("\n情感突变:")
         for change in result['sentiment_changes']:
@@ -174,12 +174,12 @@ def test_dictionary_update():
     # 测试更新前的状态
     stats_before = sentiment_dict.get_dictionary_stats()
     print(f"更新前 - 正向词: {stats_before['positive_words_count']}, 负向词: {stats_before['negative_words_count']}")
-    
+
     # 添加新词汇
     new_positive = ["新词汇1", "新词汇2"]
     new_negative = ["新词汇3", "新词汇4"]
     sentiment_dict.update_from_external_source(new_positive, new_negative)
-    
+
     # 测试更新后的状态
     stats_after = sentiment_dict.get_dictionary_stats()
     print(f"更新后 - 正向词: {stats_after['positive_words_count']}, 负向词: {stats_after['negative_words_count']}")
@@ -196,14 +196,14 @@ def test_performance():
         "今天心情不错",
         "遇到了麻烦事",
     ] * 20  # 100条测试文本
-    
+
     start_time = time.time()
     results = SentimentService.analyze_batch(test_texts, mode="custom")
     end_time = time.time()
-    
+
     total_time = end_time - start_time
     average_time = total_time / len(test_texts)
-    
+
     print(f"批量分析 {len(test_texts)} 条文本")
     print(f"总耗时: {total_time:.4f}s")
     print(f"平均耗时: {average_time:.4f}s/条")
@@ -212,7 +212,7 @@ def test_performance():
 
 if __name__ == "__main__":
     print("开始测试优化后的情感分析系统...")
-    
+
     test_basic_sentiment()
     test_internet_slang()
     test_emoji()
@@ -222,5 +222,5 @@ if __name__ == "__main__":
     test_dictionary_stats()
     test_dictionary_update()
     test_performance()
-    
+
     print("\n测试完成！")

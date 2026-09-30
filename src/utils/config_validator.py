@@ -6,7 +6,6 @@
 
 import logging
 import os
-from typing import Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +45,7 @@ class ConfigValidator:
     ]
 
     @classmethod
-    def validate(cls) -> Tuple[bool, List[str]]:
+    def validate(cls) -> tuple[bool, list[str]]:
         """
         验证所有配置
 
@@ -122,7 +121,7 @@ class ConfigValidator:
         return is_valid, messages
 
     @classmethod
-    def validate_spider_config(cls) -> Tuple[bool, List[str]]:
+    def validate_spider_config(cls) -> tuple[bool, list[str]]:
         """验证爬虫相关配置"""
         messages = []
         is_valid = True
@@ -161,7 +160,7 @@ class ConfigValidator:
         return is_valid, messages
 
     @classmethod
-    def safe_config_value(cls, key: str, value: Optional[str] = None) -> str:
+    def safe_config_value(cls, key: str, value: str | None = None) -> str:
         """
         获取安全的配置值显示（隐藏敏感信息）
 

@@ -119,13 +119,12 @@ class TestApiJwtRequiredRegardlessOfOrigin:
         assert resp.status_code == 401
 
     def test_post_api_with_jwt_and_evil_origin_is_403(self, client, monkeypatch):
-        from utils.jwt_handler import create_token
-
-        from tests.conftest import set_auth_cookie
+        import utils.authz as _authz
 
         # 避免真实提交爬虫任务污染全局 _spider_state（会导致后续测试 409）
         import views.api.spider_api as spider_api
-        import utils.authz as _authz
+        from tests.conftest import set_auth_cookie
+        from utils.jwt_handler import create_token
 
         # quick-crawl 仅 admin 可用：测试账号提权以便聚焦 Origin 校验层
         monkeypatch.setattr(_authz.Config, "ADMIN_USERS", {"tester"})
@@ -155,12 +154,10 @@ class TestApiJwtRequiredRegardlessOfOrigin:
         assert resp.status_code == 403
 
     def test_post_api_with_jwt_and_good_origin_passes_csrf(self, client, monkeypatch):
-        from utils.jwt_handler import create_token
-
-        from tests.conftest import set_auth_cookie
-
-        import views.api.spider_api as spider_api
         import utils.authz as _authz
+        import views.api.spider_api as spider_api
+        from tests.conftest import set_auth_cookie
+        from utils.jwt_handler import create_token
 
         # quick-crawl 仅 admin 可用：测试账号提权以便聚焦 Origin 校验层
         monkeypatch.setattr(_authz.Config, "ADMIN_USERS", {"tester"})

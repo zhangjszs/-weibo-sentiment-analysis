@@ -11,9 +11,8 @@ from typing import Any
 
 import pandas as pd
 from sqlalchemy import text
-from sqlalchemy.exc import OperationalError
 
-from database import db_session, engine
+from database import engine
 
 logger = logging.getLogger(__name__)
 

@@ -3,14 +3,8 @@
 正式数据模式接口测试
 """
 
-import importlib
-import os
-import sys
 
-import pandas as pd
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 @pytest.mark.external
@@ -94,8 +88,8 @@ def test_propagation_analyze_returns_404_without_real_data(authed_client, monkey
 
 @pytest.mark.api
 def test_get_article_data_uses_aggregated_type_query(authed_client, monkeypatch):
-    import views.data.data_api as data_api
     import utils.getPublicData as public_data
+    import views.data.data_api as data_api
 
     monkeypatch.setattr(data_api.getEchartsData, "getTypeList", lambda: ["news", "blog"])
     monkeypatch.setattr(

@@ -8,15 +8,11 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 class TestSentimentModel:
@@ -69,7 +65,7 @@ class TestSentimentModel:
         """测试流水线构建"""
         from model.trainModel import MODELS, build_pipeline
 
-        for name, estimator in MODELS.items():
+        for _name, estimator in MODELS.items():
             pipeline = build_pipeline(estimator)
             assert pipeline is not None
             assert hasattr(pipeline, "steps")

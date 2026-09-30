@@ -7,7 +7,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
 class Platform(Enum):
@@ -44,29 +44,29 @@ class PlatformContent:
     author_verified: bool = False
 
     content: str = ""
-    media_urls: List[str] = field(default_factory=list)
+    media_urls: list[str] = field(default_factory=list)
 
     like_count: int = 0
     comment_count: int = 0
     repost_count: int = 0
     view_count: int = 0
 
-    published_at: Optional[datetime] = None
+    published_at: datetime | None = None
     collected_at: datetime = field(default_factory=datetime.now)
 
-    keywords: List[str] = field(default_factory=list)
-    sentiment_score: Optional[float] = None
-    sentiment_label: Optional[str] = None
+    keywords: list[str] = field(default_factory=list)
+    sentiment_score: float | None = None
+    sentiment_label: str | None = None
 
-    location: Optional[str] = None
-    tags: List[str] = field(default_factory=list)
+    location: str | None = None
+    tags: list[str] = field(default_factory=list)
 
-    raw_data: Dict[str, Any] = field(default_factory=dict)
+    raw_data: dict[str, Any] = field(default_factory=dict)
 
-    parent_id: Optional[str] = None
-    root_id: Optional[str] = None
+    parent_id: str | None = None
+    root_id: str | None = None
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "platform": self.platform.value,
             "content_id": self.content_id,
@@ -95,7 +95,7 @@ class PlatformContent:
         }
 
     @classmethod
-    def from_weibo(cls, data: Dict) -> "PlatformContent":
+    def from_weibo(cls, data: dict) -> "PlatformContent":
         """从微博数据转换"""
         return cls(
             platform=Platform.WEIBO,
@@ -121,7 +121,7 @@ class PlatformContent:
         )
 
     @classmethod
-    def from_wechat(cls, data: Dict) -> "PlatformContent":
+    def from_wechat(cls, data: dict) -> "PlatformContent":
         """从微信数据转换"""
         return cls(
             platform=Platform.WECHAT,
@@ -142,7 +142,7 @@ class PlatformContent:
         )
 
     @classmethod
-    def from_douyin(cls, data: Dict) -> "PlatformContent":
+    def from_douyin(cls, data: dict) -> "PlatformContent":
         """从抖音数据转换"""
         return cls(
             platform=Platform.DOUYIN,
@@ -165,7 +165,7 @@ class PlatformContent:
         )
 
     @classmethod
-    def from_zhihu(cls, data: Dict) -> "PlatformContent":
+    def from_zhihu(cls, data: dict) -> "PlatformContent":
         """从知乎数据转换"""
         return cls(
             platform=Platform.ZHIHU,
@@ -199,12 +199,12 @@ class PlatformStats:
     negative_ratio: float = 0.0
     neutral_ratio: float = 0.0
 
-    top_keywords: List[Dict[str, Any]] = field(default_factory=list)
-    top_users: List[Dict[str, Any]] = field(default_factory=list)
+    top_keywords: list[dict[str, Any]] = field(default_factory=list)
+    top_users: list[dict[str, Any]] = field(default_factory=list)
 
     updated_at: datetime = field(default_factory=datetime.now)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "platform": self.platform.value,
             "total_content": self.total_content,
@@ -222,7 +222,7 @@ class PlatformStats:
 class PlatformRegistry:
     """平台注册表"""
 
-    _platforms: Dict[str, Dict] = {}
+    _platforms: dict[str, dict] = {}
 
     @classmethod
     def register(cls, platform: Platform, name: str, enabled: bool = True):
@@ -234,7 +234,7 @@ class PlatformRegistry:
         }
 
     @classmethod
-    def get_platform(cls, platform: str) -> Optional[Platform]:
+    def get_platform(cls, platform: str) -> Platform | None:
         """获取平台枚举"""
         try:
             return Platform(platform)
@@ -242,7 +242,7 @@ class PlatformRegistry:
             return None
 
     @classmethod
-    def list_platforms(cls, enabled_only: bool = True) -> List[Dict]:
+    def list_platforms(cls, enabled_only: bool = True) -> list[dict]:
         """列出所有平台"""
         platforms = cls._platforms.values()
         if enabled_only:

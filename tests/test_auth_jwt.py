@@ -8,12 +8,8 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
-import importlib
 
 # 添加 src 目录到路径
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 import pytest

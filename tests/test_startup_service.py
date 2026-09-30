@@ -7,12 +7,9 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 import importlib
+import os
 from types import SimpleNamespace
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.settings import Config
 from services import startup_service

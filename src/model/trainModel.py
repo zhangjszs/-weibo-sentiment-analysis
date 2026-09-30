@@ -223,11 +223,11 @@ def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
         from social_media_augmenter import augment_data
     except ImportError:
         from .social_media_augmenter import augment_data
-    
+
     # 对训练数据进行增强
     X = df["text"].tolist()
     y = df["label"].tolist()
-    
+
     # 只对训练集进行增强
     X_train, X_test, y_train, y_test = train_test_split(
         X,
@@ -236,10 +236,10 @@ def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
         stratify=y,
         random_state=42,
     )
-    
+
     # 数据增强
     X_train_augmented, y_train_augmented = augment_data(X_train, y_train, num_augmentations=2)
-    
+
     # 构建模型
     pipe = build_pipeline(MODELS[model_name])
     pipe.fit(X_train_augmented, y_train_augmented)
@@ -268,27 +268,27 @@ def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
     output_path = Path(__file__).parent / "best_sentiment_model.pkl"
     joblib.dump(pipe, output_path)
     print(f"✅ 模型已保存为 {output_path}")
-    
+
     # 集成版本管理
     try:
         from model_version_manager import ModelVersionManager
     except ImportError:
         from .model_version_manager import ModelVersionManager
-    
+
     # 计算性能指标
     performance = {
         "f1_macro": f1_score(y_test, y_pred, average="macro"),
         "accuracy": (y_pred == y_test).mean(),
         "sample_count": len(y_test),
     }
-    
+
     mvm = ModelVersionManager()
     version_name = mvm.save_model_version(pipe, performance, {
         "model_name": model_name,
         "test_size": 0.2,
     })
     mvm.set_current_version(version_name)
-    
+
     return pipe
 
 

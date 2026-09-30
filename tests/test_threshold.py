@@ -7,11 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import sys
 
 import pytest
-
-sys.path.insert(0, "src")
 
 
 class TestThresholdConfig:
@@ -185,7 +182,7 @@ class TestAlertSuppression:
 
         suppression = AlertSuppression()
 
-        for i in range(5):
+        for _ in range(5):
             result = suppression.should_suppress("rule_1", max_per_hour=10)
             assert result is False
 
@@ -195,7 +192,7 @@ class TestAlertSuppression:
 
         suppression = AlertSuppression()
 
-        for i in range(10):
+        for _ in range(10):
             suppression.should_suppress("rule_1", max_per_hour=10)
 
         result = suppression.should_suppress("rule_1", max_per_hour=10)
@@ -207,7 +204,7 @@ class TestAlertSuppression:
 
         suppression = AlertSuppression()
 
-        for i in range(10):
+        for _ in range(10):
             suppression.should_suppress("rule_1", max_per_hour=10)
 
         suppression.reset("rule_1")

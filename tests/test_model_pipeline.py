@@ -12,15 +12,12 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 class TestModelDataProcessor:
@@ -134,8 +131,8 @@ class TestModelDataProcessor:
         )
         monkeypatch.setitem(sys.modules, "getPublicData", fake_public_data)
 
-        from model.index import ModelDataProcessor
         import model.index as model_index
+        from model.index import ModelDataProcessor
 
         monkeypatch.setattr(
             model_index,

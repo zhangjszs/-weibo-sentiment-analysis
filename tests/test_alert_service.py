@@ -22,13 +22,9 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-import os
-import sys
 from datetime import datetime, timedelta
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.alert_service import (
     Alert,
@@ -42,7 +38,6 @@ from services.alert_service import (
     ThresholdOperator,
     ThresholdValidator,
 )
-
 
 # ---------------------------------------------------------------------------
 # DB fixtures（alert_db / alert_engine 已在 conftest.py 共享；此处 engine 为

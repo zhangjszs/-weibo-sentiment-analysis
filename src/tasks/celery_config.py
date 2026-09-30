@@ -6,7 +6,7 @@
 
 import logging
 import time
-from typing import Any, Dict, List
+from typing import Any
 
 from celery import Celery
 from celery.signals import task_failure, task_prerun, task_success
@@ -116,7 +116,7 @@ def task_failure_handler(sender=None, task_id=None, exception=None, **kwargs):
         logger.debug("utils.metrics 不可用，跳过 celery_task_failure 指标上报")
 
 
-def health_check() -> Dict[str, Any]:
+def health_check() -> dict[str, Any]:
     """
     执行Celery系统健康检查
 
@@ -197,7 +197,7 @@ def health_check() -> Dict[str, Any]:
     return health_status
 
 
-def _create_task_queues() -> List[Dict[str, Any]]:
+def _create_task_queues() -> list[dict[str, Any]]:
     """
     创建带优先级的任务队列配置
 

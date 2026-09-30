@@ -13,16 +13,11 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 from unittest.mock import patch
 
 import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from services.audit_service import audit_log
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

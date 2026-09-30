@@ -1,7 +1,6 @@
 import io
 import logging
 import os
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +41,7 @@ class ChartRenderer:
         buf.seek(0)
         return buf.read()
 
-    def render_sentiment_pie(self, data: dict) -> Optional[bytes]:
+    def render_sentiment_pie(self, data: dict) -> bytes | None:
         if not MATPLOTLIB_AVAILABLE:
             return None
         summary = data.get("summary", {})
@@ -68,7 +67,7 @@ class ChartRenderer:
             ax.set_title("Sentiment Distribution")
         return self._to_bytes(fig)
 
-    def render_topics_bar(self, data: dict) -> Optional[bytes]:
+    def render_topics_bar(self, data: dict) -> bytes | None:
         if not MATPLOTLIB_AVAILABLE:
             return None
         topics = data.get("hot_topics", [])[:10]
@@ -88,7 +87,7 @@ class ChartRenderer:
             ax.set_title("Top Topics")
         return self._to_bytes(fig)
 
-    def render_trend_line(self, data: dict) -> Optional[bytes]:
+    def render_trend_line(self, data: dict) -> bytes | None:
         if not MATPLOTLIB_AVAILABLE:
             return None
         trend = data.get("trend", [])
@@ -109,7 +108,7 @@ class ChartRenderer:
         ax.tick_params(axis="x", rotation=30)
         return self._to_bytes(fig)
 
-    def render_alert_bar(self, data: dict) -> Optional[bytes]:
+    def render_alert_bar(self, data: dict) -> bytes | None:
         if not MATPLOTLIB_AVAILABLE:
             return None
         alerts = data.get("alerts", [])

@@ -24,13 +24,10 @@ pytestmark = pytest.mark.unit
 
 import os
 import sqlite3
-import sys
 from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.search_service import (
     AdvancedSearchEngine,
@@ -39,7 +36,6 @@ from services.search_service import (
     SearchSuggestion,
     advanced_search,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

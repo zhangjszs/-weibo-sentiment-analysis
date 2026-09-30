@@ -8,7 +8,7 @@ what are its limitations.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 
@@ -23,7 +23,7 @@ class ReportMeta:
     time_range: tuple[datetime | None, datetime | None]
     source: str = "weibo"
     data_count: int = 0
-    generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     model_version: str = "1.0"
     limitations: list[str] = field(default_factory=list)
     audit_event_id: int | None = None

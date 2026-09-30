@@ -7,13 +7,9 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-import os
-import sys
 
 import pandas as pd
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 def test_article_chart_queries_do_not_call_full_article_scan(monkeypatch):

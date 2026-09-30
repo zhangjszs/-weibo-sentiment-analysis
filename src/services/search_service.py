@@ -10,7 +10,6 @@ import threading
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +25,9 @@ class SearchResult:
     author: str
     created_at: str
     score: float
-    highlights: List[str] = field(default_factory=list)
+    highlights: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "title": self.title,
@@ -51,7 +50,7 @@ class SearchSuggestion:
     type: str
     count: int
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {"text": self.text, "type": self.type, "count": self.count}
 
 
@@ -61,7 +60,7 @@ class PinyinConverter:
     def __init__(self):
         self._pinyin_map = self._init_pinyin_map()
 
-    def _init_pinyin_map(self) -> Dict[str, str]:
+    def _init_pinyin_map(self) -> dict[str, str]:
         """初始化拼音映射表"""
         return {
             "微": "wei",
@@ -254,7 +253,7 @@ class AdvancedSearchEngine:
 
                 conn.commit()
 
-    def batch_index(self, documents: List[Dict]):
+    def batch_index(self, documents: list[dict]):
         """批量索引文档"""
         with self._lock:
             with sqlite3.connect(self.db_path) as conn:
@@ -311,7 +310,7 @@ class AdvancedSearchEngine:
         offset: int = 0,
         source_type: str = None,
         order_by: str = "relevance",
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """搜索"""
         results = []
 
@@ -374,7 +373,7 @@ class AdvancedSearchEngine:
 
     def _fallback_search(
         self, query: str, limit: int, offset: int, source_type: str = None
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """回退搜索（LIKE）"""
         results = []
         like_query = f"%{query}%"
@@ -415,7 +414,7 @@ class AdvancedSearchEngine:
 
     def _extract_highlights(
         self, content: str, query: str, max_length: int = 100
-    ) -> List[str]:
+    ) -> list[str]:
         """提取高亮片段"""
         highlights = []
         words = query.split()
@@ -440,7 +439,7 @@ class AdvancedSearchEngine:
 
         return highlights
 
-    def get_suggestions(self, prefix: str, limit: int = 10) -> List[SearchSuggestion]:
+    def get_suggestions(self, prefix: str, limit: int = 10) -> list[SearchSuggestion]:
         """获取搜索建议"""
         suggestions = []
 
@@ -493,7 +492,7 @@ class AdvancedSearchEngine:
 
     def search_by_pinyin(
         self, pinyin_query: str, limit: int = 20
-    ) -> List[SearchResult]:
+    ) -> list[SearchResult]:
         """拼音搜索"""
         results = []
 
@@ -527,7 +526,7 @@ class AdvancedSearchEngine:
 
         return results
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """获取索引统计"""
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.execute("SELECT COUNT(*) FROM search_index")

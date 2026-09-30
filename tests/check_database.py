@@ -39,7 +39,7 @@ def check_database():
                 engine,
             )
             print("\n📰 最新5条文章:")
-            for idx, row in latest_articles.iterrows():
+            for _, row in latest_articles.iterrows():
                 content = (
                     str(row["content"])[:50] if pd.notna(row["content"]) else "无内容"
                 )
@@ -65,7 +65,7 @@ def check_database():
                 engine,
             )
             print("\n💬 最新5条评论:")
-            for idx, row in latest_comments.iterrows():
+            for _, row in latest_comments.iterrows():
                 content = (
                     str(row["content"])[:50] if pd.notna(row["content"]) else "无内容"
                 )
@@ -89,7 +89,7 @@ def check_database():
                 "SELECT type, COUNT(*) as count FROM article GROUP BY type", engine
             )
             print("\n📈 文章类型统计:")
-            for idx, row in type_stats.iterrows():
+            for _, row in type_stats.iterrows():
                 print(f"  • {row['type']}: {row['count']} 条")
 
         return article_count, comment_count

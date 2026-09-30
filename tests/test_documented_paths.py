@@ -21,7 +21,6 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 from check_documented_paths import (  # noqa: E402
     check_document,
     extract_potential_paths,
-    main,
 )
 
 

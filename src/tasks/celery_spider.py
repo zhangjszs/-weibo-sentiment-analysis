@@ -9,8 +9,11 @@ import logging
 import os
 import sys
 import time
+from collections.abc import Generator
 from datetime import datetime
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from typing import Any
+
+import requests
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -22,7 +25,7 @@ from tasks.celery_config import celery_app
 logger = logging.getLogger(__name__)
 
 
-def _upsert_articles_batch(rows: List[Tuple], batch_size: int = 200) -> int:
+def _upsert_articles_batch(rows: list[tuple], batch_size: int = 200) -> int:
     if not rows:
         return 0
 
@@ -70,7 +73,7 @@ def _notify_articles_upserted_event(
     )
 
 
-def _build_hot_headers(cookie: str) -> Dict[str, str]:
+def _build_hot_headers(cookie: str) -> dict[str, str]:
     return {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
         "Cookie": cookie,
@@ -79,7 +82,7 @@ def _build_hot_headers(cookie: str) -> Dict[str, str]:
     }
 
 
-def _parse_hot_item(item: dict) -> Tuple:
+def _parse_hot_item(item: dict) -> tuple:
     user = item.get("user", {}) or {}
     return (
         item.get("id", ""),
@@ -100,8 +103,8 @@ def _parse_hot_item(item: dict) -> Tuple:
 
 
 def _fetch_hot_page(
-    headers: Dict[str, str], page: int, task_id: str
-) -> List[Tuple]:
+    headers: dict[str, str], page: int, task_id: str
+) -> list[tuple]:
     import requests as req
 
     url = "https://weibo.com/ajax/feed/hottimeline"
@@ -122,7 +125,7 @@ def _fetch_hot_page(
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=60)
-def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
+def spider_hot_task(self, page_num: int = 3) -> dict[str, Any]:
     """热门微博刷新任务（异步）"""
     task_id = self.request.id
     page_num = max(1, min(int(page_num), 10))
@@ -137,7 +140,7 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
     import random
 
     headers = _build_hot_headers(cookie)
-    rows: List[Tuple] = []
+    rows: list[tuple] = []
 
     try:
         for page in range(page_num):
@@ -182,7 +185,7 @@ def spider_hot_task(self, page_num: int = 3) -> Dict[str, Any]:
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
 
-def _build_search_params(keyword: str, page: int) -> Dict[str, Any]:
+def _build_search_params(keyword: str, page: int) -> dict[str, Any]:
     return {
         "q": keyword,
         "type": "all",
@@ -225,7 +228,7 @@ def _fetch_search_page(config, search_url: str, keyword: str, page: int, task_id
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
-def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:
+def spider_search_task(self, keyword: str, page_num: int = 3) -> dict[str, Any]:
     """关键词搜索爬虫任务（异步）"""
     task_id = self.request.id
     logger.info(f"[任务{task_id}] 开始搜索爬虫: keyword={keyword}, pages={page_num}")
@@ -291,7 +294,7 @@ def spider_search_task(self, keyword: str, page_num: int = 3) -> Dict[str, Any]:
         raise self.retry(exc=exc, countdown=60 * (self.request.retries + 1)) from exc
 
 
-def _parse_uid_from_url(detail_url: str) -> Optional[str]:
+def _parse_uid_from_url(detail_url: str) -> str | None:
     if not detail_url or "weibo.com" not in detail_url:
         return None
     try:
@@ -302,7 +305,7 @@ def _parse_uid_from_url(detail_url: str) -> Optional[str]:
 
 
 def _fetch_article_comments(
-    config, url: str, article_id: str, uid: Optional[str]
+    config, url: str, article_id: str, uid: str | None
 ) -> str:
     """Fetch comments for one article. Returns parse result status."""
     import random
@@ -340,7 +343,7 @@ def _fetch_article_comments(
     return parse_json(response.json(), article_id)
 
 
-def _load_articles_from_csv(csv_path: str, limit: int) -> List[list]:
+def _load_articles_from_csv(csv_path: str, limit: int) -> list[list]:
     if not os.path.exists(csv_path):
         return []
     with open(csv_path, encoding="utf8") as f:
@@ -353,7 +356,7 @@ def _load_articles_from_csv(csv_path: str, limit: int) -> List[list]:
 
 
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
-def spider_comments_task(self, article_limit: int = 50) -> Dict[str, Any]:
+def spider_comments_task(self, article_limit: int = 50) -> dict[str, Any]:
     """评论爬虫任务（异步）"""
     task_id = self.request.id
     logger.info(f"[任务{task_id}] 开始评论爬虫: limit={article_limit}")
@@ -442,7 +445,7 @@ def _build_task_response(result, task_id: str) -> dict:
 
 
 @celery_app.task(bind=True)
-def get_task_progress(self, task_id: str) -> Dict[str, Any]:
+def get_task_progress(self, task_id: str) -> dict[str, Any]:
     """查询任务进度，返回统一的五字段结构"""
     from celery.result import AsyncResult
 
@@ -450,7 +453,7 @@ def get_task_progress(self, task_id: str) -> Dict[str, Any]:
     return _build_task_response(result, task_id)
 
 
-def search_weibo_generator(keyword: str, page_num: int) -> Generator[Dict, None, None]:
+def search_weibo_generator(keyword: str, page_num: int) -> Generator[dict, None, None]:
     """生成器版本的微博搜索（用于实时进度反馈）"""
     from spider.config import get_config_manager
     from spider.spiderContent import init, parse_json

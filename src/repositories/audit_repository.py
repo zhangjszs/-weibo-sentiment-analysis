@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from sqlalchemy import desc, func
+from sqlalchemy import desc
 
 from models.audit_log import AuditLog
 
@@ -17,7 +17,7 @@ class AuditRepository(BaseRepository):
         username: str = "",
         limit: int = 20,
         offset: int = 0,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         query = self.session.query(AuditLog)
 
         if action:

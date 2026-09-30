@@ -4,7 +4,12 @@ import os
 import numpy as np
 import requests
 
-from spider.config import DEFAULT_TIMEOUT, HEADERS, get_random_headers, get_working_proxy
+from spider.config import (
+    DEFAULT_TIMEOUT,
+    HEADERS,
+    get_random_headers,
+    get_working_proxy,
+)
 
 
 def init():

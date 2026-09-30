@@ -5,8 +5,8 @@ Covers four scenarios: real data, empty data, demo data, and database error.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -16,7 +16,7 @@ from services.analysis_pipeline import AnalysisPipeline, AnalysisSnapshot
 
 
 def _dt(y=2026, m=8, d=1):
-    return datetime(y, m, d, tzinfo=timezone.utc)
+    return datetime(y, m, d, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -93,9 +93,10 @@ class TestEmptyDataScenario:
             demo=False,
         )
         limitations = snapshot.data.get("meta", {}).get("limitations", [])
+        assert len(limitations) > 0
         # Should include a note about no data
         limitations_text = " ".join(limitations)
-        assert len(limitations) > 0
+        assert limitations_text.strip(), "limitations 应有非空文本说明"
 
 
 # ---------------------------------------------------------------------------

@@ -12,17 +12,16 @@ import hashlib
 import json
 import logging
 import time
-from typing import Optional
 
 from config.settings import Config
 
+from .models import SentimentResult
 from .monitoring import (
-    _stats,
-    cleanup_memory_cache,
     MEMORY_CACHE_MAX_SIZE,
     MEMORY_CACHE_TTL,
+    _stats,
+    cleanup_memory_cache,
 )
-from .models import SentimentResult
 
 logger = logging.getLogger(__name__)
 
@@ -83,7 +82,7 @@ def _build_sentiment_from_cache_data(data: dict, source: str) -> SentimentResult
 
 def get_from_cache(
     text: str, mode: str, backend: str = "default"
-) -> Optional[SentimentResult]:
+) -> SentimentResult | None:
     """从缓存获取结果"""
     cache_key = get_cache_key(text, mode, backend)
 

@@ -3,9 +3,9 @@ from datetime import datetime
 
 from snownlp import SnowNLP
 
-from utils.getPublicData import getAllCiPingTotal, getAllCommentsData, getAllData
-from repositories.comment_repository import CommentRepository
 from repositories.article_repository import ArticleRepository
+from repositories.comment_repository import CommentRepository
+from utils.getPublicData import getAllCiPingTotal, getAllCommentsData, getAllData
 
 logger = logging.getLogger(__name__)
 

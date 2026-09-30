@@ -8,14 +8,11 @@ import pytest
 pytestmark = pytest.mark.unit
 
 import shutil
-import sys
 import tempfile
 import time
 from pathlib import Path
 
 import pytest
-
-sys.path.insert(0, "src")
 
 
 class TestPinyinConverter:

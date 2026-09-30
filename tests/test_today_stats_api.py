@@ -7,12 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.api
 
-import os
-import sys
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from utils.jwt_handler import create_token  # noqa: E402
 from views.api import api as api_module  # noqa: E402

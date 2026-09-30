@@ -22,7 +22,7 @@ import logging
 import os
 import sys
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from config.settings import Config
 
@@ -35,7 +35,7 @@ LABEL_NEGATIVE = "negative"
 
 # 类型别名：标签字符串与单条预测结果 (label, confidence_score 0..1)
 Label = str
-PredictResult = Tuple[Label, float]
+PredictResult = tuple[Label, float]
 
 
 class ModelBackend(ABC):
@@ -50,7 +50,7 @@ class ModelBackend(ABC):
         """后端是否就绪（模型/词典加载完成）。"""
 
     @abstractmethod
-    def predict(self, texts: List[str]) -> List[PredictResult]:
+    def predict(self, texts: list[str]) -> list[PredictResult]:
         """对一批文本做预测，返回 ``[(label, score), ...]``。
 
         实现需保证：
@@ -59,14 +59,14 @@ class ModelBackend(ABC):
         - label 必须为英文 ``positive`` / ``negative`` / ``neutral``
         """
 
-    def predict_batch(self, texts: List[str]) -> List[PredictResult]:
+    def predict_batch(self, texts: list[str]) -> list[PredictResult]:
         """批量预测，默认等同 :meth:`predict`。
 
         BERT / sklearn 可重写为一次性推理以获得更好的吞吐。
         """
         return self.predict(texts)
 
-    def close(self) -> None:
+    def close(self) -> None:  # noqa: B027 - 有意的 no-op 钩子，非所有后端都需释放资源
         """释放底层资源（如 ONNX session），默认无操作。"""
 
 
@@ -75,12 +75,12 @@ class SklearnBackend(ModelBackend):
 
     name = "sklearn"
 
-    def __init__(self, model_path: Optional[str] = None) -> None:
+    def __init__(self, model_path: str | None = None) -> None:
         self.model_path = model_path or os.path.join(
             Config.BASE_DIR, "model", "best_sentiment_model.pkl"
         )
         self._model: Any = None
-        self._metadata: Dict[str, Any] = {}
+        self._metadata: dict[str, Any] = {}
 
     @property
     def is_loaded(self) -> bool:
@@ -130,7 +130,7 @@ class SklearnBackend(ModelBackend):
             prediction, LABEL_NEUTRAL
         )
 
-    def predict(self, texts: List[str]) -> List[PredictResult]:
+    def predict(self, texts: list[str]) -> list[PredictResult]:
         if not texts:
             return []
         self._load()
@@ -138,7 +138,7 @@ class SklearnBackend(ModelBackend):
             raise RuntimeError("SklearnBackend: 模型未加载")
         processed = [t[:512] for t in texts]
         predictions = self._model.predict(processed)
-        results: List[PredictResult] = []
+        results: list[PredictResult] = []
         if hasattr(self._model, "predict_proba"):
             probs = self._model.predict_proba(processed)
             for pred, prob in zip(predictions, probs):
@@ -167,13 +167,13 @@ class BertBackend(ModelBackend):
     POSITIVE_THRESHOLD = 0.7
     NEGATIVE_THRESHOLD = 0.3
 
-    def __init__(self, model_path: Optional[str] = None) -> None:
+    def __init__(self, model_path: str | None = None) -> None:
         self.model_path = model_path or Config.BERT_MODEL_PATH
         self.max_length = Config.BERT_MAX_LENGTH
         self.batch_size = Config.BERT_BATCH_SIZE
         self._model: Any = None
         self._tokenizer: Any = None
-        self._id2label: Dict[int, str] = {}
+        self._id2label: dict[int, str] = {}
 
     @property
     def is_loaded(self) -> bool:
@@ -192,8 +192,8 @@ class BertBackend(ModelBackend):
             )
             return
         try:
-            from transformers import AutoTokenizer
             from optimum.onnxruntime import ORTModelForSequenceClassification
+            from transformers import AutoTokenizer
         except ImportError as e:
             logger.warning(
                 "BertBackend: 缺少依赖 %s（pip install optimum[onnxruntime] transformers）", e
@@ -213,7 +213,7 @@ class BertBackend(ModelBackend):
             self._model = None
             self._tokenizer = None
 
-    def _softmax(self, logits: List[float]) -> List[float]:
+    def _softmax(self, logits: list[float]) -> list[float]:
         import math
 
         if not logits:
@@ -223,7 +223,7 @@ class BertBackend(ModelBackend):
         s = sum(exps)
         return [e / s for e in exps]
 
-    def _map_three_class(self, probs: List[float]) -> PredictResult:
+    def _map_three_class(self, probs: list[float]) -> PredictResult:
         """将二分类概率映射为三分类 (label, score)。
 
         Erlangshen-Roberta-110M-Sentiment 的 id2label 通常是
@@ -275,13 +275,13 @@ class BertBackend(ModelBackend):
             return (LABEL_NEGATIVE, 1.0 - pos_prob)
         return (LABEL_NEUTRAL, 1.0 - abs(pos_prob - 0.5) * 2)
 
-    def _run_inference(self, texts: List[str]) -> List[PredictResult]:
+    def _run_inference(self, texts: list[str]) -> list[PredictResult]:
         if not texts:
             return []
         if self._model is None or self._tokenizer is None:
             raise RuntimeError("BertBackend: 模型未加载")
 
-        results: List[PredictResult] = []
+        results: list[PredictResult] = []
         # 分批避免显存/内存峰值
         for start in range(0, len(texts), self.batch_size):
             batch = texts[start : start + self.batch_size]
@@ -301,10 +301,10 @@ class BertBackend(ModelBackend):
                 results.append(self._map_three_class(probs))
         return results
 
-    def predict(self, texts: List[str]) -> List[PredictResult]:
+    def predict(self, texts: list[str]) -> list[PredictResult]:
         return self._run_inference(texts)
 
-    def predict_batch(self, texts: List[str]) -> List[PredictResult]:
+    def predict_batch(self, texts: list[str]) -> list[PredictResult]:
         # _run_inference 已分批，predict_batch 等同 predict
         return self._run_inference(texts)
 
@@ -336,11 +336,11 @@ class SnowNLPBackend(ModelBackend):
             self._strategy = SnowNLPStrategy()
         return self._strategy
 
-    def predict(self, texts: List[str]) -> List[PredictResult]:
+    def predict(self, texts: list[str]) -> list[PredictResult]:
         if not texts:
             return []
         strategy = self._get_strategy()
-        results: List[PredictResult] = []
+        results: list[PredictResult] = []
         for text in texts:
             try:
                 r = strategy.analyze(text)
@@ -354,7 +354,7 @@ class SnowNLPBackend(ModelBackend):
 
 
 # 后端注册表（按优先级排序，AutoBackendSelector 降级链也基于此）
-BACKEND_REGISTRY: Dict[str, type] = {
+BACKEND_REGISTRY: dict[str, type] = {
     "bert": BertBackend,
     "sklearn": SklearnBackend,
     "snownlp": SnowNLPBackend,
@@ -368,17 +368,17 @@ class AutoBackendSelector:
     逐个尝试；指定具体后端时优先使用指定项，失败再走降级链。
     """
 
-    DEGRADATION_CHAIN: List[str] = ["bert", "sklearn", "snownlp"]
+    DEGRADATION_CHAIN: list[str] = ["bert", "sklearn", "snownlp"]
 
-    def __init__(self, preferred: Optional[str] = None) -> None:
+    def __init__(self, preferred: str | None = None) -> None:
         self.preferred = (preferred or self._read_config()).lower()
-        self._backends: Dict[str, ModelBackend] = {}
+        self._backends: dict[str, ModelBackend] = {}
 
     @staticmethod
     def _read_config() -> str:
         return getattr(Config, "SENTIMENT_BACKEND", "auto")
 
-    def _get_backend(self, name: str) -> Optional[ModelBackend]:
+    def _get_backend(self, name: str) -> ModelBackend | None:
         if name not in self._backends:
             cls = BACKEND_REGISTRY.get(name)
             if cls is None:
@@ -392,7 +392,7 @@ class AutoBackendSelector:
                 return None
         return self._backends[name]
 
-    def _ordered_candidates(self) -> List[str]:
+    def _ordered_candidates(self) -> list[str]:
         """返回尝试顺序：preferred 优先，其余按降级链补齐。"""
         if self.preferred in ("auto", "", None):
             return list(self.DEGRADATION_CHAIN)
@@ -419,11 +419,10 @@ class AutoBackendSelector:
         logger.warning("AutoBackendSelector: 所有后端不可用，回退 SnowNLPBackend")
         return self._get_backend("snownlp") or SnowNLPBackend()
 
-    def predict(self, texts: List[str]) -> List[PredictResult]:
+    def predict(self, texts: list[str]) -> list[PredictResult]:
         """选择后端并执行预测；首选失败时按链降级。"""
         if not texts:
             return []
-        last_error: Optional[Exception] = None
         for name in self._ordered_candidates():
             backend = self._get_backend(name)
             if backend is None:
@@ -438,7 +437,6 @@ class AutoBackendSelector:
                     name,
                     e,
                 )
-                last_error = e
         # 最终兜底：SnowNLP（永远可用）
         try:
             snow = self._get_backend("snownlp") or SnowNLPBackend()

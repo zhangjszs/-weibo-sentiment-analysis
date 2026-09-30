@@ -15,8 +15,15 @@ def test_query_dataframe_uses_engine():
     assert not hasattr(q, "DatabasePool"), "DatabasePool 应已删除"
     assert not hasattr(q, "db_pool"), "db_pool 应已删除"
     assert not hasattr(q, "_backup_connection"), "_backup_connection 应已删除"
-    assert hasattr(q, "engine"), "engine 应存在"
-    assert hasattr(q, "db_session"), "db_session 应存在"
+    # 复用 database.py 的 SQLAlchemy engine（不是 pymysql 旧连接池）。
+    # 注意：不再断言 re-export 的 db_session —— query.py 只需 engine，
+    # 保留未使用的 db_session 导入会触发 ruff F401，调用方一律从 database 取。
+    # 也不断言 `q.engine is database.engine`：database.reset() 会在测试
+    # teardown 重建 engine，而 query.py 在 import 期就已绑定，两者可以不同。
+    from sqlalchemy.engine import Engine
+
+    assert isinstance(q.engine, Engine), "engine 应为 SQLAlchemy Engine"
+    assert not hasattr(q, "pymysql"), "不应直接依赖 pymysql"
 
 
 def test_querys_function_exists():

@@ -7,12 +7,9 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import sys
 from datetime import datetime, timedelta
 
 import pytest
-
-sys.path.insert(0, "src")
 
 
 class TestCUSUMDetector:

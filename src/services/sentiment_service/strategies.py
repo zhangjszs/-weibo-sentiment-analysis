@@ -11,16 +11,16 @@ import json
 import logging
 import time
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
 
 import requests
 from circuitbreaker import circuit
 from snownlp import SnowNLP
 
 from config.settings import Config
+
 from ..sentiment_dictionaries import sentiment_dict
-from .models import SentimentResult, SentimentSchema
 from .cache import get_from_cache, save_to_cache
+from .models import SentimentResult, SentimentSchema
 
 logger = logging.getLogger(__name__)
 
@@ -48,16 +48,15 @@ class SnowNLPStrategy(SentimentStrategy):
                          '不可靠', '不稳定', '落后', '不专业', '冷漠', '冰冷', '无聊', '枯燥',
                          '不推荐', '不值得', '物有所值', '性价比低', '质量差', '服务差', '态度差',
                          '难用', '不实用', '不方便', '慢', '丑陋', '过时', '弱小', '破防', '破防了',
-                         '无语', '醉了', '吐了', '服了', '晕了', '崩溃', '绝望', '难受', '痛苦',
-                         '伤心', '难过', '生气', '愤怒', '恼火', '烦躁', '焦虑', '担忧', '害怕',
-                         '恐惧', '紧张', '压力', '负担', '烦恼', '无聊', '枯燥', '失望', '绝望'}
+                         '无语', '醉了', '吐了', '服了', '晕了', '崩溃', '绝望', '难受', '伤心', '愤怒', '恼火', '烦躁', '焦虑', '担忧', '害怕',
+                         '恐惧', '紧张', '压力', '负担', '烦恼'}
     positive_indicators = {'好', '优秀', '棒', '赞', '满意', '喜欢', '高兴', '开心', '快乐', '幸福',
                          '美好', '精彩', '出色', '成功', '完美', '舒适', '便利', '快速', '高效',
                          '安全', '可靠', '稳定', '创新', '专业', '贴心', '温暖', '感动', '惊喜',
                          '推荐', '值得', '物超所值', '性价比高', '质量好', '服务好', '态度好',
                          '好用', '实用', '方便', '快捷', '美观', '时尚', '流行', '先进', '强大',
                          'yyds', '永远的神', '绝绝子', '666', 'nb', '牛批', '牛逼', '厉害',
-                         '奥利给', '给力', 'nice', '赞', '好评', '种草', '安利', '真香', '爱了'}
+                         '奥利给', '给力', 'nice', '好评', '种草', '安利', '真香', '爱了'}
     neutral_indicators = {'一般', '普通', '还行', '还好', '马马虎虎', '凑合', '一般般', '平常', '正常', '常规'}
     positive_emotions = {'喜悦', '感动', '兴奋', '期待'}
     negative_emotions = {'愤怒', '悲伤', '失望', '焦虑', '无奈', '讽刺'}
@@ -240,8 +239,8 @@ class SnowNLPStrategy(SentimentStrategy):
         '🤩': '喜悦', '🥳': '喜悦', '👍': '喜悦', '👌': '喜悦', '✌️': '喜悦', '🤞': '喜悦', '🤟': '喜悦', '🤘': '喜悦',
         '😢': '悲伤', '😭': '悲伤', '😞': '悲伤', '😔': '悲伤', '😟': '悲伤', '😕': '悲伤', '🙁': '悲伤', '☹️': '悲伤',
         '😤': '愤怒', '😠': '愤怒', '😡': '愤怒', '🤬': '愤怒',
-        '😰': '焦虑', '😥': '焦虑', '😓': '焦虑', '😨': '焦虑',
-        '😱': '恐惧', '😨': '恐惧', '😰': '恐惧',
+        '😰': '焦虑', '😥': '焦虑', '😓': '焦虑',
+        '😱': '恐惧', '😨': '恐惧',
         '🤢': '厌恶', '🤮': '厌恶',
         '😴': '无感', '🤔': '无感', '😐': '无感', '😑': '无感'
     }
@@ -492,7 +491,7 @@ class CustomModelStrategy(SentimentStrategy):
 
         self._selector = AutoBackendSelector()
         self._backend = None  # 懒加载：首次 predict 时才 select
-        self._snow_strategy: Optional[SnowNLPStrategy] = None
+        self._snow_strategy: SnowNLPStrategy | None = None
 
     @property
     def backend(self):
@@ -526,7 +525,7 @@ class CustomModelStrategy(SentimentStrategy):
                 return []
 
     def _build_model_reasoning(
-        self, label: str, score: float, emotion: Optional[str], backend_name: str
+        self, label: str, score: float, emotion: str | None, backend_name: str
     ) -> str:
         from utils.sentiment import label_to_chinese
 

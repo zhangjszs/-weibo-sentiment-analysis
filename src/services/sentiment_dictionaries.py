@@ -4,10 +4,9 @@
 功能：管理和加载情感词典，提供情感词匹配和得分计算
 """
 
+import logging
 import os
 import time
-import logging
-from typing import Dict, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -126,13 +125,13 @@ class SentimentDictionary:
         for word in self.negative_words:
             self.negative_scores[word] = -1.0
 
-    def get_sentiment_score(self, text: str) -> Tuple[float, List[str], List[str]]:
+    def get_sentiment_score(self, text: str) -> tuple[float, list[str], list[str]]:
         """
         计算文本的情感得分
-        
+
         Args:
             text: 待分析文本
-            
+
         Returns:
             Tuple[float, List[str], List[str]]: (情感得分, 正向词列表, 负向词列表)
         """
@@ -182,7 +181,7 @@ class SentimentDictionary:
     def update_from_external_source(self, positive_words: list, negative_words: list):
         """
         从外部源更新词典
-        
+
         Args:
             positive_words: 新的正向词列表
             negative_words: 新的负向词列表
@@ -191,13 +190,13 @@ class SentimentDictionary:
             # 添加新词汇
             self.positive_words.update(positive_words)
             self.negative_words.update(negative_words)
-            
+
             # 更新得分
             for word in positive_words:
                 self.positive_scores[word] = 1.0
             for word in negative_words:
                 self.negative_scores[word] = -1.0
-            
+
             self.last_updated = time.time()
             logger.info(f"从外部源更新词典，新增正向词: {len(positive_words)}, 新增负向词: {len(negative_words)}")
         except Exception as e:
@@ -206,7 +205,7 @@ class SentimentDictionary:
     def get_dictionary_stats(self):
         """
         获取词典统计信息
-        
+
         Returns:
             dict: 词典统计信息
         """

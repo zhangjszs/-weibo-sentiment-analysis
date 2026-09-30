@@ -8,7 +8,6 @@
 
 import logging
 import re
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +195,7 @@ class LogSanitizer:
         return sanitized
 
     @staticmethod
-    def sanitize_dict(data: dict, sensitive_keys: Optional[list] = None) -> dict:
+    def sanitize_dict(data: dict, sensitive_keys: list | None = None) -> dict:
         """
         对字典中的敏感信息进行脱敏
 

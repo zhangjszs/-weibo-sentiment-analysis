@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from repositories.comment_repository import CommentRepository
 
@@ -16,7 +16,7 @@ class CommentService:
         user: str,
         start_time: str,
         end_time: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         offset = (page - 1) * limit
         comments, total = self.comment_repo.find_with_filter(
             keyword=keyword,

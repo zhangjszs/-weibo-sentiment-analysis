@@ -6,20 +6,16 @@
 
 import csv
 import logging
-import os
 import re
 import sys
 from pathlib import Path
-from typing import List
 
 import jieba
 
+from utils.query import query_dataframe
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "utils"))
-
-from utils.query import query_dataframe
 
 
 class ModelDataProcessor:
@@ -84,7 +80,7 @@ class ModelDataProcessor:
 
         return stop_words
 
-    def get_comment_list(self) -> List[List]:
+    def get_comment_list(self) -> list[list]:
         """获取评论数据 - 改进版"""
         try:
             df = query_dataframe(
@@ -111,7 +107,7 @@ class ModelDataProcessor:
             logger.error(f"获取评论数据失败: {e}")
             return []
 
-    def clean_and_segment_text(self, comment_list: List[List]) -> str:
+    def clean_and_segment_text(self, comment_list: list[list]) -> str:
         """清洗和分词文本 - 修复版"""
         if not comment_list:
             logger.warning("评论列表为空")

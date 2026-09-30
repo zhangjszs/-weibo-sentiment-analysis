@@ -13,13 +13,9 @@ import pytest
 pytestmark = pytest.mark.unit
 
 import json
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from services.sentiment_service import (
     SentimentResult,

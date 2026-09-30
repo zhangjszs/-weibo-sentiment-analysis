@@ -170,7 +170,7 @@ class TestResetCache:
         _stats.record_cache_hit()
         _stats.record_cache_miss()
 
-        result = _stats.reset_cache()
+        _stats.reset_cache()
         assert _stats.cache["hits"] == 0
         assert _stats.cache["misses"] == 0
         assert _stats.cache["total"] == 0
@@ -200,7 +200,7 @@ class TestResetPerformance:
         _stats.record_performance(10.0, "simple")
         _stats.record_performance(20.0, "detailed")
 
-        result = _stats.reset_performance()
+        _stats.reset_performance()
         p = _stats.performance
         assert p["total_requests"] == 0
         assert p["total_time"] == 0

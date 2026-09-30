@@ -3,15 +3,11 @@
 报告数据 API 测试
 """
 
-import os
-import sys
-import importlib
 
 import pytest
 
 pytestmark = pytest.mark.api
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from utils.jwt_handler import create_token
 

@@ -9,7 +9,6 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Dict, List, Optional, Set
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class Permission(Enum):
 @dataclass
 class Role:
     name: str
-    permissions: Set[Permission] = field(default_factory=set)
+    permissions: set[Permission] = field(default_factory=set)
 
     def has_permission(self, perm: Permission) -> bool:
         return perm in self.permissions
@@ -33,7 +32,7 @@ class Role:
 
 class RoleManager:
     def __init__(self):
-        self._roles: Dict[str, Role] = {}
+        self._roles: dict[str, Role] = {}
         self._register_defaults()
 
     def _register_defaults(self):
@@ -70,7 +69,7 @@ class RoleManager:
             raise KeyError(f"角色不存在: {name}")
         return self._roles[name]
 
-    def list_roles(self) -> List[str]:
+    def list_roles(self) -> list[str]:
         return list(self._roles.keys())
 
 
@@ -80,7 +79,7 @@ class ShareRecord:
     resource_type: str
     resource_id: str
     owner_id: str
-    share_to: List[str]
+    share_to: list[str]
     permission: str
     created_at: datetime = field(default_factory=datetime.now)
     active: bool = True
@@ -88,14 +87,14 @@ class ShareRecord:
 
 class ShareService:
     def __init__(self):
-        self._shares: Dict[str, ShareRecord] = {}
+        self._shares: dict[str, ShareRecord] = {}
 
     def create_share(
         self,
         resource_type: str,
         resource_id: str,
         owner_id: str,
-        share_to: List[str],
+        share_to: list[str],
         permission: str = "read",
     ) -> ShareRecord:
         record = ShareRecord(
@@ -109,7 +108,7 @@ class ShareService:
         self._shares[record.share_id] = record
         return record
 
-    def get_shares_for_user(self, user_id: str) -> List[ShareRecord]:
+    def get_shares_for_user(self, user_id: str) -> list[ShareRecord]:
         return [r for r in self._shares.values() if r.active and user_id in r.share_to]
 
     def revoke_share(self, share_id: str):
@@ -133,13 +132,13 @@ class OperationLog:
     action: str
     resource_type: str
     resource_id: str
-    detail: Dict = field(default_factory=dict)
+    detail: dict = field(default_factory=dict)
     created_at: datetime = field(default_factory=datetime.now)
 
 
 class OperationLogger:
     def __init__(self):
-        self._logs: List[OperationLog] = []
+        self._logs: list[OperationLog] = []
 
     def log(
         self,
@@ -147,7 +146,7 @@ class OperationLogger:
         action: str,
         resource_type: str,
         resource_id: str,
-        detail: Dict = None,
+        detail: dict = None,
     ) -> OperationLog:
         entry = OperationLog(
             log_id=str(uuid.uuid4()),
@@ -162,7 +161,7 @@ class OperationLogger:
 
     def get_logs(
         self, user_id: str = None, resource_id: str = None
-    ) -> List[OperationLog]:
+    ) -> list[OperationLog]:
         result = self._logs
         if user_id:
             result = [log_entry for log_entry in result if log_entry.user_id == user_id]
@@ -181,14 +180,14 @@ class Annotation:
     resource_id: str
     user_id: str
     content: str
-    position: Dict
-    parent_id: Optional[str] = None
+    position: dict
+    parent_id: str | None = None
     created_at: datetime = field(default_factory=datetime.now)
 
 
 class AnnotationService:
     def __init__(self):
-        self._annotations: Dict[str, Annotation] = {}
+        self._annotations: dict[str, Annotation] = {}
 
     def add(
         self,
@@ -196,7 +195,7 @@ class AnnotationService:
         resource_id: str,
         user_id: str,
         content: str,
-        position: Dict,
+        position: dict,
     ) -> Annotation:
         ann = Annotation(
             annotation_id=str(uuid.uuid4()),
@@ -225,7 +224,7 @@ class AnnotationService:
         self._annotations[ann.annotation_id] = ann
         return ann
 
-    def get_by_resource(self, resource_type: str, resource_id: str) -> List[Annotation]:
+    def get_by_resource(self, resource_type: str, resource_id: str) -> list[Annotation]:
         return [
             a
             for a in self._annotations.values()

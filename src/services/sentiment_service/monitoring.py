@@ -5,7 +5,6 @@
 
 import logging
 import time
-from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class _StatsManager:
             "time_by_mode": {},
             "last_reset": time.time(),
         }
-        self.memory_cache: Dict[str, tuple] = {}
+        self.memory_cache: dict[str, tuple] = {}
 
     def record_cache_hit(self):
         self.cache["hits"] += 1

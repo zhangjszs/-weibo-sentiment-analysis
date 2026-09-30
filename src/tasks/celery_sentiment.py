@@ -9,7 +9,7 @@ import json
 import logging
 import os
 import sys
-from typing import Any, Dict, List
+from typing import Any
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -39,8 +39,8 @@ def get_cache_key(text: str, mode: str = "smart") -> str:
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=30)
 def analyze_sentiment_batch(
-    self, texts: List[str], mode: str = "smart"
-) -> Dict[str, Any]:
+    self, texts: list[str], mode: str = "smart"
+) -> dict[str, Any]:
     """
     批量情感分析任务
 
@@ -115,7 +115,7 @@ def analyze_sentiment_batch(
 @celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
 def analyze_single_with_fallback(
     self, text: str, mode: str = "smart"
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     单条文本分析（带降级缓存）
 
@@ -168,7 +168,7 @@ def analyze_single_with_fallback(
 
 
 @celery_app.task(bind=True, max_retries=1, default_retry_delay=300)
-def retrain_model_task(self, optimize: bool = False) -> Dict[str, Any]:
+def retrain_model_task(self, optimize: bool = False) -> dict[str, Any]:
     """
     模型重训练任务
 

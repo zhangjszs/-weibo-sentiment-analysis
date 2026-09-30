@@ -39,8 +39,8 @@ try:
     from app.tasks import (  # type: ignore[import-not-found]
         DEFAULT_BACKEND_URL,
         _auth_headers,
-        _backend_url,
         _backend_timeout,
+        _backend_url,
         _post,
         analyze_batch_sync,
         analyze_sequence_sync,

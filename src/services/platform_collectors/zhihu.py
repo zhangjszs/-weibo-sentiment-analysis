@@ -5,7 +5,7 @@
 """
 
 import os
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
@@ -16,39 +16,39 @@ class ZhihuCollector(BasePlatformCollector):
     """知乎采集器"""
 
     API_BASE = "https://www.zhihu.com/api/v4"
-    
+
     @property
     def platform(self) -> Platform:
         return Platform.ZHIHU
 
-    def parse(self, raw: Dict[str, Any]) -> PlatformContent:
+    def parse(self, raw: dict[str, Any]) -> PlatformContent:
         return PlatformContent.from_zhihu(raw)
 
-    def _fetch_data(self, keyword: str, limit: int) -> List[Dict[str, Any]]:
+    def _fetch_data(self, keyword: str, limit: int) -> list[dict[str, Any]]:
         """
         从知乎搜索获取数据
-        
+
         Note: 需要处理知乎的反爬机制
         """
         if os.getenv("ZHIHU_COLLECTOR_ENABLED", "false").lower() != "true":
             raise NotImplementedError("知乎采集未启用，使用模拟数据")
-        
+
         # 知乎搜索 API
         search_api = f"{self.API_BASE}/search_v3"
-        
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
             "Accept": "application/json, text/plain, */*",
             "X-Requested-With": "fetch",
         }
-        
+
         params = {
             "t": "general",
             "q": keyword,
             "offset": 0,
             "limit": limit,
         }
-        
+
         try:
             response = requests.get(
                 search_api,
@@ -56,7 +56,7 @@ class ZhihuCollector(BasePlatformCollector):
                 headers=headers,
                 timeout=30,
             )
-            
+
             if response.status_code == 200:
                 data = response.json()
                 # 解析搜索结果
@@ -72,15 +72,15 @@ class ZhihuCollector(BasePlatformCollector):
             else:
                 self.logger.warning(f"知乎搜索返回状态码: {response.status_code}")
                 raise NotImplementedError("知乎采集失败")
-                
+
         except Exception as e:
             self.logger.error(f"知乎采集请求失败: {e}")
-            raise NotImplementedError(f"知乎采集失败: {e}")
+            raise NotImplementedError(f"知乎采集失败: {e}") from e
 
-    def _generate_demo_data(self, keyword: str, limit: int) -> List[PlatformContent]:
+    def _generate_demo_data(self, keyword: str, limit: int) -> list[PlatformContent]:
         """生成知乎模拟数据"""
-        from datetime import datetime, timedelta
         import random
+        from datetime import datetime, timedelta
 
         results = []
         authors = [
@@ -89,9 +89,9 @@ class ZhihuCollector(BasePlatformCollector):
             ("算法工程师", "algo_engineer"),
             ("互联网观察家", "internet_observer"),
         ]
-        
+
         base_time = datetime.now() - timedelta(days=5)
-        
+
         for i in range(min(limit, 12)):
             author = random.choice(authors)
             results.append(PlatformContent(
@@ -108,5 +108,5 @@ class ZhihuCollector(BasePlatformCollector):
                 url=f"https://www.zhihu.com/question/demo_{i}",
                 keywords=[keyword, "知乎", "问答"],
             ))
-        
+
         return results

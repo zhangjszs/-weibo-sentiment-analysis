@@ -10,10 +10,7 @@ pytestmark = pytest.mark.unit
 import os
 import pickle
 import shutil
-import sys
 import uuid
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 def _make_test_dir(prefix: str) -> str:

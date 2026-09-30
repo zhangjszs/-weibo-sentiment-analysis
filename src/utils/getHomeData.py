@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 
 from config.settings import BASE_DIR
-from utils.cache import cache_result
 from repositories.article_repository import ArticleRepository
 from repositories.comment_repository import CommentRepository
+from utils.cache import cache_result
 
 
 def get_abs_path(rel_path):

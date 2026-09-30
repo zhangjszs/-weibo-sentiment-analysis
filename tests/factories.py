@@ -14,7 +14,6 @@ from models.article import Article
 from models.comment import Comment
 from models.user import User
 from services.analysis_pipeline import AnalysisSnapshot
-from utils.data_provenance import real_meta
 
 
 def build_article(
@@ -107,12 +106,12 @@ def build_snapshot(
 ) -> AnalysisSnapshot:
     return AnalysisSnapshot(
         topic=topic,
-        start_at=start_at or datetime.datetime(2026, 1, 1, tzinfo=datetime.timezone.utc),
-        end_at=end_at or datetime.datetime(2026, 1, 7, tzinfo=datetime.timezone.utc),
+        start_at=start_at or datetime.datetime(2026, 1, 1, tzinfo=datetime.UTC),
+        end_at=end_at or datetime.datetime(2026, 1, 7, tzinfo=datetime.UTC),
         data=data or {},
         errors=errors or [],
         generated_at=kwargs.get(
             "generated_at",
-            datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.timezone.utc),
+            datetime.datetime(2026, 1, 1, 12, 0, 0, tzinfo=datetime.UTC),
         ),
     )

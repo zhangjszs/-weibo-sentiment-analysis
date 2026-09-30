@@ -5,9 +5,7 @@
 """
 
 import os
-from typing import Any, Dict, List
-
-import requests
+from typing import Any
 
 from .base import BasePlatformCollector, ContentType, Platform, PlatformContent
 
@@ -16,33 +14,33 @@ class DouyinCollector(BasePlatformCollector):
     """抖音采集器"""
 
     API_BASE = "https://www.douyin.com"
-    
+
     @property
     def platform(self) -> Platform:
         return Platform.DOUYIN
 
-    def parse(self, raw: Dict[str, Any]) -> PlatformContent:
+    def parse(self, raw: dict[str, Any]) -> PlatformContent:
         return PlatformContent.from_douyin(raw)
 
-    def _fetch_data(self, keyword: str, limit: int) -> List[Dict[str, Any]]:
+    def _fetch_data(self, keyword: str, limit: int) -> list[dict[str, Any]]:
         """
         从抖音搜索获取数据
-        
+
         Note: 抖音有严格的反爬机制，需要使用签名算法
         """
         if os.getenv("DOUYIN_COLLECTOR_ENABLED", "false").lower() != "true":
             raise NotImplementedError("抖音采集未启用，使用模拟数据")
-        
+
         # 实际实现需要：
         # 1. 获取 X-Bogus 签名
         # 2. 使用 msToken
         # 3. 处理验证码
         raise NotImplementedError("抖音采集需要签名算法，暂未实现")
 
-    def _generate_demo_data(self, keyword: str, limit: int) -> List[PlatformContent]:
+    def _generate_demo_data(self, keyword: str, limit: int) -> list[PlatformContent]:
         """生成抖音模拟数据"""
-        from datetime import datetime, timedelta
         import random
+        from datetime import datetime, timedelta
 
         results = []
         creators = [
@@ -51,9 +49,9 @@ class DouyinCollector(BasePlatformCollector):
             ("极客公园", "geekpark"),
             ("创新实验室", "innovation_lab"),
         ]
-        
+
         base_time = datetime.now() - timedelta(days=1)
-        
+
         for i in range(min(limit, 15)):
             creator = random.choice(creators)
             results.append(PlatformContent(
@@ -71,5 +69,5 @@ class DouyinCollector(BasePlatformCollector):
                 url=f"https://www.douyin.com/video/demo_{i}",
                 keywords=[keyword, "抖音", "短视频"],
             ))
-        
+
         return results

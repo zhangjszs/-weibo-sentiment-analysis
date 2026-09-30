@@ -7,8 +7,6 @@ the default ``unit``/``api`` test run without any external service.
 
 from __future__ import annotations
 
-import json
-
 import pytest
 
 

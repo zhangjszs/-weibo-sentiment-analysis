@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from utils.data_provenance import demo_meta, real_meta
@@ -38,7 +38,7 @@ class AnalysisSnapshot:
     end_at: datetime
     data: dict[str, Any] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
-    generated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    generated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -170,7 +170,7 @@ class AnalysisPipeline:
         """Return a plausible demo dataset for *topic*."""
         import random
 
-        base = datetime.now(timezone.utc)
+        base = datetime.now(UTC)
         days = 7
         trend = [
             {"date": f"2026-{7+m:02d}-{d+1:02d}", "count": random.randint(50, 300)}

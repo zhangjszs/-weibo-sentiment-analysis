@@ -8,11 +8,8 @@ import pytest
 pytestmark = pytest.mark.unit
 
 import importlib
-import os
 import sys
 import types
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 def test_legacy_get_all_data_module_has_no_import_side_effects(monkeypatch):

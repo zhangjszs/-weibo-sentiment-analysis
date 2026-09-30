@@ -344,7 +344,7 @@ class TestBaseCollect:
         """_fetch_data 返回数据时走 parse 路径（176-185）"""
         c = _MinimalCollector()
         raw = {"msg_link": "link1", "nickname": "作者", "title": "标题", "like_num": 5}
-        monkeypatch.setattr(c, "_fetch_data", lambda k, l: [raw])
+        monkeypatch.setattr(c, "_fetch_data", lambda k, _l: [raw])
         results = c.collect("kw", 5)
         assert len(results) == 1
         assert results[0].author_name == "作者"
@@ -374,7 +374,7 @@ class TestBaseCollect:
     def test_collect_empty_raw_data(self, monkeypatch):
         """_fetch_data 返回空列表 → collect 返回空列表"""
         c = _MinimalCollector()
-        monkeypatch.setattr(c, "_fetch_data", lambda k, l: [])
+        monkeypatch.setattr(c, "_fetch_data", lambda k, _l: [])
         assert c.collect("kw", 5) == []
 
 

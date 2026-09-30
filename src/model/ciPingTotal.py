@@ -10,7 +10,6 @@ import re
 import sys
 from collections import Counter
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 
@@ -81,7 +80,7 @@ class WordFrequencyAnalyzer:
 
         return stop_words
 
-    def read_segmented_text(self) -> Optional[str]:
+    def read_segmented_text(self) -> str | None:
         """读取分词文本"""
         try:
             if not self.input_file.exists():
@@ -102,7 +101,7 @@ class WordFrequencyAnalyzer:
             logger.error(f"读取文件失败: {e}")
             return None
 
-    def filter_words(self, words: List[str]) -> List[str]:
+    def filter_words(self, words: list[str]) -> list[str]:
         """过滤无效词语"""
         filtered_words = []
 
@@ -123,7 +122,7 @@ class WordFrequencyAnalyzer:
 
     def calculate_frequency(
         self, content: str, max_results: int = 300
-    ) -> List[Tuple[str, int]]:
+    ) -> list[tuple[str, int]]:
         """计算词频 - 改进版"""
         try:
             words = content.split()
@@ -149,7 +148,7 @@ class WordFrequencyAnalyzer:
             logger.error(f"词频计算失败: {e}")
             return []
 
-    def save_frequency_results(self, word_freq: List[Tuple[str, int]]) -> bool:
+    def save_frequency_results(self, word_freq: list[tuple[str, int]]) -> bool:
         """保存词频结果 - 安全版"""
         if not word_freq:
             logger.warning("词频结果为空，跳过保存")
@@ -175,7 +174,7 @@ class WordFrequencyAnalyzer:
             logger.error(f"保存词频结果失败: {e}")
             return False
 
-    def generate_frequency_report(self, word_freq: List[Tuple[str, int]]) -> Dict:
+    def generate_frequency_report(self, word_freq: list[tuple[str, int]]) -> dict:
         """生成词频分析报告"""
         if not word_freq:
             return {}
@@ -247,7 +246,7 @@ class WordFrequencyAnalyzer:
             logger.error(f"词频分析异常: {e}")
             return False
 
-    def get_top_words(self, n: int = 20) -> List[Tuple[str, int]]:
+    def get_top_words(self, n: int = 20) -> list[tuple[str, int]]:
         """获取高频词TOP N"""
         try:
             if not self.output_file.exists():

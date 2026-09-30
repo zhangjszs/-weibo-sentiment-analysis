@@ -10,9 +10,9 @@ from snownlp import SnowNLP
 from wordcloud import WordCloud
 
 from config.settings import BASE_DIR
-from utils.getPublicData import getAllCiPingTotal
 from repositories.article_repository import ArticleRepository
 from repositories.comment_repository import CommentRepository
+from utils.getPublicData import getAllCiPingTotal
 
 logger = logging.getLogger(__name__)
 

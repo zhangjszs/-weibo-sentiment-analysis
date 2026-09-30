@@ -10,7 +10,7 @@ import copy
 import logging
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from config.settings import Config
@@ -43,7 +43,7 @@ _STARTUP_STATE: dict[str, Any] = {
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(UTC).isoformat()
 
 
 def _set_admin_bootstrap_state(payload: dict[str, Any]) -> None:

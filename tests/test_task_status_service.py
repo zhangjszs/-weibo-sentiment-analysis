@@ -18,21 +18,16 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 from requests import HTTPError
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.task_status_service import (
     _is_not_found_error,
     _query_local_task,
     query_task_progress,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

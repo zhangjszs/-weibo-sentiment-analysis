@@ -6,7 +6,7 @@
 
 import logging
 import random
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,10 +22,10 @@ except ImportError:
 class SynonymReplacer:
     """同义词替换器"""
 
-    def __init__(self, synonym_dict: Dict[str, List[str]] = None):
+    def __init__(self, synonym_dict: dict[str, list[str]] = None):
         self.synonym_dict = synonym_dict or self._load_default_synonyms()
 
-    def _load_default_synonyms(self) -> Dict[str, List[str]]:
+    def _load_default_synonyms(self) -> dict[str, list[str]]:
         """加载默认同义词词典"""
         return {
             "好": ["棒", "优秀", "出色", "不错", "良好"],
@@ -207,7 +207,7 @@ class BackTranslator:
 class TextAugmenter:
     """文本增强器 - 整合所有增强方法"""
 
-    def __init__(self, config: Dict[str, Any] = None):
+    def __init__(self, config: dict[str, Any] = None):
         """
         Args:
             config: 配置字典
@@ -224,7 +224,7 @@ class TextAugmenter:
         self.random_swapper = RandomSwapper(n=1)
         self.back_translator = BackTranslator()
 
-    def augment(self, text: str, methods: List[str] = None) -> List[str]:
+    def augment(self, text: str, methods: list[str] = None) -> list[str]:
         """
         对文本进行数据增强
 
@@ -253,11 +253,11 @@ class TextAugmenter:
 
     def augment_dataset(
         self,
-        texts: List[str],
-        labels: List[int],
+        texts: list[str],
+        labels: list[int],
         augment_factor: int = 2,
         balance: bool = True,
-    ) -> Tuple[List[str], List[int]]:
+    ) -> tuple[list[str], list[int]]:
         """
         对数据集进行增强
 
@@ -334,7 +334,7 @@ class NoiseInjector:
 
 def augment_training_data(
     input_path: str, output_path: str, augment_factor: int = 2, balance: bool = True
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     增强训练数据
 

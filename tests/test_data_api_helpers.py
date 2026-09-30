@@ -7,10 +7,6 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from views.data.data_api import (  # noqa: E402
     _extract_hour_from_value,

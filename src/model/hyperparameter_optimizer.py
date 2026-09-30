@@ -7,7 +7,7 @@
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -111,7 +111,7 @@ class HyperparameterOptimizer:
             from social_media_preprocessor import SocialMediaPreprocessor
         except ImportError:
             from .social_media_preprocessor import SocialMediaPreprocessor
-        
+
         return Pipeline(
             steps=[
                 ("preprocess", SocialMediaPreprocessor()),
@@ -128,7 +128,7 @@ class HyperparameterOptimizer:
         cv_folds: int = 5,
         scoring: str = "f1_macro",
         n_jobs: int = -1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         使用GridSearchCV进行超参数优化
 
@@ -206,7 +206,7 @@ class HyperparameterOptimizer:
         cv_folds: int = 5,
         scoring: str = "f1_macro",
         n_jobs: int = -1,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         使用RandomizedSearchCV进行超参数优化（更快）
         """
@@ -260,7 +260,7 @@ class HyperparameterOptimizer:
         y_train: np.ndarray,
         n_trials: int = 50,
         timeout: int = 600,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         使用Optuna进行贝叶斯优化（需要安装optuna）
         """
@@ -318,8 +318,8 @@ class HyperparameterOptimizer:
         }
 
     def select_best_model(
-        self, results: Dict[str, Any], X_test: np.ndarray, y_test: np.ndarray
-    ) -> Tuple[str, Any, float]:
+        self, results: dict[str, Any], X_test: np.ndarray, y_test: np.ndarray
+    ) -> tuple[str, Any, float]:
         """
         从优化结果中选择最佳模型
         """
@@ -382,7 +382,7 @@ class HyperparameterOptimizer:
         data_path: str = None,
         method: str = "random",
         test_size: float = 0.2,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         运行完整的优化流程
 

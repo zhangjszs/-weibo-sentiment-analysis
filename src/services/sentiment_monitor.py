@@ -9,10 +9,11 @@ import logging
 import math
 import threading
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -50,9 +51,9 @@ class ChangePoint:
     after_value: float
     magnitude: float
     confidence: float
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "timestamp": self.timestamp.isoformat(),
             "index": self.index,
@@ -76,7 +77,7 @@ class SentimentSnapshot:
     negative_ratio: float
     neutral_ratio: float
     volume: int = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class CUSUMDetector:
@@ -99,7 +100,7 @@ class CUSUMDetector:
         self.neg_cumsum = 0.0
         self.detected_change = False
 
-    def update(self, value: float) -> Optional[ChangePoint]:
+    def update(self, value: float) -> ChangePoint | None:
         """更新检测器状态"""
         self.detected_change = False
 
@@ -161,7 +162,7 @@ class SlidingWindowDetector:
         self.window2: deque = deque(maxlen=window_size)
         self._lock = threading.Lock()
 
-    def update(self, value: float) -> Optional[ChangePoint]:
+    def update(self, value: float) -> ChangePoint | None:
         """更新检测器状态"""
         with self._lock:
             self.window2.append(value)
@@ -206,7 +207,7 @@ class SlidingWindowDetector:
 
             return None
 
-    def get_window_stats(self) -> Dict:
+    def get_window_stats(self) -> dict:
         """获取窗口统计信息"""
         with self._lock:
             return {
@@ -235,7 +236,7 @@ class ZScoreDetector:
         self.history: deque = deque(maxlen=history_size)
         self._lock = threading.Lock()
 
-    def update(self, value: float) -> Optional[ChangePoint]:
+    def update(self, value: float) -> ChangePoint | None:
         """更新检测器状态"""
         with self._lock:
             if len(self.history) < 10:
@@ -272,7 +273,7 @@ class ZScoreDetector:
 
             return None
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """获取统计信息"""
         with self._lock:
             if not self.history:
@@ -310,7 +311,7 @@ class BOCPDDetector:
             -0.5 * (x - mean) ** 2 / var
         )
 
-    def update(self, value: float) -> Optional[ChangePoint]:
+    def update(self, value: float) -> ChangePoint | None:
         """更新检测器状态"""
         self.t += 1
 
@@ -362,7 +363,7 @@ class SentimentMonitor:
     整合多种检测算法，提供统一的监控接口
     """
 
-    def __init__(self, config: Dict = None):
+    def __init__(self, config: dict = None):
         self.config = config or {}
         self._lock = threading.Lock()
 
@@ -388,8 +389,8 @@ class SentimentMonitor:
         )
 
         self.snapshots: deque = deque(maxlen=1000)
-        self.change_points: List[ChangePoint] = []
-        self._callbacks: List[Callable[[ChangePoint], None]] = []
+        self.change_points: list[ChangePoint] = []
+        self._callbacks: list[Callable[[ChangePoint], None]] = []
 
         self._stats = {
             "total_updates": 0,
@@ -409,7 +410,7 @@ class SentimentMonitor:
             except Exception as e:
                 logger.error(f"回调执行失败: {e}")
 
-    def update(self, snapshot: SentimentSnapshot) -> List[ChangePoint]:
+    def update(self, snapshot: SentimentSnapshot) -> list[ChangePoint]:
         """更新监控状态"""
         with self._lock:
             self.snapshots.append(snapshot)
@@ -448,7 +449,7 @@ class SentimentMonitor:
 
             return change_points
 
-    def get_trend(self, window_minutes: int = 30) -> Dict:
+    def get_trend(self, window_minutes: int = 30) -> dict:
         """获取情感趋势"""
         with self._lock:
             if not self.snapshots:
@@ -479,7 +480,7 @@ class SentimentMonitor:
                 "count": len(recent),
             }
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """获取监控统计"""
         with self._lock:
             return {
@@ -495,7 +496,7 @@ class SentimentMonitor:
                 "window_stats": self.sliding_window.get_window_stats(),
             }
 
-    def get_recent_change_points(self, limit: int = 20) -> List[Dict]:
+    def get_recent_change_points(self, limit: int = 20) -> list[dict]:
         """获取最近的变点"""
         with self._lock:
             return [cp.to_dict() for cp in self.change_points[-limit:]]

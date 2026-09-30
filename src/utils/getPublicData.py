@@ -4,11 +4,11 @@ import re
 import sys
 
 from config.settings import Config
-
-from .cache import cache_result
 from repositories.article_repository import ArticleRepository
 from repositories.comment_repository import CommentRepository
 from repositories.user_repository import UserRepository
+
+from .cache import cache_result
 
 sys.path.append("model")
 

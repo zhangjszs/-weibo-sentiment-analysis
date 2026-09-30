@@ -11,7 +11,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 from flask import request
 from flask_socketio import SocketIO, emit, join_room, leave_room
@@ -46,10 +46,10 @@ class ConnectionInfo:
     """连接信息"""
 
     sid: str
-    user_id: Optional[str] = None
-    username: Optional[str] = None
+    user_id: str | None = None
+    username: str | None = None
     connected_at: datetime = field(default_factory=datetime.now)
-    rooms: Set[str] = field(default_factory=set)
+    rooms: set[str] = field(default_factory=set)
     is_authenticated: bool = False
 
 
@@ -60,12 +60,12 @@ class WebSocketMessage:
     id: str
     type: MessageType
     level: str = "info"
-    title: Optional[str] = None
-    content: Optional[str] = None
-    data: Dict[str, Any] = field(default_factory=dict)
+    title: str | None = None
+    content: str | None = None
+    data: dict[str, Any] = field(default_factory=dict)
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "id": self.id,
             "type": self.type.value,
@@ -81,9 +81,9 @@ class WebSocketService:
     """WebSocket服务管理器"""
 
     def __init__(self):
-        self.socketio: Optional[SocketIO] = None
-        self.connections: Dict[str, ConnectionInfo] = {}
-        self.user_connections: Dict[str, Set[str]] = {}
+        self.socketio: SocketIO | None = None
+        self.connections: dict[str, ConnectionInfo] = {}
+        self.user_connections: dict[str, set[str]] = {}
         self._lock = threading.Lock()
         self._initialized = False
 
@@ -288,7 +288,7 @@ class WebSocketService:
             return False
 
     def broadcast(
-        self, message: WebSocketMessage, exclude_sids: Optional[List[str]] = None
+        self, message: WebSocketMessage, exclude_sids: list[str] | None = None
     ) -> bool:
         """广播消息给所有连接"""
         if not self.socketio:
@@ -306,9 +306,9 @@ class WebSocketService:
 
     def send_alert(
         self,
-        alert_data: Dict[str, Any],
-        user_id: Optional[str] = None,
-        keyword: Optional[str] = None,
+        alert_data: dict[str, Any],
+        user_id: str | None = None,
+        keyword: str | None = None,
     ) -> bool:
         """发送预警消息"""
         message = WebSocketMessage(
@@ -328,7 +328,7 @@ class WebSocketService:
             return self.broadcast(message)
 
     def send_notification(
-        self, title: str, content: str, user_id: Optional[str] = None
+        self, title: str, content: str, user_id: str | None = None
     ) -> bool:
         """发送通知消息"""
         message = WebSocketMessage(
@@ -345,7 +345,7 @@ class WebSocketService:
             return self.broadcast(message)
 
     def send_data_update(
-        self, data_type: str, data: Dict[str, Any], user_id: Optional[str] = None
+        self, data_type: str, data: dict[str, Any], user_id: str | None = None
     ) -> bool:
         """发送数据更新消息"""
         message = WebSocketMessage(
@@ -361,7 +361,7 @@ class WebSocketService:
         else:
             return self.broadcast(message)
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> dict[str, Any]:
         """获取连接统计信息"""
         with self._lock:
             return {

@@ -22,23 +22,24 @@ P0 #5：``Alert`` / ``AlertRule`` 由 ``@dataclass`` 改为 SQLAlchemy ORM，持
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from sqlalchemy import (
     JSON,
     Boolean,
     Column,
     DateTime,
-    Enum as SAEnum,
     Index,
     Integer,
     String,
     Text,
     TypeDecorator,
 )
+from sqlalchemy import (
+    Enum as SAEnum,
+)
 
 from database import Base
-
 
 # ---------------------------------------------------------------------------
 # 枚举（不变，广泛被引用）
@@ -90,7 +91,7 @@ class ThresholdConfig:
     field: str
     operator: ThresholdOperator
     value: float
-    value_max: Optional[float] = None
+    value_max: float | None = None
     time_window_minutes: int = 30
 
     def evaluate(self, current_value: float) -> bool:
@@ -113,7 +114,7 @@ class ThresholdConfig:
             return self.value <= current_value <= self.value_max
         return False
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "field": self.field,
             "operator": self.operator.value,
@@ -123,7 +124,7 @@ class ThresholdConfig:
         }
 
 
-def _enum_values(enum_cls: type) -> List[str]:
+def _enum_values(enum_cls: type) -> list[str]:
     """供 SAEnum 使用：存储枚举的 value（小写字符串），而非 name。"""
     return [e.value for e in enum_cls]
 
@@ -146,7 +147,7 @@ class ThresholdListType(TypeDecorator):
     def process_result_value(self, value, dialect):
         if not value:
             return []
-        result: List[ThresholdConfig] = []
+        result: list[ThresholdConfig] = []
         for t in value:
             if isinstance(t, ThresholdConfig):
                 result.append(t)
@@ -232,7 +233,7 @@ class AlertRule(Base):
         if self.trigger_count is None:
             self.trigger_count = 0
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,
@@ -306,7 +307,7 @@ class Alert(Base):
         if self.data is None:
             self.data = {}
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "rule_id": self.rule_id,

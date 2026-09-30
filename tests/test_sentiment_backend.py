@@ -8,28 +8,24 @@
 
 from __future__ import annotations
 
-import os
-import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
 pytestmark = pytest.mark.unit
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.sentiment_backend import (  # noqa: E402
-    AutoBackendSelector,
     BACKEND_REGISTRY,
-    BertBackend,
     LABEL_NEGATIVE,
     LABEL_NEUTRAL,
     LABEL_POSITIVE,
+    AutoBackendSelector,
+    BertBackend,
     ModelBackend,
     SklearnBackend,
     SnowNLPBackend,
 )
-
 
 # ---------------------------------------------------------------------------
 # SklearnBackend

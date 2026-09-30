@@ -7,12 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.integration
 
-import os
-import sys
 
 import pandas as pd
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 def test_article_table_sentiment_rows_do_not_full_scan(monkeypatch):

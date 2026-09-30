@@ -14,12 +14,9 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
 import sys
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 
 @pytest.fixture
@@ -197,8 +194,8 @@ class TestOriginCheckIntegration:
 
     def test_bearer_track_without_origin_passes_csrf(self, csrf_app, monkeypatch):
         """Bearer 主轨无 Origin → 放行 CSRF（非 ambient 凭证，不受 CSRF 影响）"""
-        import views.api.spider_api as spider_api
         import utils.authz as _authz
+        import views.api.spider_api as spider_api
 
         # quick-crawl 仅 admin 可用：测试账号提权以便聚焦 Origin 校验层
         monkeypatch.setattr(_authz.Config, "ADMIN_USERS", {"tester"})

@@ -5,7 +5,6 @@
 """
 
 import logging
-from typing import Dict, List, Optional, Type
 
 from .base import BasePlatformCollector, Platform
 from .bilibili import BilibiliCollector
@@ -19,7 +18,7 @@ logger = logging.getLogger(__name__)
 class PlatformCollectorFactory:
     """平台采集器工厂"""
 
-    _registry: Dict[Platform, Type[BasePlatformCollector]] = {
+    _registry: dict[Platform, type[BasePlatformCollector]] = {
         Platform.WECHAT: WechatCollector,
         Platform.DOUYIN: DouyinCollector,
         Platform.ZHIHU: ZhihuCollector,
@@ -27,7 +26,7 @@ class PlatformCollectorFactory:
     }
 
     @classmethod
-    def get(cls, platform: Platform | str) -> Optional[BasePlatformCollector]:
+    def get(cls, platform: Platform | str) -> BasePlatformCollector | None:
         """
         获取采集器实例
 
@@ -52,7 +51,7 @@ class PlatformCollectorFactory:
         return collector_cls()
 
     @classmethod
-    def list_supported(cls) -> List[Platform]:
+    def list_supported(cls) -> list[Platform]:
         """
         获取支持的平台列表
 
@@ -62,7 +61,7 @@ class PlatformCollectorFactory:
         return list(cls._registry.keys())
 
     @classmethod
-    def list_supported_ids(cls) -> List[str]:
+    def list_supported_ids(cls) -> list[str]:
         """
         获取支持的平台ID列表
 
@@ -72,7 +71,7 @@ class PlatformCollectorFactory:
         return [p.value for p in cls._registry.keys()]
 
     @classmethod
-    def register(cls, platform: Platform, collector_class: Type[BasePlatformCollector]):
+    def register(cls, platform: Platform, collector_class: type[BasePlatformCollector]):
         """
         注册新的采集器
 
@@ -102,7 +101,7 @@ class PlatformCollectorFactory:
         return platform in cls._registry
 
     @classmethod
-    def get_platform_info(cls) -> List[Dict]:
+    def get_platform_info(cls) -> list[dict]:
         """
         获取所有支持的平台信息
 
@@ -130,9 +129,9 @@ class PlatformCollectorFactory:
     def collect_all(
         cls,
         keyword: str,
-        platforms: Optional[List[Platform | str]] = None,
+        platforms: list[Platform | str] | None = None,
         limit: int = 20,
-    ) -> Dict[str, List]:
+    ) -> dict[str, list]:
         """
         从多个平台采集数据
 

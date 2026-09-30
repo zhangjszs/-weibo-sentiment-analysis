@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +46,14 @@ class PlatformContent:
     comment_count: int = 0
     repost_count: int = 0
     view_count: int = 0
-    created_at: Optional[datetime] = None
+    created_at: datetime | None = None
     url: str = ""
-    keywords: List[str] = field(default_factory=list)
+    keywords: list[str] = field(default_factory=list)
     sentiment: str = "neutral"
     sentiment_score: float = 0.5
-    raw_data: Dict[str, Any] = field(default_factory=dict)
+    raw_data: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """转换为字典"""
         return {
             "platform": self.platform.value,
@@ -74,7 +74,7 @@ class PlatformContent:
         }
 
     @classmethod
-    def from_wechat(cls, raw: Dict[str, Any]) -> "PlatformContent":
+    def from_wechat(cls, raw: dict[str, Any]) -> "PlatformContent":
         """从微信公众号数据创建"""
         return cls(
             platform=Platform.WECHAT,
@@ -90,7 +90,7 @@ class PlatformContent:
         )
 
     @classmethod
-    def from_douyin(cls, raw: Dict[str, Any]) -> "PlatformContent":
+    def from_douyin(cls, raw: dict[str, Any]) -> "PlatformContent":
         """从抖音数据创建"""
         stats = raw.get("statistics", {})
         return cls(
@@ -108,7 +108,7 @@ class PlatformContent:
         )
 
     @classmethod
-    def from_zhihu(cls, raw: Dict[str, Any]) -> "PlatformContent":
+    def from_zhihu(cls, raw: dict[str, Any]) -> "PlatformContent":
         """从知乎数据创建"""
         return cls(
             platform=Platform.ZHIHU,
@@ -125,7 +125,7 @@ class PlatformContent:
         )
 
     @classmethod
-    def from_bilibili(cls, raw: Dict[str, Any]) -> "PlatformContent":
+    def from_bilibili(cls, raw: dict[str, Any]) -> "PlatformContent":
         """从B站数据创建"""
         stat = raw.get("stat", {})
         return cls(
@@ -158,18 +158,18 @@ class BasePlatformCollector(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def parse(self, raw: Dict[str, Any]) -> PlatformContent:
+    def parse(self, raw: dict[str, Any]) -> PlatformContent:
         """解析原始数据为统一格式"""
         raise NotImplementedError
 
-    def collect(self, keyword: str, limit: int = 20) -> List[PlatformContent]:
+    def collect(self, keyword: str, limit: int = 20) -> list[PlatformContent]:
         """
         采集数据
-        
+
         Args:
             keyword: 搜索关键词
             limit: 限制数量
-            
+
         Returns:
             List[PlatformContent]: 采集到的内容列表
         """
@@ -191,28 +191,28 @@ class BasePlatformCollector(ABC):
             self.logger.error(f"采集失败: {e}")
             return []
 
-    def _fetch_data(self, keyword: str, limit: int) -> List[Dict[str, Any]]:
+    def _fetch_data(self, keyword: str, limit: int) -> list[dict[str, Any]]:
         """
         获取原始数据（子类必须实现或使用模拟数据）
-        
+
         Raises:
             NotImplementedError: 如果未实现则使用模拟数据
         """
         raise NotImplementedError
 
-    def _generate_demo_data(self, keyword: str, limit: int) -> List[PlatformContent]:
+    def _generate_demo_data(self, keyword: str, limit: int) -> list[PlatformContent]:
         """生成模拟数据（用于演示）"""
-        from datetime import datetime, timedelta
         import random
+        from datetime import datetime, timedelta
 
         results = []
         topics = [
             "人工智能", "科技创新", "新能源", "数字经济",
             "绿色发展", "智慧城市", "乡村振兴", "教育改革"
         ]
-        
+
         base_time = datetime.now() - timedelta(days=7)
-        
+
         for i in range(min(limit, 20)):
             topic = random.choice(topics)
             results.append(PlatformContent(
@@ -229,5 +229,5 @@ class BasePlatformCollector(ABC):
                 created_at=base_time + timedelta(hours=i),
                 keywords=[keyword, topic],
             ))
-        
+
         return results

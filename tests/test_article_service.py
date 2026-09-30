@@ -19,14 +19,10 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from services.article_service import ArticleService
 

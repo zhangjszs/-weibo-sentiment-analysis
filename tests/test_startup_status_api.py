@@ -7,12 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.api
 
-import os
-import sys
 
 import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.settings import Config
 from utils.jwt_handler import create_token

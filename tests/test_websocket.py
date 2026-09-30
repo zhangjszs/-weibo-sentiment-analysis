@@ -7,11 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import sys
 
 import pytest
-
-sys.path.insert(0, "src")
 
 
 class TestWebSocketService:
@@ -112,7 +109,16 @@ class TestIntegration:
                 websocket_service,
             )
 
-            assert True
+            assert all(
+                [
+                    MessageType,
+                    RoomType,
+                    WebSocketMessage,
+                    WebSocketService,
+                    create_message,
+                    websocket_service,
+                ]
+            )
         except ImportError as e:
             pytest.fail(f"WebSocket 模块导入失败: {e}")
 

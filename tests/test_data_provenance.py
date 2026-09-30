@@ -6,14 +6,13 @@ and response-level integration with AnalysisMeta.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 pytestmark = pytest.mark.unit
 
 from utils.data_provenance import (
-    AnalysisMeta,
     demo_meta,
     experimental_meta,
     real_meta,
@@ -21,7 +20,7 @@ from utils.data_provenance import (
 
 
 def _ts(year=2026, month=8, day=3) -> datetime:
-    return datetime(year, month, day, tzinfo=timezone.utc)
+    return datetime(year, month, day, tzinfo=UTC)
 
 
 # ---------------------------------------------------------------------------

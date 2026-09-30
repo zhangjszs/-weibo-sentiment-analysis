@@ -9,7 +9,7 @@ import queue
 import threading
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, Optional, Set
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +27,8 @@ class ConnectedClient:
     """连接的客户端"""
 
     sid: str
-    user_id: Optional[str] = None
-    rooms: Set[str] = None
+    user_id: str | None = None
+    rooms: set[str] = None
     connected_at: datetime = None
 
     def __post_init__(self):
@@ -42,8 +42,8 @@ class WebSocketManager:
     """WebSocket连接管理器"""
 
     def __init__(self):
-        self.socketio: Optional[SocketIO] = None
-        self.clients: Dict[str, ConnectedClient] = {}
+        self.socketio: SocketIO | None = None
+        self.clients: dict[str, ConnectedClient] = {}
         self._lock = threading.Lock()
         self._message_queue = queue.Queue()
         self._running = False
@@ -150,31 +150,31 @@ class WebSocketManager:
         def handle_ping():
             emit("pong", {"timestamp": datetime.now().isoformat()})
 
-    def broadcast(self, event: str, data: Dict[str, Any]):
+    def broadcast(self, event: str, data: dict[str, Any]):
         """广播消息到所有客户端"""
         if self.socketio:
             self.socketio.emit(event, data)
             logger.debug(f"广播消息: {event}")
 
-    def emit_to_room(self, room: str, event: str, data: Dict[str, Any]):
+    def emit_to_room(self, room: str, event: str, data: dict[str, Any]):
         """发送消息到指定房间"""
         if self.socketio:
             self.socketio.emit(event, data, room=room)
             logger.debug(f"发送消息到房间 {room}: {event}")
 
-    def emit_to_user(self, user_id: str, event: str, data: Dict[str, Any]):
+    def emit_to_user(self, user_id: str, event: str, data: dict[str, Any]):
         """发送消息到指定用户"""
         self.emit_to_room(f"user_{user_id}", event, data)
 
-    def broadcast_alert(self, alert_data: Dict[str, Any]):
+    def broadcast_alert(self, alert_data: dict[str, Any]):
         """广播预警消息"""
         self.broadcast("alert", alert_data)
 
-    def broadcast_stats_update(self, stats_data: Dict[str, Any]):
+    def broadcast_stats_update(self, stats_data: dict[str, Any]):
         """广播统计数据更新"""
         self.broadcast("stats_update", stats_data)
 
-    def broadcast_sentiment_update(self, sentiment_data: Dict[str, Any]):
+    def broadcast_sentiment_update(self, sentiment_data: dict[str, Any]):
         """广播情感分析更新"""
         self.broadcast("sentiment_update", sentiment_data)
 
@@ -183,7 +183,7 @@ class WebSocketManager:
         with self._lock:
             return len(self.clients)
 
-    def get_client_info(self, sid: str) -> Optional[Dict]:
+    def get_client_info(self, sid: str) -> dict | None:
         """获取客户端信息"""
         with self._lock:
             if sid in self.clients:
@@ -227,15 +227,15 @@ class RealTimeDataPusher:
         self._running = False
         logger.info("实时数据推送服务已停止")
 
-    def push_alert(self, alert: Dict):
+    def push_alert(self, alert: dict):
         """推送预警消息"""
         self.ws_manager.broadcast_alert(alert)
 
-    def push_stats(self, stats: Dict):
+    def push_stats(self, stats: dict):
         """推送统计数据"""
         self.ws_manager.broadcast_stats_update(stats)
 
-    def push_sentiment(self, sentiment: Dict):
+    def push_sentiment(self, sentiment: dict):
         """推送情感分析"""
         self.ws_manager.broadcast_sentiment_update(sentiment)
 

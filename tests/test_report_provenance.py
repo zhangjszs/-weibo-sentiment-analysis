@@ -6,13 +6,13 @@ integration with the report generator.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 pytestmark = pytest.mark.unit
 
-from services.report_contracts import ReportMeta, build_report_meta
+from services.report_contracts import build_report_meta
 
 
 class TestReportMeta:
@@ -21,8 +21,8 @@ class TestReportMeta:
             topic="AI",
             data_count=100,
             time_range=(
-                datetime(2026, 7, 1, tzinfo=timezone.utc),
-                datetime(2026, 8, 1, tzinfo=timezone.utc),
+                datetime(2026, 7, 1, tzinfo=UTC),
+                datetime(2026, 8, 1, tzinfo=UTC),
             ),
         )
         d = meta.to_dict()

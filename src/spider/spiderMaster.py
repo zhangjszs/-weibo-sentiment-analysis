@@ -12,7 +12,6 @@ import sys
 import threading
 import time
 from threading import Event, Lock
-from typing import Optional
 
 # 添加项目根目录到Python路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -99,7 +98,7 @@ class WeiboSpiderController:
 
         # 搜索模式配置
         self.search_mode = False
-        self.search_keyword: Optional[str] = None
+        self.search_keyword: str | None = None
 
         # 线程同步锁
         self._lock = Lock()
@@ -189,7 +188,7 @@ class WeiboSpiderController:
             self._error_count += 1
             self.user_completed.set()
 
-    def concurrent_spider_mode(self, keyword: Optional[str] = None) -> None:
+    def concurrent_spider_mode(self, keyword: str | None = None) -> None:
         """
         并发爬取模式
 
@@ -241,7 +240,7 @@ class WeiboSpiderController:
         else:
             logger.error(f"错误次数过多({self._error_count})，跳过数据保存")
 
-    def sequential_spider_mode(self, keyword: Optional[str] = None) -> None:
+    def sequential_spider_mode(self, keyword: str | None = None) -> None:
         """
         顺序爬取模式 - 最稳定
 

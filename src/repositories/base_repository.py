@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any
 
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -14,10 +14,10 @@ class BaseRepository:
         self.model = model
         self.session = db_session
 
-    def find_all(self, limit: int = 100, offset: int = 0) -> List[Any]:
+    def find_all(self, limit: int = 100, offset: int = 0) -> list[Any]:
         return self.session.query(self.model).limit(limit).offset(offset).all()
 
-    def find_by_id(self, id: Any) -> Optional[Any]:
+    def find_by_id(self, id: Any) -> Any | None:
         # SQLAlchemy 2.0：Query.get() 已移除，改用 Session.get()
         return self.session.get(self.model, id)
 

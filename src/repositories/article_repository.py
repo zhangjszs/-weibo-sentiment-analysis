@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from sqlalchemy import desc, func
 
@@ -28,7 +28,7 @@ class ArticleRepository(BaseRepository):
         region: str = "",
         limit: int = 10,
         offset: int = 0,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         query = self.session.query(Article)
 
         if keyword:
@@ -76,7 +76,7 @@ class ArticleRepository(BaseRepository):
 
         return result, total
 
-    def get_latest_update_time(self) -> Optional[str]:
+    def get_latest_update_time(self) -> str | None:
         result = self.session.query(func.max(Article.created_at)).scalar()
         return result if result else None
 
@@ -91,7 +91,7 @@ class ArticleRepository(BaseRepository):
         """文章总数"""
         return self.session.query(func.count(Article.id)).scalar() or 0
 
-    def count_by_type(self) -> List[Dict[str, Any]]:
+    def count_by_type(self) -> list[dict[str, Any]]:
         """按类型分组统计"""
         rows = (
             self.session.query(Article.type, func.count(Article.id).label("count"))
@@ -104,7 +104,7 @@ class ArticleRepository(BaseRepository):
             for r in rows
         ]
 
-    def count_by_region(self, limit: int = 1) -> List[Dict[str, Any]]:
+    def count_by_region(self, limit: int = 1) -> list[dict[str, Any]]:
         """按地区分组统计（排除空值）"""
         rows = (
             self.session.query(Article.region, func.count(Article.id).label("count"))
@@ -118,7 +118,7 @@ class ArticleRepository(BaseRepository):
         )
         return [{"region": r.region, "count": r.count} for r in rows]
 
-    def get_top_liked_author(self) -> Optional[str]:
+    def get_top_liked_author(self) -> str | None:
         """点赞最多文章的作者"""
         row = (
             self.session.query(Article.authorName)
@@ -127,7 +127,7 @@ class ArticleRepository(BaseRepository):
         )
         return row[0] if row else None
 
-    def count_by_date_range(self) -> List[Dict[str, Any]]:
+    def count_by_date_range(self) -> list[dict[str, Any]]:
         """按日期分组统计（用于趋势图，按 DATE 截断分组，避免按秒 GROUP BY）"""
         day = func.date(Article.created_at).label("day")
         rows = (
@@ -138,7 +138,7 @@ class ArticleRepository(BaseRepository):
         )
         return [{"created_at": str(r.day), "count": r.count} for r in rows]
 
-    def get_distinct_types(self) -> List[str]:
+    def get_distinct_types(self) -> list[str]:
         """获取所有文章类型"""
         rows = (
             self.session.query(Article.type)
@@ -150,7 +150,7 @@ class ArticleRepository(BaseRepository):
         )
         return [r[0] for r in rows]
 
-    def get_region_distribution(self) -> List[Dict[str, Any]]:
+    def get_region_distribution(self) -> list[dict[str, Any]]:
         """文章地域分布"""
         rows = (
             self.session.query(Article.region, func.count(Article.id).label("count"))
@@ -166,10 +166,10 @@ class ArticleRepository(BaseRepository):
     def get_histogram(
         self,
         column: str,
-        exclude_type: Optional[str] = None,
+        exclude_type: str | None = None,
         range_num: int = 1000,
         bucket_count: int = 14,
-    ) -> Tuple[List[str], List[int]]:
+    ) -> tuple[list[str], list[int]]:
         """
         文章数值直方图（likeNum / commentsLen）
         使用 CASE WHEN 分桶
@@ -210,8 +210,9 @@ class ArticleRepository(BaseRepository):
             ORDER BY bucket_index
         """
 
-        from database import engine
         from sqlalchemy import text
+
+        from database import engine
 
         with engine.connect() as conn:
             result = conn.execute(text(sql), params)
@@ -222,7 +223,7 @@ class ArticleRepository(BaseRepository):
 
         return labels, counts
 
-    def get_recent_texts(self, limit: int = 200) -> List[str]:
+    def get_recent_texts(self, limit: int = 200) -> list[str]:
         """获取最近文章内容用于情感/词云分析"""
         rows = (
             self.session.query(Article.content)
@@ -236,7 +237,7 @@ class ArticleRepository(BaseRepository):
 
     # === data_api 专用 ===
 
-    def get_type_distribution(self) -> List[Dict[str, Any]]:
+    def get_type_distribution(self) -> list[dict[str, Any]]:
         """文章类型分布（饼图格式）"""
         rows = (
             self.session.query(Article.type, func.count(Article.id).label("count"))

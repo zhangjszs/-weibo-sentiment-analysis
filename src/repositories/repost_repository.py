@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
-from sqlalchemy import asc, desc, func
+from sqlalchemy import asc
 
 from models.repost import Repost
 from models.user import User
@@ -17,7 +17,7 @@ class RepostRepository(BaseRepository):
         article_id: str,
         limit: int = 500,
         offset: int = 0,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         """按文章ID查找转发记录"""
         query = self.session.query(Repost).filter(Repost.article_id == article_id)
 
@@ -50,7 +50,7 @@ class RepostRepository(BaseRepository):
         self,
         article_id: str,
         limit: int = 500,
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """查找转发记录并关联用户名"""
         rows, _ = self.find_by_article(article_id, limit=limit)
 

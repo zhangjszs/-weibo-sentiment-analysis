@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import re
-from typing import Dict, List, Tuple
 
 import emoji
 import jieba
@@ -21,7 +20,7 @@ class SocialMediaPreprocessor(BaseEstimator, TransformerMixin):
         self.use_hashtag_features = use_hashtag_features
         self.emoji_sentiment_map = self._build_emoji_sentiment_map()
 
-    def _build_emoji_sentiment_map(self) -> Dict[str, float]:
+    def _build_emoji_sentiment_map(self) -> dict[str, float]:
         """构建表情符号情感映射"""
         # 简化的表情符号情感字典
         return {
@@ -30,15 +29,15 @@ class SocialMediaPreprocessor(BaseEstimator, TransformerMixin):
             '😐': 0.0, '😕': -0.2, '🤔': 0.0, '🙄': -0.3, '😏': 0.1
         }
 
-    def _extract_emojis(self, text: str) -> List[str]:
+    def _extract_emojis(self, text: str) -> list[str]:
         """提取文本中的表情符号"""
         return [char for char in text if char in emoji.EMOJI_DATA]
 
-    def _extract_hashtags(self, text: str) -> List[str]:
+    def _extract_hashtags(self, text: str) -> list[str]:
         """提取话题标签"""
         return re.findall(r'#([^#\s]+)#', text)
 
-    def _extract_mentions(self, text: str) -> List[str]:
+    def _extract_mentions(self, text: str) -> list[str]:
         """提取用户提及"""
         return re.findall(r'@([^@\s]+)', text)
 
@@ -60,12 +59,12 @@ class SocialMediaPreprocessor(BaseEstimator, TransformerMixin):
         emojis = self._extract_emojis(text)
         if not emojis:
             return 0.0
-        
+
         sentiments = []
         for e in emojis:
             if e in self.emoji_sentiment_map:
                 sentiments.append(self.emoji_sentiment_map[e])
-        
+
         return sum(sentiments) / len(sentiments) if sentiments else 0.0
 
     def transform(self, X, y=None):
@@ -74,14 +73,14 @@ class SocialMediaPreprocessor(BaseEstimator, TransformerMixin):
         for text in X:
             if not isinstance(text, str):
                 text = str(text)
-            
+
             # 基础清理
             cleaned = self._clean_text(text)
-            
+
             # 分词
             words = jieba.lcut(cleaned)
             processed_text = ' '.join(words)
-            
+
             transformed.append(processed_text)
         return transformed
 
@@ -89,11 +88,11 @@ class SocialMediaPreprocessor(BaseEstimator, TransformerMixin):
         """拟合（无操作）"""
         return self
 
-    def get_social_features(self, text: str) -> Dict[str, any]:
+    def get_social_features(self, text: str) -> dict[str, any]:
         """获取社交媒体特有特征"""
         if not isinstance(text, str):
             text = str(text)
-        
+
         features = {
             'emoji_count': len(self._extract_emojis(text)),
             'hashtag_count': len(self._extract_hashtags(text)),
@@ -102,16 +101,16 @@ class SocialMediaPreprocessor(BaseEstimator, TransformerMixin):
             'text_length': len(text),
             'word_count': len(jieba.lcut(text))
         }
-        
+
         return features
 
 
-def preprocess_social_media_text(text: str) -> Tuple[str, Dict[str, any]]:
+def preprocess_social_media_text(text: str) -> tuple[str, dict[str, any]]:
     """预处理社交媒体文本
-    
+
     Args:
         text: 原始文本
-    
+
     Returns:
         预处理后的文本和特征字典
     """

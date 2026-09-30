@@ -3,26 +3,24 @@
 测试智能策略选择系统
 """
 
-import sys
-import os
 
 import pytest
 
 pytestmark = pytest.mark.unit
 
 # 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from services.sentiment_strategy_selector import AdaptiveStrategyManager
 from services.sentiment_service import SentimentService
+from services.sentiment_strategy_selector import AdaptiveStrategyManager
+
 
 def test_smart_strategy_selector():
     """测试智能策略选择器"""
     print("测试智能策略选择系统...")
-    
+
     # 创建自适应策略管理器
     manager = AdaptiveStrategyManager()
-    
+
     # 测试文本
     test_texts = [
         "这部电影真的太棒了，演员表演很出色！",  # 简单正面文本
@@ -34,7 +32,7 @@ def test_smart_strategy_selector():
         "😀😀😀，今天真开心！",                # 包含emoji
         "不，我不喜欢这个东西。",              # 否定句式
     ]
-    
+
     print("\n1. 测试智能策略选择:")
     print("-" * 60)
     for text in test_texts:
@@ -45,7 +43,7 @@ def test_smart_strategy_selector():
         print(f"使用策略: {result['source']}")
         print(f"关键词: {result['keywords']}")
         print("-" * 60)
-    
+
     print("\n2. 测试批量分析:")
     print("-" * 60)
     batch_results = manager.analyze_batch(test_texts)
@@ -54,7 +52,7 @@ def test_smart_strategy_selector():
         print(f"情感: {result['label']} (得分: {result['score']:.4f})")
         print(f"使用策略: {result['source']}")
         print("-" * 60)
-    
+
     print("\n3. 测试性能统计:")
     print("-" * 60)
     stats = manager.get_performance_stats()
@@ -65,7 +63,7 @@ def test_smart_strategy_selector():
         print(f"  平均响应时间: {data['average_time']:.4f}s")
         print(f"  成功率: {data['success_rate']:.4f}")
         print(f"  准确率: {data['accuracy']:.4f}")
-    
+
     print("\n4. 测试健康状态:")
     print("-" * 60)
     health = manager.get_health_status()
@@ -76,7 +74,7 @@ def test_smart_strategy_selector():
             print(f"  - {issue}")
     else:
         print("系统健康，无问题")
-    
+
     print("\n5. 测试SentimentService的auto模式:")
     print("-" * 60)
     for text in test_texts[:3]:

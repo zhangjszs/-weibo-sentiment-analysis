@@ -12,10 +12,11 @@ from datetime import datetime
 
 from flask import Blueprint, request
 
-from ._shared import API_PREFIX
-
 from services.analysis_pipeline import AnalysisPipeline
-from utils.api_response import error as api_error, ok as api_ok
+from utils.api_response import error as api_error
+from utils.api_response import ok as api_ok
+
+from ._shared import API_PREFIX
 
 logger = logging.getLogger(__name__)
 

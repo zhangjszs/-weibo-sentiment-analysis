@@ -10,7 +10,6 @@ pytestmark = pytest.mark.external
 
 def _admin_client(client, monkeypatch):
     import utils.authz as _authz
-
     from utils.jwt_handler import create_token
 
     # authz 模块持有其导入期的 Config 对象，提权必须打到该对象上

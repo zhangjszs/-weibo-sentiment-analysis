@@ -8,8 +8,8 @@ import logging
 import threading
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Callable, Dict, List, Optional, Tuple
 
 from models.alert import (
     Alert,
@@ -27,7 +27,7 @@ class AlertSuppression:
     """告警抑制管理器"""
 
     def __init__(self):
-        self._alert_counts: Dict[str, List[datetime]] = defaultdict(list)
+        self._alert_counts: dict[str, list[datetime]] = defaultdict(list)
         self._lock = threading.Lock()
         self._suppressed_count = 0
 
@@ -48,7 +48,7 @@ class AlertSuppression:
             self._alert_counts[rule_id].append(now)
             return False
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """获取抑制统计"""
         with self._lock:
             return {
@@ -56,7 +56,7 @@ class AlertSuppression:
                 "active_rules": len(self._alert_counts),
             }
 
-    def reset(self, rule_id: Optional[str] = None):
+    def reset(self, rule_id: str | None = None):
         """重置抑制计数"""
         with self._lock:
             if rule_id:
@@ -70,7 +70,7 @@ class ThresholdValidator:
     """阈值验证器"""
 
     @staticmethod
-    def validate_threshold(config: ThresholdConfig) -> Tuple[bool, str]:
+    def validate_threshold(config: ThresholdConfig) -> tuple[bool, str]:
         """验证阈值配置是否有效"""
         if not config.field:
             return False, "阈值字段不能为空"
@@ -90,7 +90,7 @@ class ThresholdValidator:
         return True, "验证通过"
 
     @staticmethod
-    def validate_rule(rule: AlertRule) -> Tuple[bool, List[str]]:
+    def validate_rule(rule: AlertRule) -> tuple[bool, list[str]]:
         """验证预警规则"""
         errors = []
 
@@ -115,7 +115,7 @@ class ThresholdChecker:
     """阈值检查服务"""
 
     def __init__(self):
-        self._metrics_cache: Dict[str, List[Tuple[datetime, float]]] = defaultdict(list)
+        self._metrics_cache: dict[str, list[tuple[datetime, float]]] = defaultdict(list)
         self._lock = threading.Lock()
         self._max_cache_size = 10000
 
@@ -131,7 +131,7 @@ class ThresholdChecker:
 
     def get_metric_values(
         self, metric_name: str, time_window_minutes: int = 30
-    ) -> List[float]:
+    ) -> list[float]:
         """获取时间窗口内的指标值"""
         with self._lock:
             now = datetime.now()
@@ -142,7 +142,7 @@ class ThresholdChecker:
             ]
             return values
 
-    def get_metric_stats(self, metric_name: str, time_window_minutes: int = 30) -> Dict:
+    def get_metric_stats(self, metric_name: str, time_window_minutes: int = 30) -> dict:
         """获取指标统计"""
         values = self.get_metric_values(metric_name, time_window_minutes)
 
@@ -163,8 +163,8 @@ class ThresholdChecker:
         return config.evaluate(current_value)
 
     def check_multiple_thresholds(
-        self, thresholds: List[ThresholdConfig], metric_values: Dict[str, float]
-    ) -> Tuple[bool, List[str]]:
+        self, thresholds: list[ThresholdConfig], metric_values: dict[str, float]
+    ) -> tuple[bool, list[str]]:
         """检查多个阈值（AND逻辑）"""
         triggered = True
         triggered_fields = []
@@ -196,13 +196,13 @@ class AlertRuleEngine:
 
     def __init__(self):
         self._lock = threading.Lock()
-        self._callbacks: List[Callable[[Alert], None]] = []
+        self._callbacks: list[Callable[[Alert], None]] = []
         self.suppression = AlertSuppression()
         self.threshold_checker = ThresholdChecker()
         self.validator = ThresholdValidator()
         self._defaults_seeded = False
 
-    def _build_default_rules(self) -> List[AlertRule]:
+    def _build_default_rules(self) -> list[AlertRule]:
         """构造默认预警规则列表（不写 DB，供 seed 使用）。"""
         return [
             AlertRule(
@@ -316,7 +316,7 @@ class AlertRuleEngine:
         """兼容旧入口：触发默认规则 seed。"""
         self._ensure_defaults_seeded()
 
-    def add_rule(self, rule: AlertRule) -> Tuple[bool, str]:
+    def add_rule(self, rule: AlertRule) -> tuple[bool, str]:
         """添加预警规则（持久化到 DB）"""
         valid, errors = self.validator.validate_rule(rule)
         if not valid:
@@ -360,7 +360,7 @@ class AlertRuleEngine:
                 pass
             return False
 
-    def update_rule(self, rule_id: str, **kwargs) -> Tuple[bool, str]:
+    def update_rule(self, rule_id: str, **kwargs) -> tuple[bool, str]:
         """更新预警规则（持久化到 DB）"""
         try:
             from database import db_session
@@ -413,7 +413,7 @@ class AlertRuleEngine:
         return elapsed >= timedelta(minutes=rule.cooldown_minutes)
 
     def _create_alert(
-        self, rule: AlertRule, title: str, message: str, data: Dict = None
+        self, rule: AlertRule, title: str, message: str, data: dict = None
     ) -> Alert:
         """创建预警消息"""
         alert = Alert(
@@ -429,8 +429,8 @@ class AlertRuleEngine:
         return alert
 
     def _fire_alert(
-        self, rule: AlertRule, title: str, message: str, data: Dict = None
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, title: str, message: str, data: dict = None
+    ) -> Alert | None:
         """触发预警（带抑制检查）"""
         if self.suppression.should_suppress(rule.id, rule.max_alerts_per_hour):
             logger.debug(f"预警被抑制: {rule.name}")
@@ -451,7 +451,7 @@ class AlertRuleEngine:
         logger.info(f"触发预警: {title} - {message}")
         return alert
 
-    def check_alerts(self, metrics: Dict[str, float]) -> List[Alert]:
+    def check_alerts(self, metrics: dict[str, float]) -> list[Alert]:
         """检查所有规则并触发预警（规则从 DB 加载）"""
         self._ensure_defaults_seeded()
         try:
@@ -476,8 +476,8 @@ class AlertRuleEngine:
         return triggered_alerts
 
     def _evaluate_rule(
-        self, rule: AlertRule, metrics: Dict[str, float]
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, metrics: dict[str, float]
+    ) -> Alert | None:
         """评估单条规则"""
         if rule.alert_type == AlertType.NEGATIVE_SURGE:
             return self._evaluate_negative_surge(rule, metrics)
@@ -492,8 +492,8 @@ class AlertRuleEngine:
         return None
 
     def _evaluate_negative_surge(
-        self, rule: AlertRule, metrics: Dict[str, float]
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, metrics: dict[str, float]
+    ) -> Alert | None:
         """评估负面舆情激增"""
         negative_count = metrics.get("negative_count", 0)
         total_count = metrics.get("total_count", 1)
@@ -522,8 +522,8 @@ class AlertRuleEngine:
         return None
 
     def _evaluate_volume_spike(
-        self, rule: AlertRule, metrics: Dict[str, float]
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, metrics: dict[str, float]
+    ) -> Alert | None:
         """评估讨论量异常增长"""
         current_count = metrics.get("current_count", 0)
         baseline_count = metrics.get("baseline_count", 10)
@@ -556,8 +556,8 @@ class AlertRuleEngine:
         )
 
     def _evaluate_sentiment_shift(
-        self, rule: AlertRule, metrics: Dict[str, float]
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, metrics: dict[str, float]
+    ) -> Alert | None:
         """评估情感倾向突变"""
         current_sentiment = metrics.get("current_sentiment", 0.5)
         previous_sentiment = metrics.get("previous_sentiment", 0.5)
@@ -589,8 +589,8 @@ class AlertRuleEngine:
         )
 
     def _evaluate_hot_topic(
-        self, rule: AlertRule, metrics: Dict[str, float]
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, metrics: dict[str, float]
+    ) -> Alert | None:
         """评估热点话题"""
         topic_mentions = metrics.get("topic_mentions", 0)
         topic_name = metrics.get("topic_name", "未知话题")
@@ -616,8 +616,8 @@ class AlertRuleEngine:
         )
 
     def _evaluate_threshold_breach(
-        self, rule: AlertRule, metrics: Dict[str, float]
-    ) -> Optional[Alert]:
+        self, rule: AlertRule, metrics: dict[str, float]
+    ) -> Alert | None:
         """评估通用阈值突破"""
         if not rule.thresholds:
             return None
@@ -638,7 +638,7 @@ class AlertRuleEngine:
             )
         return None
 
-    def evaluate_keyword_match(self, text: str, keywords: List[str]) -> Optional[Alert]:
+    def evaluate_keyword_match(self, text: str, keywords: list[str]) -> Alert | None:
         """评估关键词匹配（keyword_match 规则从 DB 加载）"""
         try:
             from database import db_session
@@ -682,7 +682,7 @@ class AlertRuleEngine:
 
     def get_alert_history(
         self, limit: int = 50, level: str = None, unread_only: bool = False
-    ) -> List[Dict]:
+    ) -> list[dict]:
         """获取预警历史（从 DB 查询）"""
         try:
             from database import db_session
@@ -750,7 +750,7 @@ class AlertRuleEngine:
             logger.error(f"获取未读数失败: {e}")
             return 0
 
-    def get_rule(self, rule_id: str) -> Optional[AlertRule]:
+    def get_rule(self, rule_id: str) -> AlertRule | None:
         """按 ID 获取单条规则（从 DB）。"""
         try:
             from database import db_session
@@ -767,7 +767,7 @@ class AlertRuleEngine:
     def _invalidate_rules_cache(self) -> None:
         self.__dict__.pop("_rules_cache", None)
 
-    def get_rules(self) -> List[Dict]:
+    def get_rules(self) -> list[dict]:
         """获取所有规则（从 DB 加载，按优先级降序，15s 缓存）"""
         self._ensure_defaults_seeded()
         cached = self.__dict__.get("_rules_cache")
@@ -778,9 +778,9 @@ class AlertRuleEngine:
             if _time.time() < expires:
                 return rules
         try:
-            from database import db_session
-
             import time as _time
+
+            from database import db_session
 
             rules = db_session.query(AlertRule).all()
             result = [
@@ -793,11 +793,12 @@ class AlertRuleEngine:
             logger.error(f"加载规则失败: {e}")
             return []
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> dict:
         """获取预警统计（聚合查询）"""
         try:
-            from database import db_session
             from sqlalchemy import func
+
+            from database import db_session
 
             total = db_session.query(Alert).count()
             unread = db_session.query(Alert).filter(Alert.is_read.is_(False)).count()

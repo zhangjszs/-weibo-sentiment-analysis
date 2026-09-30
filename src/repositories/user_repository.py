@@ -1,5 +1,4 @@
-from typing import Any, Dict, List, Optional
-from sqlalchemy import func
+from typing import Any
 
 from models.user import User
 
@@ -10,13 +9,13 @@ class UserRepository(BaseRepository):
     def __init__(self):
         super().__init__(User)
 
-    def find_by_username(self, username: str) -> Optional[Dict[str, Any]]:
+    def find_by_username(self, username: str) -> dict[str, Any] | None:
         user = self.session.query(User).filter_by(username=username).first()
         if user:
             return self._user_to_dict(user)
         return None
 
-    def find_by_id(self, id: Any) -> Optional[Dict[str, Any]]:
+    def find_by_id(self, id: Any) -> dict[str, Any] | None:
         user = self.session.query(User).filter_by(id=id).first()
         if user:
             return self._user_to_dict(user)
@@ -52,13 +51,13 @@ class UserRepository(BaseRepository):
             self.session.rollback()
             return False
 
-    def get_all_for_export(self, limit: int = 10000) -> List[Dict[str, Any]]:
+    def get_all_for_export(self, limit: int = 10000) -> list[dict[str, Any]]:
         """导出用户（SQL 侧 LIMIT，避免全量 .all() OOM）"""
         rows = self.session.query(User).limit(max(1, min(limit, 10000))).all()
         return [self._user_to_dict(u) for u in rows]
 
     @staticmethod
-    def _user_to_dict(user: User) -> Dict[str, Any]:
+    def _user_to_dict(user: User) -> dict[str, Any]:
         return {
             "id": user.id,
             "username": user.username,

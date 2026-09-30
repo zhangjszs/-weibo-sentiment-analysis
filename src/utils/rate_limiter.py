@@ -8,8 +8,8 @@ import logging
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Dict
 
 from flask import g, jsonify, request
 
@@ -24,8 +24,8 @@ class RateLimiter:
     _IDLE_SECONDS = 3600
 
     def __init__(self):
-        self.requests: Dict[str, list] = defaultdict(list)
-        self._last_seen: Dict[str, float] = {}
+        self.requests: dict[str, list] = defaultdict(list)
+        self._last_seen: dict[str, float] = {}
         self.lock = threading.Lock()
 
     def _clean_old_requests(self, key: str, window_seconds: int):
@@ -74,7 +74,7 @@ class RateLimiter:
             self.requests[key].append(time.time())
             return True, remaining - 1, reset_time
 
-    def get_stats(self, key: str) -> Dict:
+    def get_stats(self, key: str) -> dict:
         """获取限流统计"""
         with self.lock:
             return {
@@ -100,7 +100,7 @@ class TokenBucket:
         """
         self.rate = rate
         self.capacity = capacity
-        self.tokens: Dict[str, dict] = {}
+        self.tokens: dict[str, dict] = {}
         self.lock = threading.Lock()
 
     def _init_bucket(self, key: str):
@@ -278,7 +278,7 @@ def token_bucket_limit(
 class RateLimitMiddleware:
     """Flask限流中间件"""
 
-    def __init__(self, app=None, default_limits: Dict[str, tuple] = None):
+    def __init__(self, app=None, default_limits: dict[str, tuple] = None):
         self.app = app
         self.default_limits = default_limits or {
             "default": (60, 60),
@@ -347,7 +347,7 @@ class RateLimitMiddleware:
         return response
 
 
-def get_rate_limit_stats() -> Dict:
+def get_rate_limit_stats() -> dict:
     """获取限流统计信息"""
     return {
         "active_keys": len(_global_limiter.requests),

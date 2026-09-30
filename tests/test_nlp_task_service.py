@@ -28,14 +28,10 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
-import os
-import sys
 from unittest.mock import MagicMock, patch
 
 import pytest
 from requests import HTTPError
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 from config.settings import Config
 from services import nlp_task_service
@@ -59,7 +55,6 @@ from services.nlp_task_service import (
     submit_analyze_task,
     submit_retrain_task,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

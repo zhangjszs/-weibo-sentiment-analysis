@@ -4,7 +4,6 @@
 """
 
 import logging
-from typing import List, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -49,9 +48,9 @@ class SentimentSchema(BaseModel):
 
     score: float = Field(ge=0.0, le=1.0, default=0.5, description="情感得分，0-1之间")
     label: str = Field(default="neutral", description="情感标签")
-    emotion: Optional[str] = Field(default="无感", description="细粒度情绪")
-    reasoning: Optional[str] = Field(default="", max_length=100, description="分析理由")
-    keywords: Optional[List[str]] = Field(
+    emotion: str | None = Field(default="无感", description="细粒度情绪")
+    reasoning: str | None = Field(default="", max_length=100, description="分析理由")
+    keywords: list[str] | None = Field(
         default_factory=list, description="关键词列表"
     )
 

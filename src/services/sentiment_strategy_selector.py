@@ -9,10 +9,13 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
-from config.settings import Config
-from .sentiment_service import SnowNLPStrategy, LLMStrategy, CustomModelStrategy, SentimentResult
+from .sentiment_service import (
+    CustomModelStrategy,
+    LLMStrategy,
+    SentimentResult,
+    SnowNLPStrategy,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +52,7 @@ class StrategyPerformanceMonitor:
             accuracy: 准确率（如果有）
         """
         try:
-            with open(self.performance_file, 'r', encoding='utf-8') as f:
+            with open(self.performance_file, encoding='utf-8') as f:
                 data = json.load(f)
 
             # 更新策略性能统计
@@ -57,19 +60,19 @@ class StrategyPerformanceMonitor:
                 strategy_data = data["strategies"][strategy_name]
                 strategy_data["total_calls"] += 1
                 strategy_data["total_time"] += latency
-                
+
                 # 更新成功率
                 if success:
                     strategy_data["success_rate"] = (
-                        (strategy_data["success_rate"] * (strategy_data["total_calls"] - 1) + 1.0) / 
+                        (strategy_data["success_rate"] * (strategy_data["total_calls"] - 1) + 1.0) /
                         strategy_data["total_calls"]
                     )
                 else:
                     strategy_data["success_rate"] = (
-                        (strategy_data["success_rate"] * (strategy_data["total_calls"] - 1) + 0.0) / 
+                        (strategy_data["success_rate"] * (strategy_data["total_calls"] - 1) + 0.0) /
                         strategy_data["total_calls"]
                     )
-                
+
                 # 更新准确率（如果提供）
                 if accuracy is not None:
                     if "total_accuracy" not in strategy_data:
@@ -94,14 +97,14 @@ class StrategyPerformanceMonitor:
         except Exception as e:
             logger.error(f"记录策略性能失败: {e}")
 
-    def get_strategy_performance(self) -> Dict[str, Dict]:
+    def get_strategy_performance(self) -> dict[str, dict]:
         """获取策略性能数据
 
         Returns:
             dict: 策略性能数据
         """
         try:
-            with open(self.performance_file, 'r', encoding='utf-8') as f:
+            with open(self.performance_file, encoding='utf-8') as f:
                 data = json.load(f)
             return data["strategies"]
         except Exception as e:
@@ -129,10 +132,10 @@ class StrategyPerformanceMonitor:
         success_rate = data.get("success_rate", 0.5)
         accuracy = data.get("accuracy", 0.5)
         avg_time = data.get("total_time", 1.0) / max(data.get("total_calls", 1), 1)
-        
+
         # 时间权重（越快越好）
         time_score = max(0.1, 1.0 - min(1.0, avg_time / 2.0))
-        
+
         # 综合得分
         score = (success_rate * 0.3 + accuracy * 0.5 + time_score * 0.2)
         return score
@@ -142,7 +145,7 @@ class TextFeatureAnalyzer:
     """文本特征分析器"""
 
     @staticmethod
-    def analyze(text: str) -> Dict[str, any]:
+    def analyze(text: str) -> dict[str, any]:
         """分析文本特征
 
         Args:
@@ -211,14 +214,14 @@ class TextFeatureAnalyzer:
         """
         if not text:
             return 0.0
-        
+
         # 基于长度的复杂度
         length_score = min(1.0, len(text) / 200)
-        
+
         # 基于句子数量的复杂度
         sentence_count = text.count('。') + text.count('！') + text.count('？') + text.count('!') + text.count('?')
         sentence_score = min(1.0, sentence_count / 5)
-        
+
         # 基于词汇多样性的复杂度
         words = text.split()
         if words:
@@ -226,7 +229,7 @@ class TextFeatureAnalyzer:
             diversity_score = len(unique_words) / len(words)
         else:
             diversity_score = 0.0
-        
+
         # 综合复杂度得分
         complexity = (length_score * 0.4 + sentence_score * 0.3 + diversity_score * 0.3)
         return complexity
@@ -258,19 +261,16 @@ class SmartStrategySelector:
 
         # 分析文本特征
         features = self.feature_analyzer.analyze(text)
-        
-        # 获取策略性能数据
-        performance = self.performance_monitor.get_strategy_performance()
-        
+
         # 计算各策略得分
         strategy_scores = {}
         for strategy_name in self.strategies:
             # 基础性能得分
             performance_score = self.performance_monitor.get_strategy_score(strategy_name)
-            
+
             # 根据文本特征调整得分
             feature_score = self._calculate_feature_score(strategy_name, features)
-            
+
             # 综合得分
             strategy_scores[strategy_name] = performance_score * 0.6 + feature_score * 0.4
 
@@ -279,7 +279,7 @@ class SmartStrategySelector:
         logger.debug(f"策略选择: {best_strategy}, 得分: {strategy_scores[best_strategy]:.4f}")
         return best_strategy
 
-    def _calculate_feature_score(self, strategy_name: str, features: Dict[str, any]) -> float:
+    def _calculate_feature_score(self, strategy_name: str, features: dict[str, any]) -> float:
         """根据文本特征计算策略得分
 
         Args:
@@ -366,7 +366,7 @@ class SmartStrategySelector:
         """
         # 基于文本特征和结果一致性估计准确率
         features = self.feature_analyzer.analyze(text)
-        
+
         # 简单的准确率估计逻辑
         if features["complexity_score"] < 0.3:
             # 简单文本准确率较高
@@ -378,7 +378,7 @@ class SmartStrategySelector:
             # 中等复杂度文本
             return 0.8
 
-    def get_strategy_recommendations(self) -> Dict[str, str]:
+    def get_strategy_recommendations(self) -> dict[str, str]:
         """获取策略推荐
 
         Returns:
@@ -414,13 +414,13 @@ class SmartStrategySelector:
         """
         # 选择最优策略
         strategy_name = self.select_strategy(text)
-        
+
         # 使用选择的策略进行分析
         result = self.analyze_with_strategy(text, strategy_name)
-        
+
         # 增强结果，添加策略信息
         result.source = f"{strategy_name}_smart"
-        
+
         return result
 
 
@@ -431,7 +431,7 @@ class AdaptiveStrategyManager:
         self.selector = SmartStrategySelector()
         self.performance_monitor = self.selector.performance_monitor
 
-    def analyze(self, text: str) -> Dict:
+    def analyze(self, text: str) -> dict:
         """执行情感分析
 
         Args:
@@ -443,7 +443,7 @@ class AdaptiveStrategyManager:
         result = self.selector.analyze(text)
         return result.to_dict()
 
-    def analyze_batch(self, texts: List[str]) -> List[Dict]:
+    def analyze_batch(self, texts: list[str]) -> list[dict]:
         """批量分析文本
 
         Args:
@@ -471,7 +471,7 @@ class AdaptiveStrategyManager:
                 })
         return results
 
-    def get_performance_stats(self) -> Dict[str, any]:
+    def get_performance_stats(self) -> dict[str, any]:
         """获取性能统计信息
 
         Returns:
@@ -497,7 +497,7 @@ class AdaptiveStrategyManager:
 
         return stats
 
-    def get_health_status(self) -> Dict[str, any]:
+    def get_health_status(self) -> dict[str, any]:
         """获取系统健康状态
 
         Returns:

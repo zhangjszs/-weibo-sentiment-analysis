@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, Text, BigInteger, Index
+from sqlalchemy import BigInteger, Column, DateTime, Index, Integer, String, Text
 
 from database import Base
 

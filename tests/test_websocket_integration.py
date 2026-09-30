@@ -24,23 +24,17 @@ import pytest
 pytestmark = pytest.mark.integration
 
 import logging
-import os
-import sys
 from unittest.mock import patch
 
 import pytest
 from flask import Flask
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
 from services.websocket_service import (
     MessageType,
     RoomType,
-    WebSocketMessage,
     WebSocketService,
     create_message,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -117,3 +117,11 @@ ignore = [
     "B008",   # do not perform function calls in argument defaults - 现有代码大量使用此模式，重构风险高
     "B905",   # zip without explicit strict - 现有代码大量使用zip()，添加strict=True可能引入行为变化
 ]
+
+# E402（import 不在文件顶部）在 tests/ 是既有且必要的模式：测试需要先
+# monkeypatch sys.path / os.environ 再导入被测的 src/ 模块，否则被测模块在
+# import 期就读取了错误的环境。conftest.py 已统一把 src/ 放进 sys.path，
+# 但各测试仍需在自身 import 之前完成各自的前置设置，故不改为 conftest 统一处理。
+# 这里按文件设 baseline（见 issue #29），src/ 下 E402 仍然必须清零。
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["E402"]

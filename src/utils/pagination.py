@@ -3,12 +3,11 @@
 提供统一的分页参数处理功能
 """
 
-from typing import Tuple
 
 
 def get_pagination_params(
     request, default_limit: int = 10, max_limit: int = 100
-) -> Tuple[int, int, int]:
+) -> tuple[int, int, int]:
     """
     从请求中获取分页参数
 

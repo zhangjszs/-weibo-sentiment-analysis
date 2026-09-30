@@ -14,10 +14,10 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-import time
-import statistics
-from concurrent.futures import ThreadPoolExecutor
 import logging
+import statistics
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 from services.sentiment_service import SentimentService
 
@@ -45,34 +45,34 @@ test_texts = test_texts * 10  # 100条测试数据
 def test_single_requests():
     """测试单个请求的响应时间"""
     logger.info("开始测试单个请求响应时间...")
-    
+
     # 先预热缓存
     for text in test_texts[:10]:
         SentimentService.analyze(text, mode="simple")
-    
+
     # 重置缓存统计
     SentimentService.reset_cache_stats()
-    
+
     response_times = []
     for i, text in enumerate(test_texts):
         start_time = time.time()
-        result = SentimentService.analyze(text, mode="simple")
+        SentimentService.analyze(text, mode="simple")
         end_time = time.time()
         response_time = (end_time - start_time) * 1000  # 转换为毫秒
         response_times.append(response_time)
-        
+
         if (i + 1) % 10 == 0:
             logger.info(f"已完成 {i + 1}/{len(test_texts)} 个请求")
-    
+
     # 计算统计数据
     avg_time = statistics.mean(response_times)
     min_time = min(response_times)
     max_time = max(response_times)
     std_time = statistics.stdev(response_times) if len(response_times) > 1 else 0
-    
+
     # 获取缓存统计
     cache_stats = SentimentService.get_cache_stats()
-    
+
     logger.info("\n单个请求测试结果:")
     logger.info(f"平均响应时间: {avg_time:.2f} ms")
     logger.info(f"最小响应时间: {min_time:.2f} ms")
@@ -81,7 +81,7 @@ def test_single_requests():
     logger.info(f"缓存命中率: {cache_stats['cache_stats']['hit_rate']}")
     logger.info(f"缓存命中次数: {cache_stats['cache_stats']['hits']}")
     logger.info(f"缓存未命中次数: {cache_stats['cache_stats']['misses']}")
-    
+
     return {
         "avg_time": avg_time,
         "min_time": min_time,
@@ -93,59 +93,59 @@ def test_single_requests():
 def test_batch_requests():
     """测试批量请求的响应时间和吞吐量"""
     logger.info("\n开始测试批量请求响应时间...")
-    
+
     # 重置缓存统计
     SentimentService.reset_cache_stats()
-    
+
     # 测试不同批量大小
     batch_sizes = [10, 50, 100]
     batch_results = []
-    
+
     for batch_size in batch_sizes:
         # 准备批量数据
         batch_texts = test_texts[:batch_size]
-        
+
         start_time = time.time()
-        results = SentimentService.analyze_batch(batch_texts, mode="simple")
+        SentimentService.analyze_batch(batch_texts, mode="simple")
         end_time = time.time()
-        
+
         total_time = (end_time - start_time) * 1000  # 转换为毫秒
         avg_time_per_request = total_time / batch_size
         throughput = batch_size / (end_time - start_time)  # 请求/秒
-        
+
         batch_results.append({
             "batch_size": batch_size,
             "total_time": total_time,
             "avg_time_per_request": avg_time_per_request,
             "throughput": throughput
         })
-        
+
         logger.info(f"批量大小 {batch_size}: 总时间 {total_time:.2f} ms, 平均每请求 {avg_time_per_request:.2f} ms, 吞吐量 {throughput:.2f} 请求/秒")
-    
+
     # 获取缓存统计
     cache_stats = SentimentService.get_cache_stats()
-    
+
     logger.info("\n批量请求测试结果:")
     for result in batch_results:
         logger.info(f"批量大小 {result['batch_size']}: 总时间 {result['total_time']:.2f} ms, 平均每请求 {result['avg_time_per_request']:.2f} ms, 吞吐量 {result['throughput']:.2f} 请求/秒")
     logger.info(f"缓存命中率: {cache_stats['cache_stats']['hit_rate']}")
-    
+
     return batch_results
 
 def test_concurrent_requests():
     """测试并发请求的性能"""
     logger.info("\n开始测试并发请求性能...")
-    
+
     # 重置缓存统计
     SentimentService.reset_cache_stats()
-    
+
     # 测试不同并发数
     concurrency_levels = [5, 10, 20]
     concurrent_results = []
-    
+
     for concurrency in concurrency_levels:
         start_time = time.time()
-        
+
         # 使用线程池执行并发请求
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
             # 每个线程处理相同的文本集
@@ -156,86 +156,86 @@ def test_concurrent_requests():
                 start_idx = i * batch_size
                 end_idx = (i + 1) * batch_size if i < concurrency - 1 else len(test_texts)
                 batch_texts = test_texts[start_idx:end_idx]
-                
+
                 futures.append(executor.submit(SentimentService.analyze_batch, batch_texts, "simple"))
-            
+
             # 等待所有任务完成
             for future in futures:
                 future.result()
-        
+
         end_time = time.time()
         total_time = end_time - start_time
         total_requests = len(test_texts)
         throughput = total_requests / total_time  # 请求/秒
         avg_time_per_request = (total_time * 1000) / total_requests  # 毫秒/请求
-        
+
         concurrent_results.append({
             "concurrency": concurrency,
             "total_time": total_time,
             "throughput": throughput,
             "avg_time_per_request": avg_time_per_request
         })
-        
+
         logger.info(f"并发数 {concurrency}: 总时间 {total_time:.2f} 秒, 吞吐量 {throughput:.2f} 请求/秒, 平均每请求 {avg_time_per_request:.2f} ms")
-    
+
     # 获取缓存统计
     cache_stats = SentimentService.get_cache_stats()
-    
+
     logger.info("\n并发请求测试结果:")
     for result in concurrent_results:
         logger.info(f"并发数 {result['concurrency']}: 总时间 {result['total_time']:.2f} 秒, 吞吐量 {result['throughput']:.2f} 请求/秒, 平均每请求 {result['avg_time_per_request']:.2f} ms")
     logger.info(f"缓存命中率: {cache_stats['cache_stats']['hit_rate']}")
-    
+
     return concurrent_results
 
 def test_different_modes():
     """测试不同分析模式的性能"""
     logger.info("\n开始测试不同分析模式的性能...")
-    
+
     modes = ["simple", "custom"]
     mode_results = []
-    
+
     for mode in modes:
         # 重置缓存统计
         SentimentService.reset_cache_stats()
-        
+
         start_time = time.time()
-        results = SentimentService.analyze_batch(test_texts[:50], mode=mode)
+        SentimentService.analyze_batch(test_texts[:50], mode=mode)
         end_time = time.time()
-        
+
         total_time = (end_time - start_time) * 1000  # 转换为毫秒
         avg_time_per_request = total_time / 50
-        
+
         # 获取缓存统计
         cache_stats = SentimentService.get_cache_stats()
-        
+
         mode_results.append({
             "mode": mode,
             "total_time": total_time,
             "avg_time_per_request": avg_time_per_request,
             "cache_hit_rate": cache_stats['cache_stats']['hit_rate']
         })
-        
+
         logger.info(f"模式 {mode}: 总时间 {total_time:.2f} ms, 平均每请求 {avg_time_per_request:.2f} ms, 缓存命中率 {cache_stats['cache_stats']['hit_rate']}")
-    
+
     return mode_results
 
 def main():
     """运行所有性能测试"""
     logger.info("=== 情感分析性能测试 ===")
-    
+
     # 测试单个请求
     single_results = test_single_requests()
-    
+
     # 测试批量请求
     batch_results = test_batch_requests()
-    
+
     # 测试并发请求
     concurrent_results = test_concurrent_requests()
-    
+
     # 测试不同模式
-    mode_results = test_different_modes()
-    
+    test_different_modes()
+
     logger.info("\n=== 性能测试完成 ===")
     logger.info("总结:")
     logger.info(f"单个请求平均响应时间: {single_results['avg_time']:.2f} ms")

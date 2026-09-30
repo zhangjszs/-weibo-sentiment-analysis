@@ -13,8 +13,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-sys.path.insert(0, "src")
-
 
 class TestNotificationRecipient:
     """通知接收人测试"""
@@ -1254,7 +1252,6 @@ class TestChannelSenders:
         assert "手机号为空" in error
 
     def test_send_websocket_socketio_none(self, monkeypatch):
-        import sys
 
         fake_module = MagicMock()
         fake_module.websocket_service.socketio = None
@@ -1271,7 +1268,6 @@ class TestChannelSenders:
         assert "未初始化" in error
 
     def test_send_websocket_success(self, monkeypatch):
-        import sys
 
         fake_module = MagicMock()
         fake_module.websocket_service.socketio = MagicMock()  # truthy
@@ -1289,7 +1285,6 @@ class TestChannelSenders:
         fake_module.websocket_service.send_to_user.assert_called_once()
 
     def test_send_websocket_import_error(self, monkeypatch):
-        import sys
 
         monkeypatch.setitem(sys.modules, "services.websocket_service", None)
 
@@ -1303,7 +1298,6 @@ class TestChannelSenders:
         assert success is False
 
     def test_send_websocket_attribute_error(self, monkeypatch):
-        import sys
 
         fake_module = MagicMock()
         fake_module.websocket_service = MagicMock(spec=[])  # 无 socketio 属性
@@ -1551,7 +1545,6 @@ class TestWorkerLoop:
 
     def test_process_pending_message_no_retry_when_max_exceeded(self):
         from services.notification_service import (
-            NotificationMessage,
             NotificationService,
         )
 

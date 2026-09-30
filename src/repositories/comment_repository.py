@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
-from sqlalchemy import desc, func, or_
+from sqlalchemy import desc, func
 
 from models.comment import Comment
 from utils.sql_safety import coerce_positive_int, escape_like
@@ -21,7 +21,7 @@ class CommentRepository(BaseRepository):
         end_time: str = "",
         limit: int = 10,
         offset: int = 0,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         query = self.session.query(Comment)
 
         if article_id:
@@ -45,7 +45,7 @@ class CommentRepository(BaseRepository):
             query.order_by(desc(Comment.created_at)).limit(limit).offset(offset).all()
         )
 
-        result: List[Dict[str, Any]] = []
+        result: list[dict[str, Any]] = []
         for c in rows:
             comment_id = f"{c.articleId}_{c.created_at}"
             result.append(
@@ -68,7 +68,7 @@ class CommentRepository(BaseRepository):
         """评论总数"""
         return self.session.query(func.count(Comment.comment_id)).scalar() or 0
 
-    def get_top_liked_comments(self, limit: int = 4) -> List[Dict[str, Any]]:
+    def get_top_liked_comments(self, limit: int = 4) -> list[dict[str, Any]]:
         """点赞最多的评论（含作者信息）"""
         rows = (
             self.session.query(
@@ -101,7 +101,7 @@ class CommentRepository(BaseRepository):
             for r in rows
         ]
 
-    def count_by_date_range(self) -> List[Dict[str, Any]]:
+    def count_by_date_range(self) -> list[dict[str, Any]]:
         """按日期分组统计（created_at 为文本：按前 10 位截断分组，避免按秒 GROUP BY）"""
         day = func.substr(Comment.created_at, 1, 10).label("day")
         rows = (
@@ -113,7 +113,7 @@ class CommentRepository(BaseRepository):
         )
         return [{"created_at": str(r.day), "count": r.count} for r in rows]
 
-    def get_all_for_export(self, limit: int = 1000) -> List[Dict[str, Any]]:
+    def get_all_for_export(self, limit: int = 1000) -> list[dict[str, Any]]:
         """导出评论（SQL 侧 LIMIT，默认 1000，避免全量 .all() OOM）"""
         rows = self.session.query(Comment).limit(max(1, min(limit, 10000))).all()
         return [
@@ -140,7 +140,7 @@ class CommentRepository(BaseRepository):
             for c in rows
         ]
 
-    def search_by_content(self, keyword: str, limit: int = 1000) -> List[Dict[str, Any]]:
+    def search_by_content(self, keyword: str, limit: int = 1000) -> list[dict[str, Any]]:
         """根据内容关键词搜索评论"""
         rows = (
             self.session.query(
@@ -174,7 +174,7 @@ class CommentRepository(BaseRepository):
             for r in rows
         ]
 
-    def get_region_distribution(self) -> List[Dict[str, Any]]:
+    def get_region_distribution(self) -> list[dict[str, Any]]:
         """评论地域分布"""
         rows = (
             self.session.query(Comment.region, func.count(Comment.comment_id).label("count"))
@@ -187,7 +187,7 @@ class CommentRepository(BaseRepository):
         )
         return [{"name": r.region, "value": r.count} for r in rows]
 
-    def get_gender_distribution(self) -> List[Dict[str, Any]]:
+    def get_gender_distribution(self) -> list[dict[str, Any]]:
         """评论性别分布"""
         rows = (
             self.session.query(Comment.authorGender, func.count(Comment.comment_id).label("count"))
@@ -203,7 +203,7 @@ class CommentRepository(BaseRepository):
         self,
         range_num: int = 20,
         bucket_count: int = 99,
-    ) -> Tuple[List[str], List[int]]:
+    ) -> tuple[list[str], list[int]]:
         """
         评论点赞数直方图
         使用 CASE WHEN 分桶
@@ -235,8 +235,9 @@ class CommentRepository(BaseRepository):
             ORDER BY bucket_index
         """
 
-        from database import engine
         from sqlalchemy import text
+
+        from database import engine
 
         with engine.connect() as conn:
             result = conn.execute(text(sql))
@@ -247,7 +248,7 @@ class CommentRepository(BaseRepository):
 
         return labels, counts
 
-    def get_recent_texts(self, limit: int = 200) -> List[str]:
+    def get_recent_texts(self, limit: int = 200) -> list[str]:
         """获取最近评论内容用于情感/词云分析"""
         rows = (
             self.session.query(Comment.content)
@@ -261,7 +262,7 @@ class CommentRepository(BaseRepository):
 
     # === data_api 专用 ===
 
-    def get_hour_distribution(self, limit: int = 5000) -> Dict[str, List[Any]]:
+    def get_hour_distribution(self, limit: int = 5000) -> dict[str, list[Any]]:
         """评论小时分布（0-23点，Python 侧分桶：跨方言，不用 func.hour MySQL 方言）"""
         rows = (
             self.session.query(Comment.created_at)
@@ -281,7 +282,7 @@ class CommentRepository(BaseRepository):
                 counts[hour] += 1
         return {"hours": hours, "counts": counts}
 
-    def get_top_active_users(self, limit: int = 10) -> Dict[str, List[Any]]:
+    def get_top_active_users(self, limit: int = 10) -> dict[str, list[Any]]:
         """评论最活跃用户"""
         rows = (
             self.session.query(Comment.user, func.count(Comment.comment_id).label("count"))
@@ -297,7 +298,7 @@ class CommentRepository(BaseRepository):
             "counts": [r.count for r in rows],
         }
 
-    def get_recent_comments(self, limit: int = 100) -> List[Tuple[str, str]]:
+    def get_recent_comments(self, limit: int = 100) -> list[tuple[str, str]]:
         """获取最近评论（时间, 内容）"""
         rows = (
             self.session.query(Comment.created_at, Comment.content)
@@ -309,7 +310,7 @@ class CommentRepository(BaseRepository):
         )
         return [(str(r.created_at), str(r.content)) for r in rows]
 
-    def get_hot_comments(self, limit: int = 5) -> List[Dict[str, Any]]:
+    def get_hot_comments(self, limit: int = 5) -> list[dict[str, Any]]:
         """热门评论（点赞数降序）"""
         rows = (
             self.session.query(
@@ -333,7 +334,7 @@ class CommentRepository(BaseRepository):
             for r in rows
         ]
 
-    def get_ip_list(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def get_ip_list(self, limit: int = 10) -> list[dict[str, Any]]:
         """IP/地区分布列表（作者地址去重统计）"""
         rows = (
             self.session.query(
@@ -360,7 +361,7 @@ class CommentRepository(BaseRepository):
             for r in rows
         ]
 
-    def get_recent_trend(self, days: int = 7) -> List[Dict[str, Any]]:
+    def get_recent_trend(self, days: int = 7) -> list[dict[str, Any]]:
         """最近 N 天评论数趋势"""
         from datetime import datetime, timedelta
 

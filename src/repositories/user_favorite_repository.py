@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from sqlalchemy import desc, func
 
@@ -11,7 +11,7 @@ class UserFavoriteRepository(BaseRepository):
     def __init__(self):
         super().__init__(UserFavorite)
 
-    def find_by_user_and_article(self, user_id: int, article_id: str) -> Optional[UserFavorite]:
+    def find_by_user_and_article(self, user_id: int, article_id: str) -> UserFavorite | None:
         return (
             self.session.query(UserFavorite)
             .filter(UserFavorite.user_id == user_id)
@@ -24,7 +24,7 @@ class UserFavoriteRepository(BaseRepository):
         user_id: int,
         limit: int = 10,
         offset: int = 0,
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         """获取用户收藏列表（带文章详情）"""
         from models.article import Article
 
@@ -75,7 +75,7 @@ class UserFavoriteRepository(BaseRepository):
 
         return results, total
 
-    def check_batch(self, user_id: int, article_ids: List[str]) -> Dict[str, bool]:
+    def check_batch(self, user_id: int, article_ids: list[str]) -> dict[str, bool]:
         """批量检查收藏状态"""
         if not article_ids:
             return {}
