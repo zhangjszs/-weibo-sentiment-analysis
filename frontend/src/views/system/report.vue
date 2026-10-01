@@ -364,7 +364,7 @@
       } else {
         ElMessage.error(res.msg || '生成失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('报告生成失败')
     } finally {
       generating.value = false
@@ -396,7 +396,7 @@
         }
         ElMessage.success('所有报告生成成功')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('报告生成失败')
     } finally {
       generatingAll.value = false

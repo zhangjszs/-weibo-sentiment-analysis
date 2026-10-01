@@ -10,7 +10,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{vue,js,jsx,cjs,mjs}\" \"tests/**/*.js\"",
+    "lint": "eslint --max-warnings 0 \"src/**/*.{vue,js,jsx,cjs,mjs}\" \"tests/**/*.js\"",
     "format": "prettier --write src/",
     "format:check": "prettier --check src/",
     "test": "vitest",

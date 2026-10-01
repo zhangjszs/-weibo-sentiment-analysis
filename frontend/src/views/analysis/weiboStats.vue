@@ -177,7 +177,7 @@
         }))
         total.value = data.total || tableData.value.length
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false

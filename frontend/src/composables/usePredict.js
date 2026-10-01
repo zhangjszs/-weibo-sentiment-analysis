@@ -156,7 +156,7 @@ export function usePredict() {
       } else {
         ElMessage.error(res.msg || '预测失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('预测请求失败')
     } finally {
       predicting.value = false
@@ -232,7 +232,7 @@ export function usePredict() {
       } else {
         ElMessage.error(res.msg || '批量预测失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('批量预测请求失败')
     } finally {
       batchPredicting.value = false

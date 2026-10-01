@@ -72,7 +72,7 @@ export function useTasks() {
       if (res.code === 200) {
         spiderOverview.value = res.data || {}
       }
-    } catch (_e) {
+    } catch {
       ElMessage.error('加载爬虫概览失败')
     } finally {
       spiderLoading.value = false
@@ -86,7 +86,7 @@ export function useTasks() {
       if (res.code === 200) {
         logs.value = res.data?.logs || []
       }
-    } catch (_e) {
+    } catch {
       ElMessage.error('加载日志失败')
     } finally {
       logsLoading.value = false
@@ -122,7 +122,7 @@ export function useTasks() {
         startupStatus.value = res.data || {}
         syncStartupPolling()
       }
-    } catch (_e) {
+    } catch {
       stopStartupPolling()
       ElMessage.error('加载启动状态失败')
     } finally {
@@ -148,7 +148,7 @@ export function useTasks() {
     try {
       const raw = localStorage.getItem('weibo_recent_tasks')
       recentTasks.value = raw ? JSON.parse(raw) : []
-    } catch (_e) {
+    } catch {
       recentTasks.value = []
     }
   }
@@ -188,7 +188,7 @@ export function useTasks() {
         taskResult.value = res.data || null
         addRecent(id)
       }
-    } catch (_e) {
+    } catch {
       ElMessage.error('查询任务状态失败')
     } finally {
       taskLoading.value = false

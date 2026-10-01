@@ -224,7 +224,7 @@
           await handleHotWordChange(hotWordList.value[0][0])
         }
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载热词列表失败')
     }
   }
@@ -256,7 +256,7 @@
         }))
         total.value = tableData.value.length
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false

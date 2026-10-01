@@ -539,7 +539,7 @@
           reposts: item[3] || 0,
         }))
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false
@@ -580,7 +580,7 @@
         listData.value = data.list || []
         pagination.value.total = data.total || 0
       }
-    } catch (e) {
+    } catch {
       ElMessage.error('加载文章列表失败')
     } finally {
       listLoading.value = false

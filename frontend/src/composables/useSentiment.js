@@ -405,7 +405,7 @@ export function useSentiment() {
         total.value = data.total || 0
         currentPage.value = 1
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false

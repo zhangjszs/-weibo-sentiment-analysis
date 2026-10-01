@@ -55,7 +55,7 @@ class WebSocketClient {
         }
       })
 
-      this.socket.on('disconnect', (reason) => {
+      this.socket.on('disconnect', () => {
         this.connected.value = false
         this.authenticated = false
         this.scheduleReconnect(authToken)
@@ -67,10 +67,10 @@ class WebSocketClient {
       })
 
 
-      this.socket.on('connected', (data) => {
+      this.socket.on('connected', () => {
       })
 
-      this.socket.on('auth_success', (data) => {
+      this.socket.on('auth_success', () => {
         this.authenticated = true
       })
 
@@ -78,17 +78,17 @@ class WebSocketClient {
         console.error('WebSocket 认证失败:', data)
       })
 
-      this.socket.on('subscribed', (data) => {
+      this.socket.on('subscribed', () => {
       })
 
-      this.socket.on('unsubscribed', (data) => {
+      this.socket.on('unsubscribed', () => {
       })
 
       this.socket.on('subscribe_error', (data) => {
         console.error('WebSocket 订阅失败:', data)
       })
 
-      this.socket.on('pong', (data) => {
+      this.socket.on('pong', () => {
       })
     } catch (error) {
       console.error('WebSocket 连接异常:', error)

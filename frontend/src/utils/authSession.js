@@ -59,7 +59,7 @@ export const getCachedUser = (storage) => {
   try {
     const parsed = JSON.parse(rawValue)
     return parsed && typeof parsed === 'object' ? parsed : {}
-  } catch (error) {
+  } catch {
     targetStorage.removeItem(USER_CACHE_KEY)
     return {}
   }

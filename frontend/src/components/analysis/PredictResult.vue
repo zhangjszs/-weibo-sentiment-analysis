@@ -120,5 +120,11 @@
   </el-row>
 </template>
 <script setup>
-defineProps({ predictResult: Object, getSentimentTagType: Function, getSentimentLabel: Function, getScoreColor: Function, getEmotionTagType: Function })
+defineProps({
+  predictResult: { type: Object, default: () => ({}) },
+  getSentimentTagType: { type: Function, default: () => () => '' },
+  getSentimentLabel: { type: Function, default: () => () => '' },
+  getScoreColor: { type: Function, default: () => () => '' },
+  getEmotionTagType: { type: Function, default: () => () => '' },
+})
 </script>

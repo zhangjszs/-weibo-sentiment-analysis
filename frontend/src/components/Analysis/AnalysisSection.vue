@@ -67,10 +67,9 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import AnalysisEmptyState from '@/components/Common/AnalysisEmptyState.vue'
 
-const props = defineProps({
+defineProps({
   /** loading | empty | degraded | error | normal */
   status: { type: String, default: 'loading' },
   errorTitle: { type: String, default: '加载失败' },

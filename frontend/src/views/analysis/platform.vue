@@ -221,8 +221,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, watch } from 'vue'
-  import { ElMessage } from 'element-plus'
+  import { ref, computed, onMounted } from 'vue'
   import {
     Search,
     User,
@@ -235,7 +234,6 @@
   import BaseChart from '@/components/Charts/BaseChart.vue'
   import {
     getPlatformData,
-    getAllPlatformsData,
     getPlatformStats,
     comparePlatforms,
   } from '@/api/platform'

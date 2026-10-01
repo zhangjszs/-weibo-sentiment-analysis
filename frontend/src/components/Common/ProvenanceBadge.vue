@@ -57,7 +57,7 @@ const badgeLabel = computed(() => {
 
 const badgeTitle = computed(() => {
   if (!props.meta) return badgeLabel.value
-  const { source_name, source_type, model_name, data_count } = props.meta
+  const { source_name, model_name, data_count } = props.meta
   const parts = [badgeLabel.value]
   if (source_name) parts.push(`来源: ${source_name}`)
   if (data_count !== undefined) parts.push(`数据量: ${data_count}`)

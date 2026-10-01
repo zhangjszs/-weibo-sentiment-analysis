@@ -345,7 +345,7 @@ import { useSpider } from '@/composables/useSpider'
 
 const {
   overview, hotPageNum, searchKeyword, searchPageNum, refreshing, clearingCache,
-  logs, logsLoading, logFilter, logContainerRef, trendChartRef,
+  logsLoading, logFilter, logContainerRef, trendChartRef,
   filteredLogs, refreshAll, handleClearCache, startCrawlAction, getLogLevel,
 } = useSpider()
 </script>

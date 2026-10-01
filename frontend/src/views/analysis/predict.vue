@@ -314,7 +314,7 @@
 import PredictInput from '@/components/analysis/PredictInput.vue'
 import PredictResult from '@/components/analysis/PredictResult.vue'
 import { usePredict } from '@/composables/usePredict'
-const { predictMode, predictForm, predicting, predictResult, historyList, loadingModelInfo, modelInfo, gaugeChartRef, showBatchDialog, showBatchResultDialog, batchForm, batchPredicting, batchResults, uploadRef, gaugeChartOptions, getSentimentTagType, getSentimentLabel, getScoreColor, getScoreClass, getEmotionTagType, handlePredict, clearInput, clearHistory, retryPredict, handleBatchPredict, handleFileChange, exportBatchResults, loadModelInfo } = usePredict()
+const { predictMode, predictForm, predicting, predictResult, historyList, loadingModelInfo, modelInfo, gaugeChartRef, showBatchDialog, showBatchResultDialog, batchForm, batchPredicting, batchResults, uploadRef, gaugeChartOptions, getSentimentTagType, getSentimentLabel, getScoreColor, getScoreClass, getEmotionTagType, handlePredict, clearInput, clearHistory, retryPredict, handleBatchPredict, handleFileChange, exportBatchResults } = usePredict()
 </script>
 
 <style lang="scss" scoped src="./predict.scss"></style>

@@ -157,7 +157,7 @@
       link.click()
       document.body.removeChild(link)
       ElMessage.success('图片下载成功')
-    } catch (error) {
+    } catch {
       ElMessage.error('下载失败')
     }
   }
@@ -177,7 +177,7 @@
           wordStats.value = res.data.wordStats
         }
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('生成失败')
     } finally {
       loading.value = false
@@ -196,7 +196,7 @@
           ElMessage.warning('未能获取到图片URL')
         }
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('生成失败')
     } finally {
       loading.value = false
@@ -233,7 +233,7 @@
       link.download = 'word-stats.csv'
       link.click()
       ElMessage.success('数据导出成功')
-    } catch (error) {
+    } catch {
       ElMessage.error('导出失败')
     }
   }
@@ -248,7 +248,7 @@
         authorCloudUrl.value = data.authorCloud || defaultAuthorCloud
         wordStats.value = data.wordStats || []
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false

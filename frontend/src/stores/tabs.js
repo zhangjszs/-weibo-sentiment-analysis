@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 
 const HOME_TAB = {
   name: 'Home',
@@ -25,7 +24,7 @@ function loadTabsFromStorage() {
         return parsed
       }
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
   return [{ ...HOME_TAB }]
@@ -37,7 +36,7 @@ function loadActiveFromStorage(tabs) {
     if (saved && tabs.some((t) => t.name === saved)) {
       return saved
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
   return HOME_TAB.name
@@ -187,7 +186,7 @@ export const useTabsStore = defineStore('tabs', () => {
     try {
       localStorage.removeItem(STORAGE_TABS_KEY)
       localStorage.removeItem(STORAGE_ACTIVE_KEY)
-    } catch (e) {
+    } catch {
       // ignore
     }
   }

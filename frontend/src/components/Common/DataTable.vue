@@ -102,7 +102,7 @@
 </template>
 
 <script setup>
-  import { ref, watch, computed } from 'vue'
+  import { ref, computed } from 'vue'
   import { Download, Refresh } from '@element-plus/icons-vue'
 
   const props = defineProps({

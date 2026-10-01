@@ -357,11 +357,11 @@
 </template>
 
 <script setup>
-import { CircleCheck, Remove, CircleClose, Refresh } from '@element-plus/icons-vue'
+import { Refresh } from '@element-plus/icons-vue'
 import StatCard from '@/components/Common/StatCard.vue'
 import BaseChart from '@/components/Charts/BaseChart.vue'
 import { useSentiment } from '@/composables/useSentiment'
-const { loading, rawList, sentimentStats, sentimentData, trendData, keywords, currentPage, pageSize, total, filters, sentimentPieRef, trendChartRef, emotionBarRef, scoreDistRef, sentimentPieOptions, trendChartOptions, emotionBarOptions, scoreDistOptions, getSentimentType, getScoreClass, getEmotionType, filteredList, filteredTotal, pagedList, loadData, handleSizeChange, handlePageChange, resetFilters, handlePieClick, handleTrendClick } = useSentiment()
+const { loading, sentimentStats, keywords, currentPage, pageSize, filters, sentimentPieRef, trendChartRef, emotionBarRef, scoreDistRef, sentimentPieOptions, trendChartOptions, emotionBarOptions, scoreDistOptions, getSentimentType, getScoreClass, getEmotionType, filteredTotal, pagedList, loadData, handleSizeChange, handlePageChange, resetFilters, handlePieClick, handleTrendClick } = useSentiment()
 </script>
 
 <style lang="scss" scoped src="./sentiment.scss"></style>

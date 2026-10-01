@@ -172,23 +172,6 @@ export function useBigScreen() {
     } catch (error) { console.error('加载统计数据失败:', error) }
   }
 
-  const loadRegionData = async () => {
-    try {
-      const data = await analysisStore.fetchRegion()
-      if (data && data.data) regionData.value = data.data
-      else if (data && Array.isArray(data)) regionData.value = data
-    } catch (error) { console.error('加载地区数据失败:', error) }
-  }
-
-  const loadTrendData = async () => {
-    try {
-      const data = await analysisStore.fetchTrend()
-      if (data) trendData.value = { times: data.times || [], positive: data.positive || [], neutral: data.negative ? data.negative : [], negative: data.negative || [] }
-      // 兼容 store 返回结构：trend 含 times/positive/neutral/negative
-      if (data && data.times) trendData.value = { times: data.times || [], positive: data.positive || [], neutral: data.neutral || [], negative: data.negative || [] }
-    } catch (error) { console.error('加载趋势数据失败:', error) }
-  }
-
   const loadHotTopics = async () => {
     try {
       const data = await analysisStore.fetchHotTopics()

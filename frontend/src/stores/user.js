@@ -35,7 +35,7 @@ export const useUserStore = defineStore('user', () => {
     // 登出同步清工作区 tab（内存 + localStorage），多用户共机不串数据（#20）
     try {
       useTabsStore().resetTabs()
-    } catch (e) {
+    } catch {
       // pinia 尚未就绪的极端时序下忽略
     }
   }
@@ -80,7 +80,7 @@ export const useUserStore = defineStore('user', () => {
         if (extendRes.code === 200) {
           applyToken(extendRes.data?.token || '')
         }
-      } catch (error) {
+      } catch {
         applyToken('')
       }
 
@@ -89,7 +89,7 @@ export const useUserStore = defineStore('user', () => {
         applyUserInfo(res.data || {})
         return true
       }
-    } catch (e) {
+    } catch {
       resetAuthState()
       if (redirectOnFailure) {
         const target = router.currentRoute?.value?.fullPath || '/home'

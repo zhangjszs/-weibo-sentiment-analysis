@@ -120,7 +120,7 @@
         favorites.value = res.data.items || []
         total.value = res.data.total || 0
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载收藏列表失败')
     } finally {
       loading.value = false
@@ -138,7 +138,7 @@
       } else {
         ElMessage.error(res.msg || '操作失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('操作失败')
     } finally {
       removingId.value = null

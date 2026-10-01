@@ -146,7 +146,7 @@ export function useAlert() {
         fetchAlerts()
         fetchStats()
       }
-    } catch (_error) {
+    } catch {
       ElMessage.error('操作失败')
     }
   }
@@ -155,7 +155,7 @@ export function useAlert() {
     try {
       await toggleAlertRule(rule.id)
       ElMessage.success(rule.enabled ? '规则已启用' : '规则已禁用')
-    } catch (_error) {
+    } catch {
       rule.enabled = !rule.enabled
       ElMessage.error('操作失败')
     }
@@ -170,7 +170,7 @@ export function useAlert() {
         fetchAlerts()
         fetchStats()
       }
-    } catch (_error) {
+    } catch {
       ElMessage.error('发送失败')
     } finally {
       testing.value = false
@@ -191,7 +191,7 @@ export function useAlert() {
         showRuleDialog.value = false
         fetchRules()
       }
-    } catch (_error) {
+    } catch {
       ElMessage.error('创建失败')
     } finally {
       creating.value = false

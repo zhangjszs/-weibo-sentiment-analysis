@@ -361,7 +361,7 @@
         sentimentData.value = data.sentimentData || []
         hotComments.value = data.hotComments || []
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false
@@ -402,7 +402,7 @@
         listData.value = data.list || []
         pagination.value.total = data.total || 0
       }
-    } catch (e) {
+    } catch {
       ElMessage.error('加载评论列表失败')
     } finally {
       listLoading.value = false

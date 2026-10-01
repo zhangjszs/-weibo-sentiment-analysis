@@ -161,7 +161,7 @@
       if (res.code === 200) {
         alerts.value = res.data.alerts
       }
-    } catch (error) {
+    } catch {
       // 获取预警失败，静默处理
     } finally {
       loading.value = false
@@ -174,7 +174,7 @@
       if (res.code === 200) {
         unreadCount.value = res.data.unread_count
       }
-    } catch (error) {
+    } catch {
       // 获取未读数量失败，静默处理
     }
   }
@@ -185,7 +185,7 @@
         await markAlertRead(alert.id)
         alert.is_read = true
         unreadCount.value = Math.max(0, unreadCount.value - 1)
-      } catch (error) {
+      } catch {
         // 标记已读失败，静默处理
       }
     }
@@ -199,7 +199,7 @@
         unreadCount.value = 0
         ElMessage.success('已全部标记为已读')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('操作失败')
     }
   }

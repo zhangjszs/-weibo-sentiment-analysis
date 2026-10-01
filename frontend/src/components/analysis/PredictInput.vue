@@ -64,6 +64,10 @@
 </template>
 <script setup>
 import { TrendCharts, Upload } from '@element-plus/icons-vue'
-defineProps({ predictMode: String, predictForm: Object, predicting: Boolean })
+defineProps({
+  predictMode: { type: String, default: '' },
+  predictForm: { type: Object, default: () => ({}) },
+  predicting: Boolean,
+})
 const emit = defineEmits(['update:predictMode', 'update:predictForm', 'predict', 'clear', 'openBatch'])
 </script>

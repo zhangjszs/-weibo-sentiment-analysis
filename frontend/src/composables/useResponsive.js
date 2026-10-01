@@ -149,7 +149,7 @@ export function usePullRefresh(callback) {
   }
 }
 
-export function useGesture(elementRef) {
+export function useGesture() {
   const scale = ref(1)
   const isLongPress = ref(false)
   let longPressTimer = null

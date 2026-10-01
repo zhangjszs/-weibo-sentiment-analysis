@@ -101,18 +101,7 @@
 
 <script setup>
   import { ref } from 'vue'
-  import {
-    QuestionFilled,
-    TrendCharts,
-    Document,
-    ChatDotRound,
-    Monitor,
-    Bell,
-    DataAnalysis,
-    Share,
-    Cpu,
-    Star,
-  } from '@element-plus/icons-vue'
+  import { QuestionFilled } from '@element-plus/icons-vue'
 
   const activeFaq = ref(0)
 

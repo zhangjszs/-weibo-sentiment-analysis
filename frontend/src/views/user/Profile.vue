@@ -301,7 +301,7 @@
         profileForm.bio = res.data.bio || ''
         profileForm.avatar_color = res.data.avatar_color || '#2563EB'
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载个人资料失败')
     }
   }
@@ -339,7 +339,7 @@
       } else {
         ElMessage.error(res.msg || '更新失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('更新失败')
     } finally {
       profileSaving.value = false
@@ -371,7 +371,7 @@
       } else {
         ElMessage.error(res.msg || '修改失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('修改失败')
     } finally {
       passwordSaving.value = false

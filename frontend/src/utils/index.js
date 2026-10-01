@@ -191,7 +191,7 @@ export function isEmpty(value) {
 }
 
 export function getEnumLabel(enumObj, value) {
-  const found = Object.entries(enumObj).find(([key, val]) => val === value)
+  const found = Object.entries(enumObj).find(([, val]) => val === value)
   return found ? found[0] : String(value)
 }
 

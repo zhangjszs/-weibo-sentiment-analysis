@@ -196,7 +196,7 @@
         mapData.value = data.mapData || []
         regionData.value = data.regionData?.slice(0, 10) || []
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('加载数据失败')
     } finally {
       loading.value = false

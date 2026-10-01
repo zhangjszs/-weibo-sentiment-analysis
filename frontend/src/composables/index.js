@@ -84,7 +84,7 @@ export function useCopyToClipboard() {
         copied.value = false
       }, 2000)
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }
@@ -100,7 +100,7 @@ export function useLocalStorage() {
     try {
       const item = localStorage.getItem(key)
       return item ? JSON.parse(item) : defaultValue
-    } catch (error) {
+    } catch {
       return defaultValue
     }
   }
@@ -109,7 +109,7 @@ export function useLocalStorage() {
     try {
       localStorage.setItem(key, JSON.stringify(value))
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }
@@ -118,7 +118,7 @@ export function useLocalStorage() {
     try {
       localStorage.removeItem(key)
       return true
-    } catch (error) {
+    } catch {
       return false
     }
   }

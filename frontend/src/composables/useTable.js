@@ -3,7 +3,7 @@
  * 提供分页、搜索、排序等通用表格逻辑
  */
 
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 /**
  * 使用分页表格

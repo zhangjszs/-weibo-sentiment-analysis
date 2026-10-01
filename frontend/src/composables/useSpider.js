@@ -1,4 +1,4 @@
-import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getSpiderOverview, startCrawl, getSpiderStatus, getSpiderLogs, clearCache } from '@/api/spider'
 import echarts from '@/utils/echarts'
@@ -93,9 +93,7 @@ export function useSpider() {
     if (!trendChartRef.value) return
     if (!trendChart) trendChart = echarts.init(trendChartRef.value)
     const articleDates = overview.dailyTrend.map((d) => d.date)
-    const articleCounts = overview.dailyTrend.map((d) => d.count)
     const commentDates = overview.commentTrend.map((d) => d.date)
-    const commentCounts = overview.commentTrend.map((d) => d.count)
     const allDates = [...new Set([...articleDates, ...commentDates])].sort()
     const articleMap = Object.fromEntries(overview.dailyTrend.map((d) => [d.date, d.count]))
     const commentMap = Object.fromEntries(overview.commentTrend.map((d) => [d.date, d.count]))

@@ -137,7 +137,7 @@
       } else {
         ElMessage.error(res.msg || '注册失败')
       }
-    } catch (error) {
+    } catch {
       ElMessage.error('注册失败')
     } finally {
       loading.value = false

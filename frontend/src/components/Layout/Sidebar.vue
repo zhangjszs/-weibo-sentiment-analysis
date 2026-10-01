@@ -31,13 +31,13 @@
         </div>
       </template>
       <template
-        v-for="route in analysisRoutes"
-        :key="route.path"
+        v-for="item in analysisRoutes"
+        :key="item.path"
       >
-        <el-menu-item :index="route.path">
-          <el-icon><component :is="route.meta.icon" /></el-icon>
+        <el-menu-item :index="item.path">
+          <el-icon><component :is="item.meta.icon" /></el-icon>
           <template #title>
-            {{ route.meta.title }}
+            {{ item.meta.title }}
           </template>
         </el-menu-item>
       </template>
@@ -49,13 +49,13 @@
         </div>
       </template>
       <template
-        v-for="route in labRoutes"
-        :key="route.path"
+        v-for="item in labRoutes"
+        :key="item.path"
       >
-        <el-menu-item :index="route.path">
-          <el-icon><component :is="route.meta.icon" /></el-icon>
+        <el-menu-item :index="item.path">
+          <el-icon><component :is="item.meta.icon" /></el-icon>
           <template #title>
-            {{ route.meta.title }}
+            {{ item.meta.title }}
             <el-tag
               size="small"
               type="warning"
