@@ -5,77 +5,55 @@
 
 ## 上一棒是谁
 
-Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T04:0x。
-第二棒，本会话做了七轮：#30 → #19 → #20 → #15(三轮) → #21。**五个 issue 全部关闭**。
-CI 三 job 连续七次全绿。
+Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T05:5x。
+第二棒，本会话九轮：#30 → #19 → #20 → #15(三轮) → #21 → #16 → #28。
+**当前全部 open issue 已清零**，CI 三 job 连续九次全绿。
 
-## 本会话累计成果
+## 本会话成果总览（六个 issue 关闭，逐 issue 详情见各关闭评论）
 
-### 轮 1：#30 integration 27 个失效测试 → 全绿关闭
-nlp passthrough 私有模块名加载 / echarts-table 改 patch Repository /
-app fixture 复用 engine + 自举 schema（**勿回退** conftest 的"不调
-database.reset()"）。详见 #30 关闭评论。
+| Issue | 内容 | 要点 |
+|-------|------|------|
+| #30 | integration 27 失效测试 | sys.modules 污染 / patch 目标迁移 / 测试基建两缺陷（勿回退 conftest 的 engine 复用） |
+| #19 | 前端 Loading/静默失败/空状态 | request.js 触发条件+计数对称、useTable loadError+竞态、路由 me 缓存 60s、404 public 放行、adminOnly→/403 |
+| #20 | WS 死链/SW 缓存鉴权/裸 fetch | socket.io-client 接入+vite/nginx /socket.io、SW 不缓存 /api/*、axios 统一、Inter 本地化 |
+| #15 | JWT 会话安全（3 轮） | jti 黑名单+aud/iss、logout 作废、extend 旋转、三套校验统一、401/403、redirect 白名单、失败锁定、审计 |
+| #21 | 前端死依赖/配置矛盾 | 5 死依赖删除、死代码、lint 去 --fix 纳入 tests、no-console 收紧、auth-session 入套件 |
+| #16 | 后端死代码/文档漂移 | platform_collector 单数版等删除、AGENTS/README/CONTEXT 校正 |
+| #28 | scripts/alembic 杂项 | run_migration 走 alembic、env.py 尊重 TEST_DATABASE_URL（SQLite 迁移链实测通）、check 脚本对齐 |
 
-### 轮 2：#19 前端 Loading/静默失败/空状态 → 关闭
-request.js loading 触发条件与计数对称、useTable loadError+竞态、路由守卫
-me 缓存 60s TTL / public 放行 404 / adminOnly 跳 /403、home 防连点、report
-空导出拦截、analysis store allSettled。详见 #19 对账评论。
+数字基线：后端 fast gate **1261 passed**（删 17 个单数版遗留测试后）、
+integration **189 passed**、前端 **10 文件 73 tests**、前端 lint 警告
+146→103（0 error）、ruff 0。
 
-### 轮 3：#20 WebSocket 死链 / SW 缓存鉴权 / 裸 fetch → 关闭
-WS 接入 socket.io-client（后端服务端完整，选接入而非删除）+ vite/nginx
-/socket.io 通道 + 抖动退避；SW 不缓存 /api/*、离线回退 index.html；裸 fetch
-统一 axios；登出清 tab；Inter 字体本地化。详见 #20 对账评论。
+## 留白项（有意不做，供下一棒/人工决策）
 
-### 轮 5：#15 统一三套校验 → 完成（issue 保持 open）
-jwt_required 升级单轨标准实现（Bearer+Cookie、统一 error envelope）、
-require_jwt 真别名（__all__ 防 ruff 删）、中间件 401 文案区分、ADMIN_USERS
-空 dev 启动告警。refactor: 6135bb2，+4 测试，fast gate 1278 / CI 绿。
+1. **验证码**（#15）：需前端配合 + 产品决策，建议单独立项。
+2. **user.py password String(100) 拓宽 / createTime 驼峰统一**（#16）：
+   涉 schema 迁移与全局重命名。
+3. **WS 刷新后无 token**：需后端提供刷新后取 token 端点（与 #15 旋转同片区）。
+4. **jti 黑名单/失败锁定的多 worker 语义**：Redis 不可用时退化进程内存，
+   生产应保证 Redis 可用（token_blacklist.py / login_lockout.py 注释已写明）。
+5. **conftest 两套 SQLite 语义**（#28）：会话级共享 vs alert_db StaticPool 隔离，
+   属取舍，未动。
 
-### 轮 4：#15 JWT 撤销/旋转核心 → 部分完成，**已 reopen**
-- 新增 utils/token_blacklist.py（Redis 优先/内存兜底），verify_token 查
-  jti 黑名单；create_token 补 aud/iss 并强制验签
-- 两处 logout 作废 token；extend 旋转；预热不再伪造 user_id=0 管理员 token
-- admin_required 401/403 区分；g.user_id 挂载使限流 user 键生效
-- 登录 redirect 白名单（//evil.com）；X-Request-Id 消毒
-- 新增 test_jwt_revocation.py 11 例；fast gate 1274 / integration 189 /
-  CI 全绿。对账评论里有逐项清单与未完成理由。
+## 坑与经验（重要，接力者必读）
 
-### 轮 6：#15 登录锁定 + 审计 → 关闭
-utils/login_lockout.py（username+IP 5 次失败锁 15 分钟，成功清零，两条登录
-轨都覆盖）；logout 审计补齐（api_logout 在撤销前解析用户）。feat a548221
-+ test_login_lockout.py 5 例。验证码留白：需产品决策（建议另行立项）。
-
-### 轮 7：#21 前端死依赖/死代码/配置矛盾 → 关闭
-删 5 个死依赖（注意 socket.io-client/@fontsource 因 #20 已在用而保留）、
-locales 等死代码、lint 去 --fix 纳入 tests、no-console 收紧、auth-session
-测试改写 vitest 纳入。2 commits。详见 #21 关闭评论（含对 issue 两条误报的
-核对结论）。
-
-## 下一步建议（下一棒从这里接）
-
-1. **#16（Low，后端）**：死代码与文档漂移（AGENTS/CONTEXT/README/目录树）。
-   注意文档里 fast gate 数字已随 #30/#15 变化，顺手校正。
-2. #28（Low，scripts/alembic 杂项）。
-3. #15 若有后续：验证码选型（需产品决策）。
-
-## 坑与经验（重要）
-1. **commit `fix: #N` 自动关闭 issue**：#19/#20/#15 都被自动关；部分完成的
-   在评论后 `gh issue reopen` 即可。
-2. app fixture 会删 config* 模块重导入：测试里 monkeypatch Config 必须
-   **在 fixture 之后** `import config.settings` 取新类，顶层 import 到旧类。
-3. Werkzeug 测试客户端在边界就拒绝带换行的头值；测日志注入用超长值。
-4. mock axios 的 create 返回值要带 interceptors 桩（router-guard.test.js）；
-   自定义 adapter 必须回填合并 config（request-loading.test.js）。
-5. 工作区曾有未记录的 pytest.ini 改动，存于本地分支
+1. **commit `fix: #N` 自动关闭 issue**；部分完成想保持 open 就用
+   `refactor:`/`feat:`/`test:`/`chore:` 开头（feat 不在 GitHub 关闭关键字表）。
+2. **勿回退** conftest `app` fixture 的「不调 database.reset() + 复用 engine」
+   （#30 第 3 类根因）；nlp 测试的 `_nlp_tasks_under_test` 私有模块名同理。
+3. app fixture 会删 config* 模块重导入：测试里 monkeypatch Config 必须
+   在 fixture 之后 `import config.settings` 取新类。
+4. mock axios 的 create 要带 interceptors 桩；自定义 adapter 必须回填合并 config。
+5. 模块级别名导出会被 ruff F401 --fix 删，需配 `__all__`（authz.py）。
+6. 工作区曾有未记录的 pytest.ini 改动（ROS 插件屏蔽），存于本地分支
    `wip/20260930T154700Z`（73cd2a7，未推送），请人工确认去留。
 
-## 遗留 / 已知限制
-- WS 刷新后无 token（AlertNotification 回退 HTTP 轮询）：与 #15 的 token
-  旋转同片区，后续可加"刷新后换 token"端点一并解决。
-- nginx /socket.io Upgrade 本机无 Docker 只做了结构验证，上线确认握手 101。
-- jti 黑名单 Redis 不可用时退化为进程内存（多 worker 有半失效窗口），
-  部署侧保证 Redis 可用；已在 token_blacklist.py 注释说明。
-- vitest exclude 了 auth-session.test.js，改 authSession 时留意。
+## 下一步建议
+
+- 无待办 issue。下一棒可按协议第七节主动发现（先查重）；
+  也可优先核对：nginx /socket.io Upgrade 上线后握手是否 101（#20 留的
+  结构性验证）、Security Scan 持续绿是否稳定。
 
 ## 环境备注
 

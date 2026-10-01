@@ -3,8 +3,8 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#28 [Low] scripts/alembic 杂项（绕开迁移、弱校验、TEST_DATABASE_URL 被无视）
-- 状态：待办（本会话最后一轮从这里接）
+- 任务：无——全部 open issue 已关闭（截至 2026-10-01T05:5x）
+- 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 连续六次全绿。
@@ -19,7 +19,7 @@
 - 模块级别名导出会被 ruff F401 --fix 删除，需配 `__all__`（authz.py 的
   require_jwt 即此写法）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
-- 本会话累计：#30/#19/#20/#15/#21 五个 issue 修复关闭
+- 本会话累计：#30/#19/#20/#15/#21/#16/#28 七个 issue 修复关闭，全部推送 main
 - 前端测试现 10 文件 73 个（auth-session 已纳入）
 - Security Scan 连续六次转绿——"每次都红"的旧记录已过时
 - 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
@@ -36,6 +36,10 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #28 关闭：run_migration.py 改走 alembic（原裸 pymysql 绕迁移链）、
+  alembic/env.py 尊重 TEST_DATABASE_URL（迁移链 SQLite 实测跑到 head）、
+  check_db/check_env 对齐 Config、deploy 注释、alembic.ini 占位清空、
+  docs 计数去硬编码（1 commit；fast gate 1261 / CI 绿）
 - #16 关闭：删 platform_collector.py 单数版+测试、_create_task_queues、
   utils.metrics 死路径、rate_limiter __main__、_api_cache；print→logger；
   AGENTS/README/CONTEXT 漂移校正（307 别名、密钥隔离要求、情感链路
