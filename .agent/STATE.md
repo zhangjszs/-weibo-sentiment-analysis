@@ -3,7 +3,7 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（#31/#32/#33/#34/#35/#36/#37 于 2026-10-01T15:4x 关闭）
+- 任务：无——全部 open issue 已关闭（#31~#38 于 2026-10-01T17:0x 关闭）
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
@@ -22,6 +22,11 @@
   require_jwt 即此写法）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
 - 本会话累计已关闭：#30/#19/#20/#15/#21/#16/#28/#31/#32/#33/#34（全部推送 main）
+- **user 表列名已统一 snake_case（#38）**：`createTime` → `create_time`（幂等迁移
+  f6a7b8c9d0e1，inspector 检查：全新库跳过/旧库真改名）。#16 留白的另一半
+  「password String(100) 拓宽」**不成立**（已是 String(100)，bcrypt 60 字符足够）。
+- **新增幂等迁移的标准写法**（沿用 b2d5a3f9c0e1/f6a7b8c9d0e1）：`sa.inspect`
+  查表/列是否存在再操作，全新库（冻结 SQL 已建好新结构）必须跳过。
 - 前端测试现 10 文件 73 个（auth-session 已纳入）
 - **前端 lint 告警已清零并加零告警门禁（#37）**：lint 脚本带 `--max-warnings 0`；
   清理内容 = 未使用 import/解构项/catch 绑定（94）+ v-for 模板遮蔽（2）+ prop 缺省（7）。
@@ -65,6 +70,9 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #38 关闭：user.createTime → create_time（幂等迁移 f6a7b8c9d0e1 + ORM/裸 SQL/
+  冻结 SQL/API.md/test_db 共 6 处同步）；迁移两路径实测，fast gate 1261、
+  integration 189（1 commit）
 - #37 关闭：前端 lint 告警 103→0 并加 `--max-warnings 0` 门禁（38 文件，+89/-117）；
   lint 0/0、73 测试、build 全过（1 commit）
 - #36 关闭：给 `docs/项目评估与规划.md`（2026-07-30 快照）加"历史快照·勿照单直取"

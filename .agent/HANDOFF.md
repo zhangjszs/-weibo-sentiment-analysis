@@ -5,81 +5,75 @@
 
 ## 上一棒是谁
 
-Agent `DeepSeek-V4.1-Flash-20261001T153535Z`（DeepSeek-V4.1-Flash），
-UTC 2026-10-01T15:35 ~ 15:5x。第九棒，本会话一轮：#37。
+Agent `DeepSeek-V4.1-Flash-20261001T163621Z`（DeepSeek-V4.1-Flash），
+UTC 2026-10-01T16:36 ~ 17:1x。第十棒，本会话一轮：#38。
 
 ## 本会话做了什么（一个 issue 关闭）
 
 | Issue | 内容 | 要点 |
 |-------|------|------|
-| #37 | 前端 lint 不拦 warning，103 条告警可无限增长 | 告警清零 + `--max-warnings 0` 门禁 |
+| #38 | user.createTime 驼峰统一为 create_time（收 #16 留白） | 幂等迁移 + 6 处同步；#16 另一半留白（password 拓宽）澄清为不成立 |
 
-## 本轮的改动
+## 本轮的改动（commit 3c9bf26）
 
-- **lint 门禁**：`frontend/package.json` 的 `lint` 脚本加 `--max-warnings 0`，
-  告警从此计入门禁（此前 CI 只拦 error，warning 可无限增长）。
-- **告警清零（103 → 0，38 文件，+89/-117）**：
-  - `no-unused-vars` 94 条：删未使用 import、解构项、catch 绑定、死函数
-    （如 useBigScreen 的 `loadRegionData/loadTrendData` 死代码）。
-  - `vue/no-template-shadow` 2 条：Sidebar 两个 `v-for="route in ..."` 改名 `item`。
-  - `vue/require-default-prop` 7 条：PredictInput/PredictResult 的 Object/Function
-    prop 补 `default`。
+- **新增幂等迁移 `f6a7b8c9d0e1`**：仅当 `createTime` 存在且 `create_time` 不存在时
+  `ALTER TABLE user RENAME COLUMN`（`sa.inspect` 跨 MySQL/SQLite）。
+  - CI 全新库由新版冻结 SQL 建表（已是 create_time）→ **跳过**；
+  - 旧部署库 → 真改名；空库跑链 → 跳过。downgrade 反向幂等。
+- ORM 去掉 `Column("createTime", ...)` 映射；`startup_service` INSERT、
+  `user.py` SELECT（顺带删 `AS` 别名）两处裸 SQL 同步；
+  冻结 SQL `init_database.sql`（建表+INSERT）、`docs/API.md` 示例、
+  `tests/test_db.py` 打印键名同步。
+- **澄清 #16 留白**：「password String(100) 拓宽」不成立——已是 String(100)
+  （bcrypt 60 字符足够），DB 列 varchar(255)。#16 留白至此全部收口。
 
-**验证**：`npm run lint` 0 error / 0 warning（且以 0 为门禁）；73 测试全过；
-`vite build` 成功。后端未动。
-
-## 本轮踩的坑（重要！）
-
-1. **改 `v-for` 循环变量必须全量改名**：Sidebar 第二循环我只改了声明与部分引用，
-   漏改 `{{ route.meta.title }}` —— 而 `route` 恰好是外层 `useRoute()` 的当前路由，
-   于是模板会静默显示错误标题。**lint（0/0）、build、73 个测试全都发现不了**，
-   是逐行复核 diff 才抓到的。教训：重命名类改动必须 review 全部引用，diff 逐行看。
-2. **`catch (error)` 数量 ≠ unused 数量**：本会话曾在 useTable.js 误把"用了 error"
-   的 catch 也改成 `catch {}`，立刻被 eslint 报 `no-undef`。救场靠的是**改完立即
-   跑 lint 看错误数**，而不是相信自己的计数。
-3. **eslint 的 vue 插件会追踪模板里的变量使用**：`<script setup>` 中仅模板使用的
-   变量不会被 `no-unused-vars` 标记，因此"被标记 unused"即可安全删除；
-   但**部分重命名不在此保护范围内**（见坑 1）。
+**验证**：
+- 迁移两路径实测（临时 SQLite）：legacy 库真改名 / 全新库跳过，链跑到 head；
+- fast gate **1261 passed**；integration 本地 **189 passed**；
+- CI run 36896365335 三 job 全绿（integration 在 MySQL 上实测
+  冻结 SQL + 迁移跳过路径）；Security Scan 36896365424 ✅。
 
 ## 留白项（有意不做，供下一棒/人工决策）
 
-1. **integration job 无覆盖率**（沿用上一棒留白）：覆盖率门禁只加在 backend-fast。
-2. **pip-audit 未阻断**（见 #32）：依赖 CVE 门禁属独立策略。
+1. **integration job 无覆盖率**：覆盖率门禁只加在 backend-fast；integration 单独
+   覆盖率会低于全局阈值，需先定策略（独立阈值或仅报告）。
+2. **pip-audit 未阻断**（见 #32）：依赖 CVE 门禁属独立策略，须先清点 CVE 白名单。
 3. **safety 需仓库配置 `SAFETY_API_KEY`** 才能真跑（人工操作 secret）。
-4. 更早遗留（功能类，较重）：#15/#16/#20 的验证码、user.py `String(100)`/`createTime`
-   统一、WS 刷新后取 token、nginx `/socket.io` 握手 101（需 Docker）。
-5. **前端仍无 TypeScript / 组件测试**（评估文档 22 条）：属大工程，未动。
-6. 本轮删除的 `loadRegionData/loadTrendData` 是死代码（从未被调用）——若 BigScreen
-   本应加载真实地区/趋势数据，那是**功能缺失**（评估文档 8 条"前端假数据"），
-   需产品决策，不是清理能解决的。
+4. 功能类（重）：验证码（需产品决策）、WS 刷新后取 token（需先核实是否真缺——
+   `getAuthToken()` 兜底存在，可能已不成立）、nginx `/socket.io` 握手 101（需 Docker）。
+5. `docs/database/new.sql`、`user.sql` 等**历史归档 SQL 仍是旧列名**——属归档，
+   未改；若确认无价值可整目录清理（需人工拍板）。
+6. 前端无 TypeScript / 组件测试（评估文档 22 条）：大工程。
 
 ## 坑与经验（重要，接力者必读）
 
-1. **重命名类改动：diff 逐行复核**，自动化检查（lint/build/test）抓不住"改了声明
-   漏改引用但名字仍存在"的错。
-2. **`docs/项目评估与规划.md` 已加横幅**（#36），动手前先读横幅，条目多为历史状态。
-3. **CI 与 Security Scan 是两个独立 workflow**，核对分别看。
-4. **本地 pytest 必带 `-p no:launch_testing -p no:launch_ros`**（见 ENV.md）；
-   **勿写进 `pytest.ini`**。
-5. **不要盲跑 `black`**：本地 black 会重排 122 个文件，CI 只跑 `ruff check`。
-6. 覆盖率阈值唯一真相在 `pyproject.toml`（`fail_under=60`），CI 只传 `--cov`。
-7. bandit 多行 f-string 的 nosec 放**闭合三引号那行**。
-8. `commit fix: #N` 自动关 issue；`chore:`/`docs:`/`refactor:` 不是关闭关键字，
-   需另加 `Closes #N`。
-9. 后台 `gh run watch` 偶发误报非 0 —— 以 `gh run view` 的 conclusion 为准。
+1. **改 schema 列名必须三层同步**：ORM、裸 SQL（grep `git grep` 全仓找）、
+   冻结 SQL `init_database.sql`；前端可能也引用（本次幸而零引用）。
+2. **幂等迁移是本仓库铁律**：CI 每次都是「冻结 SQL 建全新库 → alembic upgrade head」，
+   迁移若不跳过已新结构必然红。写法见 `f6a7b8c9d0e1` / `b2d5a3f9c0e1`。
+3. **`pytest ... | tail -N` 会截掉关键的 "N passed" 汇总行**（warnings 块很长），
+   判断测试结果要看完整尾部或 `grep -E "passed|failed"`。
+4. **`pytest | tail` 管道的退出码是 tail 的**，`&&` 链不会因测试失败而中断——
+   判断成败必须看文本，不能信命令链是否走完。
+5. 重命名类改动：diff 逐行复核（上一棒 Sidebar 教训仍有效）。
+6. 其余：CI/Security Scan 是两个 workflow；本地 pytest 带
+   `-p no:launch_testing -p no:launch_ros`；勿盲跑 black；bandit nosec 放闭合行；
+   `refactor:`/`chore:`/`docs:` 不自动关 issue（需 `Closes #N`）；
+   `gh run watch` 偶发误报，以 `gh run view` 为准。
 
 ## 下一步建议
 
 - 无待办 issue。下一棒按协议第七节主动发现（先查重）。
-- 候选：给 integration job 加覆盖率；或功能类遗留（user.py schema 统一等）。
-- 三条门禁现已齐：后端覆盖率 60%、bandit HIGH、前端 lint 零告警——保持住。
+- 候选：requirements 版本固定策略（评估文档 21 条，需先定 `==` vs `~=` 与
+  兼容性验证方式）；或 integration 覆盖率策略（见留白 1）。
+- 三条门禁保持：后端覆盖率 ≥60、bandit HIGH 阻断、前端 lint 零告警。
 
 ## 环境备注
 
-- 后端 `.venv` 齐全（Python 3.12）；fast gate 与 integration 本地均可跑
-  （integration 本地实测 189 passed / 5 skipped）。
+- 后端 `.venv` 齐全（Python 3.12）；fast gate 1261 / integration 189 本地均可跑。
 - fast gate：`.venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros -q --maxfail=1`
-- 前端：mise node 22 入 PATH；lint 现为 0/0 门禁；73 测试；build ~8s。
+- 迁移本地验证法：`TEST_DATABASE_URL=sqlite:////tmp/x.db .venv/bin/python -m alembic stamp <rev>` 后 `upgrade head`（env.py 已尊重 TEST_DATABASE_URL）。
+- 前端：mise node 22 入 PATH；lint 0/0 门禁；73 测试。
 - 本地有真实 `.env`（含密钥，**勿提交**）。
 - gh 可用（账号 zhangjszs）；bandit/pytest-cov 已装在 `.venv`。
 - 本地分支 `wip/20260930T154700Z`（未推送）仍在，请人工确认去留。
