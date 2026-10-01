@@ -5,48 +5,38 @@
 
 ## 上一棒是谁
 
-Agent `DeepSeek-V4.1-Flash-20261001T143939Z`（DeepSeek-V4.1-Flash），
-UTC 2026-10-01T14:39 ~ 14:5x。第六棒，本会话一轮：#34。
+Agent `DeepSeek-V4.1-Flash-20261001T145524Z`（DeepSeek-V4.1-Flash），
+UTC 2026-10-01T14:55 ~ 15:0x。第七棒，本会话一轮：#35。
 
 ## 本会话做了什么（一个 issue 关闭）
 
 | Issue | 内容 | 要点 |
 |-------|------|------|
-| #34 | 覆盖率门禁是死配置 | CI backend-fast 加 `--cov=src`，激活 pyproject 的 `fail_under=50` |
+| #35 | 覆盖率阈值 50%→60% | 门禁更贴近现状、更早发现退化；阈值仍单源于 pyproject |
 
-## 本轮的改动（commit 6c11673，仅 `.github/workflows/ci.yml`）
+## 本轮的改动（commit 3276170，仅 `pyproject.toml`）
 
-- backend-fast 测试步骤：`pytest -m "unit or api" -q --maxfail=1`
-  → 追加 `--cov=src --cov-report=term-missing`。
-- 效果：`pyproject.toml` 的 `[tool.coverage.report] fail_under = 50` 从"死配置"
-  变为真实门禁（此前 CI 从不传 `--cov`，覆盖率根本不生成）。
+- `[tool.coverage.report] fail_under` 由 **50 → 60**。
+- 保留 ~5% 缓冲（实测 65%），CI 命令无需改动（阈值读取自 pyproject）。
 
 **验证**：
-- 本地全量 unit+api：覆盖率 **65.11%**，退出 0；单文件低覆盖时 pytest-cov 报
-  `FAIL Required test coverage of 50.0% not reached` 退出 1（证明门禁生效）。
-- CI run 36879311174 ✅：日志确认 `Required test coverage of 50.0% reached.
-  Total coverage: 65.22%`。Security Scan run 36879311203 ✅。
+- 本地同 CI 命令：`Required test coverage of 60.0% reached. Total coverage: 65.11%`，退出 0。
+- CI run 36880776590 ✅：日志确认 `Required test coverage of 60.0% reached.
+  Total coverage: 65.22%`。Security Scan run 36880776716 ✅。
 
-## 重要：`docs/项目评估与规划.md` 是过时快照，不要照单直取
+## 覆盖率门禁现状（#34 + #35 累计）
 
-本棒的 HANDOFF/上一棒曾建议清理该文档的低优先项 25/26/28，**现场核实全部已不成立**：
-
-- 25. `list/` 目录误建 venv —— 目录**已不存在**
-- 26. 双日志目录 —— `logs/` 已无，仅 `src/logs/`（且被 gitignore，属运行产物）
-- 28. PyMySQL 主依赖 —— `src` 无任何直接 `import pymysql`，经 SQLAlchemy URL 使用
-- 7. `pickle.load` —— 全仓无命中
-- 9. `init_database.sql` 含 DROP DATABASE + 明文密码 —— 该文件是 **schema 唯一真相**
-  （CI `sed 's/`wb`/`weibo_test`/'` 后建库、compose 挂载初始化），密码已 bcrypt 哈希
-  （注释里的明文仅供开发演示）；属**已缓解的设计**，非待修缺陷。
-
-**教训**：该文档是历史时点评估，动手前必须 `git grep`/`ls` 现场核实。
+- `ci.yml` backend-fast：`pytest -m "unit or api" -q --maxfail=1 --cov=src --cov-report=term-missing`
+- 阈值：`pyproject.toml` `fail_under = 60`（唯一真相）
+- 覆盖率：本地 ~65.1% / CI ~65.2%
 
 ## 留白项（有意不做，供下一棒/人工决策）
 
-1. **覆盖率阈值只有 50%，实际 65%**：可考虑上调 fail_under（如 60%）作为更紧的门禁，
-   但需评估向后兼容，建议单独立项。
-2. **integration job 无覆盖率**：只给 backend-fast（unit+api）加了门禁；是否需要给
-   integration 也生成覆盖率，属可选。
+1. **`docs/项目评估与规划.md` 是过时快照，建议加"历史文档"横幅**：其低优先项
+   25/26/28、7、16、9 等多已被处理或已不成立，但文档本身无任何提示，屡屡
+   误导接力者（上一棒即被 HANDOFF 的该建议带偏）。给它加一条头部说明
+   （"本文为某时点评估，已被多轮修复取代，现状以代码/CI 为准"）属低风险改进。
+2. **integration job 无覆盖率**：门禁只加在 backend-fast。
 3. **pip-audit 未阻断**（见 #32）：依赖 CVE 门禁属独立策略。
 4. **safety 需仓库配置 `SAFETY_API_KEY`** 才能真跑（人工操作）。
 5. 更早遗留：#15/#16/#20 的验证码、user.py `String(100)`/`createTime`、
@@ -54,26 +44,25 @@ UTC 2026-10-01T14:39 ~ 14:5x。第六棒，本会话一轮：#34。
 
 ## 坑与经验（重要，接力者必读）
 
-1. **`docs/项目评估与规划.md` 是快照，会误导**——见上节。
+1. **`docs/项目评估与规划.md` 是快照，会误导**——见留白 1。
 2. **CI 与 Security Scan 是两个独立 workflow**：核对分别用 `gh run list` 与
    `gh run list --workflow=security-scan.yml`。
 3. **本地 pytest 必带 `-p no:launch_testing -p no:launch_ros`**（本机 ROS 插件
    collection 崩溃），详见 `.agent/ENV.md`；**勿写进 `pytest.ini`**。
 4. **不要盲跑 `black`**：本地 black 会重排 122 个文件，CI 只跑 `ruff check`。
-5. **pytest-cov 会读取 pyproject 的 `fail_under`**：只要传 `--cov`，阈值自动生效，
-   无需在 CI 重复写 `--cov-fail-under`。
+5. **覆盖率阈值唯一真相在 `pyproject.toml`**：CI 只传 `--cov`，不要另写
+   `--cov-fail-under`（会双源漂移）。
 6. bandit 多行 f-string 的 nosec 放**闭合三引号那行**（写在起始行无效）。
 7. `commit fix: #N` 自动关 issue；`chore:` 不是关闭关键字，需另加 `Closes #N`。
 8. 后台 `gh run watch` 偶发对成功的 run 返回非 0 —— **以 `gh run view` 的
-   conclusion 为准**（本会话遇到过）。
+   conclusion 为准**（本会话两次遇到）。
 
 ## 下一步建议
 
 - 无待办 issue。下一棒按协议第七节主动发现（先查重）。
-- **首选候选**：评估把覆盖率阈值从 50% 上调到更贴近现状（65%）的值，
-  作为更紧的门禁（见留白 1）；需先决定目标阈值。
-- 也可复核 CI 覆盖率门禁稳定性（连续几次 push 是否稳定绿）。
-- 功能类候选（更重）：user.py `String(100)`/`createTime` 统一、WS 刷新取 token。
+- **首选候选**：给 `docs/项目评估与规划.md` 加"历史快照"横幅（见留白 1）——
+  低风险、直接减少后续接力被误导。
+- 也可评估给 integration job 加覆盖率，或继续功能类遗留（user.py schema 统一等）。
 
 ## 环境备注
 

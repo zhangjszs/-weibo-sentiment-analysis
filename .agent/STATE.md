@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（#31/#32/#33/#34 于 2026-10-01T14:4x 关闭）
+- 任务：无——全部 open issue 已关闭（#31/#32/#33/#34/#35 于 2026-10-01T14:5x 关闭）
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 绿；Security Scan 绿（#31 修复）；
-  **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34 后 CI 带覆盖率门禁（fail_under=50，实测 65%）**。
+  **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65%）**。
 
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
@@ -35,7 +35,8 @@
 - **CI 覆盖率门禁已激活（#34）**：ci.yml 的 backend-fast 加了
   `--cov=src --cov-report=term-missing`，pyproject 的 `fail_under=50` 才真正生效
   （此前 CI 从不传 `--cov`，是死配置）。实测全量 unit+api 覆盖率 **65.11%**。
-  pytest-cov 会读取 pyproject 的 fail_under（已验证）。
+  pytest-cov 会读取 pyproject 的 fail_under（已验证）。**#35 已把阈值由 50→60**
+  （实际 65%，留 ~5% 缓冲）；阈值唯一真相在 pyproject，CI 不同步。
 - **`docs/项目评估与规划.md` 是时点快照，多处已过时**：其低优先项 25（`list/`
   误建 venv）、26（双日志目录 `logs/`：现仅 `src/logs/` 且 gitignore）、
   28（PyMySQL：src 无直接 import）、7（pickle.load）均**已不成立**；
@@ -57,6 +58,8 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #35 关闭：覆盖率阈值 fail_under 50→60（实际 65%，留缓冲），仍单源于 pyproject；
+  本地同命令实测 `Required test coverage of 60.0% reached … 65.11%` 通过（1 commit）
 - #34 关闭：CI backend-fast 加 `--cov=src --cov-report=term-missing`，激活
   pyproject 的 fail_under=50（此前死配置）；实测覆盖率 65.11% > 50 通过（1 commit）
 - #33 关闭：删除冗余 `requirements/requirements.audit.txt`（全仓零引用、内容与
