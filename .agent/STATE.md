@@ -3,7 +3,7 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（#31/#32/#33/#34/#35 于 2026-10-01T14:5x 关闭）
+- 任务：无——全部 open issue 已关闭（#31/#32/#33/#34/#35/#36 于 2026-10-01T15:1x 关闭）
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
@@ -40,7 +40,8 @@
 - **`docs/项目评估与规划.md` 是时点快照，多处已过时**：其低优先项 25（`list/`
   误建 venv）、26（双日志目录 `logs/`：现仅 `src/logs/` 且 gitignore）、
   28（PyMySQL：src 无直接 import）、7（pickle.load）均**已不成立**；
-  动手前务必现场核实，勿照单直取（本棒曾被 HANDOFF 的该建议误导）。
+  动手前务必现场核实，勿照单直取（本会话曾被其误导）。#36 已给该文档顶部加
+  **"历史快照 · 勿照单直取"横幅**，后续读者应在动手前先看横幅。
 - 本机 shell 源过 `/opt/ros/*/setup.bash`，ROS launch_testing 作为 pytest 插件
   自动加载且 `osrf_pycommon` 缺失 → collection 崩溃。本地跑 pytest 必带
   `-p no:launch_testing -p no:launch_ros`（CI 无此问题，勿写进 pytest.ini）
@@ -58,6 +59,8 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #36 关闭：给 `docs/项目评估与规划.md`（2026-07-30 快照）加"历史快照·勿照单直取"
+  横幅，列已核实过时条目作示例（1 commit，纯文档）
 - #35 关闭：覆盖率阈值 fail_under 50→60（实际 65%，留缓冲），仍单源于 pyproject；
   本地同命令实测 `Required test coverage of 60.0% reached … 65.11%` 通过（1 commit）
 - #34 关闭：CI backend-fast 加 `--cov=src --cov-report=term-missing`，激活
