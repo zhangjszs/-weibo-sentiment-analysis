@@ -11,7 +11,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(50), unique=True, nullable=False)
     password = Column(String(100), nullable=False)
-    create_time = Column("createTime", DateTime, default=datetime.datetime.utcnow)
+    create_time = Column(DateTime, default=datetime.datetime.utcnow)
     nickname = Column(String(50), default=None)
     email = Column(String(100), default=None)
     bio = Column(String(200), default=None)

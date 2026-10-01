@@ -192,7 +192,7 @@ def get_user_info():
 
     try:
         users = querys(
-            "SELECT id, username, createTime AS create_time FROM user WHERE id = %s",
+            "SELECT id, username, create_time FROM user WHERE id = %s",
             [user["user_id"]],
             "select",
         )

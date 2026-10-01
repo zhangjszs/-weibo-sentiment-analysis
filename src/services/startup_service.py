@@ -142,7 +142,7 @@ def ensure_demo_admin() -> dict[str, Any]:
 
         if not user_rows:
             querys(
-                "INSERT INTO user (username, password, createTime) VALUES (%s, %s, NOW())",
+                "INSERT INTO user (username, password, create_time) VALUES (%s, %s, NOW())",
                 [username, hashed_password],
                 "insert",
             )

@@ -22,7 +22,7 @@ CREATE TABLE `user` (
     `id` int(11) NOT NULL AUTO_INCREMENT,
     `username` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `password` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '生产环境应使用哈希值',
-    `createTime` date DEFAULT NULL,
+    `create_time` date DEFAULT NULL,
     `is_admin` tinyint(1) DEFAULT 0 COMMENT '是否为管理员: 0-否, 1-是',
     `nickname` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户昵称',
     `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '邮箱',
@@ -215,7 +215,7 @@ CREATE TABLE `alerts` (
 --   Edward / 123123
 --   EdwardD / 123123
 --   test_user / 123456
-INSERT INTO `user` (`id`, `username`, `password`, `createTime`, `is_admin`, `nickname`, `email`) VALUES
+INSERT INTO `user` (`id`, `username`, `password`, `create_time`, `is_admin`, `nickname`, `email`) VALUES
 (1, 'admin', '$2b$12$2H4lUDRAjOFzkzLjP80ArOF3ZtfFBTAPb4BKm7c/pBwtFhej4OCF6', CURDATE(), 1, '系统管理员', 'admin@example.com'),
 (2, 'Edward', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-03-06', 0, 'Edward', 'edward@example.com'),
 (3, 'EdwardD', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-08-08', 0, 'EdwardD', 'edwardd@example.com'),

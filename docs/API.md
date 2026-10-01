@@ -59,7 +59,7 @@ Body:
   "msg": "登录成功",
   "data": {
     "token": "<jwt>",
-    "user": { "id": 1, "username": "test", "createTime": "2025-01-01", "is_admin": false }
+    "user": { "id": 1, "username": "test", "create_time": "2025-01-01", "is_admin": false }
   },
   "timestamp": "..."
 }

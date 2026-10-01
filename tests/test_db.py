@@ -70,7 +70,7 @@ def test_database(db_connection):
             print(f"   用户{i + 1}:")
             print(f"     ID: {user.get('id')}")
             print(f"     用户名: '{user.get('username', '')}'")
-            print(f"     创建时间: {user.get('createTime')}")
+            print(f"     创建时间: {user.get('create_time')}")
             print()
 
         # 测试特定用户查询
