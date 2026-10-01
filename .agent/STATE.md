@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（#31/#32/#33 于 2026-10-01T14:3x 关闭）
+- 任务：无——全部 open issue 已关闭（#31/#32/#33/#34 于 2026-10-01T14:4x 关闭）
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 绿；Security Scan 绿（#31 修复）；
-  **#32 后带 Bandit HIGH/CRITICAL 门禁**（run 36874452700 验证：门禁步骤实跑通过）。
+  **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34 后 CI 带覆盖率门禁（fail_under=50，实测 65%）**。
 
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
@@ -20,7 +20,7 @@
 - 模块级别名导出会被 ruff F401 --fix 删除，需配 `__all__`（authz.py 的
   require_jwt 即此写法）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
-- 本会话累计：#30/#19/#20/#15/#21/#16/#28 七个 issue 修复关闭，全部推送 main
+- 本会话累计已关闭：#30/#19/#20/#15/#21/#16/#28/#31/#32/#33/#34（全部推送 main）
 - 前端测试现 10 文件 73 个（auth-session 已纳入）
 - **Security Scan 此前从未绿过**：main 上连续 20+ 次全红（截止 2026-10-01T01:46Z）。
   曾误记为"连续六次转绿"，实为混淆 CI 与 Security Scan 两个 workflow。根因：
@@ -32,6 +32,14 @@
 - `requirements/requirements.audit.txt` 已于 #33 删除（全仓无引用 + 内容漂移）；
   README.md / docs/LOCAL_DEPLOYMENT.md 目录树同步移除该条目。现 `requirements/`
   只剩 `requirements.txt` + `requirements-dev.txt`。
+- **CI 覆盖率门禁已激活（#34）**：ci.yml 的 backend-fast 加了
+  `--cov=src --cov-report=term-missing`，pyproject 的 `fail_under=50` 才真正生效
+  （此前 CI 从不传 `--cov`，是死配置）。实测全量 unit+api 覆盖率 **65.11%**。
+  pytest-cov 会读取 pyproject 的 fail_under（已验证）。
+- **`docs/项目评估与规划.md` 是时点快照，多处已过时**：其低优先项 25（`list/`
+  误建 venv）、26（双日志目录 `logs/`：现仅 `src/logs/` 且 gitignore）、
+  28（PyMySQL：src 无直接 import）、7（pickle.load）均**已不成立**；
+  动手前务必现场核实，勿照单直取（本棒曾被 HANDOFF 的该建议误导）。
 - 本机 shell 源过 `/opt/ros/*/setup.bash`，ROS launch_testing 作为 pytest 插件
   自动加载且 `osrf_pycommon` 缺失 → collection 崩溃。本地跑 pytest 必带
   `-p no:launch_testing -p no:launch_ros`（CI 无此问题，勿写进 pytest.ini）
@@ -49,6 +57,8 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #34 关闭：CI backend-fast 加 `--cov=src --cov-report=term-missing`，激活
+  pyproject 的 fail_under=50（此前死配置）；实测覆盖率 65.11% > 50 通过（1 commit）
 - #33 关闭：删除冗余 `requirements/requirements.audit.txt`（全仓零引用、内容与
   requirements.txt 漂移），README/LOCAL_DEPLOYMENT 目录树同步移除（1 commit）
 - #32 关闭：Security Scan 加 Bandit HIGH/CRITICAL 门禁步骤（`-lll`，实测
