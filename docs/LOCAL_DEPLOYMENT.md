@@ -732,8 +732,7 @@ python -O src/app.py
 ├── .env                       # 环境变量配置
 ├── requirements/              # Python依赖目录
 │   ├── requirements.txt
-│   ├── requirements-dev.txt
-│   └── requirements.audit.txt
+│   └── requirements-dev.txt
 └── docs/REPAIR_PLAN.md       # 修复计划
 ```
 

@@ -112,8 +112,7 @@
 ├── logs/                       # 日志目录
 ├── requirements/               # Python 依赖
 │   ├── requirements.txt        # 运行时依赖
-│   ├── requirements-dev.txt    # 开发依赖（测试、lint）
-│   └── requirements.audit.txt  # 审计依赖
+│   └── requirements-dev.txt    # 开发依赖（测试、lint）
 ├── run.py                      # 启动脚本
 ├── pyproject.toml              # 工具配置（pytest、ruff、mypy）
 ├── .editorconfig               # 编辑器配置
