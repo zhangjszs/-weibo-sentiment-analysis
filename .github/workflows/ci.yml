@@ -43,7 +43,8 @@ jobs:
           ALLOWED_ORIGINS: http://localhost:3000,http://127.0.0.1:3000
           ADMIN_USERS: admin
         run: |
-          pytest -m "unit or api" -q --maxfail=1
+          # --cov 激活 pyproject.toml 的覆盖率门禁（fail_under=50 为唯一真相）
+          pytest -m "unit or api" -q --maxfail=1 --cov=src --cov-report=term-missing
 
   # --- Frontend gate: lint + build ---
   frontend-fast:
