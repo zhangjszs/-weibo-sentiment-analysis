@@ -3,11 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（截至 2026-10-01T05:5x）
+- 任务：无——全部 open issue 已关闭（#31 于 2026-10-01T12:1x 关闭）
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 连续六次全绿。
+- 无已知阻塞。CI（backend-fast / frontend-fast / integration）绿；
+  Security Scan 于本轮 #31 修复后应首次转绿（待下一棒核对首轮结果）。
 
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
@@ -21,7 +22,13 @@
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
 - 本会话累计：#30/#19/#20/#15/#21/#16/#28 七个 issue 修复关闭，全部推送 main
 - 前端测试现 10 文件 73 个（auth-session 已纳入）
-- Security Scan 连续六次转绿——"每次都红"的旧记录已过时
+- **Security Scan 此前从未绿过**：main 上连续 20+ 次全红（截止 2026-10-01T01:46Z）。
+  曾误记为"连续六次转绿"，实为混淆 CI 与 Security Scan 两个 workflow。根因：
+  9536e2b（traeagent）删掉了 d36906b 加的 `|| true`，任一扫描有发现即 step 中止。
+  #31 已修复（恢复 `|| true` + bandit 发现清零），下一棒核对首轮绿否。
+- 本机 shell 源过 `/opt/ros/*/setup.bash`，ROS launch_testing 作为 pytest 插件
+  自动加载且 `osrf_pycommon` 缺失 → collection 崩溃。本地跑 pytest 必带
+  `-p no:launch_testing -p no:launch_ros`（CI 无此问题，勿写进 pytest.ini）
 - 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
   `vitest.config.js` exclude 了 auth-session.test.js
 - mock axios 时 `create` 返回值必须带 `interceptors` 桩——同模块图里
@@ -36,6 +43,9 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #31 关闭：Security Scan 恢复 `|| true`（回归修复）、6 处 hashlib.md5 加
+  usedforsecurity=False、B608/B615/B105 加 #nosec、新增 .bandit 跳过 B311/B110，
+  bandit 报告 111→0；bandit 本地 0 发现，fast gate 1261 passed（1 commit）
 - #28 关闭：run_migration.py 改走 alembic（原裸 pymysql 绕迁移链）、
   alembic/env.py 尊重 TEST_DATABASE_URL（迁移链 SQLite 实测跑到 head）、
   check_db/check_env 对齐 Config、deploy 注释、alembic.ini 占位清空、
