@@ -131,9 +131,6 @@ async function onSearch(value) {
       ? 'normal'
       : 'empty'
 
-    if (meta.limitations?.length > 0) {
-      console.info('Analysis limitations:', meta.limitations)
-    }
   } catch (err) {
     // HTTP/网络错误已由 request.js 拦截器全局 toast，这里不再重复弹
     console.error('分析请求失败:', err)

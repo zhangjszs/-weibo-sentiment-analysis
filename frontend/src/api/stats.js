@@ -16,14 +16,6 @@ export function getTodayStats() {
   })
 }
 
-export function refreshSpiderData(data = {}) {
-  return request({
-    url: '/api/spider/refresh',
-    method: 'post',
-    data,
-    loadingOptions: { text: '正在刷新数据...' },
-  })
-}
 
 export function getHotWords(hotWord = '') {
   return request({
@@ -89,13 +81,6 @@ export function getContentCloudData(params = {}) {
 }
 
 // 清空缓存
-export function clearCache() {
-  return request({
-    url: '/api/clearCache',
-    method: 'post',
-    loadingOptions: { text: '清空缓存...' },
-  })
-}
 
 // ========== 数据大屏 API ==========
 

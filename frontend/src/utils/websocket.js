@@ -27,7 +27,6 @@ class WebSocketClient {
 
   connect(token) {
     if (this.socket) {
-      console.log('WebSocket已连接，跳过连接')
       if (token && !this.authenticated) {
         this.authenticate(token)
       }
@@ -48,7 +47,6 @@ class WebSocketClient {
       })
 
       this.socket.on('connect', () => {
-        console.log('WebSocket 连接成功')
         this.connected.value = true
         this.reconnectAttempts = 0
 
@@ -58,7 +56,6 @@ class WebSocketClient {
       })
 
       this.socket.on('disconnect', (reason) => {
-        console.log('WebSocket 断开连接:', reason)
         this.connected.value = false
         this.authenticated = false
         this.scheduleReconnect(authToken)
@@ -69,16 +66,11 @@ class WebSocketClient {
         this.scheduleReconnect(authToken)
       })
 
-      this.socket.on('message', (data) => {
-        this.handleMessage(data)
-      })
 
       this.socket.on('connected', (data) => {
-        console.log('WebSocket 已连接:', data)
       })
 
       this.socket.on('auth_success', (data) => {
-        console.log('WebSocket 认证成功:', data)
         this.authenticated = true
       })
 
@@ -87,11 +79,9 @@ class WebSocketClient {
       })
 
       this.socket.on('subscribed', (data) => {
-        console.log('WebSocket 订阅成功:', data)
       })
 
       this.socket.on('unsubscribed', (data) => {
-        console.log('WebSocket 取消订阅:', data)
       })
 
       this.socket.on('subscribe_error', (data) => {
@@ -99,7 +89,6 @@ class WebSocketClient {
       })
 
       this.socket.on('pong', (data) => {
-        console.debug('WebSocket Pong:', data)
       })
     } catch (error) {
       console.error('WebSocket 连接异常:', error)
@@ -168,9 +157,6 @@ class WebSocketClient {
     }
   }
 
-  handleMessage(data) {
-    console.debug('收到WebSocket消息:', data)
-  }
 
   scheduleReconnect(token) {
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
@@ -187,10 +173,6 @@ class WebSocketClient {
     // （惊群），抖动把重连打散（#20）
     const exponential = Math.min(RECONNECT_DELAY * 2 ** (this.reconnectAttempts - 1), MAX_RECONNECT_DELAY)
     const delay = exponential * (0.5 + Math.random())
-
-    console.log(
-      `WebSocket 约${Math.round(delay / 1000)}秒后尝试重连 (${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`
-    )
 
     this.reconnectTimer = setTimeout(() => {
       this.disconnect()

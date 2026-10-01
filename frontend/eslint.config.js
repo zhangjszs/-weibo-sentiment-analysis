@@ -17,8 +17,8 @@ export default [
       'vue/multi-word-component-names': 'off',
       // 未使用变量设为警告，逐步清理
       'no-unused-vars': 'warn',
-      // console 语句设为警告，生产环境应移除调试信息
-      'no-console': 'warn',
+      // 只放行 warn/error 诊断输出；log/debug/info 会被警告（#21 收紧）
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       // 禁止使用已废弃的 /getAllData 前缀（已收敛至 /api/*，见 ADR 0002）
       'no-restricted-syntax': [
         'error',
