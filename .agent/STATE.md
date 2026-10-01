@@ -3,8 +3,8 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#16 [Low] 后端死代码与文档漂移（AGENTS/CONTEXT/README/目录树）
-- 状态：待办（下一棒从这里接）
+- 任务：#28 [Low] scripts/alembic 杂项（绕开迁移、弱校验、TEST_DATABASE_URL 被无视）
+- 状态：待办（本会话最后一轮从这里接）
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 连续六次全绿。
@@ -36,6 +36,11 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #16 关闭：删 platform_collector.py 单数版+测试、_create_task_queues、
+  utils.metrics 死路径、rate_limiter __main__、_api_cache；print→logger；
+  AGENTS/README/CONTEXT 漂移校正（307 别名、密钥隔离要求、情感链路
+  mode 路由、接口表 /api/*、CONTEXT 补 Architecture 段）——2 commits，
+  fast gate 1261 / CI 绿；String(100) 拓宽与验证码均留白待立项
 - #21 关闭：删死依赖 5 个（socket.io-client/@fontsource 因 #20 已在用，
   保留）、死代码（locales/、sentiment.js、3 个 composable、v-lazy、
   propagation/stats 无消费方函数）、lint 去 --fix 纳入 tests、no-console
