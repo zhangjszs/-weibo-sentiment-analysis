@@ -7,7 +7,6 @@
 
 import hashlib
 import logging
-import threading
 from collections import defaultdict
 from datetime import datetime
 from urllib.parse import unquote
@@ -28,8 +27,6 @@ logger = logging.getLogger(__name__)
 db = Blueprint("data", __name__, url_prefix="/api")
 
 # API 响应缓存（简单内存缓存）
-_api_cache = {}
-_cache_lock = threading.Lock()
 
 # 缓存超时时间配置（秒）
 CACHE_TIMEOUT = {

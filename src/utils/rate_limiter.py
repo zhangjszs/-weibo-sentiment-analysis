@@ -362,21 +362,3 @@ def clear_rate_limit_stats():
     with _global_limiter.lock:
         _global_limiter.requests.clear()
 
-
-if __name__ == "__main__":
-    print("API限流模块演示:")
-    print("=" * 50)
-
-    limiter = RateLimiter()
-
-    for i in range(12):
-        allowed, remaining, reset_time = limiter.is_allowed("test_key", 10, 60)
-        print(f"请求 {i + 1}: 允许={allowed}, 剩余={remaining}")
-
-    print("\n令牌桶演示:")
-    bucket = TokenBucket(rate=2, capacity=5)
-
-    for i in range(7):
-        time.sleep(0.3)
-        result = bucket.consume("test_bucket")
-        print(f"请求 {i + 1}: 成功={result}")

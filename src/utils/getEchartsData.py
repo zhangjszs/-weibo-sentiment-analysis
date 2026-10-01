@@ -131,7 +131,7 @@ def stopwordslist():
     try:
         stopwords = [line.strip() for line in open(path, encoding="UTF-8").readlines()]
     except Exception as e:
-        print(f"Errors reading stopwords from {path}: {e}")
+        logger.warning(f"读取停用词失败: {path}: {e}")
         return []
     return stopwords
 

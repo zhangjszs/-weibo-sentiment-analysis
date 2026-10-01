@@ -89,13 +89,7 @@ def task_success_handler(sender=None, result=None, **kwargs):
     task_id = kwargs.get("task_id", "unknown")
     logger.info(f"[任务成功] {task_name} | task_id={task_id}")
 
-    # 可以在这里添加指标收集
-    try:
-        from utils.metrics import increment_counter
-
-        increment_counter("celery_task_success", labels={"task": task_name})
-    except ImportError:
-        logger.debug("utils.metrics 不可用，跳过 celery_task_success 指标上报")
+    # 指标收集：utils.metrics 包不存在（#16），如需接入请先实现该包
 
 
 @task_failure.connect
@@ -104,16 +98,7 @@ def task_failure_handler(sender=None, task_id=None, exception=None, **kwargs):
     task_name = sender.name if sender else "unknown"
     logger.error(f"[任务失败] {task_name} | task_id={task_id} | error={exception}")
 
-    # 可以在这里添加告警
-    try:
-        from utils.metrics import increment_counter
-
-        increment_counter(
-            "celery_task_failure",
-            labels={"task": task_name, "error": type(exception).__name__},
-        )
-    except ImportError:
-        logger.debug("utils.metrics 不可用，跳过 celery_task_failure 指标上报")
+    # 告警/指标：utils.metrics 包不存在（#16），如需接入请先实现该包
 
 
 def health_check() -> dict[str, Any]:
@@ -197,84 +182,7 @@ def health_check() -> dict[str, Any]:
     return health_status
 
 
-def _create_task_queues() -> list[dict[str, Any]]:
-    """
-    创建带优先级的任务队列配置
 
-    配置多优先级队列、Exchange创建、队列参数设置（支持优先级）、默认队列设置
-
-    Returns:
-        List[Dict]: 队列配置列表
-    """
-    from kombu import Exchange
-
-    queues = []
-
-    # 定义Exchange
-    default_exchange = Exchange("default", type="direct")
-    spider_exchange = Exchange("spider", type="direct")
-    sentiment_exchange = Exchange("sentiment", type="direct")
-    priority_exchange = Exchange("priority", type="direct")
-
-    # 默认队列
-    queues.append({
-        "name": "default",
-        "exchange": default_exchange,
-        "routing_key": "default",
-        "queue_arguments": {},
-        "description": "默认任务队列"
-    })
-
-    # 爬虫任务队列
-    queues.append({
-        "name": "spider",
-        "exchange": spider_exchange,
-        "routing_key": "spider",
-        "queue_arguments": {
-            "x-max-priority": 10,  # 支持10级优先级
-        },
-        "description": "爬虫任务专用队列"
-    })
-
-    # 情感分析任务队列
-    queues.append({
-        "name": "sentiment",
-        "exchange": sentiment_exchange,
-        "routing_key": "sentiment",
-        "queue_arguments": {
-            "x-max-priority": 10,
-        },
-        "description": "情感分析任务专用队列"
-    })
-
-    # 高优先级队列（用于紧急任务）
-    queues.append({
-        "name": "priority_high",
-        "exchange": priority_exchange,
-        "routing_key": "priority.high",
-        "queue_arguments": {
-            "x-max-priority": 20,
-            "x-message-ttl": 3600000,  # 消息1小时过期
-        },
-        "description": "高优先级任务队列"
-    })
-
-    # 低优先级队列（用于后台任务）
-    queues.append({
-        "name": "priority_low",
-        "exchange": priority_exchange,
-        "routing_key": "priority.low",
-        "queue_arguments": {
-            "x-max-priority": 5,
-        },
-        "description": "低优先级任务队列"
-    })
-
-    return queues
-
-
-# 健康检查任务（可选）
-@celery_app.task(name="tasks.health_check")
 def health_check_task():
     """系统健康检查任务"""
     return health_check()
