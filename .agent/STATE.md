@@ -7,8 +7,8 @@
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
-- 无已知阻塞。CI（backend-fast / frontend-fast / integration）绿；
-  Security Scan 于本轮 #31 修复后应首次转绿（待下一棒核对首轮结果）。
+- 无已知阻塞。CI 三 job 绿；**Security Scan 于 #31 修复后首次转绿**
+  （run 36860551180 / commit 0fd132f，此前 20+ 次全红）。
 
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
@@ -25,7 +25,7 @@
 - **Security Scan 此前从未绿过**：main 上连续 20+ 次全红（截止 2026-10-01T01:46Z）。
   曾误记为"连续六次转绿"，实为混淆 CI 与 Security Scan 两个 workflow。根因：
   9536e2b（traeagent）删掉了 d36906b 加的 `|| true`，任一扫描有发现即 step 中止。
-  #31 已修复（恢复 `|| true` + bandit 发现清零），下一棒核对首轮绿否。
+  #31 已修复并确认首次转绿（恢复 `|| true` + bandit 发现清零）。
 - 本机 shell 源过 `/opt/ros/*/setup.bash`，ROS launch_testing 作为 pytest 插件
   自动加载且 `osrf_pycommon` 缺失 → collection 崩溃。本地跑 pytest 必带
   `-p no:launch_testing -p no:launch_ros`（CI 无此问题，勿写进 pytest.ini）

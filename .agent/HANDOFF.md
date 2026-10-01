@@ -64,11 +64,11 @@ bandit `-c .bandit -r src/` **0 发现**；ruff 0。
 ## 下一步建议
 
 - 无待办 issue。下一棒按协议第七节主动发现（先查重）。
-- **优先核对**：本轮 push 后 Security Scan 是否**首次转绿**（此前 20+ 次全红）；
-  若仍红，看具体是哪一步（safety/pip-audit 在 `|| true` 下不应失败）。
+- **已确认**：本轮 push 后 Security Scan **首次转绿**（run 36860551180，
+  commit 0fd132f），此前 20+ 次全红；CI 三 job 亦绿。
 - 可继续核对 #20 留的 nginx `/socket.io` 上线握手 101（需 Docker，本机无）。
 - 有意的候选议题（需先查重）：`safety` 步骤在无 secret 下的空报告、
-  是否给 Security Scan 加真正的严重度门禁。
+  是否给 Security Scan 加真正的严重度门禁、`.bandit` 的 B110 是否收紧。
 
 ## 环境备注
 
