@@ -70,7 +70,8 @@ exclude_lines = [
     "if TYPE_CHECKING:",
 ]
 show_missing = true
-fail_under = 50
+# 阈值贴近现状（实测 ~65%）留 5% 缓冲；改这里即为唯一真相，CI 无需同步。
+fail_under = 60
 
 # ===== MyPy 类型检查配置 (可选) =====
 [tool.mypy]
