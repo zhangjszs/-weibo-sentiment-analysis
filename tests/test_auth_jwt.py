@@ -153,7 +153,7 @@ class TestLoginAPI:
         monkeypatch.setattr(
             api_module.auth_service,
             "login",
-            lambda username, password: (
+            lambda username, password, client_ip="": (
                 True,
                 "登录成功",
                 {

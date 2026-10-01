@@ -76,7 +76,7 @@ def api_login():
             return error(password_validation["message"], code=400), 400
 
         username = sanitize_input(username_raw, max_length=20)
-        success, msg, payload = auth_service.login(username, password_raw)
+        success, msg, payload = auth_service.login(username, password_raw, request.remote_addr)
         if success:
             user_data = payload.get("user", {})
             audit_log(
@@ -177,14 +177,29 @@ def api_me():
 def api_logout():
     # 作废当前 token（#15）：此前仅删 Cookie，token 在自然过期前始终有效，
     # 复制走仍可继续调用 API
-    from utils.jwt_handler import revoke_token
+    from utils.jwt_handler import revoke_token, verify_token
 
     auth_header = request.headers.get("Authorization", "")
-    if auth_header.startswith("Bearer "):
-        revoke_token(auth_header[7:].strip())
+    bearer_token = auth_header[7:].strip() if auth_header.startswith("Bearer ") else ""
     cookie_token = request.cookies.get(Config.AUTH_COOKIE_NAME)
+    # 审计要在撤销前验证（撤销后 verify 返回 None）；logout 在公开白名单里，
+    # 中间件不会挂 current_user，这里自行解析
+    current_user = getattr(request, "current_user", None) or verify_token(
+        bearer_token or cookie_token or ""
+    ) or {}
+
+    if bearer_token:
+        revoke_token(bearer_token)
     if cookie_token:
         revoke_token(cookie_token)
+
+    audit_log(
+        current_user.get("user_id"),
+        current_user.get("username", ""),
+        "logout",
+        "登出",
+        request.remote_addr,
+    )
 
     response = ok()
     _clear_auth_cookie(response)

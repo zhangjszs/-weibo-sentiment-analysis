@@ -6,6 +6,12 @@ from config.settings import Config
 from repositories.user_repository import UserRepository
 from utils.jwt_handler import create_token
 from utils.log_sanitizer import SafeLogger
+from utils.login_lockout import (
+    clear_failures,
+    is_locked,
+    locked_message,
+    record_failure,
+)
 from utils.password_hasher import (
     check_password_strength,
     hash_password,
@@ -19,17 +25,29 @@ class AuthService:
     def __init__(self):
         self.user_repo = UserRepository()
 
-    def login(self, username: str, password: str) -> tuple[bool, str, dict[str, Any]]:
+    def login(
+        self, username: str, password: str, client_ip: str = ""
+    ) -> tuple[bool, str, dict[str, Any]]:
         """
         Authenticate user.
         Returns: (success, message, data)
+
+        client_ip 用于失败锁定（#15）：同一 username+IP 连续失败达阈值后
+        临时锁定，缓解撞库。
         """
+        if is_locked(username, client_ip):
+            return False, locked_message(), {}
+
         user = self.user_repo.find_by_username(username)
         if not user:
+            record_failure(username, client_ip)
             return False, "用户名或密码错误", {}
 
         if not verify_password(password, user.get("password", "")):
+            record_failure(username, client_ip)
             return False, "用户名或密码错误", {}
+
+        clear_failures(username, client_ip)
 
         # Generate Token
         token = create_token(user.get("id"), username)

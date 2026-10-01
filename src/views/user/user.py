@@ -10,6 +10,7 @@ import logging
 
 from flask import Blueprint, redirect, render_template, request, session
 
+from services.audit_service import audit_log
 from services.auth_service import AuthService
 from utils.api_response import error, ok
 from utils.errorResponse import errorResponse
@@ -75,7 +76,7 @@ def login():
         password = password_raw
 
         # 调用 Service 层
-        success, msg, data = auth_service.login(username, password)
+        success, msg, data = auth_service.login(username, password, request.remote_addr)
 
         if success:
             # Session 设置 (保持向后兼容)
@@ -166,6 +167,7 @@ def logOut():
     if cookie_token:
         revoke_token(cookie_token)
     logger.info(f"用户登出: {current_user}")
+    audit_log(None, current_user, "logout", "登出", request.remote_addr)
 
     is_api_request = request.is_json or request.headers.get("Accept", "").startswith(
         "application/json"
