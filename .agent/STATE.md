@@ -3,7 +3,7 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#21 [Medium] 前端死依赖/死代码与相互矛盾的配置
+- 任务：#16 [Low] 后端死代码与文档漂移（AGENTS/CONTEXT/README/目录树）
 - 状态：待办（下一棒从这里接）
 
 ## 阻塞项
@@ -19,8 +19,8 @@
 - 模块级别名导出会被 ruff F401 --fix 删除，需配 `__all__`（authz.py 的
   require_jwt 即此写法）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
-- 本会话累计：#30/#19/#20/#15 四个 issue 修复关闭，61 个新测试
-  （前端 67 + 后端 api 层 16）
+- 本会话累计：#30/#19/#20/#15/#21 五个 issue 修复关闭
+- 前端测试现 10 文件 73 个（auth-session 已纳入）
 - Security Scan 连续六次转绿——"每次都红"的旧记录已过时
 - 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
   `vitest.config.js` exclude 了 auth-session.test.js
@@ -36,6 +36,12 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #21 关闭：删死依赖 5 个（socket.io-client/@fontsource 因 #20 已在用，
+  保留）、死代码（locales/、sentiment.js、3 个 composable、v-lazy、
+  propagation/stats 无消费方函数）、lint 去 --fix 纳入 tests、no-console
+  收紧 allow[warn,error]（警告 146→103）、auth-session 测试从 node:test
+  改写 vitest 纳入套件（2 commits；前端 73 测试 / lint 0 error / build /
+  CI 绿）
 - #15 关闭（第三轮）：登录失败锁定（username+IP 5 次锁 15 分钟，成功清零，
   两条登录轨覆盖）+ logout 审计补齐（feat a548221 + 5 测试；fast gate 1283 /
   integration 189 / CI 绿；验证码留白：需产品决策建议另行立项）

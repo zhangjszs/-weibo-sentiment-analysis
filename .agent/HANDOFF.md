@@ -6,8 +6,8 @@
 ## 上一棒是谁
 
 Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T04:0x。
-第二棒，本会话做了六轮：#30 → #19 → #20 → #15(三轮)。**四个 issue 全部关闭**。
-CI 三 job 连续六次全绿。
+第二棒，本会话做了七轮：#30 → #19 → #20 → #15(三轮) → #21。**五个 issue 全部关闭**。
+CI 三 job 连续七次全绿。
 
 ## 本会话累计成果
 
@@ -45,13 +45,18 @@ utils/login_lockout.py（username+IP 5 次失败锁 15 分钟，成功清零，�
 轨都覆盖）；logout 审计补齐（api_logout 在撤销前解析用户）。feat a548221
 + test_login_lockout.py 5 例。验证码留白：需产品决策（建议另行立项）。
 
+### 轮 7：#21 前端死依赖/死代码/配置矛盾 → 关闭
+删 5 个死依赖（注意 socket.io-client/@fontsource 因 #20 已在用而保留）、
+locales 等死代码、lint 去 --fix 纳入 tests、no-console 收紧、auth-session
+测试改写 vitest 纳入。2 commits。详见 #21 关闭评论（含对 issue 两条误报的
+核对结论）。
+
 ## 下一步建议（下一棒从这里接）
 
-1. **#21（Medium，前端）**：死依赖/死代码与相互矛盾的配置。注意 vite.config
-   里 /getAllData 代理已删（ADR 0002）、#20 刚动过字体与 WS，先看现状再动手。
-2. #16（Low，后端死代码与文档漂移）。
-3. #28（Low，scripts/alembic 杂项）。
-4. #15 若有后续：验证码选型（需产品决策）。
+1. **#16（Low，后端）**：死代码与文档漂移（AGENTS/CONTEXT/README/目录树）。
+   注意文档里 fast gate 数字已随 #30/#15 变化，顺手校正。
+2. #28（Low，scripts/alembic 杂项）。
+3. #15 若有后续：验证码选型（需产品决策）。
 
 ## 坑与经验（重要）
 1. **commit `fix: #N` 自动关闭 issue**：#19/#20/#15 都被自动关；部分完成的
