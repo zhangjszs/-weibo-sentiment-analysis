@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（#31 于 2026-10-01T12:1x 关闭）
+- 任务：无——全部 open issue 已关闭（#31/#32 于 2026-10-01T14:1x 关闭）
 - 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 绿；**Security Scan 于 #31 修复后首次转绿**
-  （run 36860551180 / commit 0fd132f，此前 20+ 次全红）。
+- 无已知阻塞。CI 三 job 绿；Security Scan 绿（#31 修复）；
+  **#32 后带 Bandit HIGH/CRITICAL 门禁**（run 36874452700 验证：门禁步骤实跑通过）。
 
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
@@ -26,6 +26,11 @@
   曾误记为"连续六次转绿"，实为混淆 CI 与 Security Scan 两个 workflow。根因：
   9536e2b（traeagent）删掉了 d36906b 加的 `|| true`，任一扫描有发现即 step 中止。
   #31 已修复并确认首次转绿（恢复 `|| true` + bandit 发现清零）。
+- **Security Scan 现在是有牙齿的门禁（#32）**：`bandit -c .bandit -r src/ -lll`
+  作为阻断步骤，只有 HIGH/CRITICAL 才红（LOW 噪音不阻断）。safety 无
+  `SAFETY_API_KEY` 时显式 `::notice::` 跳过（不再静默空报告）；pip-audit 仍报告模式。
+- `requirements/requirements.audit.txt` **无任何引用、内容与 requirements.txt 漂移**
+  （`docs/项目评估与规划.md` 第 195 条已记为"冗余"）。候选：下一轮清理或立项。
 - 本机 shell 源过 `/opt/ros/*/setup.bash`，ROS launch_testing 作为 pytest 插件
   自动加载且 `osrf_pycommon` 缺失 → collection 崩溃。本地跑 pytest 必带
   `-p no:launch_testing -p no:launch_ros`（CI 无此问题，勿写进 pytest.ini）
@@ -43,6 +48,9 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #32 关闭：Security Scan 加 Bandit HIGH/CRITICAL 门禁步骤（`-lll`，实测
+  HIGH→1 / LOW→0）、safety 无 secret 显式 `::notice::` 跳过并写占位报告；
+  YAML 校验通过、CI+Security Scan 双绿（run 36874452700，1 commit）
 - #31 关闭：Security Scan 恢复 `|| true`（回归修复）、6 处 hashlib.md5 加
   usedforsecurity=False、B608/B615/B105 加 #nosec、新增 .bandit 跳过 B311/B110，
   bandit 报告 111→0；bandit 本地 0 发现，fast gate 1261 passed（1 commit）
