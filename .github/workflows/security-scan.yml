@@ -31,15 +31,28 @@ jobs:
         pip install bandit safety pip-audit
         pip install -r requirements/requirements.txt
     
-    # 扫描器以「报告而不阻断」为既定策略：发现写入报告产物，退出码不使 CI 失败，
-    # 避免任一 CVE 长期把常驻状态检查染红而掩盖真实回归。
+    # 扫描器默认「报告而不阻断」：发现写入报告产物，退出码不使 CI 失败，
+    # 避免依赖 CVE 长期把常驻状态检查染红而掩盖真实回归。
     - name: Run Bandit (代码安全扫描)
       run: |
         bandit -c .bandit -r src/ -f json -o bandit-report.json || true
         bandit -c .bandit -r src/ -f txt || true
+
+    # 例外：Bandit 的 HIGH/CRITICAL 是真正的门禁。-lll 只报 HIGH，退出码反映
+    # 过滤后的结果（实测：有 HIGH→1，仅 LOW→0），代码库当前为 0。
+    - name: Bandit gate (HIGH/CRITICAL 阻断)
+      run: bandit -c .bandit -r src/ -lll
     
     - name: Run Safety (依赖漏洞扫描)
+      env:
+        SAFETY_API_KEY: ${{ secrets.SAFETY_API_KEY }}
       run: |
+        # safety 3.x 需登录；未配置 secret 时显式跳过，避免留下误导性空报告。
+        if [ -z "$SAFETY_API_KEY" ]; then
+          echo "::notice::未配置 SAFETY_API_KEY，跳过 Safety 扫描（safety 3.x 需登录）"
+          echo '{"skipped": true, "reason": "SAFETY_API_KEY not configured"}' > safety-report.json
+          exit 0
+        fi
         safety scan --json > safety-report.json || true
         safety scan || true
     
