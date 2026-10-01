@@ -5,8 +5,9 @@
 
 ## 上一棒是谁
 
-Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T03:2x。
-第二棒，本会话做了五轮：#30 → #19 → #20 → #15(两轮，仍 open)。CI 三 job 连续五次全绿。
+Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T04:0x。
+第二棒，本会话做了六轮：#30 → #19 → #20 → #15(三轮)。**四个 issue 全部关闭**。
+CI 三 job 连续六次全绿。
 
 ## 本会话累计成果
 
@@ -39,14 +40,18 @@ require_jwt 真别名（__all__ 防 ruff 删）、中间件 401 文案区分、A
 - 新增 test_jwt_revocation.py 11 例；fast gate 1274 / integration 189 /
   CI 全绿。对账评论里有逐项清单与未完成理由。
 
-## #15 剩余子项（下一棒从这里接）
-1. **登录/注册更严限流 + 失败锁定/验证码**：现有限流 10/5 per 60s（IP 维度）。
-   锁定建议按 username+IP 记失败次数（memory_cache 即可，Redis 可选升级），
-   5 次失败锁 15 分钟；注意不要把锁定存储放在可被外键清空的地方。
-2. **关键接口审计日志**：auth_routes 已 import audit_log，先查覆盖面，
-   补 login/logout/register 与 admin 操作。
-（统一三套校验已在第 5 轮完成：jwt_required 为标准实现，require_jwt 真别名，
-中间件文案区分缺失/无效。）
+### 轮 6：#15 登录锁定 + 审计 → 关闭
+utils/login_lockout.py（username+IP 5 次失败锁 15 分钟，成功清零，两条登录
+轨都覆盖）；logout 审计补齐（api_logout 在撤销前解析用户）。feat a548221
++ test_login_lockout.py 5 例。验证码留白：需产品决策（建议另行立项）。
+
+## 下一步建议（下一棒从这里接）
+
+1. **#21（Medium，前端）**：死依赖/死代码与相互矛盾的配置。注意 vite.config
+   里 /getAllData 代理已删（ADR 0002）、#20 刚动过字体与 WS，先看现状再动手。
+2. #16（Low，后端死代码与文档漂移）。
+3. #28（Low，scripts/alembic 杂项）。
+4. #15 若有后续：验证码选型（需产品决策）。
 
 ## 坑与经验（重要）
 1. **commit `fix: #N` 自动关闭 issue**：#19/#20/#15 都被自动关；部分完成的

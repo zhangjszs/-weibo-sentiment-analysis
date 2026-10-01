@@ -3,12 +3,11 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#15 [Medium] 会话/JWT（两轮推进后仅剩两子项，见下）
-- 状态：进行中——剩余：①登录/注册更严限流+失败锁定/验证码
-  ②关键接口审计日志覆盖
+- 任务：#21 [Medium] 前端死依赖/死代码与相互矛盾的配置
+- 状态：待办（下一棒从这里接）
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 连续三次全绿。
+- 无已知阻塞。CI 三 job 连续六次全绿。
 
 ## 关键事实（已实测验证）
 - `main` 未设分支保护，可直接推送
@@ -20,7 +19,9 @@
 - 模块级别名导出会被 ruff F401 --fix 删除，需配 `__all__`（authz.py 的
   require_jwt 即此写法）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
-- Security Scan 连续三次转绿——"每次都红"的旧记录已过时
+- 本会话累计：#30/#19/#20/#15 四个 issue 修复关闭，61 个新测试
+  （前端 67 + 后端 api 层 16）
+- Security Scan 连续六次转绿——"每次都红"的旧记录已过时
 - 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
   `vitest.config.js` exclude 了 auth-session.test.js
 - mock axios 时 `create` 返回值必须带 `interceptors` 桩——同模块图里
@@ -35,6 +36,9 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #15 关闭（第三轮）：登录失败锁定（username+IP 5 次锁 15 分钟，成功清零，
+  两条登录轨覆盖）+ logout 审计补齐（feat a548221 + 5 测试；fast gate 1283 /
+  integration 189 / CI 绿；验证码留白：需产品决策建议另行立项）
 - #15 第二轮（统一校验）：jwt_required 升级单轨标准实现（Bearer+Cookie、
   统一 error envelope）、require_jwt 变真别名、中间件 401 文案区分缺失/
   无效、ADMIN_USERS 空 dev 启动告警（refactor: 6135bb2 + 4 测试；
