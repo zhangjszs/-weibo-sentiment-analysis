@@ -26,6 +26,11 @@ target_metadata = Base.metadata
 
 # 从项目配置读取数据库 URL
 def get_url():
+    # 与 database._build_database_url 同一优先级（#28）：显式导出的
+    # TEST_DATABASE_URL 优先，否则用主配置——SQLite 上验证迁移才走得通
+    test_url = os.environ.get("TEST_DATABASE_URL")
+    if test_url:
+        return test_url
     return Config.get_database_url()
 
 

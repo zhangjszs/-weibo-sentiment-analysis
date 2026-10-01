@@ -4,7 +4,7 @@
 
 ## 归档原因
 
-`database/*.sql`（7 文件）与 `alembic/versions/*`（4 迁移）长期双真相并存，建表来源不清，易导致 ORM ↔ SQL ↔ 迁移不一致。
+`database/*.sql`（7 文件）与 `alembic/versions/*`（迁移数量以目录实际内容为准）长期双真相并存，建表来源不清，易导致 ORM ↔ SQL ↔ 迁移不一致。
 
 - ADR：`docs/adr/0003-schema-single-truth-alembic.md`
 - 计划：`docs/plans/2026-08-21-abc-unification.md`（C1）

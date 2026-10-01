@@ -32,8 +32,8 @@ def init_directories():
     try:
         from config.settings import Config
 
-        # Config automatically creates directories on import if using the updated settings.py
-        # But we can force check here
+        # 目录创建在 create_app 的 create_app_directories() 中进行（app 启动时），
+        # 部署阶段在此提前强制检查/创建，避免首启前目录缺失
         for _dir in [
             Config.DATA_DIR,
             Config.MODEL_DIR,
