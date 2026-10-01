@@ -16,7 +16,7 @@
 - Two-service app: Flask backend (`src/`) + Vue frontend (`frontend/`). No shared root package.
 - Backend entrypoint: `run.py`. It inserts `src/` onto `sys.path`; imports inside `src/` rely on this.
 - App object is also exposed as `run:app` for Gunicorn (`gunicorn -w 2 -b 0.0.0.0:5000 run:app`).
-- Blueprint routes live under `src/views/`. API paths: `/api/*`, `/getAllData/*`, `/user/*`.
+- Blueprint routes live under `src/views/`. API paths: `/api/*`, `/user/*`. The legacy `/getAllData/*` prefix survives only as an authenticated 307 alias to `/api/*` (ADR 0002) and will be removed next major.
 
 ## Testing
 
@@ -28,7 +28,7 @@
 ## Env / Config
 
 - `src/config/settings.py` auto-loads `.env` via `python-dotenv`. `.env.example` is the source of truth for supported vars.
-- Production requires `SECRET_KEY`, `JWT_SECRET_KEY`, `ALLOWED_ORIGINS`, `ADMIN_USERS` set; `Config.validate()` raises at startup otherwise.
+- Production requires `SECRET_KEY`, `JWT_SECRET_KEY` (explicit and different from `SECRET_KEY`), `ALLOWED_ORIGINS`, `ADMIN_USERS` set; `Config.validate()` raises at startup otherwise.
 - Database URL defaults to MySQL via `Config.get_database_url()`. Override with `TEST_DATABASE_URL` for tests.
 
 ## Docker

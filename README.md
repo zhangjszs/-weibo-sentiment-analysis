@@ -39,12 +39,12 @@
 │   │   ├── collaboration_service.py # 协作服务
 │   │   ├── comment_service.py      # 评论服务
 │   │   ├── notification_service.py # 通知服务
-│   │   ├── platform_collector.py   # 平台数据采集
+│   │   ├── platform_collectors/    # 多平台采集器（工厂 + 各平台实现）
 │   │   ├── propagation_analyzer.py # 传播分析
 │   │   ├── propagation_service.py  # 传播服务
 │   │   ├── search_service.py       # 搜索服务
 │   │   ├── sentiment_monitor.py    # 情感监控
-│   │   ├── sentiment_service.py    # 情感分析服务
+│   │   ├── sentiment_service/      # 情感分析服务（策略模式）
 │   │   └── websocket_service.py    # WebSocket 服务
 │   ├── tasks/                  # 异步任务（Celery）
 │   │   ├── celery_config.py    # Celery 配置
@@ -77,7 +77,6 @@
 │   │   ├── query.py            # 数据库查询
 │   │   ├── rate_limiter.py     # 限流工具
 │   │   ├── report_generator.py # 报告生成
-│   │   ├── sentiment.py        # 情感工具
 │   │   └── websocket_server.py # WebSocket 服务端
 │   ├── views/                  # 视图/路由
 │   │   ├── api/                # REST API 路由
@@ -235,7 +234,7 @@ docker compose down
 
 ### 数据分析
 
-- 情感分析（正面/中性/负面）—— **默认使用 SnowNLP + 情感词典 + 启发式规则**，ML 模型（`src/model/trainModel.py`）为离线实验用，未接入线上默认链路
+- 情感分析（正面/中性/负面）—— 按 mode 路由策略：默认 `custom` 走 CustomModelStrategy（ML 模型），`simple` 为 SnowNLP + 情感词典兜底，另有 `smart`(LLM)/`auto`(自适应选择)/`contextual`（见 `src/services/sentiment_service/service.py`）
 - 热词提取
 - 地域分布分析
 - 时间趋势分析
@@ -268,14 +267,16 @@ docker compose down
 
 | 接口 | 说明 | 缓存时间 |
 |------|------|----------|
-| `GET /getAllData/getHomeData` | 首页数据 | 5分钟 |
-| `GET /getAllData/getTableData` | 表格数据 | 3分钟 |
-| `GET /getAllData/getArticleData` | 文章分析 | 10分钟 |
-| `GET /getAllData/getCommentData` | 评论分析 | 5分钟 |
-| `GET /getAllData/getIPData` | IP 分布 | 10分钟 |
-| `GET /getAllData/getYuqingData` | 舆情分析 | 5分钟 |
-| `GET /getAllData/getContentCloudData` | 词云数据 | 30分钟 |
-| `POST /getAllData/clearCache` | 清空缓存 | - |
+| `GET /api/getHomeData` | 首页数据 | 5分钟 |
+| `GET /api/getTableData` | 表格数据 | 3分钟 |
+| `GET /api/getArticleData` | 文章分析 | 10分钟 |
+| `GET /api/getCommentData` | 评论分析 | 5分钟 |
+| `GET /api/getIPData` | IP 分布 | 10分钟 |
+| `GET /api/getYuqingData` | 舆情分析 | 5分钟 |
+| `GET /api/getContentCloudData` | 词云数据 | 30分钟 |
+| `POST /api/clearCache` | 清空缓存 | - |
+
+> 旧前缀 `/getAllData/*` 为 307 别名（先鉴权再跳转 `/api/*`，见 ADR 0002），下一个大版本移除。
 
 更完整的接口说明见 [docs/API.md](docs/API.md)。
 
