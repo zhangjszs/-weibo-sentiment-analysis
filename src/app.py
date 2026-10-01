@@ -159,9 +159,12 @@ def _set_auth_cookie(response, token: str):
 
 
 def _require_jwt_auth():
+    # 缺失与无效区分提示（#15）：前端据此决定跳登录页还是提示重新登录
+    if not _get_auth_token():
+        return error("缺少认证令牌", code=401), 401
     user_info = _attach_current_user_from_token()
     if not user_info:
-        return error("缺少认证令牌", code=401), 401
+        return error("认证令牌无效或已过期", code=401), 401
     return None
 
 

@@ -180,3 +180,61 @@ def test_request_id_sanitized_from_client_header(app):
 
         resp2 = c.get("/health", headers={"X-Request-Id": "abc-DEF_123"})
         assert resp2.headers.get("X-Request-Id") == "abc-DEF_123"
+
+
+# ---------------------------------------------------------------------------
+# 三套 JWT 校验统一（#15 后半）
+# ---------------------------------------------------------------------------
+
+
+def test_jwt_required_accepts_cookie_token(app):
+    """jwt_required 升级为单轨标准实现：Bearer 之外也接受认证 Cookie。"""
+    from utils.jwt_handler import jwt_required
+
+    @app.route("/_test_jwt_cookie", methods=["GET"])
+    @jwt_required
+    def _view():
+        from flask import request as req
+
+        return {"user": req.current_user["username"]}
+
+    token = create_token(9, "carol")
+    with app.test_client() as c:
+        c.set_cookie("weibo_access_token", token)
+        resp = c.get("/_test_jwt_cookie")
+        assert resp.status_code == 200
+        assert resp.get_json()["user"] == "carol"
+
+
+def test_require_jwt_is_alias_of_jwt_required():
+    """authz.require_jwt 与 jwt_required 是同一实现（统一三套校验）。"""
+    from utils.authz import require_jwt
+    from utils.jwt_handler import jwt_required
+
+    assert require_jwt is jwt_required
+
+
+def test_middleware_distinguishes_missing_vs_invalid(client):
+    """全局中间件 401 文案区分缺失与无效（前端据此分流）。"""
+    resp = client.get("/api/stats/today")
+    assert resp.status_code == 401
+    assert resp.get_json()["msg"] == "缺少认证令牌"
+
+    resp2 = client.get(
+        "/api/stats/today", headers={"Authorization": "Bearer not-a-real-token"}
+    )
+    assert resp2.status_code == 401
+    assert resp2.get_json()["msg"] == "认证令牌无效或已过期"
+
+
+def test_validate_warns_when_admin_users_empty_development(caplog, monkeypatch):
+    """dev 下 ADMIN_USERS 为空要有启动告警（生产直接拒绝启动）。"""
+    import logging
+
+    import config.settings as settings
+
+    monkeypatch.setattr(settings.Config, "ADMIN_USERS", set(), raising=False)
+    monkeypatch.setattr(settings.Config, "FLASK_ENV", "development", raising=False)
+    with caplog.at_level(logging.WARNING, logger="config.settings"):
+        settings.Config.validate()
+    assert any("ADMIN_USERS" in r.message for r in caplog.records)

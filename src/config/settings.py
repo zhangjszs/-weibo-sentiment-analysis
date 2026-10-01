@@ -325,6 +325,10 @@ class Config:
         elif errors:
             for message in errors:
                 logger.warning("配置数值无效: %s", message)
+        if not cls.ADMIN_USERS and cls.FLASK_ENV not in cls.PROTECTED_ENVS:
+            # #15：ADMIN_USERS 为空时 admin_required 对所有人 403，且启动
+            # 无任何提示，排障困难；生产环境由上方 errors 直接拒绝启动
+            logger.warning("ADMIN_USERS 未配置：admin_required 将拒绝所有用户（生产环境会启动失败）")
 
 
 # Backward compatibility aliases

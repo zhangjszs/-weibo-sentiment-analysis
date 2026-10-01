@@ -12,7 +12,7 @@ from datetime import UTC, datetime, timedelta
 from functools import wraps
 
 import jwt
-from flask import g, jsonify, request
+from flask import g, request
 
 from config.settings import Config
 
@@ -137,10 +137,28 @@ def verify_token(token: str) -> dict:
     }
 
 
+def _extract_token():
+    """取请求 token：Bearer 头优先，回退认证 Cookie（#15 单轨统一）。
+
+    此前 jwt_required 只认 Bearer，而 require_jwt / 中间件 _require_jwt_auth
+    都认 Bearer+Cookie，三套实现错误结构还各不相同；现统一为本函数 + 统一
+    错误 envelope。
+    """
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:].strip()
+        if token:
+            return token
+    return request.cookies.get(Config.AUTH_COOKIE_NAME)
+
+
 def jwt_required(f):
     """
-    JWT 认证装饰器
+    JWT 认证装饰器（单轨标准实现，authz.require_jwt 为其别名）
     用于保护需要登录的 API 路由
+
+    支持 ``Authorization: Bearer <token>`` 与 ``Config.AUTH_COOKIE_NAME``
+    cookie 两条轨，与全局中间件 ``_require_jwt_auth`` 行为一致。
 
     Usage:
         @bp.route('/protected')
@@ -149,35 +167,17 @@ def jwt_required(f):
             user = request.current_user  # 获取当前用户信息
             return jsonify({'user': user})
     """
+    from utils.api_response import error
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = None
-
-        # 从 Authorization header 获取 token
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]  # 去掉 'Bearer ' 前缀
-
+        token = _extract_token()
         if not token:
-            return jsonify(
-                {
-                    "code": 401,
-                    "msg": "缺少认证令牌",
-                    "error": "Authorization header missing or invalid",
-                }
-            ), 401
+            return error("缺少认证令牌", code=401), 401
 
-        # 验证 token
         user_info = verify_token(token)
         if not user_info:
-            return jsonify(
-                {
-                    "code": 401,
-                    "msg": "认证令牌无效或已过期",
-                    "error": "Invalid or expired token",
-                }
-            ), 401
+            return error("认证令牌无效或已过期", code=401), 401
 
         # 将用户信息附加到 request 对象
         request.current_user = user_info
@@ -205,11 +205,7 @@ def jwt_optional(f):
 
     @wraps(f)
     def decorated(*args, **kwargs):
-        token = None
-
-        auth_header = request.headers.get("Authorization", "")
-        if auth_header.startswith("Bearer "):
-            token = auth_header[7:]
+        token = _extract_token()
 
         if token:
             user_info = verify_token(token)
