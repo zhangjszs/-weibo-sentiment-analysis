@@ -235,7 +235,10 @@ def cache_result(ttl=300, timeout=None, use_file_cache=False, key_func=None):
                 key_parts = [func.__name__]
                 key_parts.extend(str(arg) for arg in args)
                 key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
-                cache_key = hashlib.md5("_".join(key_parts).encode()).hexdigest()
+                # 仅用于生成缓存键，非安全用途；显式声明以消除 bandit B324。
+                cache_key = hashlib.md5(
+                    "_".join(key_parts).encode(), usedforsecurity=False
+                ).hexdigest()
 
             result = memory_cache.get(cache_key)
             if result is not None:

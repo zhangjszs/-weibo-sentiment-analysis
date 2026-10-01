@@ -220,6 +220,8 @@ class CommentRepository(BaseRepository):
                 f"WHEN COALESCE(likeNum, 0) < {upper_bound} THEN {idx}"
             )
 
+        # CASE WHEN 仅插值整数（coerce_positive_int），无字符串拼接注入面；
+        # bandit B608 为误报。
         sql = f"""
             SELECT bucket_index, COUNT(*) AS count
             FROM (
@@ -233,7 +235,7 @@ class CommentRepository(BaseRepository):
             WHERE bucket_index IS NOT NULL
             GROUP BY bucket_index
             ORDER BY bucket_index
-        """
+        """  # nosec B608
 
         from sqlalchemy import text
 

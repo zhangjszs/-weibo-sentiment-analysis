@@ -65,7 +65,8 @@ def get_cache_key(text: str, mode: str, backend: str = "default") -> str:
     max_text_length = 1000
     truncated_text = text[:max_text_length]
     key_data = f"sentiment:v4:{backend}:{mode}:{truncated_text}"
-    return hashlib.md5(key_data.encode()).hexdigest()
+    # 仅用于生成缓存键，非安全用途；显式声明以消除 bandit B324。
+    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
 
 def _build_sentiment_from_cache_data(data: dict, source: str) -> SentimentResult:

@@ -72,7 +72,8 @@ def error_response(msg, code=500):
 def get_cache_key(prefix, *args, **kwargs):
     """生成缓存键"""
     key_data = f"{prefix}_{str(args)}_{str(sorted(kwargs.items()))}"
-    return hashlib.md5(key_data.encode()).hexdigest()
+    # 仅用于生成缓存键，非安全用途；显式声明以消除 bandit B324。
+    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
 
 def get_cached_data(cache_key, timeout):

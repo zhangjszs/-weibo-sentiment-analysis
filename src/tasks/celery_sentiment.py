@@ -34,7 +34,8 @@ except Exception as e:
 def get_cache_key(text: str, mode: str = "smart") -> str:
     """生成缓存键"""
     key_data = f"sentiment:{mode}:{text}"
-    return hashlib.md5(key_data.encode()).hexdigest()
+    # 仅用于生成缓存键，非安全用途；显式声明以消除 bandit B324。
+    return hashlib.md5(key_data.encode(), usedforsecurity=False).hexdigest()
 
 
 @celery_app.task(bind=True, max_retries=2, default_retry_delay=30)

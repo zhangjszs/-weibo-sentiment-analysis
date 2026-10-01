@@ -194,6 +194,8 @@ class ArticleRepository(BaseRepository):
             where_clause += " AND type <> :exclude_type"
             params["exclude_type"] = exclude_type
 
+        # CASE WHEN 仅插值已白名单校验的列名与整数（validate_identifier /
+        # coerce_positive_int），无字符串拼接注入面；bandit B608 为误报。
         sql = f"""
             SELECT bucket_index, COUNT(*) AS count
             FROM (
@@ -208,7 +210,7 @@ class ArticleRepository(BaseRepository):
             WHERE bucket_index IS NOT NULL
             GROUP BY bucket_index
             ORDER BY bucket_index
-        """
+        """  # nosec B608
 
         from sqlalchemy import text
 

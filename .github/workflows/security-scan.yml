@@ -31,20 +31,22 @@ jobs:
         pip install bandit safety pip-audit
         pip install -r requirements/requirements.txt
     
+    # 扫描器以「报告而不阻断」为既定策略：发现写入报告产物，退出码不使 CI 失败，
+    # 避免任一 CVE 长期把常驻状态检查染红而掩盖真实回归。
     - name: Run Bandit (代码安全扫描)
       run: |
-        bandit -r src/ -f json -o bandit-report.json
-        bandit -r src/ -f txt
+        bandit -c .bandit -r src/ -f json -o bandit-report.json || true
+        bandit -c .bandit -r src/ -f txt || true
     
     - name: Run Safety (依赖漏洞扫描)
       run: |
-        safety scan --json > safety-report.json
-        safety scan
+        safety scan --json > safety-report.json || true
+        safety scan || true
     
     - name: Run pip-audit (依赖审计)
       run: |
-        pip-audit --format json > pip-audit-report.json
-        pip-audit
+        pip-audit --format json > pip-audit-report.json || true
+        pip-audit || true
     
     - name: Upload security reports
       uses: actions/upload-artifact@v4

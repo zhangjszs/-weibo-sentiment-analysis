@@ -200,7 +200,9 @@ class BertBackend(ModelBackend):
             )
             return
         try:
-            self._tokenizer = AutoTokenizer.from_pretrained(self.model_path)
+            # model_path 是本地模型目录（Config.BERT_MODEL_PATH），不从 Hub 下载；
+            # bandit B615 为误报。
+            self._tokenizer = AutoTokenizer.from_pretrained(self.model_path)  # nosec B615
             self._model = ORTModelForSequenceClassification.from_pretrained(
                 self.model_path
             )

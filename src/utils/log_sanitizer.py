@@ -30,7 +30,7 @@ class LogSanitizer:
     IP_PATTERN = r"\b(\d{1,3}\.\d{1,3})\.\d+\.\d+\b"
 
     # JWT / Bearer Token
-    TOKEN_PATTERN = r"Bearer\s+[A-Za-z0-9\-_\.]+"
+    TOKEN_PATTERN = r"Bearer\s+[A-Za-z0-9\-_\.]+"  # nosec B105 —— 脱敏正则，非密码
 
     # Cookie value (anything after =, between ; or end of string)
     COOKIE_PATTERN = r"(Cookie:\s*[^=]+)=[^;]+"

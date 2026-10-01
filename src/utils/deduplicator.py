@@ -255,7 +255,8 @@ class ArticleDeduplicator:
             bool: 是否重复
         """
         if content:
-            content_hash = hashlib.md5(content.encode()).hexdigest()
+            # 仅用于内容去重的哈希，非安全用途；显式声明以消除 bandit B324。
+            content_hash = hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
             key = self.generate_key(article_id, content_hash)
         else:
             key = article_id
@@ -265,7 +266,8 @@ class ArticleDeduplicator:
     def add(self, article_id: str, content: str = None) -> None:
         """添加文章到去重集合"""
         if content:
-            content_hash = hashlib.md5(content.encode()).hexdigest()
+            # 仅用于内容去重的哈希，非安全用途；显式声明以消除 bandit B324。
+            content_hash = hashlib.md5(content.encode(), usedforsecurity=False).hexdigest()
             key = self.generate_key(article_id, content_hash)
         else:
             key = article_id
