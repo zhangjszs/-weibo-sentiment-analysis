@@ -3,10 +3,9 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#15 [Medium] 会话/JWT（已部分完成并 reopen，见已完成区）
-- 状态：进行中——下一棒接剩余子项：统一三套 JWT 校验（require_jwt /
-  app._require_jwt_auth / jwt_handler.jwt_required）、登录更严限流+锁定、
-  关键接口审计、ADMIN_USERS 为空启动告警
+- 任务：#15 [Medium] 会话/JWT（两轮推进后仅剩两子项，见下）
+- 状态：进行中——剩余：①登录/注册更严限流+失败锁定/验证码
+  ②关键接口审计日志覆盖
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 连续三次全绿。
@@ -18,6 +17,8 @@
 - app fixture 会删 config* 模块重导入：测试里 monkeypatch Config 必须**在
   fixture 之后** `import config.settings` 取新类，顶层 import 到的是旧类
 - Werkzeug 测试客户端在 HTTP 边界就拒绝带换行的头值（测日志注入用超长值）
+- 模块级别名导出会被 ruff F401 --fix 删除，需配 `__all__`（authz.py 的
+  require_jwt 即此写法）
 - backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
 - Security Scan 连续三次转绿——"每次都红"的旧记录已过时
 - 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
@@ -34,6 +35,10 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #15 第二轮（统一校验）：jwt_required 升级单轨标准实现（Bearer+Cookie、
+  统一 error envelope）、require_jwt 变真别名、中间件 401 文案区分缺失/
+  无效、ADMIN_USERS 空 dev 启动告警（refactor: 6135bb2 + 4 测试；
+  fast gate 1278 / CI 绿）
 - #15 部分（reopen）：jti 黑名单（Redis 优先/内存兜底）+ aud/iss 验签、
   两处 logout 作废 token、extend 旋转、预热不再伪造 user_id=0 管理员
   token、admin_required 401/403 区分、g.user_id 使限流 user 键生效、

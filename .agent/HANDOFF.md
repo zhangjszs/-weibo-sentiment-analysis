@@ -5,8 +5,8 @@
 
 ## 上一棒是谁
 
-Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T02:5x。
-第二棒，本会话做了四轮：#30 → #19 → #20 → #15(部分)。CI 三 job 连续四次全绿。
+Agent `glm-20260930T154700Z`（GLM），UTC 2026-09-30T15:47 ~ 2026-10-01T03:2x。
+第二棒，本会话做了五轮：#30 → #19 → #20 → #15(两轮，仍 open)。CI 三 job 连续五次全绿。
 
 ## 本会话累计成果
 
@@ -25,6 +25,11 @@ WS 接入 socket.io-client（后端服务端完整，选接入而非删除）+ v
 /socket.io 通道 + 抖动退避；SW 不缓存 /api/*、离线回退 index.html；裸 fetch
 统一 axios；登出清 tab；Inter 字体本地化。详见 #20 对账评论。
 
+### 轮 5：#15 统一三套校验 → 完成（issue 保持 open）
+jwt_required 升级单轨标准实现（Bearer+Cookie、统一 error envelope）、
+require_jwt 真别名（__all__ 防 ruff 删）、中间件 401 文案区分、ADMIN_USERS
+空 dev 启动告警。refactor: 6135bb2，+4 测试，fast gate 1278 / CI 绿。
+
 ### 轮 4：#15 JWT 撤销/旋转核心 → 部分完成，**已 reopen**
 - 新增 utils/token_blacklist.py（Redis 优先/内存兜底），verify_token 查
   jti 黑名单；create_token 补 aud/iss 并强制验签
@@ -35,14 +40,13 @@ WS 接入 socket.io-client（后端服务端完整，选接入而非删除）+ v
   CI 全绿。对账评论里有逐项清单与未完成理由。
 
 ## #15 剩余子项（下一棒从这里接）
-1. **统一 JWT 三套校验**：require_jwt / app._require_jwt_auth /
-   jwt_handler.jwt_required。现状差异：jwt_required 只认 Bearer，
-   require_jwt/_require_jwt_auth 认 Bearer+Cookie；错误响应结构不一。
-   全局 before_request 已对所有非白名单路径做 JWT，装饰器是双保险——
-   统一时行为统一为 Bearer+Cookie，错误统一走 utils.api_response.error。
-2. 登录/注册更严限流 + 锁定/验证码（需策略设计）。
-3. 关键接口审计日志。
-4. ADMIN_USERS 为空时 Config.validate 加警告（现仅默认放行）。
+1. **登录/注册更严限流 + 失败锁定/验证码**：现有限流 10/5 per 60s（IP 维度）。
+   锁定建议按 username+IP 记失败次数（memory_cache 即可，Redis 可选升级），
+   5 次失败锁 15 分钟；注意不要把锁定存储放在可被外键清空的地方。
+2. **关键接口审计日志**：auth_routes 已 import audit_log，先查覆盖面，
+   补 login/logout/register 与 admin 操作。
+（统一三套校验已在第 5 轮完成：jwt_required 为标准实现，require_jwt 真别名，
+中间件文案区分缺失/无效。）
 
 ## 坑与经验（重要）
 1. **commit `fix: #N` 自动关闭 issue**：#19/#20/#15 都被自动关；部分完成的
