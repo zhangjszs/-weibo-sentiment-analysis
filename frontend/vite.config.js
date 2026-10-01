@@ -76,8 +76,7 @@ export default defineConfig(({ command, mode }) => {
             }
             if (
               id.includes('node_modules/echarts/') ||
-              id.includes('node_modules/zrender/') ||
-              id.includes('node_modules/vue-echarts/')
+              id.includes('node_modules/zrender/')
             ) {
               return 'echarts'
             }
