@@ -3,27 +3,38 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#39 执行中断——工作区有未提交 WIP（element-plus 按需加载），来自
-  死亡会话 `glm-20261002T000100Z`（00:01Z 启动、00:07Z 后无活动、未提交未评论）
-- WIP 状态（Planning 2026-10-02T14:1xZ 只读验证）：lint ✅ 0/0、73 测试 ✅ 全过、
-  **build ❌**——`elementPlus.js` 的 `element-plus/es/components/loading/plugin`
-  导入不存在（2.14.2 该目录仅 `index.mjs`）
-- 状态：下一棒按 **issue #39 接棒清单评论**（2026-10-02T14:1xZ）从现场恢复；
-  之后的队列：#40 → #41，#42 随时插队（纯调研）
+- 任务：**#39 已实现并推送**（perf commit `33a4c1f`，含 `Closes #39` 自动关闭），
+  CI/Security Scan run 37020255603 / 37020255065 结果见 issue；
+  执行会话 `executor-glm-20261002T1447Z`（锁在位，收尾后释放）
+- 状态：下一棒先重读 PLAN/STATE/HANDOFF 与 issue backlog；队列 **#40 → #41**，
+  #42 随时插队（纯调研）
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 绿（最新 2026-10-01T23:47Z）；Security Scan 绿；
+- 无已知阻塞。CI 三 job 绿（截至 2026-10-01T23:47Z）；Security Scan 绿；
   **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65%）**；
   **#37 后前端 lint 带 --max-warnings 0 门禁（告警 103→0）**。
 
 ## 关键事实（已实测验证）
+- **#39 的真正主因是 manualChunks 聚合，不只是全量注册**：element-plus 手工聚合
+  chunk 被入口静态依赖，无论按需引得多细，所有路由用到的组件都进首屏（980KB）。
+  拆掉聚合改按真实依赖分包后首屏 raw **-76.1%**（1,484,188→354,394B；
+  gzip 418,271→114,171，-72.7%）。echarts 聚合规则保留（#40 范围），
+  **ip/echarts chunk 与基线字节一致，#40 基线未受扰动**。
+- element-plus 2.14.2：`es/components/loading/` 仅 `index.mjs`（无 `plugin`
+  子路径）；默认导出即带 install 的插件（注册 v-loading + $loading）。
+  sideEffects 只标样式路径 → 组件 JS 可 tree-shake。
+- **前端测试基线 73 → 75**（新增 tests/element-plus-icons.test.js：源码扫描
+  守护字符串图标注册面；'Help' 是路由名属扫描白名单）。
+- **vitest.config 无 Components 插件**：单测不覆盖模板级组件解析（jsdom 里
+  el-* 标签按未知元素渲染不报错）——组件缺失风险靠 build + resolver 机制 +
+  图标守护测试兜底，勿以为 75 测试全过就等于页面组件全正常。
+- jsdom 环境下 `import.meta.url` 不是 file:// 协议，定位文件用 `process.cwd()`
 - **执行会话可能无预警死亡且不留提交**：`glm-20261002T000100Z` 会话工作约 6 分钟
   后中断，遗留未提交 WIP + 陈旧锁。接棒规则：工作区 WIP 经验证后**续作而非重写**，
   陈旧锁（>数小时无文件活动）可删。判断现场是否死亡看文件 mtime，不看锁存在与否。
 - **lint/test 全过 ≠ build 可用**：#39 WIP 中 vitest（esbuild 转译、不做完整解析）
-  与 eslint 都放过了不存在的子路径导入 `element-plus/es/components/loading/plugin`，
-  只有 vite build（rollup 完整解析）报错。前端验证必须三门禁全跑。
-- element-plus 2.14.2 的 `es/components/loading/` 下只有 `index.mjs`（无 `plugin` 子路径）
+  与 eslint 都放过了不存在的子路径导入，只有 vite build（rollup 完整解析）报错。
+  前端验证必须三门禁全跑。
 - `main` 未设分支保护，可直接推送
 - **commit message 里 `fix: #N` 会自动关闭 issue**（GitHub closing keyword）；
   #19/#20/#15 都因此自动关；部分完成的 issue 在评论后 `gh issue reopen` 即可
@@ -82,6 +93,11 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #39 关闭：element-plus 按需加载（unplugin-vue-components + ElementPlusResolver +
+  iconResolver）+ 移除 manualChunks 强制聚合 + 最小全局注册（29 图标 + v-loading，
+  补 DataLine）+ 图标注册面源码扫描测试。首屏 raw -76.1% / gzip -72.7%
+  （JS 1,096,238→273,166B、CSS 387,950→81,228B）；lint 0/0、75 测试、build 过、
+  preview HTTP 冒烟过（1 commit 33a4c1f；接续死亡会话 WIP 完成）
 - #38 关闭：user.createTime → create_time（幂等迁移 f6a7b8c9d0e1 + ORM/裸 SQL/
   冻结 SQL/API.md/test_db 共 6 处同步）；迁移两路径实测，fast gate 1261、
   integration 189（1 commit）
