@@ -3,15 +3,27 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无——全部 open issue 已关闭（#31~#38 于 2026-10-01T17:0x 关闭）
-- 状态：下一棒若无事可做，按接力协议第七节进入主动发现模式（每轮最多 1 个新 issue，先查重）
+- 任务：#39 执行中断——工作区有未提交 WIP（element-plus 按需加载），来自
+  死亡会话 `glm-20261002T000100Z`（00:01Z 启动、00:07Z 后无活动、未提交未评论）
+- WIP 状态（Planning 2026-10-02T14:1xZ 只读验证）：lint ✅ 0/0、73 测试 ✅ 全过、
+  **build ❌**——`elementPlus.js` 的 `element-plus/es/components/loading/plugin`
+  导入不存在（2.14.2 该目录仅 `index.mjs`）
+- 状态：下一棒按 **issue #39 接棒清单评论**（2026-10-02T14:1xZ）从现场恢复；
+  之后的队列：#40 → #41，#42 随时插队（纯调研）
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 绿；Security Scan 绿（#31 修复）；
+- 无已知阻塞。CI 三 job 绿（最新 2026-10-01T23:47Z）；Security Scan 绿；
   **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65%）**；
   **#37 后前端 lint 带 --max-warnings 0 门禁（告警 103→0）**。
 
 ## 关键事实（已实测验证）
+- **执行会话可能无预警死亡且不留提交**：`glm-20261002T000100Z` 会话工作约 6 分钟
+  后中断，遗留未提交 WIP + 陈旧锁。接棒规则：工作区 WIP 经验证后**续作而非重写**，
+  陈旧锁（>数小时无文件活动）可删。判断现场是否死亡看文件 mtime，不看锁存在与否。
+- **lint/test 全过 ≠ build 可用**：#39 WIP 中 vitest（esbuild 转译、不做完整解析）
+  与 eslint 都放过了不存在的子路径导入 `element-plus/es/components/loading/plugin`，
+  只有 vite build（rollup 完整解析）报错。前端验证必须三门禁全跑。
+- element-plus 2.14.2 的 `es/components/loading/` 下只有 `index.mjs`（无 `plugin` 子路径）
 - `main` 未设分支保护，可直接推送
 - **commit message 里 `fix: #N` 会自动关闭 issue**（GitHub closing keyword）；
   #19/#20/#15 都因此自动关；部分完成的 issue 在评论后 `gh issue reopen` 即可
