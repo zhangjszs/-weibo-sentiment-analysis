@@ -148,4 +148,19 @@ jobs:
           ADMIN_USERS: admin
           REDIS_URL: redis://localhost:6379/0
         run: |
-          pytest -m "integration" -q --maxfail=1
+          # #41：integration 只出覆盖率报告，不设阈值（D-04：integration 用例少，
+          # 单独阈值会失真）。--cov-fail-under=0 覆盖 pyproject 的全局 fail_under=60
+          #（该值只对 backend-fast 生效），确保低覆盖率不会把 job 染红。
+          # 不在此处传 -q：pytest.ini addopts 已有 -q --maxfail=1，重复传会叠成
+          # -qq，pytest 将抑制 "N passed" 汇总行（本地实测）。
+          pytest -m "integration" --maxfail=1 \
+            --cov=src --cov-report=term-missing:skip-covered \
+            --cov-report=xml:coverage-integration.xml --cov-fail-under=0
+
+      - name: Upload integration coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-coverage
+          path: coverage-integration.xml
+          retention-days: 14
