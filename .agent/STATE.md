@@ -3,11 +3,10 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：**#39 已实现并推送**（perf commit `33a4c1f`，含 `Closes #39` 自动关闭），
-  CI/Security Scan run 37020255603 / 37020255065 结果见 issue；
-  执行会话 `executor-glm-20261002T1447Z`（锁在位，收尾后释放）
-- 状态：下一棒先重读 PLAN/STATE/HANDOFF 与 issue backlog；队列 **#40 → #41**，
-  #42 随时插队（纯调研）
+- 任务：**#39 已完成并验收**（perf commit `33a4c1f` + agent `1e080d3`，CI 三 job 绿
+  + Security Scan 绿，issue 自动关闭 reason=COMPLETED）
+- 状态：执行会话 `executor-glm-20261002T1447Z` 继续消费队列，当前 **#40**；
+  之后 #41，#42 随时插队（纯调研）
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 绿（截至 2026-10-01T23:47Z）；Security Scan 绿；

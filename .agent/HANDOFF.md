@@ -35,8 +35,8 @@ WIP；Planning 会话 14:0xZ 验收现场并留接棒清单；本会话按清单
 
 **验证**：lint 0/0 ✅；测试 11 文件 75 全过 ✅（73+2）；vite build ✅；
 preview HTTP 冒烟 ✅（首屏资源 200、SPA 回退、产物引用完整、组件样式在产物中）；
-**CI run 37020255603 / Security Scan 37020255065 结果见 issue**（commit 含
-`Closes #39`，推送即自动关闭；若 CI 红需 reopen 修复——本地三门禁已全绿，风险低）。
+**CI 三 job 绿 + Security Scan 绿（1e080d3）✅；issue #39 已自动关闭
+（reason=COMPLETED）**。
 
 ## 未做 / 留白（有意不做）
 
