@@ -3,15 +3,16 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：**#39、#40 均已完成并推送**（#40 = perf commit `442cd22`，含 `Closes #40`），
-  CI 结果以 issue 为准
-- 状态：执行会话 `executor-glm-20261002T1447Z` 继续消费队列，当前 **#41**
-  （integration 覆盖率报告）；#42 随时插队（纯调研）
+- 任务：**#39、#40、#41 全部完成并推送**（#41 = commit `a36aebf`，CI 三 job 绿 +
+  Security Scan 绿，integration 覆盖率 33% 可见且不阻断；issue 自动关闭）
+- 状态：M2 实现类 issue 清零，剩 #42（P3 纯调研，不阻塞里程碑）。
+  执行会话处理完 #41 后评估 #42 或收尾释放锁
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 绿（截至 2026-10-02T15:4xZ）；Security Scan 绿；
-  **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65%）**；
-  **#37 后前端 lint 带 --max-warnings 0 门禁（告警 103→0）**。
+- 无已知阻塞。CI 三 job 绿（2026-10-02T16:0xZ，run 37024633362）；Security Scan 绿；
+  **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65.21%）**；
+  **#37 后前端 lint 带 --max-warnings 0 门禁（告警 103→0）**；
+  **#41 后 integration job 输出覆盖率报告（实测 33%，不设阈值不阻断）**。
 
 ## 关键事实（已实测验证）
 - **#40 后地图数据是运行时资产**：china.json（1MB raw / gzip ~229KB 传输）经
@@ -104,6 +105,14 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #41 关闭：ci.yml integration job 加 `--cov=src --cov-report=term-missing:skip-covered`
+  + `--cov-fail-under=0`（豁免 pyproject 全局 fail_under=60，D-04 只报告不设阈值；
+  实测 integration 33% 不染红）+ coverage XML artifact（14 天）。CI run 37024633362
+  实证：integration TOTAL 33% + `191 passed, 3 skipped` 仍 success，backend-fast
+  `65.21% reached` 门禁不变（1 commit a36aebf）
+- **新教训：命令行 `-q` 与 pytest.ini addopts 的 `-q` 叠成 `-qq` 后，pytest 抑制
+  "N passed" 汇总行**（本地实测：单 `-q` 有汇总，双 `-q` 无）。CI 命令勿重复传
+  addopts 已有的 flag；判结果必须看退出码
 - #40 关闭：visualizer 构成报告证实 ip chunk 98.6% 是 china.json（583,919B）→
   地图数据改运行时按需拉取（utils/chinaMap.js，fetch + registerMap 幂等），
   ip chunk 586,429→4,004B（gzip -99.0%）；echarts chunk 判定已最优（构成报告
