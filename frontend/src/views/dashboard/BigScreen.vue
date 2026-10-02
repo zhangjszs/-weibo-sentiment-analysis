@@ -112,10 +112,17 @@
             地域分布
           </div>
           <BaseChart
+            v-if="mapReady"
             ref="mapChartRef"
             :options="mapChartOptions"
             height="400px"
           />
+          <div
+            v-else
+            class="map-placeholder"
+          >
+            地图数据加载中…
+          </div>
         </div>
 
         <div class="trend-container">
@@ -282,6 +289,7 @@ const {
   animatedStats,
   hotTopics,
   recentAlerts,
+  mapReady,
   sentimentChartOptions,
   mapChartOptions,
   trendChartOptions,

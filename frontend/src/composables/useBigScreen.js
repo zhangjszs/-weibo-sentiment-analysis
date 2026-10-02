@@ -1,5 +1,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAnalysisStore } from '@/stores/analysis'
+import { ensureChinaMap } from '@/utils/chinaMap'
 
 export function useBigScreen() {
   const analysisStore = useAnalysisStore()
@@ -8,6 +9,17 @@ export function useBigScreen() {
   const currentTime = ref('')
   const currentDate = ref('')
   const loading = ref(false)
+
+  // #40：地图数据运行时拉取并注册（原先依赖「先访问 IP 页」的全局 registerMap
+  // 状态，直接进大屏时地图系列渲染不出）。就绪后再挂载地图图表。
+  const mapReady = ref(false)
+  ensureChinaMap()
+    .then(() => {
+      mapReady.value = true
+    })
+    .catch((error) => {
+      console.error('Failed to load China map data:', error)
+    })
 
   const stats = ref({
     articleCount: 0,
@@ -282,6 +294,7 @@ export function useBigScreen() {
   return {
     isFullscreen, currentTime, currentDate, loading,
     stats, animatedStats, hotTopics, recentAlerts, regionData, trendData,
+    mapReady,
     sentimentChartOptions, mapChartOptions, trendChartOptions, speedChartOptions,
     toggleFullscreen, showTimeline, isPlaying, timelineIndex, timelineData, togglePlay, openTimeline,
     showConfig, refreshInterval, visiblePanels, onRefreshIntervalChange,

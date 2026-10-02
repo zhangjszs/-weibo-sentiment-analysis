@@ -514,6 +514,15 @@
 
       .map-container {
         flex: 2;
+
+        .map-placeholder {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 400px;
+          color: rgba(148, 163, 184, 0.8);
+          font-size: 14px;
+        }
       }
       .trend-container {
         flex: 1;

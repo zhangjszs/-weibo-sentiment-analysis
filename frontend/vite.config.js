@@ -3,6 +3,7 @@ import vue from '@vitejs/plugin-vue'
 import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 import * as elementPlusIcons from '@element-plus/icons-vue'
+import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -29,6 +30,18 @@ export default defineConfig(({ command, mode }) => {
         resolvers: [ElementPlusResolver(), iconResolver],
         dts: false,
       }),
+      // 一次性诊断（#40）：VISUALIZER=1 npm run build 生成模块级体积报告
+      // （dist/stats.json，raw-data 模板）；日常构建零开销。
+      ...(process.env.VISUALIZER
+        ? [
+            visualizer({
+              template: 'raw-data',
+              filename: 'dist/stats.json',
+              gzipSize: true,
+              brotliSize: false,
+            }),
+          ]
+        : []),
     ],
     resolve: {
       alias: {

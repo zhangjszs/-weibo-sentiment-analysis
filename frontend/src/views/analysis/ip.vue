@@ -10,11 +10,18 @@
             <span>IP地理位置分布</span>
           </template>
           <BaseChart
+            v-if="mapReady"
             ref="mapChartRef"
             :options="mapChartOptions"
             height="500px"
             @click="handleRegionSelect"
           />
+          <div
+            v-else
+            class="map-placeholder"
+          >
+            地图数据加载中…
+          </div>
         </el-card>
       </el-col>
 
@@ -107,8 +114,7 @@
   import { ElMessage } from 'element-plus'
   import BaseChart from '@/components/Charts/BaseChart.vue'
   import { getIPData } from '@/api/stats'
-  import chinaMap from '@/assets/china.json'
-  import echarts from '@/utils/echarts'
+  import { ensureChinaMap } from '@/utils/chinaMap'
 
   const loading = ref(false)
   const ipDataList = ref([])
@@ -125,15 +131,16 @@
     return (ipDataList.value || []).filter((x) => (x.location || '').includes(selectedRegion.value))
   })
 
-  // 注册中国地图
+  // #40：地图数据改为运行时拉取（见 utils/chinaMap.js），就绪后才挂载地图图表
   const registerChinaMap = () => {
-    try {
-      echarts.registerMap('china', chinaMap)
-      mapReady.value = true
-    } catch (error) {
-      console.error('Failed to load China map data:', error)
-      ElMessage.warning('地图数据加载失败，地图功能不可用')
-    }
+    ensureChinaMap()
+      .then(() => {
+        mapReady.value = true
+      })
+      .catch((error) => {
+        console.error('Failed to load China map data:', error)
+        ElMessage.warning('地图数据加载失败，地图功能不可用')
+      })
   }
 
   const mapChartOptions = computed(() => ({
@@ -221,6 +228,14 @@
 
 <style lang="scss" scoped>
   .ip-analysis-container {
+    .map-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 500px;
+      color: var(--el-text-color-secondary);
+    }
+
     .chart-card {
       margin-bottom: 20px;
 
