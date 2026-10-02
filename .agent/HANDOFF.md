@@ -5,80 +5,80 @@
 
 ## 上一棒是谁
 
-Agent `executor-glm-20261002T1447Z`（GLM，Execution Agent），
-UTC 2026-10-02T14:47 ~ 15:0x。第十一棒（执行），本会话一个 issue：**#39 完成**。
-（此前 `glm-20261002T000100Z` 会话 00:01Z 开工 #39、00:07Z 死亡，留下未提交
-WIP；Planning 会话 14:0xZ 验收现场并留接棒清单；本会话按清单续作完成。）
+Agent `executor-glm-20261002T1447Z`（GLM，Execution Agent），UTC 2026-10-02T14:47 起。
+第十一棒（执行），本会话已完成 **两个 issue：#39、#40**（M2 性能里程碑的主体）。
+（背景：`glm-20261002T000100Z` 会话 00:01Z 开工 #39、00:07Z 死亡，留未提交 WIP；
+Planning 会话 14:0xZ 验收现场并留接棒清单；本会话按清单续作并连做 #40。）
 
-## 本会话做了什么（#39 element-plus 按需加载，已完成）
+## 已完成 #39：element-plus 按需加载（commit 33a4c1f，CI 绿、issue 关）
 
-**接手现场**（死亡会话 WIP，lint/测试过、build 差一处）之上的增量：
+- 修复 WIP 断点（loading 深路径）+ 补 DataLine + 图标守护测试（75 测试基线）
+- **真正主因是 manualChunks 把 element-plus 聚合进入口静态依赖**（980KB），
+  拆掉后首屏 raw **-76.1% / gzip -72.7%**（1,484,188→354,394B / 418,271→114,171B）
+- 四列对比表与证据见 issue #39 评论
 
-| 改动 | 说明 |
-|------|------|
-| 修 loading 导入 | `es/components/loading/plugin` 不存在（2.14.2），改 `…/loading/index`（默认导出即插件，注册 v-loading） |
-| 补 DataLine | StatCard 的 icon prop 默认值 `'DataLine'` 走字符串解析，WIP 清单漏了它 |
-| 注释校准 | 路由 meta.icon 实为组件引用；字符串路径是 tabs 默认页签 'HomeFilled'、icon="X" prop、动态三元等；路由图标保留注册属稳妥兜底 |
-| **移除 manualChunks 的 element-plus 聚合** | **基线 980KB 的真正主因**：聚合 chunk 被入口静态依赖，按需引得多细都进首屏。改按真实依赖分包（echarts 规则保留，#40 范围） |
-| 新增图标守护测试 | tests/element-plus-icons.test.js：源码扫描字符串图标引用 ⊆ ICON_COMPONENTS（'Help' 是路由名，白名单） |
+## 已完成 #40：大 chunk 排查（commit 442cd22，CI 结果见 issue）
 
-**成果**（首屏 = index.html 实载文件，git worktree 构建基线同口径对比）：
+- **visualizer 构成报告**（`VISUALIZER=1 npm run build` → dist/stats.json，基线
+  commit 9a56559）：ip chunk **98.6% 是 china.json**（583,919B / gz 197,273B）；
+  echarts chunk 586 模块全是真实使用能力（top: core/LineView/TooltipView/
+  AxisBuilder/visualMap/MapDraw…），**判定已最优不动**（字节/hash 不变）
+- **修复**：新增 `utils/chinaMap.js`（fetch + registerMap 幂等 promise），
+  china.json 改运行时按需拉取带 hash 资产（gzip 传输 ~229KB，浏览器缓存）；
+  ip 图表 mapReady 门控。**ip chunk 586,429→4,004B（gzip -99.0%）**
+- **顺带修了一个真 bug**：大屏地图顺序依赖——mapChartOptions 用
+  `map:'china'` 但全仓只有 ip 页 registerMap，直接进大屏地图渲染不出；
+  useBigScreen 接入 ensureChinaMap 后消除
 
-| 产物 | 前 raw | 前 gzip | 后 raw | 后 gzip |
-|------|--------|---------|--------|---------|
-| 首屏 JS | 1,096,238 | 364,458 | 273,166 | 101,068 |
-| 首屏 CSS | 387,950 | 53,813 | 81,228 | 13,103 |
-| 合计 | 1,484,188 | 418,271 | 354,394 | 114,171 |
+## 验证状态
 
-即 **raw -76.1% / gzip -72.7%**，远超 ≥30% 验收线。ip/echarts chunk 字节不变
-（#40 基线未受扰动）；echarts 聚合规则是 #40 的下一刀。
-
-**验证**：lint 0/0 ✅；测试 11 文件 75 全过 ✅（73+2）；vite build ✅；
-preview HTTP 冒烟 ✅（首屏资源 200、SPA 回退、产物引用完整、组件样式在产物中）；
-**CI 三 job 绿 + Security Scan 绿（1e080d3）✅；issue #39 已自动关闭
-（reason=COMPLETED）**。
+- #39：lint 0/0、75 测试、build、preview HTTP 冒烟、CI 三 job 绿 ✅、issue CLOSED
+- #40：lint exit 0、75 测试、build、HTTP 冒烟（ip chunk 200、china.json 200 /
+  229KB gzip、SPA 回退）、**CI/Security Scan 结果以 issue #40 状态为准**
+- 三条门禁保持：后端覆盖率 ≥60、bandit HIGH 阻断、前端 lint 零告警；
+  前端测试基线现为 **75**
 
 ## 未做 / 留白（有意不做）
 
-1. **登录后页面（表格页/大屏）未做真实浏览器交互冒烟**：本机无浏览器后端，
-   后端+MySQL 未起。兜底：resolver 按模板标签机械注入（build 过=注入完成）、
-   组件样式产物抽查、75 测试、图标守护测试。如需人工全量冒烟，起后端后过一遍
-   登录/首页/大屏/表格页即可。
-2. dark css-vars 仍全量引入（纯变量，体积可忽略，issue 非目标允许）。
-3. 22 处 `import { ElMessage } from 'element-plus'` 根导入保留（sideEffects
-   声明下可正常 tree-shake，改深路径无体积收益，徒增 diff）。
+1. 登录后页面（表格页/大屏）无真实浏览器交互冒烟（本机无浏览器后端、后端未起）；
+   兜底 = resolver 机械注入 + 样式产物抽查 + 测试 + HTTP 冒烟。需要时人工起后端过一遍。
+2. 22 处 `import { ElMessage } from 'element-plus'` 根导入保留（tree-shake 有效，无收益不改）。
+3. echarts chunk per-chart 拆分不做（割裂共享缓存，无收益优化，#40 非目标）。
+4. china.json 未做数据简化（改地图精度属数据取舍，需产品决策才动）。
 
 ## 坑与经验（接力者必读）
 
-1. **「按需加载」做了不等于首屏变小**：manualChunks 把包聚合进入口静态依赖时，
-   一切按需都白做。先查 chunk 怎么进首屏（modulepreload 即静态依赖），再谈按需。
-2. **lint/test 全过 ≠ build 可用**：vitest（esbuild）与 eslint 都不完整解析模块
-   路径，只有 vite build（rollup）能抓住不存在的子路径导入。三门禁缺一不可。
-3. **vitest.config 不含 Components 插件**：单测不覆盖模板级组件解析，别把
-   「测试全过」当成「页面组件都正常」的证据。
-4. 判断上一会话死活看文件 mtime 不看锁；陈旧锁可删；WIP 经验证后续作勿重写。
-5. `gh run list --branch <b>` 偶发返回陈旧缓存，去掉过滤即正常；CI 与
-   Security Scan 是两个 workflow；`gh run watch` 偶发误报以 `gh run view` 为准。
-6. jsdom 下 `import.meta.url` 非 file://；用 `process.cwd()` 定位文件。
-7. 沿用：schema 列名三层同步；幂等迁移铁律（写法见 f6a7b8c9d0e1/b2d5a3f9c0e1）；
-   `pytest | tail` 看文本不看退出码；重命名 diff 逐行复核；
-   `refactor:`/`chore:` 不自动关 issue（需 `Closes #N`）。
+1. **「按需加载」做了不等于首屏变小**：先查 chunk 怎么进首屏（manualChunks 聚合 /
+   modulepreload = 静态依赖），再谈按需。#39 的 980KB 与 #40 的 585KB 都是此理。
+2. **判 lint/pytest 结果必须看退出码/完整输出**：lint 横幅含 `--max-warnings` 字样，
+   `grep -E "problem|error|warning"` 会误判；`pytest | tail` 管道退出码是 tail 的。
+3. **lint/test 全过 ≠ build 可用**：只有 vite build（rollup 完整解析）能抓住
+   不存在的子路径导入。前端三门禁缺一不可。
+4. **vitest.config 不含 Components 插件**：单测不覆盖模板级组件解析。
+5. `echarts.registerMap` 是全局状态：谁注册谁生效，跨页面共享时用
+   `ensureChinaMap()`（幂等 promise），别依赖访问顺序。
+6. 判断上一会话死活看文件 mtime 不看锁；陈旧锁可删；WIP 经验证后续作勿重写。
+7. jsdom 下 `import.meta.url` 非 file://；用 `process.cwd()`。
+8. 沿用：schema 列名三层同步；幂等迁移铁律；重命名 diff 逐行复核；
+   `refactor:`/`chore:` 不自动关 issue（需 `Closes #N`）；
+   `gh run list --branch <b>` 偶发陈旧缓存；CI 与 Security Scan 是两个 workflow；
+   ci.yml 为 cancel-in-progress——同分支连续 push 时前一个 run 显示 cancelled 属正常，
+   以最后 HEAD 的 run 为准。
 
 ## 下一步建议
 
-- **#40（P2）大 chunk 排查**：ip 页 572KB / echarts 695KB（基线 commit `33a4c1f`，
-  与更早基线字节一致）。echarts 的 manualChunks 聚合是现成嫌疑，可复用 #39 的
-  同款诊断（首屏强依赖 vs 路由按需）。
-- 之后 #41（P2，integration 覆盖率报告，D-04 不设阈值）；#42（P3 调研）随时。
-- 三条门禁保持：后端覆盖率 ≥60、bandit HIGH 阻断、前端 lint 零告警；
-  前端测试基线现为 **75**。
+- **#41（P2）integration job 覆盖率报告**（D-04：只报告不设阈值）：ci.yml 的
+  integration job 加 --cov 并注意 `--cov-fail-under=0` 防 pyproject 全局阈值误伤。
+- #42（P3 验证码调研）随时可插队。M2 完成后 Planning 可验收结项。
+- **#39/#40 均已含 Closes 关键字，推送即自动关闭；若 CI 红，先 reopen 再修**
+  （本地三门禁已全绿，风险低）。
 
 ## 环境备注
 
 - 后端 `.venv` 齐全（Python 3.12）；fast gate 1261 / integration 189 本地均可跑。
 - fast gate：`.venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros -q --maxfail=1`
-- 前端：mise node 22 入 PATH；lint 0/0；**75 测试**；`unplugin-vue-components`
-  已在依赖中。基线对比可用 `git worktree add /tmp/xx HEAD` + 软链 node_modules。
+- 前端：mise node 22 入 PATH；lint 0/0；**75 测试**；visualizer 用法见上。
+- 基线对比技巧：`git worktree add /tmp/xx HEAD` + 软链 frontend/node_modules。
 - 本地有真实 `.env`（含密钥，**勿提交**）。
 - gh 可用（账号 zhangjszs）；bandit/pytest-cov 已装在 `.venv`。
 - 本地分支 `wip/20260930T154700Z`（未推送）仍在，请人工确认去留。

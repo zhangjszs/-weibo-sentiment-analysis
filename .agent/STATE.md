@@ -3,17 +3,29 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：**#39 已完成并验收**（perf commit `33a4c1f` + agent `1e080d3`，CI 三 job 绿
-  + Security Scan 绿，issue 自动关闭 reason=COMPLETED）
-- 状态：执行会话 `executor-glm-20261002T1447Z` 继续消费队列，当前 **#40**；
-  之后 #41，#42 随时插队（纯调研）
+- 任务：**#39、#40 均已完成并推送**（#40 = perf commit `442cd22`，含 `Closes #40`），
+  CI 结果以 issue 为准
+- 状态：执行会话 `executor-glm-20261002T1447Z` 继续消费队列，当前 **#41**
+  （integration 覆盖率报告）；#42 随时插队（纯调研）
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 绿（截至 2026-10-01T23:47Z）；Security Scan 绿；
+- 无已知阻塞。CI 三 job 绿（截至 2026-10-02T15:4xZ）；Security Scan 绿；
   **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65%）**；
   **#37 后前端 lint 带 --max-warnings 0 门禁（告警 103→0）**。
 
 ## 关键事实（已实测验证）
+- **#40 后地图数据是运行时资产**：china.json（1MB raw / gzip ~229KB 传输）经
+  `utils/chinaMap.js` 的 `ensureChinaMap()`（fetch + registerMap 幂等 promise）
+  在 ip 页与大屏共用；vite 经 `new URL(…, import.meta.url)` 发出
+  `json/china-[hash].json`。**大屏地图顺序依赖 bug 已修**（原先只有 ip 页注册地图）。
+- **echarts chunk（712,498B）判定已最优**：构成报告见 issue #40（586 模块，
+  echarts 1.47MB + zrender 474KB 源码，6 图表 + 9 组件皆有消费方，无重复打包）。
+  勿再无证据地动它。per-chart 拆分 = 割裂共享缓存，属无收益优化（issue 非目标）。
+- **visualizer 已接入**：`VISUALIZER=1 npm run build` 产出 `dist/stats.json`
+  （raw-data 模板，nodeMetas[].moduleParts 关联 chunk 与模块体积）；devDep
+  rollup-plugin-visualizer，日常构建零开销。
+- **判 lint 结果必须看退出码**：lint 输出横幅含 `--max-warnings` 字样，
+  `grep -E "problem|error|warning"` 会误判；`pytest | tail` 同理（既有教训）。
 - **#39 的真正主因是 manualChunks 聚合，不只是全量注册**：element-plus 手工聚合
   chunk 被入口静态依赖，无论按需引得多细，所有路由用到的组件都进首屏（980KB）。
   拆掉聚合改按真实依赖分包后首屏 raw **-76.1%**（1,484,188→354,394B；
@@ -92,6 +104,12 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #40 关闭：visualizer 构成报告证实 ip chunk 98.6% 是 china.json（583,919B）→
+  地图数据改运行时按需拉取（utils/chinaMap.js，fetch + registerMap 幂等），
+  ip chunk 586,429→4,004B（gzip -99.0%）；echarts chunk 判定已最优（构成报告
+  在 issue #40，586 模块全是真实使用能力，字节/hash 不变）；**顺带修复大屏地图
+  顺序依赖 bug**（原先必须先访问 IP 页 registerMap，大屏地图才渲染）。lint/
+  75 测试/build/HTTP 冒烟全过（1 commit 442cd22）
 - #39 关闭：element-plus 按需加载（unplugin-vue-components + ElementPlusResolver +
   iconResolver）+ 移除 manualChunks 强制聚合 + 最小全局注册（29 图标 + v-loading，
   补 DataLine）+ 图标注册面源码扫描测试。首屏 raw -76.1% / gzip -72.7%
