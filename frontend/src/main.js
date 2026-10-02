@@ -1,6 +1,11 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import 'element-plus/dist/index.css'
+// #39：组件样式由 ElementPlusResolver 按模板标签按需注入，不再全量引入
+// dist/index.css（360KB）。以下是以 JS API 形式使用、模板扫描不到的组件，
+// 必须手工补样式；dark 变量保持全量（纯变量，体积可忽略）。
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/message-box/style/css'
+import 'element-plus/es/components/loading/style/css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
 
 // Inter 本地字体（#20）：替代 Google Fonts 外链，与 CSP 一致且离线可用
