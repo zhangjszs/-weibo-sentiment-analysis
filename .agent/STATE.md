@@ -3,10 +3,11 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：**#39、#40、#41 全部完成并推送**（#41 = commit `a36aebf`，CI 三 job 绿 +
-  Security Scan 绿，integration 覆盖率 33% 可见且不阻断；issue 自动关闭）
-- 状态：M2 实现类 issue 清零，剩 #42（P3 纯调研，不阻塞里程碑）。
-  执行会话处理完 #41 后评估 #42 或收尾释放锁
+- 任务：**本轮 4 个 issue 全部处理完**——#39/#40/#41 已实现并关闭（CI 绿），
+  #42 调研交付（对比表+触发条件+推荐「维持不上」，评论已贴，**issue 保持 open**
+  待 Planning 治理：关闭或据推荐立项均由 Planning 决定）
+- 状态：执行会话 `executor-glm-20261002T1447Z` 收尾释放锁。**ready 队列已清空**，
+  下一棒应为 Planning：验收 M2（三项验收标准全部达成）并规划下一阶段
 
 ## 阻塞项
 - 无已知阻塞。CI 三 job 绿（2026-10-02T16:0xZ，run 37024633362）；Security Scan 绿；
@@ -105,6 +106,10 @@
   Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
 
 ## 已完成
+- #42 调研交付（不关闭）：验证码三候选对比表（图形/滑块/云服务 × 5 维度）+
+  国内可用性核实（Turnstile 官方不支持大陆、reCAPTCHA 被墙、国产商业方案
+  国内最优但与内网部署互斥）+ 触发条件 3 条 + 推荐「维持不上」（相对现有
+  失败锁定+限流+审计的边际增益不划算）。评论见 issue #42（2026-10-02T16:2xZ）
 - #41 关闭：ci.yml integration job 加 `--cov=src --cov-report=term-missing:skip-covered`
   + `--cov-fail-under=0`（豁免 pyproject 全局 fail_under=60，D-04 只报告不设阈值；
   实测 integration 33% 不染红）+ coverage XML artifact（14 天）。CI run 37024633362
