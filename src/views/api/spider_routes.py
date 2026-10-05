@@ -6,7 +6,7 @@
 
 from flask import request
 
-from services.task_status_service import query_task_progress
+from services.task_status_service import TaskStatusUnavailable, query_task_progress
 from utils.api_response import error, ok
 from utils.authz import admin_required
 
@@ -110,6 +110,10 @@ def get_task_status(task_id):
     try:
         result = query_task_progress(task_id)
         return ok(result), 200
+    except TaskStatusUnavailable as e:
+        # 结果后端（Redis）不可用 → 503 envelope，而非 Werkzeug HTML 500（#44）
+        logger.error("任务结果后端不可用: %s", e)
+        return error("任务状态服务暂不可用，请稍后重试", code=503), 503
     except (ValueError, KeyError, TypeError) as e:
         logger.error("查询任务状态参数异常: %s", e)
         return error("请求参数错误", code=400), 400

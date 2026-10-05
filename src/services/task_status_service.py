@@ -20,6 +20,15 @@ from tasks.celery_config import celery_app
 logger = logging.getLogger(__name__)
 
 
+class TaskStatusUnavailable(Exception):
+    """任务结果后端不可用（如 Redis 连接失败）。
+
+    AsyncResult 访问后端失败此前裸抛（redis.exceptions.ConnectionError），
+    Werkzeug 渲染成 HTML 调试页 500，破坏 /api 统一 envelope 契约；统一转
+    本领域异常，由路由层转 503 envelope。
+    """
+
+
 def _is_not_found_error(exc: Exception) -> bool:
     if not isinstance(exc, HTTPError):
         return False
@@ -28,8 +37,11 @@ def _is_not_found_error(exc: Exception) -> bool:
 
 
 def _query_local_task(task_id: str) -> dict[str, Any]:
-    result = AsyncResult(task_id, app=celery_app)
-    state = result.state
+    try:
+        result = AsyncResult(task_id, app=celery_app)
+        state = result.state
+    except Exception as exc:
+        raise TaskStatusUnavailable(str(exc)) from exc
     payload: dict[str, Any] = {
         "task_id": task_id,
         "state": state,
