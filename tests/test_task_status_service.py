@@ -24,6 +24,7 @@ import pytest
 from requests import HTTPError
 
 from services.task_status_service import (
+    TaskStatusUnavailable,
     _is_not_found_error,
     _query_local_task,
     query_task_progress,
@@ -218,6 +219,20 @@ class TestQueryLocalTask:
         call_kwargs = mock_async.call_args
         assert call_kwargs[0][0] == "task-10"
         assert "app" in call_kwargs[1]
+
+    @patch("services.task_status_service.AsyncResult")
+    def test_backend_connection_error_raises_unavailable(self, mock_async):
+        """结果后端连接失败（如 Redis 不可用）→ TaskStatusUnavailable。
+
+        此前裸抛 redis.exceptions.ConnectionError，Werkzeug 渲染 HTML 500，
+        破坏 /api 统一 envelope 契约（#44 冒烟实证）；统一包装为领域异常，
+        由路由层转 503 envelope。
+        """
+        mock_async.side_effect = ConnectionError(
+            "Error 111 connecting to localhost:6379. Connection refused."
+        )
+        with pytest.raises(TaskStatusUnavailable):
+            _query_local_task("task-backend-down")
 
 
 # ---------------------------------------------------------------------------

@@ -176,9 +176,16 @@ def query_dataframe(sql: str, params: list | None = None) -> pd.DataFrame:
 def get_database_stats() -> dict:
     """返回连接池状态（兼容旧调用）"""
     pool = engine.pool
+
+    def _stat(attr: str):
+        # QueuePool 的 size/checkedin 等是方法，StaticPool 等轻量池上同名属性
+        # 直接是数值（health/details 在测试引擎上曾因此 500，#44）
+        val = getattr(pool, attr, None)
+        return val() if callable(val) else val
+
     return {
-        "pool_size": pool.size(),
-        "checked_in": pool.checkedin(),
-        "checked_out": pool.checkedout(),
-        "overflow": pool.overflow(),
+        "pool_size": _stat("size"),
+        "checked_in": _stat("checkedin"),
+        "checked_out": _stat("checkedout"),
+        "overflow": _stat("overflow"),
     }
