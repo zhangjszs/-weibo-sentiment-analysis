@@ -3,193 +3,83 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：**本轮 4 个 issue 全部处理完**——#39/#40/#41 已实现并关闭（CI 绿），
-  #42 调研交付（对比表+触发条件+推荐「维持不上」，评论已贴，**issue 保持 open**
-  待 Planning 治理：关闭或据推荐立项均由 Planning 决定）
-- 状态：执行会话 `executor-glm-20261002T1447Z` 收尾释放锁。**ready 队列已清空**，
-  下一棒应为 Planning：验收 M2（三项验收标准全部达成）并规划下一阶段
+- 任务：**本轮 5 个 issue 全部处理完**——#43 浏览器冒烟、#44 GET envelope 契约、
+  #47 写接口契约、#45 字段契约、#46 Redis 降级文档，全部完成并转 in-review
+  待 Planner 验收；另立 auto-discovered #52（大屏空数据 addColorStop 异常）、
+  #53（大屏 trend 形状漂移：前端读 positive/neutral/negative、后端返 counts）
+- 状态：执行会话 `executor-glm-20261005T0714Z` 收尾释放锁。
+  **ready 队列已清空**（#48~#51 为候补），下一棒应为 Planning：验收 M3
+  五项 + 治理 #52/#53 + 决定候补递补
 
 ## 阻塞项
-- 无已知阻塞。CI 三 job 绿（2026-10-02T16:0xZ，run 37024633362）；Security Scan 绿；
-  **#32 后带 Bandit HIGH/CRITICAL 门禁**；**#34/#35 后 CI 带覆盖率门禁（fail_under=60，实测 65.21%）**；
-  **#37 后前端 lint 带 --max-warnings 0 门禁（告警 103→0）**；
-  **#41 后 integration job 输出覆盖率报告（实测 33%，不设阈值不阻断）**。
+- 无阻塞。CI 三 job 绿（#45/#47 推送后实证）；fast gate 基线推进至
+  **1461 passed（+1 strict xfail）**；前端三门禁与 75 测试未动。
 
 ## 关键事实（已实测验证）
-- **#40 后地图数据是运行时资产**：china.json（1MB raw / gzip ~229KB 传输）经
-  `utils/chinaMap.js` 的 `ensureChinaMap()`（fetch + registerMap 幂等 promise）
-  在 ip 页与大屏共用；vite 经 `new URL(…, import.meta.url)` 发出
-  `json/china-[hash].json`。**大屏地图顺序依赖 bug 已修**（原先只有 ip 页注册地图）。
-- **echarts chunk（712,498B）判定已最优**：构成报告见 issue #40（586 模块，
-  echarts 1.47MB + zrender 474KB 源码，6 图表 + 9 组件皆有消费方，无重复打包）。
-  勿再无证据地动它。per-chart 拆分 = 割裂共享缓存，属无收益优化（issue 非目标）。
-- **visualizer 已接入**：`VISUALIZER=1 npm run build` 产出 `dist/stats.json`
-  （raw-data 模板，nodeMetas[].moduleParts 关联 chunk 与模块体积）；devDep
-  rollup-plugin-visualizer，日常构建零开销。
-- **判 lint 结果必须看退出码**：lint 输出横幅含 `--max-warnings` 字样，
-  `grep -E "problem|error|warning"` 会误判；`pytest | tail` 同理（既有教训）。
-- **#39 的真正主因是 manualChunks 聚合，不只是全量注册**：element-plus 手工聚合
-  chunk 被入口静态依赖，无论按需引得多细，所有路由用到的组件都进首屏（980KB）。
-  拆掉聚合改按真实依赖分包后首屏 raw **-76.1%**（1,484,188→354,394B；
-  gzip 418,271→114,171，-72.7%）。echarts 聚合规则保留（#40 范围），
-  **ip/echarts chunk 与基线字节一致，#40 基线未受扰动**。
-- element-plus 2.14.2：`es/components/loading/` 仅 `index.mjs`（无 `plugin`
-  子路径）；默认导出即带 install 的插件（注册 v-loading + $loading）。
-  sideEffects 只标样式路径 → 组件 JS 可 tree-shake。
-- **前端测试基线 73 → 75**（新增 tests/element-plus-icons.test.js：源码扫描
-  守护字符串图标注册面；'Help' 是路由名属扫描白名单）。
-- **vitest.config 无 Components 插件**：单测不覆盖模板级组件解析（jsdom 里
-  el-* 标签按未知元素渲染不报错）——组件缺失风险靠 build + resolver 机制 +
-  图标守护测试兜底，勿以为 75 测试全过就等于页面组件全正常。
-- jsdom 环境下 `import.meta.url` 不是 file:// 协议，定位文件用 `process.cwd()`
-- **执行会话可能无预警死亡且不留提交**：`glm-20261002T000100Z` 会话工作约 6 分钟
-  后中断，遗留未提交 WIP + 陈旧锁。接棒规则：工作区 WIP 经验证后**续作而非重写**，
-  陈旧锁（>数小时无文件活动）可删。判断现场是否死亡看文件 mtime，不看锁存在与否。
-- **lint/test 全过 ≠ build 可用**：#39 WIP 中 vitest（esbuild 转译、不做完整解析）
-  与 eslint 都放过了不存在的子路径导入，只有 vite build（rollup 完整解析）报错。
-  前端验证必须三门禁全跑。
+- **真实浏览器冒烟环境可搭建**（#43）：Playwright 已装进 `.venv`（chromium
+  用 `~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome` 现成缓存，
+  `p.chromium.launch(executable_path=...)` 指定即可）；后端 SQLite 文件库
+  （ORM `import models` + `init_db()` 自举，**必须先 import models** 否则
+  Base 空注册）；demo admin 需手动造（`ensure_demo_admin` 的 `NOW()` 在
+  SQLite 不存在——既有缺陷未修）；AUTO_CREATE_DEMO_ADMIN 等环境变量 shell
+  导出可覆盖 .env（python-dotenv 不覆盖已存在变量）
+- **契约测试三件套已就位**：`test_api_get_contract.py`（51 GET 路由 ×
+  匿名/非管理员/管理员三视角）、`test_api_write_contract.py`（31 写路由 +
+  10 成功路径 + broker 降级判例）、`test_api_field_contract.py`（14 端点
+  逐字段，来源标注到前端文件:行号）。全部从 url_map 机器枚举，新增路由
+  自动纳入契约
+- **两处 500-HTML 缺陷已修**：任务状态查询 Redis 不可用（#44，
+  TaskStatusUnavailable → 503）；任务提交 broker 不可用（#47，
+  spider_task_service/nlp_task_service 提交点转内建 ConnectionError →
+  路由既有 503 分支）。修复前这 6 条路由返回 Werkzeug HTML 调试页
+- **测试环境 celery 是 eager/memory 模式，不触真实 broker**：测 broker
+  降级必须 patch 任务对象抛 OperationalError（`TestBrokerDegradationContract`
+  有范例）；同理反例验证不能只靠坏输入
+- **探测脚本「token 中毒」坑**：`/api/auth/logout` 在公开白名单且会拉黑
+  所带 Bearer 的 jti；`/api/session/extend` 会轮换拉黑旧 jti——按字母序
+  探测时这两条会把共享 token 毒掉，其后所有路由假 401。探测需用新 token
+  且把这两条排最后
+- **大屏 trend 形状漂移（#53，未修）**：前端读 positive/neutral/negative
+  （useBigScreen.js:219），后端两条路径都只返 {times, counts}；前端拿不到
+  就回退硬编码假数据 → 大屏趋势面板永远显示静态数字。评论表无情感标注列，
+  修法需产品决策（后端补标注链路 vs 前端改单系列）
+- **登录锁定/限流/WS 广播/通知队列/爬虫运行态从来不用 Redis**（#46 核实）：
+  均为进程内存，多 worker 一致性缺口与 Redis 配置无关，详见
+  docs/DEPLOYMENT.md「Redis 依赖与降级行为」一节
+- **strict-xfail 是钉已知漂移的手段**：#45 用
+  `@pytest.mark.xfail(strict=True, reason=...)` 标注 #53 漂移，修复落地时
+  XPASS 使门禁变红，强制把断言转正
+- Flask `Rule.build()` 在部分 rule 上返回空路径——契约枚举用正则替换
+  `<arg>`/`<converter:arg>`（两个契约测试文件里的 `_ARG_RE` 可复用）
+- **user 模型自定义 `__init__` 不收 id**：造数用
+  `u = User(username=...); u.id = 1` 再 add
+- 本轮新装依赖：playwright 进 `.venv`（**未写 requirements-dev.txt**，
+  因属本机冒烟工具而非项目测试依赖——如 Planner 认为应入版本控制请指示）
 - `main` 未设分支保护，可直接推送
-- **commit message 里 `fix: #N` 会自动关闭 issue**（GitHub closing keyword）；
-  #19/#20/#15 都因此自动关；部分完成的 issue 在评论后 `gh issue reopen` 即可
-- app fixture 会删 config* 模块重导入：测试里 monkeypatch Config 必须**在
-  fixture 之后** `import config.settings` 取新类，顶层 import 到的是旧类
-- Werkzeug 测试客户端在 HTTP 边界就拒绝带换行的头值（测日志注入用超长值）
-- 模块级别名导出会被 ruff F401 --fix 删除，需配 `__all__`（authz.py 的
-  require_jwt 即此写法）
-- backend-fast / frontend-fast / integration 全绿（2026-09-30 起）
-- 本会话累计已关闭：#30/#19/#20/#15/#21/#16/#28/#31/#32/#33/#34（全部推送 main）
-- **user 表列名已统一 snake_case（#38）**：`createTime` → `create_time`（幂等迁移
-  f6a7b8c9d0e1，inspector 检查：全新库跳过/旧库真改名）。#16 留白的另一半
-  「password String(100) 拓宽」**不成立**（已是 String(100)，bcrypt 60 字符足够）。
-- **新增幂等迁移的标准写法**（沿用 b2d5a3f9c0e1/f6a7b8c9d0e1）：`sa.inspect`
-  查表/列是否存在再操作，全新库（冻结 SQL 已建好新结构）必须跳过。
-- 前端测试现 10 文件 73 个（auth-session 已纳入）
-- **前端 lint 告警已清零并加零告警门禁（#37）**：lint 脚本带 `--max-warnings 0`；
-  清理内容 = 未使用 import/解构项/catch 绑定（94）+ v-for 模板遮蔽（2）+ prop 缺省（7）。
-  **教训：改 v-for 循环变量必须全量改名**——Sidebar 第二循环曾漏改
-  `{{ route.meta.title }}`，指向外层 `useRoute()` 的 route（当前路由）而非循环项，
-  lint/build/测试都不会报，diff 逐行复核才发现。
-- **Security Scan 此前从未绿过**：main 上连续 20+ 次全红（截止 2026-10-01T01:46Z）。
-  曾误记为"连续六次转绿"，实为混淆 CI 与 Security Scan 两个 workflow。根因：
-  9536e2b（traeagent）删掉了 d36906b 加的 `|| true`，任一扫描有发现即 step 中止。
-  #31 已修复并确认首次转绿（恢复 `|| true` + bandit 发现清零）。
-- **Security Scan 现在是有牙齿的门禁（#32）**：`bandit -c .bandit -r src/ -lll`
-  作为阻断步骤，只有 HIGH/CRITICAL 才红（LOW 噪音不阻断）。safety 无
-  `SAFETY_API_KEY` 时显式 `::notice::` 跳过（不再静默空报告）；pip-audit 仍报告模式。
-- `requirements/requirements.audit.txt` 已于 #33 删除（全仓无引用 + 内容漂移）；
-  README.md / docs/LOCAL_DEPLOYMENT.md 目录树同步移除该条目。现 `requirements/`
-  只剩 `requirements.txt` + `requirements-dev.txt`。
-- **CI 覆盖率门禁已激活（#34）**：ci.yml 的 backend-fast 加了
-  `--cov=src --cov-report=term-missing`，pyproject 的 `fail_under=50` 才真正生效
-  （此前 CI 从不传 `--cov`，是死配置）。实测全量 unit+api 覆盖率 **65.11%**。
-  pytest-cov 会读取 pyproject 的 fail_under（已验证）。**#35 已把阈值由 50→60**
-  （实际 65%，留 ~5% 缓冲）；阈值唯一真相在 pyproject，CI 不同步。
-- **`docs/项目评估与规划.md` 是时点快照，多处已过时**：其低优先项 25（`list/`
-  误建 venv）、26（双日志目录 `logs/`：现仅 `src/logs/` 且 gitignore）、
-  28（PyMySQL：src 无直接 import）、7（pickle.load）均**已不成立**；
-  动手前务必现场核实，勿照单直取（本会话曾被其误导）。#36 已给该文档顶部加
-  **"历史快照 · 勿照单直取"横幅**，后续读者应在动手前先看横幅。
-- 本机 shell 源过 `/opt/ros/*/setup.bash`，ROS launch_testing 作为 pytest 插件
-  自动加载且 `osrf_pycommon` 缺失 → collection 崩溃。本地跑 pytest 必带
-  `-p no:launch_testing -p no:launch_ros`（CI 无此问题，勿写进 pytest.ini）
-- 前端测试在 `frontend/tests/*.test.js`（vitest，jsdom），67 个；
-  `vitest.config.js` exclude 了 auth-session.test.js
-- mock axios 时 `create` 返回值必须带 `interceptors` 桩——同模块图里
-  request.js 也会 create 并注册拦截器（router-guard.test.js 有范例）
-- 自定义 axios adapter 必须回填合并后的 config（request-loading.test.js）
-- 前端 node 需 mise 的 node 22 在 PATH 中
-- `pytest.ini` 的 `addopts` 自带 `--maxfail=1`，看全部失败要 `-o addopts="-q"`
-- 本地 `pytest -m integration` 走 SQLite；conftest `app` fixture 自举 schema
-  且**不再调 database.reset()**（勿回退，见 #30 第 3 类根因）
-- nlp_service 测试以私有模块名 `_nlp_tasks_under_test` 加载，勿改回 `app.tasks`
-- nginx.conf 由 frontend/Dockerfile 进生产镜像；#20 给它加了 /socket.io
-  Upgrade 代理，**本机无 Docker 只做了结构验证，人工上线时确认握手 101**
+- backend-fast / frontend-fast / integration 全绿；commit 一律 `Refs #N`
+  （不自动关闭），`.agent/` 变更单独 `chore(agent):` 提交
+- 命令行 `-q` 与 pytest.ini addopts 叠成 `-qq` 会吞汇总行：看计数用
+  `-o addopts="" -q`（本会话再次验证）
 
 ## 已完成
+- **#46 完成转 in-review**：docs/DEPLOYMENT.md 新增「Redis 依赖与降级行为」
+  一节（6 类依赖点逐项核实 + 附加发现 _spider_state + 无 Redis 失效保证
+  汇总 + 最低部署建议）；零代码变更（1 commit 8930090）
+- **#45 完成转 in-review**：字段契约 14 端点逐字段钉住（消费方标注到
+  前端文件:行号）；trend 漂移立 #53 并 strict-xfail；反例（改名
+  today_articles）红→绿（1 commit c5efd93）；fast gate 1460+1xfail
+- **#47 完成转 in-review**：写路由契约 31 条三视角 + 10 成功路径；修复
+  broker 不可用 5 条写路由 HTML 500 → 503 envelope；反例红→绿
+  （1 commit b2a52e3）；fast gate 1446；CI 绿
+- **#44 完成转 in-review**：GET envelope 契约 51 路由三视角 + 5xx 豁免表；
+  修复 tasks/status HTML 500 → 503（TaskStatusUnavailable）、
+  get_database_stats StaticPool 兼容；反例红→绿（1 commit 7261b53）；
+  fast gate 1376；CI run 37280477839 绿
+- **#43 完成转 in-review**：真实浏览器冒烟（headless Chromium + Playwright），
+  登录→表格页→大屏直达→ip 页全路径，地图渲染/组件解析/console 零新增错误
+  全部实证（截图 6 张 + JSON 报告存 .pytest_tmp/smoke/，gitignored）；
+  auto-discovered #52（大屏空数据 addColorStop 未捕获异常）；零代码变更
 - #42 调研交付（不关闭）：验证码三候选对比表（图形/滑块/云服务 × 5 维度）+
   国内可用性核实（Turnstile 官方不支持大陆、reCAPTCHA 被墙、国产商业方案
   国内最优但与内网部署互斥）+ 触发条件 3 条 + 推荐「维持不上」（相对现有
   失败锁定+限流+审计的边际增益不划算）。评论见 issue #42（2026-10-02T16:2xZ）
-- #41 关闭：ci.yml integration job 加 `--cov=src --cov-report=term-missing:skip-covered`
-  + `--cov-fail-under=0`（豁免 pyproject 全局 fail_under=60，D-04 只报告不设阈值；
-  实测 integration 33% 不染红）+ coverage XML artifact（14 天）。CI run 37024633362
-  实证：integration TOTAL 33% + `191 passed, 3 skipped` 仍 success，backend-fast
-  `65.21% reached` 门禁不变（1 commit a36aebf）
-- **新教训：命令行 `-q` 与 pytest.ini addopts 的 `-q` 叠成 `-qq` 后，pytest 抑制
-  "N passed" 汇总行**（本地实测：单 `-q` 有汇总，双 `-q` 无）。CI 命令勿重复传
-  addopts 已有的 flag；判结果必须看退出码
-- #40 关闭：visualizer 构成报告证实 ip chunk 98.6% 是 china.json（583,919B）→
-  地图数据改运行时按需拉取（utils/chinaMap.js，fetch + registerMap 幂等），
-  ip chunk 586,429→4,004B（gzip -99.0%）；echarts chunk 判定已最优（构成报告
-  在 issue #40，586 模块全是真实使用能力，字节/hash 不变）；**顺带修复大屏地图
-  顺序依赖 bug**（原先必须先访问 IP 页 registerMap，大屏地图才渲染）。lint/
-  75 测试/build/HTTP 冒烟全过（1 commit 442cd22）
-- #39 关闭：element-plus 按需加载（unplugin-vue-components + ElementPlusResolver +
-  iconResolver）+ 移除 manualChunks 强制聚合 + 最小全局注册（29 图标 + v-loading，
-  补 DataLine）+ 图标注册面源码扫描测试。首屏 raw -76.1% / gzip -72.7%
-  （JS 1,096,238→273,166B、CSS 387,950→81,228B）；lint 0/0、75 测试、build 过、
-  preview HTTP 冒烟过（1 commit 33a4c1f；接续死亡会话 WIP 完成）
-- #38 关闭：user.createTime → create_time（幂等迁移 f6a7b8c9d0e1 + ORM/裸 SQL/
-  冻结 SQL/API.md/test_db 共 6 处同步）；迁移两路径实测，fast gate 1261、
-  integration 189（1 commit）
-- #37 关闭：前端 lint 告警 103→0 并加 `--max-warnings 0` 门禁（38 文件，+89/-117）；
-  lint 0/0、73 测试、build 全过（1 commit）
-- #36 关闭：给 `docs/项目评估与规划.md`（2026-07-30 快照）加"历史快照·勿照单直取"
-  横幅，列已核实过时条目作示例（1 commit，纯文档）
-- #35 关闭：覆盖率阈值 fail_under 50→60（实际 65%，留缓冲），仍单源于 pyproject；
-  本地同命令实测 `Required test coverage of 60.0% reached … 65.11%` 通过（1 commit）
-- #34 关闭：CI backend-fast 加 `--cov=src --cov-report=term-missing`，激活
-  pyproject 的 fail_under=50（此前死配置）；实测覆盖率 65.11% > 50 通过（1 commit）
-- #33 关闭：删除冗余 `requirements/requirements.audit.txt`（全仓零引用、内容与
-  requirements.txt 漂移），README/LOCAL_DEPLOYMENT 目录树同步移除（1 commit）
-- #32 关闭：Security Scan 加 Bandit HIGH/CRITICAL 门禁步骤（`-lll`，实测
-  HIGH→1 / LOW→0）、safety 无 secret 显式 `::notice::` 跳过并写占位报告；
-  YAML 校验通过、CI+Security Scan 双绿（run 36874452700，1 commit）
-- #31 关闭：Security Scan 恢复 `|| true`（回归修复）、6 处 hashlib.md5 加
-  usedforsecurity=False、B608/B615/B105 加 #nosec、新增 .bandit 跳过 B311/B110，
-  bandit 报告 111→0；bandit 本地 0 发现，fast gate 1261 passed（1 commit）
-- #28 关闭：run_migration.py 改走 alembic（原裸 pymysql 绕迁移链）、
-  alembic/env.py 尊重 TEST_DATABASE_URL（迁移链 SQLite 实测跑到 head）、
-  check_db/check_env 对齐 Config、deploy 注释、alembic.ini 占位清空、
-  docs 计数去硬编码（1 commit；fast gate 1261 / CI 绿）
-- #16 关闭：删 platform_collector.py 单数版+测试、_create_task_queues、
-  utils.metrics 死路径、rate_limiter __main__、_api_cache；print→logger；
-  AGENTS/README/CONTEXT 漂移校正（307 别名、密钥隔离要求、情感链路
-  mode 路由、接口表 /api/*、CONTEXT 补 Architecture 段）——2 commits，
-  fast gate 1261 / CI 绿；String(100) 拓宽与验证码均留白待立项
-- #21 关闭：删死依赖 5 个（socket.io-client/@fontsource 因 #20 已在用，
-  保留）、死代码（locales/、sentiment.js、3 个 composable、v-lazy、
-  propagation/stats 无消费方函数）、lint 去 --fix 纳入 tests、no-console
-  收紧 allow[warn,error]（警告 146→103）、auth-session 测试从 node:test
-  改写 vitest 纳入套件（2 commits；前端 73 测试 / lint 0 error / build /
-  CI 绿）
-- #15 关闭（第三轮）：登录失败锁定（username+IP 5 次锁 15 分钟，成功清零，
-  两条登录轨覆盖）+ logout 审计补齐（feat a548221 + 5 测试；fast gate 1283 /
-  integration 189 / CI 绿；验证码留白：需产品决策建议另行立项）
-- #15 第二轮（统一校验）：jwt_required 升级单轨标准实现（Bearer+Cookie、
-  统一 error envelope）、require_jwt 变真别名、中间件 401 文案区分缺失/
-  无效、ADMIN_USERS 空 dev 启动告警（refactor: 6135bb2 + 4 测试；
-  fast gate 1278 / CI 绿）
-- #15 部分（reopen）：jti 黑名单（Redis 优先/内存兜底）+ aud/iss 验签、
-  两处 logout 作废 token、extend 旋转、预热不再伪造 user_id=0 管理员
-  token、admin_required 401/403 区分、g.user_id 使限流 user 键生效、
-  登录 redirect 白名单（//evil.com）、X-Request-Id 消毒（4 commits +
-  11 新测试；fast gate 1274、integration 189、CI 绿；commit fix: #15
-  自动关闭后已 reopen）
-- #20 关闭：WS 接入 socket.io-client + vite/nginx /socket.io 通道 + 抖动
-  退避；SW 不缓存 /api/*、离线回退 index.html；裸 fetch 统一 axios；登出
-  清 tab 持久化；Inter 字体本地化（4 commits，67 前端测试，CI 绿）
-- #19 关闭：loading 触发/计数对称（request.js）、useTable loadError+竞态、
-  路由守卫 me 缓存 TTL+public 放行 404+adminOnly 跳 /403、home 防连点、
-  report 空数据导出拦截、analysis store allSettled+缓存保护
-- #30 关闭：integration 27 failed 归零（sys.modules 污染 / patch 目标 /
-  测试会话无 schema + reset 丢弃 engine），CI integration/MySQL 首次绿
-- #29 后端 Ruff 全仓清零（1609 → 0），fast gate 与 CI 首次真正可执行
-- #29 staging 密钥校验测试改为自证环境，不再依赖「本机无这些变量」的偶然前提
-- #25 CI 门禁：前端单测入 CI、集成随 PR 跑、env 补 ALLOWED_ORIGINS/ADMIN_USERS
-- #25 测试依赖 cwd 入 sys.path：CI 的 pytest 入口脚本下必崩，改为 conftest 兜底
-- #25 conftest 无条件覆盖 TEST_DATABASE_URL 导致集成测试跑在 SQLite 上，改为仅缺省时回退
-- #27 MySQL TEXT 列建索引缺前缀长度（1170），迁移链 `upgrade head` 整链失败
-- #27 前缀须用 sa.text()：字符串形式被 alembic 当成列名（渲染成 `authorName(100)`）
-- #27 列类型改查 information_schema.DATA_TYPE：按 str(col["type"]) 在 MySQL 上漏判 TEXT
-- #27 同类缺陷扩散到 align_legacy_sql，提取 alembic/index_helpers.py 供两处共用

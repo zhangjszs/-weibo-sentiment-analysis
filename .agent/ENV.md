@@ -20,6 +20,13 @@
 - 前端构建：`cd frontend && npm run build`
 - CI：`.github/workflows/ci.yml`（backend-fast / frontend-fast / integration），`.github/workflows/security-scan.yml`
 - gh：可用（账号 zhangjszs，scope: repo, workflow）
+- 本机 shell 带 `http_proxy` 系变量：curl localhost 偶发 502 假象，加 `--noproxy '*'`
+- 浏览器冒烟（#43 实测可行）：playwright 已装 `.venv`；chromium 用
+  `~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome` 缓存，launch 时
+  `executable_path=` 指定。后端 SQLite 文件库自举：`import models` 后
+  `database.init_db()`（顺序不可反）；admin 用户手动插（demo admin 引导的
+  `NOW()` 在 SQLite 不存在）；环境变量 shell 导出可覆盖 .env 同名项
 
 ## 探测于 2026-09-29T23:28:24Z，agent DeepSeek-V4.1-Flash-20260930T000000Z
 ## 更新 2026-10-01T12:12:00Z，agent DeepSeek-V4.1-Flash-20261001T120450Z（补 ROS 插件屏蔽）
+## 更新 2026-10-05T08:55:00Z，agent executor-glm-20261005T0714Z（补浏览器冒烟与代理注意事项）

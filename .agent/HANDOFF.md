@@ -5,68 +5,82 @@
 
 ## 上一棒是谁
 
-Agent `executor-glm-20261002T1447Z`（GLM，Execution Agent），
-UTC 2026-10-02T14:47 ~ 16:2x。第十一棒（执行）。**本轮消费完 M2 全部 4 个 issue**：
-#39、#40、#41 实现完成且关闭（CI 绿），#42 调研交付（保持 open 待 Planning 治理）。
-（背景：`glm-20261002T000100Z` 会话曾 00:01Z 开工 #39、00:07Z 死亡留 WIP，
-Planning 14:0xZ 验收现场留接棒清单，本会话按清单续作完成。）
+Agent `executor-glm-20261005T0714Z`（GLM，Execution Agent），UTC 2026-10-05T07:14 ~ 08:55。
+第十二棒（执行）。**本轮消费完 M3 全部 5 个 issue**：#43 浏览器冒烟、#44 GET envelope
+契约、#47 写接口契约、#45 字段契约、#46 Redis 降级文档，全部完成并转 **in-review**
+（未关闭——验收是 Planning 的职责）。另立 auto-discovered **#52 / #53** 待定级。
 
 ## 本会话做了什么
 
 | Issue | 结果 | 要点 |
 |-------|------|------|
-| **#39** | ✅ 关闭（CI 绿） | element-plus 按需加载。真因是 manualChunks 把 element-plus 聚合进入口静态依赖（980KB）；拆掉后**首屏 raw -76.1% / gzip -72.7%**（1,484,188→354,394B）。含 loading 深路径修复、DataLine 补注册、图标守护测试（前端测试基线 73→**75**） |
-| **#40** | ✅ 关闭（CI 绿） | 大 chunk 排查。visualizer 报告证实 **ip chunk 98.6% 是 china.json**（584KB）→ 地图数据改运行时按需拉取（`utils/chinaMap.js` 幂等注册），**ip chunk 586,429→4,004B（gzip -99.0%）**；echarts chunk 构成报告判定**已最优**（字节/hash 不变）。**顺带修复大屏地图顺序依赖 bug**（原先必须先访问 IP 页大屏地图才渲染） |
-| **#41** | ✅ 关闭（CI 绿） | integration job 覆盖率报告：`--cov-fail-under=0` 豁免全局阈值（实测 **33%** 不染红），XML artifact 14 天；backend-fast 门禁不变（65.21% reached）。CI run 37024633362 实证三验收全过 |
-| **#42** | 📋 调研交付，**保持 open** | 验证码三候选对比表 + 国内可用性核实（Turnstile 官方不支持大陆、reCAPTCHA 被墙）+ 触发条件 3 条 + 推荐**「维持不上」**（相对现有失败锁定+限流+审计边际增益不划算）。实施与否交 Planning/用户 |
+| **#43** | ✅ 完成待验收 | 登录后页面真实浏览器冒烟（headless Chromium + Playwright，装进 .venv）。登录→表格页×2→**大屏直达**→ip 页：地图渲染/组件解析/API 全 2xx/console 零新增错误全部实证（截图 6 张 + JSON 报告存 .pytest_tmp/smoke/）。#40 顺序依赖修复获真实验证。零代码变更；顺带立 #52（大屏空数据 addColorStop 未捕获异常） |
+| **#44** | ✅ 完成待验收 | GET envelope 契约：51 条路由 × 匿名/非管理员/管理员三视角表驱动（url_map 机器枚举）+ 5xx 豁免表机制。**修复 2 缺陷**：任务状态 Redis 不可用 HTML 500 → 503 envelope（TaskStatusUnavailable）；get_database_stats StaticPool 兼容。反例红→绿。commit 7261b53 |
+| **#47** | ✅ 完成待验收 | 写路由契约：31 条（url_map 实测，规划时 30）三视角 + issue 列的 10 条成功路径（ORM 造数）+ Cookie 无 Origin 403 防线钉住。**修复 5 条路由** broker 不可用 HTML 500 → 503 envelope（service 层转内建 ConnectionError）。反例红→绿。commit b2a52e3 |
+| **#45** | ✅ 完成待验收 | 字段契约第一批：14 端点逐字段钉住，消费方标注到前端文件:行号。**发现 trend 形状漂移 → 立 #53**（strict-xfail 钉住）；level_distribution/time_range null 两处确认为前端防御性读取的合法契约。反例红→绿。commit c5efd93 |
+| **#46** | ✅ 完成待验收 | DEPLOYMENT.md 新增「Redis 依赖与降级行为」：6 类逐项 + 附加发现 _spider_state + 失效保证汇总 + 部署建议。关键事实：**登录锁定/限流/WS 广播从来不用 Redis**（多 worker 缺口与 Redis 无关）。零代码变更。commit 8930090 |
 
-提交：`33a4c1f`(#39) → `442cd22`(#40) → `a36aebf`(#41) → `823991b`/后续 chore。
-M2 三项验收标准（#39 ≥30% / #40 报告+修复 / #41 报告）**全部达成**，CI 全绿。
+提交链：7261b53(#44) → b2a52e3(#47) → c5efd93(#45) → 8930090(#46)，#43 无代码提交。
+每轮 CI 三 job 绿（run：#44 push 37280477839、#47 push 37282705661、#45/#46 push 均绿）。
 
-## 留白 / 风险
+## 未完成 / 进行中
 
-1. 登录后页面（表格页/大屏）无真实浏览器交互冒烟（本机无浏览器后端、后端未起）；
-   兜底 = resolver 机械注入 + 样式产物抽查 + 75 测试 + HTTP 冒烟。需要时人工补。
-2. #42 推荐「维持不上」——是否采纳属产品决策，Planning 治理该 issue。
-3. 22 处 `import { ElMessage } from 'element-plus'` 根导入保留（tree-shake 有效）。
-4. echarts per-chart 拆分不做（割裂共享缓存，无收益优化）；china.json 未做精度
-   简化（数据取舍需产品决策）。
+- 无进行中工作。**ready 队列已清空**（候补 #48~#51 未动）。
 
-## 坑与经验（接力者必读）
+## 验证情况
 
-1. **「按需加载」做了不等于首屏变小**：先查 chunk 怎么进首屏（manualChunks 聚合 /
-   modulepreload = 静态依赖），再谈按需。#39 的 980KB 与 #40 的 584KB 都是此理。
-2. **判 lint/pytest 结果必须看退出码/完整输出**：lint 横幅含 `--max-warnings` 会
-   骗过 grep；`pytest | tail` 管道退出码是 tail 的。
-3. **命令行 `-q` 与 pytest.ini addopts 的 `-q` 叠成 `-qq` 时，pytest 抑制
-   "N passed" 汇总行**（#41 本地实测）。CI 命令勿重复传 addopts 已有 flag。
-4. **lint/test 全过 ≠ build 可用**：只有 vite build（rollup 完整解析）能抓住
-   不存在的子路径导入。前端三门禁缺一不可。
-5. `echarts.registerMap` 是全局状态：跨页面共享地图用 `ensureChinaMap()`
-   （幂等 promise），别依赖访问顺序。
-6. 判断上一会话死活看文件 mtime 不看锁；陈旧锁可删；WIP 经验证后续作勿重写。
-7. jsdom 下 `import.meta.url` 非 file://；用 `process.cwd()`。
-8. 沿用：schema 列名三层同步；幂等迁移铁律；重命名 diff 逐行复核；
-   `refactor:`/`chore:` 不自动关 issue（需 `Closes #N`）；
-   `gh run list --branch <b>` 偶发陈旧缓存；ci.yml 为 cancel-in-progress——
-   连续 push 时前序 run 显示 cancelled 属正常，以最后 HEAD 的 run 为准。
+- fast gate（`.venv/bin/python -m pytest -m "unit or api" -o addopts="" --maxfail=1 -q`）：
+  基线推进 **1261 → 1461 passed（含 1 strict-xfail）**，43→70 skipped（契约视角 by-design skip），
+  每步推送前实测零回退；ruff 全绿。
+- CI 三 job + Security Scan：本轮 4 个代码 push 全绿（#43/#46 零代码变更也各自验证）。
+- 前端三门禁未跑（本轮零前端变更——字段契约只读前端代码，未改）。
+- integration 未跑（本轮无 integration 层改动；契约测试全在 unit/api marker）。
 
-## 下一步建议
+## 风险与注意事项
 
-- **ready 队列已清空，下一棒是 Planning**：验收 M2（三项验收全达成，可结项），
-  治理 #42（采纳推荐则关闭；采纳「上验证码」则凭调研表直接立项），规划下一阶段
-  （PLAN 远景：前端 TS 化、REST 契约测试、镜像瘦身等）。
-- 三条门禁保持：后端覆盖率 ≥60（65.21%）、bandit HIGH 阻断、前端 lint 零告警；
-  前端测试基线 **75**；integration 覆盖率观察起点 33%（不设阈值）。
+1. **#53 是用户可见失真**：大屏「舆情趋势」面板永远显示硬编码假数据（前端
+   拿不到 positive/neutral/negative 就回退静态数组）。修复方向需产品决策
+   （后端补评论情感标注链路 vs 前端改单系列），测试已用 strict-xfail 钉住——
+   谁修复谁负责把 xfail 转正。
+2. **#52**：大屏空数据时 echarts addColorStop 未捕获异常（pageerror 级），
+   空库/新装环境每次加载必现，非 M2 回归。
+3. **ensure_demo_admin 的 `NOW()` 在 SQLite 崩**（#43 冒烟发现）：demo admin
+   引导仅 MySQL 可用；本机冒烟需手动造 admin（方法见 STATE「关键事实」）。
+   价值低未立 issue。
+4. playwright 只装在 `.venv` 未入 requirements-dev——属本机冒烟工具；
+   Planner 若希望冒烟可复现（CI 或他机），需决定是否版本化。
+5. 冒烟产物（截图/矩阵/日志）在 `.pytest_tmp/smoke/`（gitignored），验收
+   #43 若需原件可在本机取； issues 里已贴完整文字记录。
+6. `.agent/LOCK` 已释放；本轮工作区干净，main 与 origin 同步（HEAD 3eeb5eb + 本 chore 提交）。
 
-## 环境备注
+## 坑与经验（接力者必读，本轮新增）
 
-- 后端 `.venv` 齐全（Python 3.12）；fast gate / integration 本地均可跑
-  （integration 本地 SQLite：189 passed, 5 skipped；CI MySQL：191/3）。
-- fast gate：`.venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros -q --maxfail=1`
-- 前端：mise node 22 入 PATH；lint 0/0；**75 测试**；体积诊断
-  `VISUALIZER=1 npm run build` → dist/stats.json；基线对比用
-  `git worktree add /tmp/xx HEAD` + 软链 frontend/node_modules。
-- 本地有真实 `.env`（含密钥，**勿提交**）。
-- gh 可用（账号 zhangjszs）；bandit/pytest-cov 已装在 `.venv`。
-- 本地分支 `wip/20260930T154700Z`（未推送）仍在，请人工确认去留。
+1. **探测「token 中毒」**：`/api/auth/logout` 在公开白名单且会拉黑所带 Bearer 的
+   jti；`/api/session/extend` 轮换也拉黑旧 jti。按字母序对同一 token 批量探测，
+   走到这两条后**其余路由全部假 401**。批量探测用新 token 且把这两条排最后。
+2. **测试环境 celery = eager/memory，不触真实 broker**：测 broker 降级必须
+   patch 任务对象抛 OperationalError（`TestBrokerDegradationContract` 有范例）；
+   反例验证同理，坏输入判例暴露不了 broker 路径。
+3. Flask `Rule.build()` 部分规则返回空路径 → 308 假响应。枚举路由用正则替换
+   `<arg>`/`<converter:arg>`（两个契约测试文件的 `_ARG_RE` 可复用）。
+4. `User` 模型自定义 `__init__` 不收 id：造数用 `u = User(...); u.id = 1`。
+5. SQLite 文件库自举 schema 必须 `import models` **再** `init_db()`，否则 Base
+   空注册建不出表（conftest 同理）。
+6. 本机 shell 有 `http_proxy` 系变量，curl localhost 偶发 502 假象——加
+   `--noproxy '*'` 或确认 no_proxy 覆盖。
+7. 沿用既有教训：lint/pytest 判结果看退出码；`-qq` 吞汇总行（看计数用
+   `-o addopts="" -q`）；commit 用 `Refs #N` 不自动关 issue。
+
+## 给下一棒的第一步建议
+
+- **ready 已空，下一棒是 Planning**：验收 in-review 五连（#43/#44/#47/#45/#46，
+  执行报告逐条对照验收标准即可独立复核）+ 定级 #52/#53 + 决定候补 #48~#51
+  是否递补 ready。
+- 若验收通过，M3 五项验收标准全部收口（#44/#47/#45/#46 各对应一条 +
+  CI 绿不回退基线），可结项 M3 并按 D-05 备选规划下一阶段。
+
+## 给 Planner 的信号
+
+- **需要 Planning 介入（验收积压）**：in-review 5 项 + auto-discovered 2 项待定级。
+- #53 涉及产品决策（大屏趋势图的数据语义），建议进 DECISIONS 待用户确认。
+- playwright 是否入版本控制、三个无消费方端点/孤儿组件是否清理，待 Planner 定。
