@@ -329,6 +329,10 @@ def spider_crawl():
         )
     except ValueError as ve:
         return error(str(ve), code=400), 400
+    except ConnectionError as e:
+        # broker（Redis）不可用：service 层已转内建 ConnectionError（#47）
+        logger.error("任务队列服务不可用: %s", e)
+        return error("任务队列服务暂不可用", code=503), 503
     except (RequestException, SQLAlchemyError, OSError, RuntimeError) as e:
         logger.error("提交爬虫任务失败: %s", e)
         return error("任务提交失败", code=500), 500
@@ -388,6 +392,10 @@ def spider_quick_crawl():
         )
     except ValueError as ve:
         return error(str(ve), code=400), 400
+    except ConnectionError as e:
+        # broker（Redis）不可用：service 层已转内建 ConnectionError（#47）
+        logger.error("任务队列服务不可用: %s", e)
+        return error("任务队列服务暂不可用", code=503), 503
     except (RequestException, SQLAlchemyError, OSError, RuntimeError) as e:
         logger.error("提交快速爬虫任务失败: %s", e)
         return error("任务提交失败", code=500), 500

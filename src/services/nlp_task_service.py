@@ -166,9 +166,16 @@ def _submit_remote_retrain_task(optimize: bool) -> dict[str, Any]:
 
 
 def _submit_local_retrain_task(optimize: bool) -> dict[str, Any]:
+    from kombu.exceptions import OperationalError as BrokerOperationalError
+    from redis.exceptions import RedisError
+
     from tasks.celery_sentiment import retrain_model_task
 
-    task = retrain_model_task.delay(optimize=bool(optimize))
+    try:
+        task = retrain_model_task.delay(optimize=bool(optimize))
+    except (BrokerOperationalError, RedisError) as exc:
+        # broker（Redis）不可用 → 内建 ConnectionError，路由层 503 envelope（#47）
+        raise ConnectionError(f"任务队列服务不可用: {exc}") from exc
     return {
         "task_id": task.id,
         "task_label": "模型重训练",

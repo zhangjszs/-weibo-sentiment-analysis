@@ -108,6 +108,9 @@ def _submit_remote_task(
 def _submit_local_task(
     crawl_type: str, keyword: str, page_num: int, article_limit: int
 ) -> dict[str, Any]:
+    from kombu.exceptions import OperationalError as BrokerOperationalError
+    from redis.exceptions import RedisError
+
     from tasks.celery_spider import (
         spider_comments_task,
         spider_hot_task,
@@ -117,11 +120,19 @@ def _submit_local_task(
     if crawl_type == "search":
         if not keyword.strip():
             raise ValueError("关键词搜索模式下 keyword 不能为空")
-        task = spider_search_task.delay(keyword.strip(), page_num)
-    elif crawl_type == "comments":
-        task = spider_comments_task.delay(article_limit)
-    else:
-        task = spider_hot_task.delay(page_num)
+
+    try:
+        if crawl_type == "search":
+            task = spider_search_task.delay(keyword.strip(), page_num)
+        elif crawl_type == "comments":
+            task = spider_comments_task.delay(article_limit)
+        else:
+            task = spider_hot_task.delay(page_num)
+    except (BrokerOperationalError, RedisError) as exc:
+        # Celery broker（Redis）不可用抛 kombu/redis 异常，views 的捕获元组
+        # 不含它们 → Werkzeug HTML 500（#47 实证）。转内建 ConnectionError，
+        # 让各路由既有 `except ConnectionError → 503 envelope` 分支生效。
+        raise ConnectionError(f"任务队列服务不可用: {exc}") from exc
 
     return {
         "task_id": task.id,
