@@ -11,6 +11,7 @@
 - [爬虫配置](#爬虫配置)
 - [应用启动](#应用启动)
 - [生产部署](#生产部署)
+- [Redis 依赖与降级行为](#redis-依赖与降级行为)
 - [故障排除](#故障排除)
 
 ## ⚡ 快速开始 (本地开发)
@@ -401,6 +402,44 @@ sudo systemctl status weibo-app
 # 查看日志
 sudo journalctl -u weibo-app -f
 ```
+
+## 🔴 Redis 依赖与降级行为
+
+> 逐项按代码核实（2026-10-05，#46）。部署方据此预判「Redis 挂了会发生什么」。
+> 结论速览：**Redis 不可用时应用仍可启动并响应**（情感缓存回落内存、任务提交返回
+> 503 envelope），但登录撤销、异步任务两类能力出现明显缺口；另有三类状态
+> （登录锁定、限流、通知队列）**从来不是共享存储**，多 worker 部署下无论 Redis
+> 是否可用都存在进程间不一致。
+
+### 依赖点清单
+
+| # | 依赖点 | Redis 可用时 | Redis 不可用时 | 生产影响 |
+|---|--------|--------------|----------------|----------|
+| 1 | **JWT jti 黑名单**（logout 作废、会话轮换撤销） | 撤销写入 Redis（SETEX，TTL 对齐 token 剩余寿命），多 worker 共享 | 懒初始化 ping 失败 → **进程内 LRU 兜底**；黑名单查询失败宁可放行（fail-open，不放大故障） | 兜底模式下撤销仅当前 worker 生效：worker A 上 logout，worker B 仍接受该 token（**半失效窗口**）；重启后撤销记录清零，已撤销 token 复活 |
+| 2 | **登录失败锁定**（username+IP 5 次锁 15 分钟） | —（**从来不用 Redis**，仅进程内 LRU） | 无降级概念，恒为进程内存 | 多 worker 计数分散：攻击者把请求打到不同 worker 可稀释/绕过阈值；重启丢失全部锁定状态 |
+| 3 | **限流**（`@rate_limit` 装饰器，滑动窗口） | —（**从来不用 Redis**，进程内 dict + 线程锁） | 无降级概念，恒为进程内存 | 多 worker 各自独立限流 → 实际总放行量 ≈ 配置值 × worker 数；重启窗口清零 |
+| 4 | **情感分析缓存** | redis_client 读写（带重试参数调优） | 连接失败 → **回落内存缓存**（启动日志实测：`Redis连接失败，将使用内存缓存`），仅 WARNING 不阻断启动 | 缓存不跨 worker 共享 → 重复计算（性能损失，正确性不受影响）；重启缓存失效 |
+| 5 | **Celery broker / result backend**（爬虫/重训练异步任务、任务状态查询） | 任务经 Redis 队列分发，结果存 Redis | 任务提交抛 kombu/redis 异常 →（#47 修复）转为 503 envelope「任务队列服务暂不可用」；任务状态查询访问 result backend 失败 →（#44 修复）`TaskStatusUnavailable` → 503 envelope。**异步能力整体不可用**（同步接口不受影响） | broker/result 为共享存储，多 worker 天然一致；Redis 重启会丢队列中未执行任务，运行中任务结果丢失（表现为任务状态查询 503/未知） |
+| 6 | **WebSocket 与通知队列** | —（**不用 Redis**：SocketIO `async_mode="threading"` 且未配置 message queue；通知队列为进程内 deque） | 无降级概念，恒为进程内存 | 多 worker 下 worker A 广播的实时消息对连在 worker B 上的客户端**不可见**（无跨 worker fanout）；通知队列重启丢待发消息，上限 10000 条 |
+
+### 附加发现（同核过程）
+
+- **爬虫任务运行态**（`running/current_task/progress`）存于模块级进程内 dict：
+  多 worker 下「已有任务运行中」的 409 判重只在单 worker 有效，进度跨 worker 不一致。
+- 健康检查 `/api/health/details` 会报告 Redis 连接状态（含连接池统计），可作为
+  部署侧探活手段；`/ready` 不做 Redis I/O。
+
+### 「无 Redis 时哪些保证失效」汇总
+
+1. **撤销保证失效**：logout/会话旋转后，旧 token 在其他 worker（或重启后的进程）仍有效至其自然过期（`JWT_EXPIRATION_HOURS`，默认见 `.env.example`）。缓解：缩短 token 寿命，或接受单 worker 部署。
+2. **异步任务保证失效**：爬虫/重训练的提交接口返回 503，任务无法排队；已排队任务不受影响（存储在 Redis 侧）。
+3. **从不受 Redis 保护的状态**（部署时需单独认知，勿误以为配了 Redis 就解决）：登录失败锁定、限流、WebSocket 广播、通知队列、爬虫任务运行态——均为进程内存，多 worker 一致性需要未来引入共享存储改造（当前未实现）。
+
+### 最低部署建议
+
+- **生产（gunicorn -w 2，docker-compose）**：保证 Redis 与应用同生命周期（compose 已含 redis 服务，`depends_on` 启动顺序 + Celery `broker_connection_retry_on_startup=True` 兜底）；监控 Redis 存活（健康检查），Redis 宕机期间避免依赖 logout 的安全审计结论。
+- **单机开发 / 演示**：无 Redis 可运行——情感缓存回落内存、任务接口返回 503 envelope（不产生 HTML 500），其余功能不受影响。
+- 若未来将锁定/限流/广播迁至 Redis（修复 2/3/6 的多 worker 缺口），属**行为变更**，需另行立项评审，请勿直接实现。
 
 ## 🔧 故障排除
 
