@@ -1,24 +1,11 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import Components from 'unplugin-vue-components/vite'
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
-import * as elementPlusIcons from '@element-plus/icons-vue'
+import { createComponentsPlugin } from './config/components.mjs'
 import { visualizer } from 'rollup-plugin-visualizer'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-// #39：模板里以标签形式直接使用的 element-plus 图标（<Star /> 等）按需自动
-// 引入，替代曾经的「全量注册 290 个图标」。字符串形式的引用（路由 meta、
-// icon="X" prop、<component :is="'X'">）仍走 plugins/elementPlus.js 的
-// 最小全局注册，两套机制互不重叠。
-const ICON_NAMES = new Set(Object.keys(elementPlusIcons))
-const iconResolver = (name) => {
-  if (ICON_NAMES.has(name)) {
-    return { name, from: '@element-plus/icons-vue' }
-  }
-}
 
 export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd())
@@ -26,10 +13,8 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       vue(),
-      Components({
-        resolvers: [ElementPlusResolver(), iconResolver],
-        dts: false,
-      }),
+      // 组件/图标按需解析配置在 build/components.mjs（#49），与 vitest 共用
+      createComponentsPlugin(),
       // 一次性诊断（#40）：VISUALIZER=1 npm run build 生成模块级体积报告
       // （dist/stats.json，raw-data 模板）；日常构建零开销。
       ...(process.env.VISUALIZER
