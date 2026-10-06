@@ -125,12 +125,3 @@ export function getBigScreenAlerts(limit = 5) {
     params: { limit },
   })
 }
-
-// 获取所有大屏数据（用于初始化）
-export function getBigScreenAllData(hours = 24) {
-  return request({
-    url: '/api/bigscreen/all',
-    method: 'get',
-    params: { hours },
-  })
-}

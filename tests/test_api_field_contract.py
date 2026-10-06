@@ -2,8 +2,9 @@
 """前端消费端点字段契约·第一批（#45）——防 #38 型字段漂移。
 
 字段清单以**前端实际读取**为准（调查见 issue #45 执行报告），每条断言注明
-消费方来源文件。覆盖 issue 列出的 14 个端点；其中 3 个端点当前无活跃消费方
-（/api/stats/today、/api/bigscreen/all、/api/alert/unread-count 仅孤儿组件），
+消费方来源文件。覆盖 13 个端点（/api/bigscreen/all 已随 #54 删除——无任何消费方）；
+其中 /api/alert/unread-count 当前无活跃消费方（仅孤儿组件），
+/api/stats/today 的消费方为遗留页面模板 base_page.html:922（SPA 无）。
 形状按后端实现钉住并在注释说明。
 
 发现的前后端不一致（均有结论）：
@@ -157,13 +158,6 @@ class TestBigScreenFields:
         for f in ("id", "level", "time", "title"):
             _assert_field(item, f, (str, int))
 
-    def test_all_aggregation(self, client, bearer_headers):
-        """/api/bigscreen/all 聚合键（当前无前端消费方，api/stats.js:131 定义未用；
-        形状取自后端聚合实现，防止无人盯防处的静默漂移）。"""
-        data = _get_data(client, "/api/bigscreen/all", bearer_headers)
-        for f in ("stats", "trend", "region", "hotTopics", "alerts"):
-            _assert_field(data, f, (dict, list))
-
 
 # ---------------------------------------------------------------------------
 # 预警中心（消费方 composables/useAlert.js + views/alert/center.vue + components/alert/*）
@@ -224,8 +218,8 @@ class TestAlertFields:
         )
 
     def test_unread_count(self, client, bearer_headers, seeded_ids):
-        """data.unread_count——唯一消费方是未挂载的孤儿组件
-        components/Common/AlertNotification.vue:175（结论记录于此）。"""
+        """data.unread_count——SPA 唯一消费方曾是未挂载的孤儿预警铃铛组件
+        （已随 #54 删除，此处不再留组件名以防死链）；端点暂留，当前无活跃消费方。"""
         data = _get_data(client, "/api/alert/unread-count", bearer_headers)
         _assert_field(data, "unread_count", int)
 
@@ -278,7 +272,8 @@ class TestStatsTodayFields:
     def test_today(self, client, bearer_headers):
         """data.today_articles/today_comments/latest_update。
 
-        当前无前端消费方（api/stats.js:11 getTodayStats 定义未用）；
+        消费方：遗留页面模板 base_page.html:922（fetch('/api/stats/today')），
+        SPA 前端无消费但端点保留（#54 调查结论）；
         形状取自 article_service.get_today_stats 实现，防静默漂移。"""
         data = _get_data(client, "/api/stats/today", bearer_headers)
         for f in ("today_articles", "today_comments"):

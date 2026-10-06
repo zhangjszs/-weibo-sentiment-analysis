@@ -54,17 +54,6 @@ class TestBigScreenAPI:
         assert data['code'] == 200
         assert 'data' in data
 
-    def test_get_all_data_endpoint(self, authed_client):
-        """测试获取所有数据端点"""
-        response = authed_client.get('/api/bigscreen/all')
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['code'] == 200
-        assert 'data' in data
-        # 验证包含所有字段
-        response_data = data['data']
-        assert 'stats' in response_data or 'region' in response_data
-
     def test_rate_limit(self, authed_client):
         """测试速率限制"""
         # 快速发送多个请求
