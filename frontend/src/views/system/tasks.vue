@@ -26,8 +26,8 @@
       :task-loading="taskLoading"
       :task-result="taskResult"
       :recent-tasks="recentTasks"
-      @update:log-lines="val => logLines = val"
-      @update:task-id="val => taskId = val"
+      @update:log-lines="(val) => (logLines = val)"
+      @update:task-id="(val) => (taskId = val)"
       @refresh-logs="refreshLogs"
       @query-task="queryTask"
       @clear-recent="clearRecent"
@@ -38,10 +38,38 @@
 </template>
 
 <script setup>
-import TaskProgress from '@/components/system/TaskProgress.vue'
-import TaskList from '@/components/system/TaskList.vue'
-import { useTasks } from '@/composables/useTasks'
-const { spiderLoading, startupLoading, logsLoading, taskLoading, spiderOverview, startupStatus, logs, logLines, taskId, taskResult, recentTasks, spiderHistory, startupWarmup, startupWarmupResults, warmupProgress, warmupProgressStatus, warmupTagType, warmupStatusText, adminBootstrapType, adminBootstrapText, refreshSpider, refreshLogs, refreshStartup, removeRecent, clearRecent, selectRecent, queryTask } = useTasks()
+  import TaskProgress from '@/components/system/TaskProgress.vue'
+  import TaskList from '@/components/system/TaskList.vue'
+  import { useTasks } from '@/composables/useTasks'
+  const {
+    spiderLoading,
+    startupLoading,
+    logsLoading,
+    taskLoading,
+    spiderOverview,
+    startupStatus,
+    logs,
+    logLines,
+    taskId,
+    taskResult,
+    recentTasks,
+    spiderHistory,
+    startupWarmup,
+    startupWarmupResults,
+    warmupProgress,
+    warmupProgressStatus,
+    warmupTagType,
+    warmupStatusText,
+    adminBootstrapType,
+    adminBootstrapText,
+    refreshSpider,
+    refreshLogs,
+    refreshStartup,
+    removeRecent,
+    clearRecent,
+    selectRecent,
+    queryTask,
+  } = useTasks()
 </script>
 
 <style lang="scss" scoped src="./tasks.scss"></style>

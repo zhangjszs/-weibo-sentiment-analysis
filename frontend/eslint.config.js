@@ -15,6 +15,15 @@ export default [
     rules: {
       // 项目中使用单文件名组件（如 HelloWorld.vue），符合项目规范
       'vue/multi-word-component-names': 'off',
+      // #51：以下 5 条是 vue/recommended 中的纯格式规则，与 Prettier
+      // （.prettierrc.json，printWidth 100 的属性换行/单行元素内容策略）
+      // 直接冲突——格式统一由 `npm run format:check` 门禁负责，eslint 不再
+      // 双重规定。其余 vue 模板质量规则（v-if 配 key、属性命名等）全部保留。
+      'vue/html-closing-bracket-newline': 'off',
+      'vue/html-indent': 'off',
+      'vue/html-self-closing': 'off',
+      'vue/max-attributes-per-line': 'off',
+      'vue/singleline-html-element-content-newline': 'off',
       // 未使用变量设为警告，逐步清理
       'no-unused-vars': 'warn',
       // 只放行 warn/error 诊断输出；log/debug/info 会被警告（#21 收紧）

@@ -1,13 +1,7 @@
 <template>
   <div class="report-container">
-    <el-row
-      :gutter="24"
-      class="mb-4"
-    >
-      <el-col
-        :xs="24"
-        :lg="16"
-      >
+    <el-row :gutter="24" class="mb-4">
+      <el-col :xs="24" :lg="16">
         <el-card class="generator-card">
           <template #header>
             <div class="card-header">
@@ -15,34 +9,18 @@
             </div>
           </template>
 
-          <el-form
-            :model="reportForm"
-            label-position="top"
-          >
+          <el-form :model="reportForm" label-position="top">
             <el-row :gutter="20">
-              <el-col
-                :xs="24"
-                :md="12"
-              >
+              <el-col :xs="24" :md="12">
                 <el-form-item label="报告标题">
-                  <el-input
-                    v-model="reportForm.title"
-                    placeholder="请输入报告标题"
-                  />
+                  <el-input v-model="reportForm.title" placeholder="请输入报告标题" />
                 </el-form-item>
               </el-col>
-              <el-col
-                :xs="24"
-                :md="12"
-              >
+              <el-col :xs="24" :md="12">
                 <el-form-item label="报告格式">
                   <el-radio-group v-model="reportForm.format">
-                    <el-radio-button label="pdf">
-                      PDF
-                    </el-radio-button>
-                    <el-radio-button label="ppt">
-                      PPT
-                    </el-radio-button>
+                    <el-radio-button label="pdf"> PDF </el-radio-button>
+                    <el-radio-button label="ppt"> PPT </el-radio-button>
                   </el-radio-group>
                 </el-form-item>
               </el-col>
@@ -50,11 +28,7 @@
 
             <el-form-item label="报告模板">
               <el-radio-group v-model="reportForm.template">
-                <el-radio-button
-                  v-for="t in templates"
-                  :key="t.id"
-                  :label="t.id"
-                >
+                <el-radio-button v-for="t in templates" :key="t.id" :label="t.id">
                   {{ t.name }}
                 </el-radio-button>
               </el-radio-group>
@@ -71,36 +45,21 @@
 
             <el-form-item label="报告内容">
               <el-checkbox-group v-model="reportForm.sections">
-                <el-checkbox label="summary">
-                  数据概览
-                </el-checkbox>
-                <el-checkbox label="sentiment">
-                  情感分析
-                </el-checkbox>
-                <el-checkbox label="topics">
-                  热门话题
-                </el-checkbox>
-                <el-checkbox label="alerts">
-                  预警记录
-                </el-checkbox>
+                <el-checkbox label="summary"> 数据概览 </el-checkbox>
+                <el-checkbox label="sentiment"> 情感分析 </el-checkbox>
+                <el-checkbox label="topics"> 热门话题 </el-checkbox>
+                <el-checkbox label="alerts"> 预警记录 </el-checkbox>
               </el-checkbox-group>
             </el-form-item>
 
             <el-form-item>
-              <el-button
-                type="primary"
-                :loading="generating"
-                @click="handleGenerate"
-              >
+              <el-button type="primary" :loading="generating" @click="handleGenerate">
                 <el-icon class="mr-1">
                   <Document />
                 </el-icon>
                 生成报告
               </el-button>
-              <el-button
-                :loading="generatingAll"
-                @click="handleGenerateAll"
-              >
+              <el-button :loading="generatingAll" @click="handleGenerateAll">
                 生成所有格式
               </el-button>
             </el-form-item>
@@ -108,62 +67,37 @@
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="8"
-      >
+      <el-col :xs="24" :lg="8">
         <el-card class="preview-card">
           <template #header>
             <div class="card-header">
               <span>数据预览</span>
-              <el-tag
-                size="small"
-                type="info"
-              >
+              <el-tag size="small" type="info">
                 {{ dataSourceText }}
               </el-tag>
             </div>
           </template>
 
-          <div
-            v-loading="loadingDemo"
-            class="preview-content"
-          >
-            <el-descriptions
-              :column="1"
-              border
-              size="small"
-            >
+          <div v-loading="loadingDemo" class="preview-content">
+            <el-descriptions :column="1" border size="small">
               <el-descriptions-item label="总文章数">
-                {{
-                  demoData.summary?.total_articles || 0
-                }}
+                {{ demoData.summary?.total_articles || 0 }}
               </el-descriptions-item>
               <el-descriptions-item label="总评论数">
-                {{
-                  demoData.summary?.total_comments || 0
-                }}
+                {{ demoData.summary?.total_comments || 0 }}
               </el-descriptions-item>
               <el-descriptions-item label="正面评价">
-                {{
-                  demoData.summary?.positive_count || 0
-                }}
+                {{ demoData.summary?.positive_count || 0 }}
               </el-descriptions-item>
               <el-descriptions-item label="中性评价">
-                {{
-                  demoData.summary?.neutral_count || 0
-                }}
+                {{ demoData.summary?.neutral_count || 0 }}
               </el-descriptions-item>
               <el-descriptions-item label="负面评价">
-                {{
-                  demoData.summary?.negative_count || 0
-                }}
+                {{ demoData.summary?.negative_count || 0 }}
               </el-descriptions-item>
             </el-descriptions>
 
-            <el-divider content-position="left">
-              热门话题
-            </el-divider>
+            <el-divider content-position="left"> 热门话题 </el-divider>
 
             <el-tag
               v-for="(topic, index) in demoData.hot_topics?.slice(0, 5)"
@@ -194,52 +128,23 @@
         </div>
       </template>
 
-      <el-table
-        :data="historyList"
-        style="width: 100%"
-      >
-        <el-table-column
-          prop="title"
-          label="报告标题"
-          min-width="200"
-        />
-        <el-table-column
-          prop="format"
-          label="格式"
-          width="100"
-          align="center"
-        >
+      <el-table :data="historyList" style="width: 100%">
+        <el-table-column prop="title" label="报告标题" min-width="200" />
+        <el-table-column prop="format" label="格式" width="100" align="center">
           <template #default="{ row }">
-            <el-tag
-              :type="row.format === 'pdf' ? 'danger' : 'primary'"
-              size="small"
-            >
+            <el-tag :type="row.format === 'pdf' ? 'danger' : 'primary'" size="small">
               {{ row.format.toUpperCase() }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column
-          prop="generated_at"
-          label="生成时间"
-          width="180"
-          align="center"
-        >
+        <el-table-column prop="generated_at" label="生成时间" width="180" align="center">
           <template #default="{ row }">
             {{ formatTime(row.generated_at) }}
           </template>
         </el-table-column>
-        <el-table-column
-          label="操作"
-          width="200"
-          align="center"
-        >
+        <el-table-column label="操作" width="200" align="center">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              link
-              size="small"
-              @click="handleDownload(row)"
-            >
+            <el-button type="primary" link size="small" @click="handleDownload(row)">
               下载
             </el-button>
             <el-button
@@ -255,10 +160,7 @@
         </el-table-column>
       </el-table>
 
-      <el-empty
-        v-if="historyList.length === 0"
-        description="暂无生成历史"
-      />
+      <el-empty v-if="historyList.length === 0" description="暂无生成历史" />
     </el-card>
   </div>
 </template>

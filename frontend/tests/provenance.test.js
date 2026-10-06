@@ -91,7 +91,7 @@ describe('AnalysisEmptyState', () => {
         props: { type },
       })
       expect(wrapper.exists()).toBe(true)
-    },
+    }
   )
 
   it('shows action button when actionLabel is provided', () => {

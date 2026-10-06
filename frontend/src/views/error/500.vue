@@ -1,25 +1,12 @@
 <template>
   <div class="error-page">
     <div class="error-content">
-      <div class="error-code">
-        500
-      </div>
-      <div class="error-title">
-        服务器错误
-      </div>
-      <p class="error-desc">
-        抱歉，服务器出现了一些问题，请稍后再试
-      </p>
+      <div class="error-code">500</div>
+      <div class="error-title">服务器错误</div>
+      <p class="error-desc">抱歉，服务器出现了一些问题，请稍后再试</p>
       <div class="error-actions">
-        <el-button
-          type="primary"
-          @click="refresh"
-        >
-          刷新页面
-        </el-button>
-        <el-button @click="goHome">
-          返回首页
-        </el-button>
+        <el-button type="primary" @click="refresh"> 刷新页面 </el-button>
+        <el-button @click="goHome"> 返回首页 </el-button>
       </div>
     </div>
   </div>

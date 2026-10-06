@@ -66,9 +66,7 @@ class WebSocketClient {
         this.scheduleReconnect(authToken)
       })
 
-
-      this.socket.on('connected', () => {
-      })
+      this.socket.on('connected', () => {})
 
       this.socket.on('auth_success', () => {
         this.authenticated = true
@@ -78,18 +76,15 @@ class WebSocketClient {
         console.error('WebSocket 认证失败:', data)
       })
 
-      this.socket.on('subscribed', () => {
-      })
+      this.socket.on('subscribed', () => {})
 
-      this.socket.on('unsubscribed', () => {
-      })
+      this.socket.on('unsubscribed', () => {})
 
       this.socket.on('subscribe_error', (data) => {
         console.error('WebSocket 订阅失败:', data)
       })
 
-      this.socket.on('pong', () => {
-      })
+      this.socket.on('pong', () => {})
     } catch (error) {
       console.error('WebSocket 连接异常:', error)
       this.scheduleReconnect(authToken)
@@ -157,7 +152,6 @@ class WebSocketClient {
     }
   }
 
-
   scheduleReconnect(token) {
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
       console.error('WebSocket 重连次数已达上限，停止重连')
@@ -171,7 +165,10 @@ class WebSocketClient {
     this.reconnectAttempts++
     // 指数退避 + 抖动：固定间隔会让断线服务恢复瞬间的所有客户端同时重连
     // （惊群），抖动把重连打散（#20）
-    const exponential = Math.min(RECONNECT_DELAY * 2 ** (this.reconnectAttempts - 1), MAX_RECONNECT_DELAY)
+    const exponential = Math.min(
+      RECONNECT_DELAY * 2 ** (this.reconnectAttempts - 1),
+      MAX_RECONNECT_DELAY
+    )
     const delay = exponential * (0.5 + Math.random())
 
     this.reconnectTimer = setTimeout(() => {

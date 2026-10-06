@@ -1,9 +1,6 @@
 <template>
   <div class="article-analysis-container">
-    <el-row
-      :gutter="24"
-      class="mb-4"
-    >
+    <el-row :gutter="24" class="mb-4">
       <el-col :span="24">
         <el-card class="chart-card">
           <template #header>
@@ -19,14 +16,8 @@
       </el-col>
     </el-row>
 
-    <el-row
-      :gutter="24"
-      class="mb-4"
-    >
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+    <el-row :gutter="24" class="mb-4">
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span class="header-title">文章类型分布</span>
@@ -40,19 +31,12 @@
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span class="header-title">文章情感分布</span>
           </template>
-          <BaseChart
-            ref="sentimentChartRef"
-            :options="sentimentChartOptions"
-            height="350px"
-          />
+          <BaseChart ref="sentimentChartRef" :options="sentimentChartOptions" height="350px" />
         </el-card>
       </el-col>
     </el-row>
@@ -63,41 +47,16 @@
           <template #header>
             <div class="card-header">
               <span class="header-title">热门文章排行</span>
-              <el-button
-                type="primary"
-                plain
-                size="small"
-                @click="loadData"
-              >
-                刷新数据
-              </el-button>
+              <el-button type="primary" plain size="small" @click="loadData"> 刷新数据 </el-button>
             </div>
           </template>
-          <el-table
-            :data="articleList"
-            :loading="loading"
-            style="width: 100%"
-          >
-            <el-table-column
-              prop="id"
-              label="文章ID"
-              width="100"
-              align="center"
-            />
-            <el-table-column
-              prop="user"
-              label="发布用户"
-              width="150"
-            >
+          <el-table :data="articleList" :loading="loading" style="width: 100%">
+            <el-table-column prop="id" label="文章ID" width="100" align="center" />
+            <el-table-column prop="user" label="发布用户" width="150">
               <template #default="{ row }">
                 <div class="user-cell">
-                  <el-avatar
-                    :size="24"
-                    :style="{ backgroundColor: '#2563EB', color: '#fff' }"
-                  >
-                    {{
-                      row.user.charAt(0)
-                    }}
+                  <el-avatar :size="24" :style="{ backgroundColor: '#2563EB', color: '#fff' }">
+                    {{ row.user.charAt(0) }}
                   </el-avatar>
                   <span>{{ row.user }}</span>
                 </div>
@@ -109,28 +68,13 @@
               min-width="400"
               show-overflow-tooltip
             />
-            <el-table-column
-              prop="time"
-              label="发布时间"
-              width="180"
-              align="center"
-            />
-            <el-table-column
-              prop="likes"
-              label="点赞数"
-              width="120"
-              align="center"
-            >
+            <el-table-column prop="time" label="发布时间" width="180" align="center" />
+            <el-table-column prop="likes" label="点赞数" width="120" align="center">
               <template #default="{ row }">
                 <span class="stat-text likes">👍 {{ row.likes }}</span>
               </template>
             </el-table-column>
-            <el-table-column
-              prop="reposts"
-              label="转发数"
-              width="120"
-              align="center"
-            >
+            <el-table-column prop="reposts" label="转发数" width="120" align="center">
               <template #default="{ row }">
                 <span class="stat-text reposts">🔁 {{ row.reposts }}</span>
               </template>
@@ -143,9 +87,7 @@
     <el-card class="list-card">
       <template #header>
         <div class="card-header">
-          <div class="header-title">
-            文章列表
-          </div>
+          <div class="header-title">文章列表</div>
           <div class="header-actions">
             <el-button
               type="default"
@@ -157,24 +99,14 @@
             >
               导出 CSV
             </el-button>
-            <el-button
-              type="default"
-              plain
-              size="small"
-              :icon="Refresh"
-              @click="loadList"
-            >
+            <el-button type="default" plain size="small" :icon="Refresh" @click="loadList">
               刷新
             </el-button>
           </div>
         </div>
       </template>
 
-      <el-form
-        :inline="true"
-        class="filter-form"
-        @submit.prevent
-      >
+      <el-form :inline="true" class="filter-form" @submit.prevent>
         <el-form-item label="关键词">
           <el-input
             v-model="filters.keyword"
@@ -184,18 +116,8 @@
           />
         </el-form-item>
         <el-form-item label="类型">
-          <el-select
-            v-model="filters.type"
-            placeholder="全部"
-            clearable
-            style="width: 180px"
-          >
-            <el-option
-              v-for="t in typeOptions"
-              :key="t"
-              :label="t"
-              :value="t"
-            />
+          <el-select v-model="filters.type" placeholder="全部" clearable style="width: 180px">
+            <el-option v-for="t in typeOptions" :key="t" :label="t" :value="t" />
           </el-select>
         </el-form-item>
         <el-form-item label="时间范围">
@@ -209,93 +131,24 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
-            type="primary"
-            :icon="Search"
-            @click="applyFilters"
-          >
-            查询
-          </el-button>
-          <el-button @click="resetFilters">
-            重置
-          </el-button>
+          <el-button type="primary" :icon="Search" @click="applyFilters"> 查询 </el-button>
+          <el-button @click="resetFilters"> 重置 </el-button>
         </el-form-item>
       </el-form>
 
-      <el-table
-        :data="listData"
-        :loading="listLoading"
-        style="width: 100%"
-      >
-        <el-table-column
-          prop="id"
-          label="ID"
-          width="120"
-          align="center"
-        />
-        <el-table-column
-          prop="authorName"
-          label="作者"
-          width="160"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="region"
-          label="地区"
-          width="120"
-          align="center"
-        />
-        <el-table-column
-          prop="type"
-          label="类型"
-          width="110"
-          align="center"
-        />
-        <el-table-column
-          prop="created_at"
-          label="时间"
-          width="180"
-          align="center"
-        />
-        <el-table-column
-          prop="content"
-          label="内容"
-          min-width="360"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="likeNum"
-          label="赞"
-          width="90"
-          align="center"
-        />
-        <el-table-column
-          prop="commentsLen"
-          label="评"
-          width="90"
-          align="center"
-        />
-        <el-table-column
-          prop="reposts_count"
-          label="转"
-          width="90"
-          align="center"
-        />
-        <el-table-column
-          label="操作"
-          width="160"
-          fixed="right"
-          align="center"
-        >
+      <el-table :data="listData" :loading="listLoading" style="width: 100%">
+        <el-table-column prop="id" label="ID" width="120" align="center" />
+        <el-table-column prop="authorName" label="作者" width="160" show-overflow-tooltip />
+        <el-table-column prop="region" label="地区" width="120" align="center" />
+        <el-table-column prop="type" label="类型" width="110" align="center" />
+        <el-table-column prop="created_at" label="时间" width="180" align="center" />
+        <el-table-column prop="content" label="内容" min-width="360" show-overflow-tooltip />
+        <el-table-column prop="likeNum" label="赞" width="90" align="center" />
+        <el-table-column prop="commentsLen" label="评" width="90" align="center" />
+        <el-table-column prop="reposts_count" label="转" width="90" align="center" />
+        <el-table-column label="操作" width="160" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              link
-              :icon="View"
-              @click="openDetail(row)"
-            >
-              查看
-            </el-button>
+            <el-button type="primary" link :icon="View" @click="openDetail(row)"> 查看 </el-button>
             <el-button
               :type="favoriteMap[row.id] ? 'warning' : 'default'"
               link
@@ -321,43 +174,28 @@
       </div>
     </el-card>
 
-    <el-dialog
-      v-model="detailVisible"
-      title="文章详情"
-      width="760px"
-    >
-      <div
-        v-if="detailRow"
-        class="detail"
-      >
+    <el-dialog v-model="detailVisible" title="文章详情" width="760px">
+      <div v-if="detailRow" class="detail">
         <div class="detail-row">
-          <div class="detail-label">
-            作者
-          </div>
+          <div class="detail-label">作者</div>
           <div class="detail-value">
             {{ detailRow.authorName || '-' }}
           </div>
         </div>
         <div class="detail-row">
-          <div class="detail-label">
-            时间
-          </div>
+          <div class="detail-label">时间</div>
           <div class="detail-value">
             {{ detailRow.created_at || '-' }}
           </div>
         </div>
         <div class="detail-row">
-          <div class="detail-label">
-            地区
-          </div>
+          <div class="detail-label">地区</div>
           <div class="detail-value">
             {{ detailRow.region || '-' }}
           </div>
         </div>
         <div class="detail-row">
-          <div class="detail-label">
-            指标
-          </div>
+          <div class="detail-label">指标</div>
           <div class="detail-value">
             赞 {{ detailRow.likeNum || 0 }} · 评 {{ detailRow.commentsLen || 0 }} · 转
             {{ detailRow.reposts_count || 0 }}
@@ -366,23 +204,14 @@
         <div class="detail-content">
           {{ detailRow.content || '' }}
         </div>
-        <div
-          v-if="detailRow.detailUrl"
-          class="detail-link"
-        >
-          <el-link
-            :href="detailRow.detailUrl"
-            target="_blank"
-            type="primary"
-          >
+        <div v-if="detailRow.detailUrl" class="detail-link">
+          <el-link :href="detailRow.detailUrl" target="_blank" type="primary">
             打开微博链接
           </el-link>
         </div>
       </div>
       <template #footer>
-        <el-button @click="detailVisible = false">
-          关闭
-        </el-button>
+        <el-button @click="detailVisible = false"> 关闭 </el-button>
       </template>
     </el-dialog>
   </div>

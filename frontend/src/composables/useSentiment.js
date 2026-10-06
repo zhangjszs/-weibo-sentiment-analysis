@@ -147,51 +147,51 @@ export function useSentiment() {
   const emotionBarOptions = computed(() => {
     // 计算情感类型分布
     const emotionCounts = {}
-    rawList.value.forEach(item => {
+    rawList.value.forEach((item) => {
       const emotion = item.emotion || '无感'
       emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1
     })
-    
+
     const emotions = Object.keys(emotionCounts)
     const counts = Object.values(emotionCounts)
-    
+
     return {
       tooltip: {
         trigger: 'axis',
         axisPointer: {
-          type: 'shadow'
-        }
+          type: 'shadow',
+        },
       },
       grid: {
         left: '3%',
         right: '4%',
         bottom: '3%',
-        containLabel: true
+        containLabel: true,
       },
       xAxis: {
         type: 'category',
         data: emotions,
         axisLabel: {
           rotate: 45,
-          color: '#666666'
+          color: '#666666',
         },
         axisLine: {
           lineStyle: {
-            color: '#eaeaea'
-          }
-        }
+            color: '#eaeaea',
+          },
+        },
       },
       yAxis: {
         type: 'value',
         axisLabel: {
-          color: '#666666'
+          color: '#666666',
         },
         splitLine: {
           lineStyle: {
             color: '#f5f5f5',
-            type: 'dashed'
-          }
-        }
+            type: 'dashed',
+          },
+        },
       },
       series: [
         {
@@ -199,36 +199,36 @@ export function useSentiment() {
           type: 'bar',
           data: counts,
           itemStyle: {
-            color: function(params) {
+            color: function (params) {
               const colorMap = {
-                '喜悦': '#10B981',
-                '感动': '#34D399',
-                '兴奋': '#6EE7B7',
-                '期待': '#A7F3D0',
-                '愤怒': '#EF4444',
-                '悲伤': '#FCA5A5',
-                '失望': '#F87171',
-                '厌恶': '#DC2626',
-                '焦虑': '#F59E0B',
-                '恐惧': '#FBBF24',
-                '惊讶': '#FCD34D',
-                '无奈': '#60A5FA',
-                '讽刺': '#93C5FD',
-                '平静': '#BFDBFE',
-                '无感': '#9CA3AF'
+                喜悦: '#10B981',
+                感动: '#34D399',
+                兴奋: '#6EE7B7',
+                期待: '#A7F3D0',
+                愤怒: '#EF4444',
+                悲伤: '#FCA5A5',
+                失望: '#F87171',
+                厌恶: '#DC2626',
+                焦虑: '#F59E0B',
+                恐惧: '#FBBF24',
+                惊讶: '#FCD34D',
+                无奈: '#60A5FA',
+                讽刺: '#93C5FD',
+                平静: '#BFDBFE',
+                无感: '#9CA3AF',
               }
               return colorMap[params.name] || '#9CA3AF'
-            }
+            },
           },
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
               shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          }
-        }
-      ]
+              shadowColor: 'rgba(0, 0, 0, 0.5)',
+            },
+          },
+        },
+      ],
     }
   })
 
@@ -239,10 +239,10 @@ export function useSentiment() {
       '0.2-0.4': 0,
       '0.4-0.6': 0,
       '0.6-0.8': 0,
-      '0.8-1.0': 0
+      '0.8-1.0': 0,
     }
-    
-    rawList.value.forEach(item => {
+
+    rawList.value.forEach((item) => {
       const score = item.score || 0.5
       if (score < 0.2) {
         scoreRanges['0.0-0.2']++
@@ -256,46 +256,46 @@ export function useSentiment() {
         scoreRanges['0.8-1.0']++
       }
     })
-    
+
     const ranges = Object.keys(scoreRanges)
     const counts = Object.values(scoreRanges)
-    
+
     return {
       tooltip: {
         trigger: 'axis',
         axisPointer: {
-          type: 'shadow'
-        }
+          type: 'shadow',
+        },
       },
       grid: {
         left: '3%',
         right: '4%',
         bottom: '3%',
-        containLabel: true
+        containLabel: true,
       },
       xAxis: {
         type: 'category',
         data: ranges,
         axisLabel: {
-          color: '#666666'
+          color: '#666666',
         },
         axisLine: {
           lineStyle: {
-            color: '#eaeaea'
-          }
-        }
+            color: '#eaeaea',
+          },
+        },
       },
       yAxis: {
         type: 'value',
         axisLabel: {
-          color: '#666666'
+          color: '#666666',
         },
         splitLine: {
           lineStyle: {
             color: '#f5f5f5',
-            type: 'dashed'
-          }
-        }
+            type: 'dashed',
+          },
+        },
       },
       series: [
         {
@@ -303,26 +303,26 @@ export function useSentiment() {
           type: 'bar',
           data: counts,
           itemStyle: {
-            color: function(params) {
+            color: function (params) {
               const colorMap = {
                 '0.0-0.2': '#EF4444',
                 '0.2-0.4': '#F87171',
                 '0.4-0.6': '#64748B',
                 '0.6-0.8': '#34D399',
-                '0.8-1.0': '#10B981'
+                '0.8-1.0': '#10B981',
               }
               return colorMap[params.name] || '#64748B'
-            }
+            },
           },
           emphasis: {
             itemStyle: {
               shadowBlur: 10,
               shadowOffsetX: 0,
-              shadowColor: 'rgba(0, 0, 0, 0.5)'
-            }
-          }
-        }
-      ]
+              shadowColor: 'rgba(0, 0, 0, 0.5)',
+            },
+          },
+        },
+      ],
     }
   })
 
@@ -342,21 +342,21 @@ export function useSentiment() {
 
   const getEmotionType = (emotion) => {
     const emotionMap = {
-      '喜悦': 'success',
-      '感动': 'success',
-      '兴奋': 'success',
-      '期待': 'success',
-      '愤怒': 'danger',
-      '悲伤': 'danger',
-      '失望': 'danger',
-      '厌恶': 'danger',
-      '焦虑': 'warning',
-      '恐惧': 'warning',
-      '惊讶': 'warning',
-      '无奈': 'info',
-      '讽刺': 'info',
-      '平静': 'info',
-      '无感': 'info'
+      喜悦: 'success',
+      感动: 'success',
+      兴奋: 'success',
+      期待: 'success',
+      愤怒: 'danger',
+      悲伤: 'danger',
+      失望: 'danger',
+      厌恶: 'danger',
+      焦虑: 'warning',
+      恐惧: 'warning',
+      惊讶: 'warning',
+      无奈: 'info',
+      讽刺: 'info',
+      平静: 'info',
+      无感: 'info',
     }
     return emotionMap[emotion] || 'info'
   }
@@ -446,5 +446,36 @@ export function useSentiment() {
     loadData()
   })
 
-  return { loading, rawList, sentimentStats, sentimentData, trendData, keywords, currentPage, pageSize, total, filters, sentimentPieRef, trendChartRef, emotionBarRef, scoreDistRef, sentimentPieOptions, trendChartOptions, emotionBarOptions, scoreDistOptions, getSentimentType, getScoreClass, getEmotionType, filteredList, filteredTotal, pagedList, loadData, handleSizeChange, handlePageChange, resetFilters, handlePieClick, handleTrendClick }
+  return {
+    loading,
+    rawList,
+    sentimentStats,
+    sentimentData,
+    trendData,
+    keywords,
+    currentPage,
+    pageSize,
+    total,
+    filters,
+    sentimentPieRef,
+    trendChartRef,
+    emotionBarRef,
+    scoreDistRef,
+    sentimentPieOptions,
+    trendChartOptions,
+    emotionBarOptions,
+    scoreDistOptions,
+    getSentimentType,
+    getScoreClass,
+    getEmotionType,
+    filteredList,
+    filteredTotal,
+    pagedList,
+    loadData,
+    handleSizeChange,
+    handlePageChange,
+    resetFilters,
+    handlePieClick,
+    handleTrendClick,
+  }
 }

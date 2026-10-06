@@ -1,13 +1,7 @@
 <template>
   <div class="propagation-container">
-    <el-row
-      :gutter="24"
-      class="mb-4"
-    >
-      <el-col
-        :xs="24"
-        :sm="6"
-      >
+    <el-row :gutter="24" class="mb-4">
+      <el-col :xs="24" :sm="6">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon primary">
@@ -17,17 +11,12 @@
               <div class="stat-value">
                 {{ summary.path?.total_nodes || 0 }}
               </div>
-              <div class="stat-label">
-                传播节点
-              </div>
+              <div class="stat-label">传播节点</div>
             </div>
           </div>
         </el-card>
       </el-col>
-      <el-col
-        :xs="24"
-        :sm="6"
-      >
+      <el-col :xs="24" :sm="6">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon success">
@@ -37,17 +26,12 @@
               <div class="stat-value">
                 {{ summary.path?.total_depth || 0 }}
               </div>
-              <div class="stat-label">
-                传播深度
-              </div>
+              <div class="stat-label">传播深度</div>
             </div>
           </div>
         </el-card>
       </el-col>
-      <el-col
-        :xs="24"
-        :sm="6"
-      >
+      <el-col :xs="24" :sm="6">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon warning">
@@ -57,17 +41,12 @@
               <div class="stat-value">
                 {{ summary.kol_count || 0 }}
               </div>
-              <div class="stat-label">
-                KOL节点
-              </div>
+              <div class="stat-label">KOL节点</div>
             </div>
           </div>
         </el-card>
       </el-col>
-      <el-col
-        :xs="24"
-        :sm="6"
-      >
+      <el-col :xs="24" :sm="6">
         <el-card class="stat-card">
           <div class="stat-content">
             <div class="stat-icon danger">
@@ -77,23 +56,15 @@
               <div class="stat-value">
                 {{ summary.path?.propagation_speed?.toFixed(1) || 0 }}
               </div>
-              <div class="stat-label">
-                传播速度(节点/时)
-              </div>
+              <div class="stat-label">传播速度(节点/时)</div>
             </div>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row
-      :gutter="24"
-      class="mb-4"
-    >
-      <el-col
-        :xs="24"
-        :lg="16"
-      >
+    <el-row :gutter="24" class="mb-4">
+      <el-col :xs="24" :lg="16">
         <el-card class="graph-card">
           <template #header>
             <div class="card-header">
@@ -105,166 +76,82 @@
                   style="width: 150px"
                   size="small"
                 />
-                <el-button
-                  type="primary"
-                  size="small"
-                  :loading="loading"
-                  @click="loadPropagation"
-                >
+                <el-button type="primary" size="small" :loading="loading" @click="loadPropagation">
                   分析
                 </el-button>
               </div>
             </div>
           </template>
-          <div
-            ref="graphContainer"
-            v-loading="loading"
-            class="graph-container"
-          >
-            <div
-              v-if="!graphData.nodes?.length"
-              class="empty-state"
-            >
+          <div ref="graphContainer" v-loading="loading" class="graph-container">
+            <div v-if="!graphData.nodes?.length" class="empty-state">
               <el-empty description="输入文章ID开始分析传播路径" />
             </div>
           </div>
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="8"
-      >
+      <el-col :xs="24" :lg="8">
         <el-card class="info-card">
           <template #header>
             <span>传播路径信息</span>
           </template>
-          <el-descriptions
-            v-if="summary.path"
-            :column="1"
-            border
-          >
+          <el-descriptions v-if="summary.path" :column="1" border>
             <el-descriptions-item label="原始发布者">
-              {{
-                summary.path.origin_user
-              }}
+              {{ summary.path.origin_user }}
             </el-descriptions-item>
             <el-descriptions-item label="总转发量">
-              {{
-                summary.path.total_reposts
-              }}
+              {{ summary.path.total_reposts }}
             </el-descriptions-item>
             <el-descriptions-item label="传播深度">
-              {{
-                summary.path.total_depth
-              }}
+              {{ summary.path.total_depth }}
             </el-descriptions-item>
             <el-descriptions-item label="传播节点数">
-              {{
-                summary.path.total_nodes
-              }}
+              {{ summary.path.total_nodes }}
             </el-descriptions-item>
             <el-descriptions-item label="传播速度">
               {{ summary.path.propagation_speed?.toFixed(2) }} 节点/小时
             </el-descriptions-item>
           </el-descriptions>
-          <el-empty
-            v-else
-            description="暂无数据"
-            :image-size="60"
-          />
+          <el-empty v-else description="暂无数据" :image-size="60" />
         </el-card>
       </el-col>
     </el-row>
 
     <el-row :gutter="24">
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span>传播深度分布</span>
           </template>
-          <BaseChart
-            ref="depthChartRef"
-            :options="depthChartOptions"
-            height="300px"
-          />
+          <BaseChart ref="depthChartRef" :options="depthChartOptions" height="300px" />
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span>传播时间线</span>
           </template>
-          <BaseChart
-            ref="timelineChartRef"
-            :options="timelineChartOptions"
-            height="300px"
-          />
+          <BaseChart ref="timelineChartRef" :options="timelineChartOptions" height="300px" />
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row
-      :gutter="24"
-      class="mt-4"
-    >
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+    <el-row :gutter="24" class="mt-4">
+      <el-col :xs="24" :lg="12">
         <el-card class="kol-card">
           <template #header>
             <div class="card-header">
               <span>KOL影响力排行</span>
-              <el-tag
-                type="danger"
-                size="small"
-              >
-                {{ summary.kol_count || 0 }} 个KOL
-              </el-tag>
+              <el-tag type="danger" size="small"> {{ summary.kol_count || 0 }} 个KOL </el-tag>
             </div>
           </template>
-          <el-table
-            :data="kolNodes"
-            style="width: 100%"
-            max-height="350"
-          >
-            <el-table-column
-              prop="user_name"
-              label="用户名"
-              min-width="120"
-            />
-            <el-table-column
-              prop="repost_count"
-              label="转发"
-              width="80"
-              align="center"
-            />
-            <el-table-column
-              prop="comment_count"
-              label="评论"
-              width="80"
-              align="center"
-            />
-            <el-table-column
-              prop="like_count"
-              label="点赞"
-              width="80"
-              align="center"
-            />
-            <el-table-column
-              prop="influence_score"
-              label="影响力"
-              width="100"
-              align="center"
-            >
+          <el-table :data="kolNodes" style="width: 100%" max-height="350">
+            <el-table-column prop="user_name" label="用户名" min-width="120" />
+            <el-table-column prop="repost_count" label="转发" width="80" align="center" />
+            <el-table-column prop="comment_count" label="评论" width="80" align="center" />
+            <el-table-column prop="like_count" label="点赞" width="80" align="center" />
+            <el-table-column prop="influence_score" label="影响力" width="100" align="center">
               <template #default="{ row }">
                 <el-progress
                   :percentage="row.influence_score * 100"
@@ -277,42 +164,16 @@
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="ranking-card">
           <template #header>
             <span>用户影响力排名</span>
           </template>
-          <el-table
-            :data="userRanking"
-            style="width: 100%"
-            max-height="350"
-          >
-            <el-table-column
-              type="index"
-              label="#"
-              width="50"
-              align="center"
-            />
-            <el-table-column
-              prop="user_name"
-              label="用户名"
-              min-width="120"
-            />
-            <el-table-column
-              prop="node_count"
-              label="参与次数"
-              width="90"
-              align="center"
-            />
-            <el-table-column
-              prop="influence_score"
-              label="影响力得分"
-              width="120"
-              align="center"
-            >
+          <el-table :data="userRanking" style="width: 100%" max-height="350">
+            <el-table-column type="index" label="#" width="50" align="center" />
+            <el-table-column prop="user_name" label="用户名" min-width="120" />
+            <el-table-column prop="node_count" label="参与次数" width="90" align="center" />
+            <el-table-column prop="influence_score" label="影响力得分" width="120" align="center">
               <template #default="{ row }">
                 <span class="score-value">{{ row.influence_score?.toFixed(3) }}</span>
               </template>
@@ -445,67 +306,67 @@
 
     graphInstance = echarts.init(graphContainer.value)
 
-      const nodes = graphData.value.nodes.map((node) => ({
-        id: node.id,
-        name: node.user_name,
-        symbolSize: Math.max(10, node.influence_score * 40 + 10),
-        category: node.category,
-        value: node.influence_score,
-        itemStyle: {
-          color: node.category === 0 ? '#EF4444' : node.category === 1 ? '#2563EB' : '#64748B',
-        },
-        label: {
-          show: node.is_kol || node.depth === 0,
-          fontSize: 10,
-        },
-      }))
+    const nodes = graphData.value.nodes.map((node) => ({
+      id: node.id,
+      name: node.user_name,
+      symbolSize: Math.max(10, node.influence_score * 40 + 10),
+      category: node.category,
+      value: node.influence_score,
+      itemStyle: {
+        color: node.category === 0 ? '#EF4444' : node.category === 1 ? '#2563EB' : '#64748B',
+      },
+      label: {
+        show: node.is_kol || node.depth === 0,
+        fontSize: 10,
+      },
+    }))
 
-      const edges = graphData.value.edges.map((edge) => ({
-        source: edge.source,
-        target: edge.target,
-        lineStyle: {
-          width: Math.max(1, edge.weight),
-          curveness: 0.2,
-        },
-      }))
+    const edges = graphData.value.edges.map((edge) => ({
+      source: edge.source,
+      target: edge.target,
+      lineStyle: {
+        width: Math.max(1, edge.weight),
+        curveness: 0.2,
+      },
+    }))
 
-      const option = {
-        tooltip: {
-          formatter: (params) => {
-            if (params.dataType === 'node') {
-              return `${params.data.name}<br/>影响力: ${(params.data.value * 100).toFixed(1)}%`
-            }
-            return ''
+    const option = {
+      tooltip: {
+        formatter: (params) => {
+          if (params.dataType === 'node') {
+            return `${params.data.name}<br/>影响力: ${(params.data.value * 100).toFixed(1)}%`
+          }
+          return ''
+        },
+      },
+      series: [
+        {
+          type: 'graph',
+          layout: 'force',
+          data: nodes,
+          links: edges,
+          roam: true,
+          draggable: true,
+          force: {
+            repulsion: 200,
+            edgeLength: [50, 150],
+            gravity: 0.1,
+          },
+          emphasis: {
+            focus: 'adjacency',
+            lineStyle: { width: 3 },
+          },
+          label: {
+            position: 'right',
+            formatter: '{b}',
+          },
+          lineStyle: {
+            color: 'source',
+            curveness: 0.3,
           },
         },
-        series: [
-          {
-            type: 'graph',
-            layout: 'force',
-            data: nodes,
-            links: edges,
-            roam: true,
-            draggable: true,
-            force: {
-              repulsion: 200,
-              edgeLength: [50, 150],
-              gravity: 0.1,
-            },
-            emphasis: {
-              focus: 'adjacency',
-              lineStyle: { width: 3 },
-            },
-            label: {
-              position: 'right',
-              formatter: '{b}',
-            },
-            lineStyle: {
-              color: 'source',
-              curveness: 0.3,
-            },
-          },
-        ],
-      }
+      ],
+    }
 
     graphInstance.setOption(option)
   }

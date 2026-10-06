@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { getBigScreenStats, getBigScreenRegion, getBigScreenTrend, getBigScreenHotTopics, getBigScreenAlerts } from '@/api/stats'
+import {
+  getBigScreenStats,
+  getBigScreenRegion,
+  getBigScreenTrend,
+  getBigScreenHotTopics,
+  getBigScreenAlerts,
+} from '@/api/stats'
 
 const TTL_MS = 30 * 1000
 
@@ -91,5 +97,21 @@ export const useAnalysisStore = defineStore('analysis', () => {
     }
   }
 
-  return { stats, region, trend, hotTopics, alerts, loading, error, lastFetched, fetchStats, fetchRegion, fetchTrend, fetchHotTopics: fetchHotTopicsFn, fetchAlerts: fetchAlertsFn, fetchAll, isStale }
+  return {
+    stats,
+    region,
+    trend,
+    hotTopics,
+    alerts,
+    loading,
+    error,
+    lastFetched,
+    fetchStats,
+    fetchRegion,
+    fetchTrend,
+    fetchHotTopics: fetchHotTopicsFn,
+    fetchAlerts: fetchAlertsFn,
+    fetchAll,
+    isStale,
+  }
 })

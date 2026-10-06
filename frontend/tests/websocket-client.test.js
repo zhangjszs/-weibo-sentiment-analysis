@@ -34,9 +34,7 @@ describe('websocket 客户端 (#20)', () => {
     const client = new WebSocketClient()
     client.connect('tok-1')
     expect(ioMock).toHaveBeenCalledTimes(1)
-    expect(ioMock.mock.calls[0][0]).toBe(
-      `${window.location.protocol}//${window.location.host}`
-    )
+    expect(ioMock.mock.calls[0][0]).toBe(`${window.location.protocol}//${window.location.host}`)
     expect(client.isConnected).toBe(false)
   })
 

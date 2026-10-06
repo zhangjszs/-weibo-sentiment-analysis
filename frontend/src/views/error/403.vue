@@ -1,21 +1,10 @@
 <template>
   <div class="error-page">
     <div class="error-content">
-      <div class="error-code">
-        403
-      </div>
-      <div class="error-title">
-        访问被拒绝
-      </div>
-      <p class="error-desc">
-        抱歉，您没有权限访问此页面
-      </p>
-      <el-button
-        type="primary"
-        @click="goHome"
-      >
-        返回首页
-      </el-button>
+      <div class="error-code">403</div>
+      <div class="error-title">访问被拒绝</div>
+      <p class="error-desc">抱歉，您没有权限访问此页面</p>
+      <el-button type="primary" @click="goHome"> 返回首页 </el-button>
     </div>
   </div>
 </template>

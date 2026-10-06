@@ -1,10 +1,7 @@
 <template>
   <div class="weibo-stats-container">
     <el-card class="filter-card">
-      <el-form
-        :inline="true"
-        :model="filterForm"
-      >
+      <el-form :inline="true" :model="filterForm">
         <el-form-item label="关键词搜索">
           <el-input
             v-model="filterForm.keyword"
@@ -25,15 +22,8 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
-            type="primary"
-            @click="handleSearch"
-          >
-            搜索
-          </el-button>
-          <el-button @click="handleReset">
-            重置
-          </el-button>
+          <el-button type="primary" @click="handleSearch"> 搜索 </el-button>
+          <el-button @click="handleReset"> 重置 </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -42,13 +32,7 @@
       <template #header>
         <div class="card-header">
           <span>微博舆情统计</span>
-          <el-button
-            type="primary"
-            :icon="Refresh"
-            @click="handleRefresh"
-          >
-            刷新数据
-          </el-button>
+          <el-button type="primary" :icon="Refresh" @click="handleRefresh"> 刷新数据 </el-button>
         </div>
       </template>
 
@@ -60,61 +44,18 @@
         style="width: 100%"
         :default-sort="{ prop: 'likes', order: 'descending' }"
       >
-        <el-table-column
-          prop="id"
-          label="文章ID"
-          width="100"
-          sortable
-        />
-        <el-table-column
-          prop="user"
-          label="评论用户"
-          width="150"
-        />
-        <el-table-column
-          prop="location"
-          label="用户地址"
-          width="150"
-        />
-        <el-table-column
-          prop="content"
-          label="内容"
-          min-width="300"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="time"
-          label="评论时间"
-          width="180"
-          sortable
-        />
-        <el-table-column
-          prop="likes"
-          label="点赞数"
-          width="120"
-          align="center"
-          sortable
-        >
+        <el-table-column prop="id" label="文章ID" width="100" sortable />
+        <el-table-column prop="user" label="评论用户" width="150" />
+        <el-table-column prop="location" label="用户地址" width="150" />
+        <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip />
+        <el-table-column prop="time" label="评论时间" width="180" sortable />
+        <el-table-column prop="likes" label="点赞数" width="120" align="center" sortable>
           <template #default="{ row }">
-            <el-tag type="danger">
-              👍 {{ row.likes }}
-            </el-tag>
+            <el-tag type="danger"> 👍 {{ row.likes }} </el-tag>
           </template>
         </el-table-column>
-        <el-table-column
-          prop="reposts"
-          label="转发数"
-          width="100"
-          align="center"
-          sortable
-        />
-        <el-table-column
-          prop="comments"
-          label="评论数"
-          width="100"
-          align="center"
-          sortable
-        />
+        <el-table-column prop="reposts" label="转发数" width="100" align="center" sortable />
+        <el-table-column prop="comments" label="评论数" width="100" align="center" sortable />
       </el-table>
 
       <div class="pagination-wrapper">

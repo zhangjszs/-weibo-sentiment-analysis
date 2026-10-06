@@ -1,20 +1,11 @@
 <template>
-  <div
-    v-loading="searching"
-    class="home-container"
-  >
+  <div v-loading="searching" class="home-container">
     <!-- Analysis filters -->
-    <AnalysisFilters
-      v-model="filters"
-      @search="onSearch"
-    />
+    <AnalysisFilters v-model="filters" @search="onSearch" />
 
     <!-- Analysis summary (shown after search) -->
     <template v-if="snapshot">
-      <AnalysisSummary
-        :meta="snapshot.meta"
-        :summary="snapshot.summary"
-      />
+      <AnalysisSummary :meta="snapshot.meta" :summary="snapshot.summary" />
 
       <!-- Analysis sections -->
       <el-row :gutter="16">
@@ -25,9 +16,7 @@
             empty-reason="当前话题在所选时间范围内没有数据。"
           >
             <BaseCard title="趋势">
-              <div class="chart-placeholder">
-                趋势图表区域
-              </div>
+              <div class="chart-placeholder">趋势图表区域</div>
             </BaseCard>
           </AnalysisSection>
         </el-col>
@@ -35,27 +24,17 @@
 
       <el-row :gutter="16">
         <el-col :span="12">
-          <AnalysisSection
-            :status="sentimentStatus"
-            empty-title="暂无情感数据"
-          >
+          <AnalysisSection :status="sentimentStatus" empty-title="暂无情感数据">
             <BaseCard title="情感分布">
-              <div class="chart-placeholder">
-                情感分布图表区域
-              </div>
+              <div class="chart-placeholder">情感分布图表区域</div>
             </BaseCard>
           </AnalysisSection>
         </el-col>
 
         <el-col :span="12">
-          <AnalysisSection
-            :status="propagationStatus"
-            empty-title="暂无传播数据"
-          >
+          <AnalysisSection :status="propagationStatus" empty-title="暂无传播数据">
             <BaseCard title="传播摘要">
-              <div class="chart-placeholder">
-                传播分析摘要区域
-              </div>
+              <div class="chart-placeholder">传播分析摘要区域</div>
             </BaseCard>
           </AnalysisSection>
         </el-col>
@@ -63,102 +42,97 @@
     </template>
 
     <!-- Before first search -->
-    <div
-      v-else
-      class="home-welcome"
-    >
-      <el-empty
-        image-size="160"
-        description="在上方输入关键词开始分析"
-      />
+    <div v-else class="home-welcome">
+      <el-empty image-size="160" description="在上方输入关键词开始分析" />
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+  import { reactive, ref } from 'vue'
+  import { ElMessage } from 'element-plus'
 
-import { http } from '@/api/request'
-import AnalysisFilters from '@/components/Analysis/AnalysisFilters.vue'
-import AnalysisSummary from '@/components/Analysis/AnalysisSummary.vue'
-import AnalysisSection from '@/components/Analysis/AnalysisSection.vue'
-import BaseCard from '@/components/Common/BaseCard.vue'
+  import { http } from '@/api/request'
+  import AnalysisFilters from '@/components/Analysis/AnalysisFilters.vue'
+  import AnalysisSummary from '@/components/Analysis/AnalysisSummary.vue'
+  import AnalysisSection from '@/components/Analysis/AnalysisSection.vue'
+  import BaseCard from '@/components/Common/BaseCard.vue'
 
-const filters = reactive({
-  topic: '',
-  startAt: '',
-  endAt: '',
-  demo: false,
-})
+  const filters = reactive({
+    topic: '',
+    startAt: '',
+    endAt: '',
+    demo: false,
+  })
 
-const snapshot = ref(null)
-const searching = ref(false)
+  const snapshot = ref(null)
+  const searching = ref(false)
 
-const trendStatus = ref('empty')
-const sentimentStatus = ref('empty')
-const propagationStatus = ref('empty')
+  const trendStatus = ref('empty')
+  const sentimentStatus = ref('empty')
+  const propagationStatus = ref('empty')
 
-async function onSearch(value) {
-  // 防连点：请求进行中忽略新的点击。否则慢响应晚到会用旧 snapshot 覆盖
-  // 新结果，且并发请求互相覆盖 loading/状态位（#19）。
-  if (searching.value) return
-  searching.value = true
-  snapshot.value = null
-  try {
-    const params = { topic: value.topic }
-    if (value.startAt) params.start_at = `${value.startAt}T00:00:00`
-    if (value.endAt) params.end_at = `${value.endAt}T23:59:59`
-    if (value.demo) params.demo = 'true'
+  async function onSearch(value) {
+    // 防连点：请求进行中忽略新的点击。否则慢响应晚到会用旧 snapshot 覆盖
+    // 新结果，且并发请求互相覆盖 loading/状态位（#19）。
+    if (searching.value) return
+    searching.value = true
+    snapshot.value = null
+    try {
+      const params = { topic: value.topic }
+      if (value.startAt) params.start_at = `${value.startAt}T00:00:00`
+      if (value.endAt) params.end_at = `${value.endAt}T23:59:59`
+      if (value.demo) params.demo = 'true'
 
-    // 走统一的 axios 实例：带超时/Authorization/统一 401 处理（#20），
-    // 此前裸 fetch 无超时也无统一鉴权
-    const body = await http.get('/api/v1/analysis', { params })
-    if (!body?.data) {
-      ElMessage.warning(body?.msg || '分析请求失败')
-      return
+      // 走统一的 axios 实例：带超时/Authorization/统一 401 处理（#20），
+      // 此前裸 fetch 无超时也无统一鉴权
+      const body = await http.get('/api/v1/analysis', { params })
+      if (!body?.data) {
+        ElMessage.warning(body?.msg || '分析请求失败')
+        return
+      }
+
+      snapshot.value = body.data
+      const meta = body.data.meta || {}
+
+      // Determine section statuses based on data availability
+      trendStatus.value = body.data.trend?.length > 0 ? 'normal' : 'empty'
+      sentimentStatus.value =
+        meta.source_type === 'demo' || (body.data.sentiment?.distribution?.positive ?? 0) > 0
+          ? 'normal'
+          : 'empty'
+      propagationStatus.value =
+        meta.source_type === 'demo' || (body.data.propagation?.total_nodes ?? 0) > 0
+          ? 'normal'
+          : 'empty'
+    } catch (err) {
+      // HTTP/网络错误已由 request.js 拦截器全局 toast，这里不再重复弹
+      console.error('分析请求失败:', err)
+    } finally {
+      searching.value = false
     }
-
-    snapshot.value = body.data
-    const meta = body.data.meta || {}
-
-    // Determine section statuses based on data availability
-    trendStatus.value = body.data.trend?.length > 0 ? 'normal' : 'empty'
-    sentimentStatus.value = meta.source_type === 'demo' || (body.data.sentiment?.distribution?.positive ?? 0) > 0
-      ? 'normal'
-      : 'empty'
-    propagationStatus.value = meta.source_type === 'demo' || (body.data.propagation?.total_nodes ?? 0) > 0
-      ? 'normal'
-      : 'empty'
-
-  } catch (err) {
-    // HTTP/网络错误已由 request.js 拦截器全局 toast，这里不再重复弹
-    console.error('分析请求失败:', err)
-  } finally {
-    searching.value = false
   }
-}
 </script>
 
 <style lang="scss" scoped>
-.home-container {
-  max-width: 1200px;
-  margin: 0 auto;
-}
+  .home-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
 
-.home-welcome {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 400px;
-}
+  .home-welcome {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+  }
 
-.chart-placeholder {
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--el-text-color-placeholder);
-  font-size: 14px;
-}
+  .chart-placeholder {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--el-text-color-placeholder);
+    font-size: 14px;
+  }
 </style>

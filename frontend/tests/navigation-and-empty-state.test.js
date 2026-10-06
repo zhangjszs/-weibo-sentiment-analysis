@@ -33,7 +33,7 @@ describe('AnalysisEmptyState types', () => {
     (type) => {
       const wrapper = mount(AnalysisEmptyState, { props: { type } })
       expect(wrapper.exists()).toBe(true)
-    },
+    }
   )
 })
 

@@ -1,15 +1,9 @@
 <template>
   <div class="hot-words-container">
-    <el-row
-      :gutter="20"
-      class="stat-row"
-    >
+    <el-row :gutter="20" class="stat-row">
       <el-col :span="24">
         <el-card class="filter-card">
-          <el-form
-            :inline="true"
-            :model="filterForm"
-          >
+          <el-form :inline="true" :model="filterForm">
             <el-form-item label="热词选择">
               <el-select
                 v-model="filterForm.hotWord"
@@ -26,32 +20,18 @@
               </el-select>
             </el-form-item>
             <el-form-item>
-              <el-button
-                type="primary"
-                @click="handleSearch"
-              >
-                查询
-              </el-button>
-              <el-button @click="handleReset">
-                重置
-              </el-button>
+              <el-button type="primary" @click="handleSearch"> 查询 </el-button>
+              <el-button @click="handleReset"> 重置 </el-button>
             </el-form-item>
           </el-form>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-row
-      :gutter="20"
-      class="stat-row"
-    >
+    <el-row :gutter="20" class="stat-row">
       <el-col :span="8">
         <el-card class="info-card">
-          <el-descriptions
-            title="热词信息"
-            :column="1"
-            border
-          >
+          <el-descriptions title="热词信息" :column="1" border>
             <el-descriptions-item label="热词名称">
               {{ currentHotWord }}
             </el-descriptions-item>
@@ -72,11 +52,7 @@
           <template #header>
             <span>热词年份变化趋势</span>
           </template>
-          <BaseChart
-            ref="trendChartRef"
-            :options="trendChartOptions"
-            height="280px"
-          />
+          <BaseChart ref="trendChartRef" :options="trendChartOptions" height="280px" />
         </el-card>
       </el-col>
     </el-row>
@@ -87,57 +63,19 @@
           <template #header>
             <div class="card-header">
               <span>热词查询表格</span>
-              <el-button
-                type="primary"
-                :icon="Download"
-                @click="handleExport"
-              >
+              <el-button type="primary" :icon="Download" @click="handleExport">
                 导出数据
               </el-button>
             </div>
           </template>
-          <el-table
-            :data="tableData"
-            :loading="loading"
-            stripe
-            border
-            style="width: 100%"
-          >
-            <el-table-column
-              prop="id"
-              label="文章ID"
-              width="100"
-            />
-            <el-table-column
-              prop="user"
-              label="评论用户"
-              width="150"
-            />
-            <el-table-column
-              prop="location"
-              label="用户地址"
-              width="150"
-            />
-            <el-table-column
-              prop="content"
-              label="内容"
-              min-width="300"
-              show-overflow-tooltip
-            />
-            <el-table-column
-              prop="time"
-              label="评论时间"
-              width="180"
-            />
-            <el-table-column
-              prop="likes"
-              label="点赞数"
-              width="100"
-              align="center"
-            >
-              <template #default="{ row }">
-                👍 {{ row.likes }}
-              </template>
+          <el-table :data="tableData" :loading="loading" stripe border style="width: 100%">
+            <el-table-column prop="id" label="文章ID" width="100" />
+            <el-table-column prop="user" label="评论用户" width="150" />
+            <el-table-column prop="location" label="用户地址" width="150" />
+            <el-table-column prop="content" label="内容" min-width="300" show-overflow-tooltip />
+            <el-table-column prop="time" label="评论时间" width="180" />
+            <el-table-column prop="likes" label="点赞数" width="100" align="center">
+              <template #default="{ row }"> 👍 {{ row.likes }} </template>
             </el-table-column>
           </el-table>
 

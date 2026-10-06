@@ -144,7 +144,9 @@ a {
   border-radius: $border-radius-large;
   background-color: $surface-color;
   box-shadow: $box-shadow-sm !important;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
   margin-bottom: $spacing-lg;
 
   &:hover {
@@ -217,7 +219,7 @@ a {
   // Remove outer borders and internal vertical borders completely
   &--border,
   .el-table--border th.el-table__cell,
-  .el-table__body-wrapper .el-table--border.is-scrolling-left~.el-table__fixed {
+  .el-table__body-wrapper .el-table--border.is-scrolling-left ~ .el-table__fixed {
     border-right: none !important;
   }
 }
@@ -277,7 +279,9 @@ a {
 // Transitions
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.25s ease-out, transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    opacity 0.25s ease-out,
+    transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .fade-enter-from {

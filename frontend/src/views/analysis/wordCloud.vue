@@ -1,27 +1,16 @@
 <template>
   <div class="word-cloud-container">
     <el-row :gutter="20">
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span>文章内容词云</span>
           </template>
           <div class="word-cloud-image">
-            <img
-              :src="contentCloudUrl"
-              alt="内容词云"
-              @error="handleImageError"
-            >
+            <img :src="contentCloudUrl" alt="内容词云" @error="handleImageError" />
           </div>
           <div class="cloud-actions">
-            <el-button
-              type="primary"
-              :loading="loading"
-              @click="regenerateContentCloud"
-            >
+            <el-button type="primary" :loading="loading" @click="regenerateContentCloud">
               重新生成
             </el-button>
             <el-button @click="downloadImage(contentCloudUrl, 'content-cloud')">
@@ -31,32 +20,19 @@
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span>评论用户名词云</span>
           </template>
           <div class="word-cloud-image">
-            <img
-              :src="authorCloudUrl"
-              alt="用户名词云"
-              @error="handleImageError"
-            >
+            <img :src="authorCloudUrl" alt="用户名词云" @error="handleImageError" />
           </div>
           <div class="cloud-actions">
-            <el-button
-              type="primary"
-              :loading="loading"
-              @click="regenerateAuthorCloud"
-            >
+            <el-button type="primary" :loading="loading" @click="regenerateAuthorCloud">
               重新生成
             </el-button>
-            <el-button @click="downloadImage(authorCloudUrl, 'author-cloud')">
-              下载图片
-            </el-button>
+            <el-button @click="downloadImage(authorCloudUrl, 'author-cloud')"> 下载图片 </el-button>
           </div>
         </el-card>
       </el-col>
@@ -68,57 +44,21 @@
           <template #header>
             <div class="card-header">
               <span>词频统计 Top 50</span>
-              <el-button
-                type="primary"
-                @click="exportWordStats"
-              >
-                导出数据
-              </el-button>
+              <el-button type="primary" @click="exportWordStats"> 导出数据 </el-button>
             </div>
           </template>
-          <el-table
-            :data="wordStats"
-            :loading="loading"
-            stripe
-            border
-            style="width: 100%"
-          >
-            <el-table-column
-              prop="rank"
-              label="排名"
-              width="80"
-              align="center"
-            >
+          <el-table :data="wordStats" :loading="loading" stripe border style="width: 100%">
+            <el-table-column prop="rank" label="排名" width="80" align="center">
               <template #default="{ $index }">
                 <el-tag :type="getRankTagType($index + 1)">
                   {{ $index + 1 }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column
-              prop="word"
-              label="词语"
-              width="200"
-            />
-            <el-table-column
-              prop="count"
-              label="出现次数"
-              width="150"
-              align="center"
-              sortable
-            />
-            <el-table-column
-              prop="frequency"
-              label="频率"
-              width="100"
-              align="center"
-            />
-            <el-table-column
-              prop="sentiment"
-              label="情感倾向"
-              width="120"
-              align="center"
-            >
+            <el-table-column prop="word" label="词语" width="200" />
+            <el-table-column prop="count" label="出现次数" width="150" align="center" sortable />
+            <el-table-column prop="frequency" label="频率" width="100" align="center" />
+            <el-table-column prop="sentiment" label="情感倾向" width="120" align="center">
               <template #default="{ row }">
                 <el-tag :type="getSentimentType(row.sentiment)">
                   {{ row.sentiment }}

@@ -14,21 +14,14 @@
         <Expand v-else />
       </el-icon>
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item :to="{ path: '/' }">
-          首页
-        </el-breadcrumb-item>
+        <el-breadcrumb-item :to="{ path: '/' }"> 首页 </el-breadcrumb-item>
         <el-breadcrumb-item v-if="currentRoute.path !== '/'">
-          {{
-            currentRoute.meta?.title || ''
-          }}
+          {{ currentRoute.meta?.title || '' }}
         </el-breadcrumb-item>
       </el-breadcrumb>
     </div>
     <div class="header-right">
-      <el-tooltip
-        content="快速爬取"
-        placement="bottom"
-      >
+      <el-tooltip content="快速爬取" placement="bottom">
         <el-button
           circle
           :icon="Download"
@@ -36,16 +29,9 @@
           @click="showCrawlDialog = true"
         />
       </el-tooltip>
-      <el-dropdown
-        trigger="click"
-        @command="handleCommand"
-      >
+      <el-dropdown trigger="click" @command="handleCommand">
         <span class="user-info">
-          <el-avatar
-            :size="32"
-            :src="userInfo.avatar"
-            class="user-avatar"
-          >
+          <el-avatar :size="32" :src="userInfo.avatar" class="user-avatar">
             {{ username.charAt(0).toUpperCase() }}
           </el-avatar>
           <span class="username">{{ username }}</span>
@@ -69,10 +55,7 @@
               <el-icon><component :is="themeIcon" /></el-icon>
               {{ isDark ? '切换亮色模式' : '切换暗黑模式' }}
             </el-dropdown-item>
-            <el-dropdown-item
-              divided
-              command="logout"
-            >
+            <el-dropdown-item divided command="logout">
               <el-icon><SwitchButton /></el-icon>
               退出登录
             </el-dropdown-item>
@@ -89,11 +72,7 @@
       destroy-on-close
       @closed="stopCrawlPolling"
     >
-      <el-form
-        :model="crawlForm"
-        label-position="top"
-        class="crawl-form"
-      >
+      <el-form :model="crawlForm" label-position="top" class="crawl-form">
         <el-form-item label="爬取类型">
           <el-radio-group v-model="crawlForm.type">
             <el-radio-button label="hot">
@@ -108,37 +87,19 @@
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item
-          v-if="crawlForm.type === 'search'"
-          label="关键词"
-        >
-          <el-input
-            v-model="crawlForm.keyword"
-            placeholder="输入搜索关键词"
-            clearable
-          />
+        <el-form-item v-if="crawlForm.type === 'search'" label="关键词">
+          <el-input v-model="crawlForm.keyword" placeholder="输入搜索关键词" clearable />
         </el-form-item>
 
         <el-form-item label="爬取页数">
-          <el-input-number
-            v-model="crawlForm.pageNum"
-            :min="1"
-            :max="10"
-            style="width: 120px"
-          />
+          <el-input-number v-model="crawlForm.pageNum" :min="1" :max="10" style="width: 120px" />
           <span class="form-hint">页数越多，数据越全，耗时越长</span>
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="showCrawlDialog = false">
-          取消
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="crawlLoading"
-          @click="handleQuickCrawl"
-        >
+        <el-button @click="showCrawlDialog = false"> 取消 </el-button>
+        <el-button type="primary" :loading="crawlLoading" @click="handleQuickCrawl">
           开始爬取
         </el-button>
       </template>

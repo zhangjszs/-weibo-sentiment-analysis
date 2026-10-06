@@ -73,6 +73,12 @@ jobs:
         working-directory: frontend
         run: npm run lint
 
+      # #51：Prettier 格式门禁——与 lint 同级，失败即红。
+      # 格式规则归属 Prettier（eslint 侧已关闭 5 条冲突的纯格式规则）。
+      - name: Frontend format check
+        working-directory: frontend
+        run: npm run format:check
+
       - name: Frontend unit tests
         working-directory: frontend
         run: npm run test:run

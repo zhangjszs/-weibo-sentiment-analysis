@@ -1,21 +1,9 @@
 <template>
   <div class="alert-notification">
-    <el-popover
-      v-model:visible="popoverVisible"
-      placement="bottom"
-      :width="380"
-      trigger="click"
-    >
+    <el-popover v-model:visible="popoverVisible" placement="bottom" :width="380" trigger="click">
       <template #reference>
-        <el-badge
-          :value="unreadCount"
-          :hidden="unreadCount === 0"
-          :max="99"
-        >
-          <el-button
-            :icon="Bell"
-            circle
-          />
+        <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99">
+          <el-button :icon="Bell" circle />
         </el-badge>
       </template>
 
@@ -33,24 +21,12 @@
           </el-button>
         </div>
 
-        <el-tabs
-          v-model="activeTab"
-          class="alert-tabs"
-        >
-          <el-tab-pane
-            label="全部"
-            name="all"
-          />
-          <el-tab-pane
-            label="未读"
-            name="unread"
-          />
+        <el-tabs v-model="activeTab" class="alert-tabs">
+          <el-tab-pane label="全部" name="all" />
+          <el-tab-pane label="未读" name="unread" />
         </el-tabs>
 
-        <div
-          v-loading="loading"
-          class="alert-list"
-        >
+        <div v-loading="loading" class="alert-list">
           <template v-if="alerts.length > 0">
             <div
               v-for="alert in alerts"
@@ -77,21 +53,11 @@
               </div>
             </div>
           </template>
-          <el-empty
-            v-else
-            description="暂无预警"
-            :image-size="60"
-          />
+          <el-empty v-else description="暂无预警" :image-size="60" />
         </div>
 
         <div class="alert-footer">
-          <el-button
-            type="primary"
-            link
-            @click="goToAlertCenter"
-          >
-            查看全部预警
-          </el-button>
+          <el-button type="primary" link @click="goToAlertCenter"> 查看全部预警 </el-button>
         </div>
       </div>
     </el-popover>
@@ -102,12 +68,7 @@
   import { ref, onMounted, onUnmounted, watch } from 'vue'
   import { useRouter } from 'vue-router'
   import { ElMessage } from 'element-plus'
-  import {
-    Bell,
-    Warning,
-    InfoFilled,
-    CircleCloseFilled,
-  } from '@element-plus/icons-vue'
+  import { Bell, Warning, InfoFilled, CircleCloseFilled } from '@element-plus/icons-vue'
   import { getAlertHistory, getUnreadCount, markAlertRead, markAllAlertsRead } from '@/api/alert'
   import websocketClient from '@/utils/websocket'
   import { useUserStore } from '@/stores/user'

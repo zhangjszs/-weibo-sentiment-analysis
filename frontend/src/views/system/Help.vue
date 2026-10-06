@@ -5,9 +5,7 @@
         <el-icon><QuestionFilled /></el-icon>
         帮助中心
       </h2>
-      <p class="subtitle">
-        了解系统功能，快速上手微博舆情分析
-      </p>
+      <p class="subtitle">了解系统功能，快速上手微博舆情分析</p>
     </div>
 
     <!-- 功能卡片概览 -->
@@ -36,16 +34,8 @@
       <template #header>
         <span class="section-title">💡 常见问题</span>
       </template>
-      <el-collapse
-        v-model="activeFaq"
-        accordion
-      >
-        <el-collapse-item
-          v-for="(faq, i) in faqs"
-          :key="i"
-          :title="faq.q"
-          :name="i"
-        >
+      <el-collapse v-model="activeFaq" accordion>
+        <el-collapse-item v-for="(faq, i) in faqs" :key="i" :title="faq.q" :name="i">
           <p class="faq-answer">
             {{ faq.a }}
           </p>

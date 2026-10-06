@@ -19,7 +19,10 @@ export const getCachedCurrentUser = (maxAgeMs = 0) => {
 }
 
 export const setCachedCurrentUser = (user) => {
-  currentUserCache = { user: user && typeof user === 'object' ? user : null, fetchedAt: user ? Date.now() : 0 }
+  currentUserCache = {
+    user: user && typeof user === 'object' ? user : null,
+    fetchedAt: user ? Date.now() : 0,
+  }
 }
 
 export const clearCurrentUserCache = () => {

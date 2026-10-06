@@ -12,8 +12,8 @@
     "preview": "vite preview",
     "lint": "eslint --max-warnings 0 \"src/**/*.{vue,js,jsx,cjs,mjs}\" \"tests/**/*.js\"",
     "check:bundle": "node scripts/check-bundle-budget.mjs",
-    "format": "prettier --write src/",
-    "format:check": "prettier --check src/",
+    "format": "prettier --write src/ tests/",
+    "format:check": "prettier --check src/ tests/",
     "test": "vitest",
     "test:run": "vitest run"
   },

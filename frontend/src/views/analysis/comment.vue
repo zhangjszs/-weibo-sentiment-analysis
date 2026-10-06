@@ -1,26 +1,16 @@
 <template>
   <div class="comment-analysis-container">
     <el-row :gutter="20">
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span>评论时间分布</span>
           </template>
-          <BaseChart
-            ref="timeChartRef"
-            :options="timeChartOptions"
-            height="350px"
-          />
+          <BaseChart ref="timeChartRef" :options="timeChartOptions" height="350px" />
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="12"
-      >
+      <el-col :xs="24" :lg="12">
         <el-card class="chart-card">
           <template #header>
             <span>评论用户活跃度</span>
@@ -36,36 +26,22 @@
     </el-row>
 
     <el-row :gutter="20">
-      <el-col
-        :xs="24"
-        :lg="8"
-      >
+      <el-col :xs="24" :lg="8">
         <el-card class="chart-card">
           <template #header>
             <span>评论情感分布</span>
           </template>
-          <BaseChart
-            ref="sentimentPieRef"
-            :options="sentimentPieOptions"
-            height="300px"
-          />
+          <BaseChart ref="sentimentPieRef" :options="sentimentPieOptions" height="300px" />
         </el-card>
       </el-col>
 
-      <el-col
-        :xs="24"
-        :lg="16"
-      >
+      <el-col :xs="24" :lg="16">
         <el-card class="chart-card">
           <template #header>
             <span>热门评论</span>
           </template>
           <div class="hot-comments">
-            <div
-              v-for="(comment, index) in hotComments"
-              :key="index"
-              class="comment-item"
-            >
+            <div v-for="(comment, index) in hotComments" :key="index" class="comment-item">
               <div class="comment-header">
                 <span class="comment-user">🧑‍{{ comment.user }}</span>
                 <span class="comment-time">{{ comment.time }}</span>
@@ -86,32 +62,17 @@
     <el-card class="list-card">
       <template #header>
         <div class="card-header">
-          <div class="header-title">
-            评论列表
-          </div>
+          <div class="header-title">评论列表</div>
           <div class="header-actions">
-            <el-button
-              :icon="Download"
-              :disabled="listData.length === 0"
-              @click="exportList"
-            >
+            <el-button :icon="Download" :disabled="listData.length === 0" @click="exportList">
               导出 CSV
             </el-button>
-            <el-button
-              :icon="Refresh"
-              @click="loadList"
-            >
-              刷新
-            </el-button>
+            <el-button :icon="Refresh" @click="loadList"> 刷新 </el-button>
           </div>
         </div>
       </template>
 
-      <el-form
-        :inline="true"
-        class="filter-form"
-        @submit.prevent
-      >
+      <el-form :inline="true" class="filter-form" @submit.prevent>
         <el-form-item label="关键词">
           <el-input
             v-model="filters.keyword"
@@ -129,12 +90,7 @@
           />
         </el-form-item>
         <el-form-item label="用户">
-          <el-input
-            v-model="filters.user"
-            placeholder="评论用户"
-            clearable
-            style="width: 180px"
-          />
+          <el-input v-model="filters.user" placeholder="评论用户" clearable style="width: 180px" />
         </el-form-item>
         <el-form-item label="时间范围">
           <el-date-picker
@@ -147,75 +103,21 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button
-            type="primary"
-            :icon="Search"
-            @click="applyFilters"
-          >
-            查询
-          </el-button>
-          <el-button @click="resetFilters">
-            重置
-          </el-button>
+          <el-button type="primary" :icon="Search" @click="applyFilters"> 查询 </el-button>
+          <el-button @click="resetFilters"> 重置 </el-button>
         </el-form-item>
       </el-form>
 
-      <el-table
-        :data="listData"
-        :loading="listLoading"
-        style="width: 100%"
-      >
-        <el-table-column
-          prop="id"
-          label="ID"
-          width="160"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="rootId"
-          label="文章ID"
-          width="160"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="user"
-          label="用户"
-          width="160"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="created_at"
-          label="时间"
-          width="180"
-          align="center"
-        />
-        <el-table-column
-          prop="likeNum"
-          label="赞"
-          width="90"
-          align="center"
-        />
-        <el-table-column
-          prop="content"
-          label="内容"
-          min-width="360"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          label="操作"
-          width="110"
-          fixed="right"
-          align="center"
-        >
+      <el-table :data="listData" :loading="listLoading" style="width: 100%">
+        <el-table-column prop="id" label="ID" width="160" show-overflow-tooltip />
+        <el-table-column prop="rootId" label="文章ID" width="160" show-overflow-tooltip />
+        <el-table-column prop="user" label="用户" width="160" show-overflow-tooltip />
+        <el-table-column prop="created_at" label="时间" width="180" align="center" />
+        <el-table-column prop="likeNum" label="赞" width="90" align="center" />
+        <el-table-column prop="content" label="内容" min-width="360" show-overflow-tooltip />
+        <el-table-column label="操作" width="110" fixed="right" align="center">
           <template #default="{ row }">
-            <el-button
-              type="primary"
-              link
-              :icon="View"
-              @click="openDetail(row)"
-            >
-              查看
-            </el-button>
+            <el-button type="primary" link :icon="View" @click="openDetail(row)"> 查看 </el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -233,43 +135,28 @@
       </div>
     </el-card>
 
-    <el-dialog
-      v-model="detailVisible"
-      title="评论详情"
-      width="760px"
-    >
-      <div
-        v-if="detailRow"
-        class="detail"
-      >
+    <el-dialog v-model="detailVisible" title="评论详情" width="760px">
+      <div v-if="detailRow" class="detail">
         <div class="detail-row">
-          <div class="detail-label">
-            用户
-          </div>
+          <div class="detail-label">用户</div>
           <div class="detail-value">
             {{ detailRow.user || '-' }}
           </div>
         </div>
         <div class="detail-row">
-          <div class="detail-label">
-            文章ID
-          </div>
+          <div class="detail-label">文章ID</div>
           <div class="detail-value">
             {{ detailRow.rootId || '-' }}
           </div>
         </div>
         <div class="detail-row">
-          <div class="detail-label">
-            时间
-          </div>
+          <div class="detail-label">时间</div>
           <div class="detail-value">
             {{ detailRow.created_at || '-' }}
           </div>
         </div>
         <div class="detail-row">
-          <div class="detail-label">
-            点赞
-          </div>
+          <div class="detail-label">点赞</div>
           <div class="detail-value">
             {{ detailRow.likeNum || 0 }}
           </div>
@@ -279,9 +166,7 @@
         </div>
       </div>
       <template #footer>
-        <el-button @click="detailVisible = false">
-          关闭
-        </el-button>
+        <el-button @click="detailVisible = false"> 关闭 </el-button>
       </template>
     </el-dialog>
   </div>

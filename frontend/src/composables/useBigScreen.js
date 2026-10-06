@@ -65,7 +65,7 @@ export function useBigScreen() {
     tooltip: { trigger: 'item' },
     visualMap: {
       min: 0,
-      max: Math.max(...(regionData.value.map(d => d.value) || [1000])),
+      max: Math.max(...(regionData.value.map((d) => d.value) || [1000])),
       left: 'left',
       top: 'bottom',
       text: ['高', '低'],
@@ -77,16 +77,19 @@ export function useBigScreen() {
         type: 'map',
         map: 'china',
         roam: true,
-        data: regionData.value.length > 0 ? regionData.value : [
-          { name: '北京', value: 985 },
-          { name: '上海', value: 876 },
-          { name: '广东', value: 765 },
-          { name: '浙江', value: 654 },
-          { name: '江苏', value: 543 },
-          { name: '四川', value: 432 },
-          { name: '湖北', value: 321 },
-          { name: '山东', value: 234 },
-        ],
+        data:
+          regionData.value.length > 0
+            ? regionData.value
+            : [
+                { name: '北京', value: 985 },
+                { name: '上海', value: 876 },
+                { name: '广东', value: 765 },
+                { name: '浙江', value: 654 },
+                { name: '江苏', value: 543 },
+                { name: '四川', value: 432 },
+                { name: '湖北', value: 321 },
+                { name: '山东', value: 234 },
+              ],
         label: { show: false },
         itemStyle: { areaColor: '#1E3A8A', borderColor: '#3B82F6' },
         emphasis: { label: { show: true } },
@@ -99,7 +102,10 @@ export function useBigScreen() {
     legend: { data: ['正面', '中性', '负面'], textStyle: { color: '#fff' }, top: 0 },
     xAxis: {
       type: 'category',
-      data: trendData.value.times.length > 0 ? trendData.value.times : ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
+      data:
+        trendData.value.times.length > 0
+          ? trendData.value.times
+          : ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
       axisLine: { lineStyle: { color: '#3B82F6' } },
       axisLabel: { color: '#94A3B8' },
     },
@@ -110,9 +116,36 @@ export function useBigScreen() {
       splitLine: { lineStyle: { color: '#1E3A8A' } },
     },
     series: [
-      { name: '正面', type: 'line', smooth: true, data: trendData.value.positive.length > 0 ? trendData.value.positive : [120, 132, 201, 234, 290, 330, 410], itemStyle: { color: '#10B981' } },
-      { name: '中性', type: 'line', smooth: true, data: trendData.value.neutral.length > 0 ? trendData.value.neutral : [80, 92, 141, 154, 190, 230, 280], itemStyle: { color: '#64748B' } },
-      { name: '负面', type: 'line', smooth: true, data: trendData.value.negative.length > 0 ? trendData.value.negative : [30, 42, 61, 74, 90, 110, 130], itemStyle: { color: '#EF4444' } },
+      {
+        name: '正面',
+        type: 'line',
+        smooth: true,
+        data:
+          trendData.value.positive.length > 0
+            ? trendData.value.positive
+            : [120, 132, 201, 234, 290, 330, 410],
+        itemStyle: { color: '#10B981' },
+      },
+      {
+        name: '中性',
+        type: 'line',
+        smooth: true,
+        data:
+          trendData.value.neutral.length > 0
+            ? trendData.value.neutral
+            : [80, 92, 141, 154, 190, 230, 280],
+        itemStyle: { color: '#64748B' },
+      },
+      {
+        name: '负面',
+        type: 'line',
+        smooth: true,
+        data:
+          trendData.value.negative.length > 0
+            ? trendData.value.negative
+            : [30, 42, 61, 74, 90, 110, 130],
+        itemStyle: { color: '#EF4444' },
+      },
     ],
   }))
 
@@ -135,7 +168,17 @@ export function useBigScreen() {
         type: 'bar',
         data: [120, 200, 150, 80, 70, 110, 130, 180, 220, 190, 160, 140],
         itemStyle: {
-          color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: '#3B82F6' }, { offset: 1, color: '#1E3A8A' }] },
+          color: {
+            type: 'linear',
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color: '#3B82F6' },
+              { offset: 1, color: '#1E3A8A' },
+            ],
+          },
         },
       },
     ],
@@ -144,14 +187,24 @@ export function useBigScreen() {
   const updateTime = () => {
     const now = new Date()
     currentTime.value = now.toLocaleTimeString()
-    currentDate.value = now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })
+    currentDate.value = now.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    })
   }
 
   const animateStats = () => {
     const duration = 2000
     const steps = 60
     const interval = duration / steps
-    const targets = { articleCount: stats.value.articleCount, commentCount: stats.value.commentCount, positiveCount: stats.value.positiveCount, negativeCount: stats.value.negativeCount }
+    const targets = {
+      articleCount: stats.value.articleCount,
+      commentCount: stats.value.commentCount,
+      positiveCount: stats.value.positiveCount,
+      negativeCount: stats.value.negativeCount,
+    }
     let step = 0
     const timer = setInterval(() => {
       step++
@@ -181,7 +234,9 @@ export function useBigScreen() {
         }
         animateStats()
       }
-    } catch (error) { console.error('加载统计数据失败:', error) }
+    } catch (error) {
+      console.error('加载统计数据失败:', error)
+    }
   }
 
   const loadHotTopics = async () => {
@@ -189,7 +244,9 @@ export function useBigScreen() {
       const data = await analysisStore.fetchHotTopics()
       if (data && data.topics) hotTopics.value = data.topics
       else if (Array.isArray(data)) hotTopics.value = data
-    } catch (error) { console.error('加载热门话题失败:', error) }
+    } catch (error) {
+      console.error('加载热门话题失败:', error)
+    }
   }
 
   const loadAlerts = async () => {
@@ -197,17 +254,29 @@ export function useBigScreen() {
       const data = await analysisStore.fetchAlerts()
       if (data && data.alerts) recentAlerts.value = data.alerts
       else if (Array.isArray(data)) recentAlerts.value = data
-    } catch (error) { console.error('加载预警数据失败:', error) }
+    } catch (error) {
+      console.error('加载预警数据失败:', error)
+    }
   }
 
   const loadAllData = async () => {
     loading.value = true
-    try { await analysisStore.fetchAll() } catch (e) { console.error('加载数据失败:', e) }
+    try {
+      await analysisStore.fetchAll()
+    } catch (e) {
+      console.error('加载数据失败:', e)
+    }
     // 回填本地 refs 以保持图表 computed 响应
     try {
       if (analysisStore.stats) {
         const d = analysisStore.stats
-        stats.value = { articleCount: d.articleCount || 0, commentCount: d.commentCount || 0, positiveCount: d.positiveCount || 0, negativeCount: d.negativeCount || 0, neutralCount: d.neutralCount || 0 }
+        stats.value = {
+          articleCount: d.articleCount || 0,
+          commentCount: d.commentCount || 0,
+          positiveCount: d.positiveCount || 0,
+          negativeCount: d.negativeCount || 0,
+          neutralCount: d.neutralCount || 0,
+        }
         animateStats()
       }
       if (analysisStore.region) {
@@ -216,7 +285,12 @@ export function useBigScreen() {
       }
       if (analysisStore.trend) {
         const d = analysisStore.trend
-        trendData.value = { times: d.times || [], positive: d.positive || [], neutral: d.neutral || [], negative: d.negative || [] }
+        trendData.value = {
+          times: d.times || [],
+          positive: d.positive || [],
+          neutral: d.neutral || [],
+          negative: d.negative || [],
+        }
       }
       if (analysisStore.hotTopics) {
         const d = analysisStore.hotTopics
@@ -226,7 +300,9 @@ export function useBigScreen() {
         const d = analysisStore.alerts
         recentAlerts.value = d.alerts || d || []
       }
-    } catch (e) { console.error('回填失败:', e) }
+    } catch (e) {
+      console.error('回填失败:', e)
+    }
     loading.value = false
   }
 
@@ -235,12 +311,22 @@ export function useBigScreen() {
     stats.value.commentCount += Math.floor(Math.random() * 50)
     stats.value.positiveCount += Math.floor(Math.random() * 20)
     stats.value.negativeCount += Math.floor(Math.random() * 5)
-    animatedStats.value = { articleCount: stats.value.articleCount, commentCount: stats.value.commentCount, positiveCount: stats.value.positiveCount, negativeCount: stats.value.negativeCount }
+    animatedStats.value = {
+      articleCount: stats.value.articleCount,
+      commentCount: stats.value.commentCount,
+      positiveCount: stats.value.positiveCount,
+      negativeCount: stats.value.negativeCount,
+    }
   }
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); isFullscreen.value = true }
-    else { document.exitFullscreen(); isFullscreen.value = false }
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen()
+      isFullscreen.value = true
+    } else {
+      document.exitFullscreen()
+      isFullscreen.value = false
+    }
   }
 
   const showTimeline = ref(false)
@@ -268,7 +354,10 @@ export function useBigScreen() {
     } else clearInterval(playTimer)
   }
 
-  const openTimeline = () => { showConfig.value = false; showTimeline.value = true }
+  const openTimeline = () => {
+    showConfig.value = false
+    showTimeline.value = true
+  }
 
   const showConfig = ref(false)
   const refreshInterval = ref(5000)
@@ -283,7 +372,11 @@ export function useBigScreen() {
     updateTime()
     timeTimer = setInterval(updateTime, 1000)
     loadAllData()
-    dataTimer = setInterval(() => { loadStats(); loadHotTopics(); loadAlerts() }, refreshInterval.value)
+    dataTimer = setInterval(() => {
+      loadStats()
+      loadHotTopics()
+      loadAlerts()
+    }, refreshInterval.value)
   })
 
   onUnmounted(() => {
@@ -292,11 +385,31 @@ export function useBigScreen() {
   })
 
   return {
-    isFullscreen, currentTime, currentDate, loading,
-    stats, animatedStats, hotTopics, recentAlerts, regionData, trendData,
+    isFullscreen,
+    currentTime,
+    currentDate,
+    loading,
+    stats,
+    animatedStats,
+    hotTopics,
+    recentAlerts,
+    regionData,
+    trendData,
     mapReady,
-    sentimentChartOptions, mapChartOptions, trendChartOptions, speedChartOptions,
-    toggleFullscreen, showTimeline, isPlaying, timelineIndex, timelineData, togglePlay, openTimeline,
-    showConfig, refreshInterval, visiblePanels, onRefreshIntervalChange,
+    sentimentChartOptions,
+    mapChartOptions,
+    trendChartOptions,
+    speedChartOptions,
+    toggleFullscreen,
+    showTimeline,
+    isPlaying,
+    timelineIndex,
+    timelineData,
+    togglePlay,
+    openTimeline,
+    showConfig,
+    refreshInterval,
+    visiblePanels,
+    onRefreshIntervalChange,
   }
 }

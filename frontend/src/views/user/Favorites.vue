@@ -8,58 +8,42 @@
       <span class="total-count">共 {{ total }} 篇</span>
     </div>
 
-    <div
-      v-if="loading"
-      class="loading-container"
-    >
-      <el-skeleton
-        :rows="5"
-        animated
-      />
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="5" animated />
     </div>
 
     <template v-else>
-      <div
-        v-if="favorites.length === 0"
-        class="empty-state"
-      >
+      <div v-if="favorites.length === 0" class="empty-state">
         <el-empty description="暂无收藏内容">
-          <el-button
-            type="primary"
-            @click="$router.push('/article-analysis')"
-          >
+          <el-button type="primary" @click="$router.push('/article-analysis')">
             去浏览文章
           </el-button>
         </el-empty>
       </div>
 
-      <div
-        v-else
-        class="favorites-list"
-      >
-        <div
-          v-for="item in favorites"
-          :key="item.id"
-          class="favorite-card"
-        >
+      <div v-else class="favorites-list">
+        <div v-for="item in favorites" :key="item.id" class="favorite-card">
           <div class="card-content">
             <p class="article-text">
               {{ truncate(item.content, 200) }}
             </p>
             <div class="card-meta">
-              <span
-                v-if="item.source"
-                class="source"
-              >
+              <span v-if="item.source" class="source">
                 <el-icon><User /></el-icon> {{ item.source }}
               </span>
               <span class="time">
                 <el-icon><Calendar /></el-icon> {{ item.created_at }}
               </span>
               <div class="stats">
-                <span><el-icon><Star /></el-icon> {{ item.like_num }}</span>
-                <span><el-icon><ChatDotRound /></el-icon> {{ item.comment_num }}</span>
-                <span><el-icon><Share /></el-icon> {{ item.forward_num }}</span>
+                <span
+                  ><el-icon><Star /></el-icon> {{ item.like_num }}</span
+                >
+                <span
+                  ><el-icon><ChatDotRound /></el-icon> {{ item.comment_num }}</span
+                >
+                <span
+                  ><el-icon><Share /></el-icon> {{ item.forward_num }}</span
+                >
               </div>
             </div>
           </div>
@@ -77,10 +61,7 @@
         </div>
       </div>
 
-      <div
-        v-if="total > pageSize"
-        class="pagination-container"
-      >
+      <div v-if="total > pageSize" class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
           :page-size="pageSize"

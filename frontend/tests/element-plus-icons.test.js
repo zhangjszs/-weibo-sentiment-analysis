@@ -42,7 +42,9 @@ describe('#39 element-plus 最小全局注册守护', () => {
     const app = createApp({ render: () => null })
     installElementPlus(app)
     for (const [name, component] of Object.entries(ICON_COMPONENTS)) {
-      expect(ICON_NAMES.has(name), `${name} 不是 @element-plus/icons-vue 的导出（拼写错误?）`).toBe(true)
+      expect(ICON_NAMES.has(name), `${name} 不是 @element-plus/icons-vue 的导出（拼写错误?）`).toBe(
+        true
+      )
       expect(app.component(name), `组件 ${name} 未被 installElementPlus 注册`).toBe(component)
     }
   })

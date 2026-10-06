@@ -1,10 +1,6 @@
 <template>
   <div class="analysis-filters">
-    <el-form
-      :inline="true"
-      :model="form"
-      @submit.prevent="emitSearch"
-    >
+    <el-form :inline="true" :model="form" @submit.prevent="emitSearch">
       <el-form-item label="话题关键词">
         <el-input
           v-model="form.topic"
@@ -36,12 +32,7 @@
       </el-form-item>
 
       <el-form-item>
-        <el-button
-          type="primary"
-          :icon="Search"
-          :disabled="!form.topic.trim()"
-          @click="emitSearch"
-        >
+        <el-button type="primary" :icon="Search" :disabled="!form.topic.trim()" @click="emitSearch">
           开始分析
         </el-button>
       </el-form-item>
@@ -59,55 +50,59 @@
 </template>
 
 <script setup>
-import { reactive, watch } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+  import { reactive, watch } from 'vue'
+  import { Search } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    default: () => ({ topic: '', startAt: '', endAt: '', demo: false }),
-  },
-  showDemoToggle: {
-    type: Boolean,
-    default: true,
-  },
-})
+  const props = defineProps({
+    modelValue: {
+      type: Object,
+      default: () => ({ topic: '', startAt: '', endAt: '', demo: false }),
+    },
+    showDemoToggle: {
+      type: Boolean,
+      default: true,
+    },
+  })
 
-const emit = defineEmits(['search', 'update:modelValue'])
+  const emit = defineEmits(['search', 'update:modelValue'])
 
-const form = reactive({
-  topic: props.modelValue.topic || '',
-  startAt: props.modelValue.startAt || '',
-  endAt: props.modelValue.endAt || '',
-  demo: props.modelValue.demo || false,
-})
+  const form = reactive({
+    topic: props.modelValue.topic || '',
+    startAt: props.modelValue.startAt || '',
+    endAt: props.modelValue.endAt || '',
+    demo: props.modelValue.demo || false,
+  })
 
-watch(() => props.modelValue, (val) => {
-  form.topic = val.topic || ''
-  form.startAt = val.startAt || ''
-  form.endAt = val.endAt || ''
-  form.demo = val.demo || false
-}, { deep: true })
+  watch(
+    () => props.modelValue,
+    (val) => {
+      form.topic = val.topic || ''
+      form.startAt = val.startAt || ''
+      form.endAt = val.endAt || ''
+      form.demo = val.demo || false
+    },
+    { deep: true }
+  )
 
-function emitSearch() {
-  const value = { ...form }
-  emit('update:modelValue', value)
-  emit('search', value)
-}
+  function emitSearch() {
+    const value = { ...form }
+    emit('update:modelValue', value)
+    emit('search', value)
+  }
 
-defineExpose({ emitSearch })
+  defineExpose({ emitSearch })
 </script>
 
 <style lang="scss" scoped>
-.analysis-filters {
-  padding: 16px 20px;
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  margin-bottom: 16px;
-  box-shadow: var(--el-box-shadow-light);
+  .analysis-filters {
+    padding: 16px 20px;
+    background: var(--el-bg-color);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: var(--el-box-shadow-light);
 
-  :deep(.el-form-item) {
-    margin-bottom: 0;
+    :deep(.el-form-item) {
+      margin-bottom: 0;
+    }
   }
-}
 </style>

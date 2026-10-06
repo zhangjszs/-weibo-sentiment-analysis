@@ -61,8 +61,7 @@ request.interceptors.request.use(
     // 显式传了 loadingOptions（如 { text: '加载中' }）即展示全局 loading，
     // 不再要求 fullscreen === true——全仓没有任何调用方传过该字段，导致
     // ElLoading 永不触发（#19）。不传 loadingOptions 或传 false 仍静默。
-    const shouldShowLoading =
-      !config.hideLoading && loadingOptions && loadingOptions !== false
+    const shouldShowLoading = !config.hideLoading && loadingOptions && loadingOptions !== false
 
     if (shouldShowLoading) {
       // 标记到本次请求的 config 上：hide 只由真正展示过 loading 的请求触发，

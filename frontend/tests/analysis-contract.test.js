@@ -40,12 +40,8 @@ const demoSnapshot = {
     distribution: { positive: 50, neutral: 30, negative: 20 },
     index: 0.3,
   },
-  top_articles: [
-    { id: 'a1', content: 'Article 1', like_count: 100 },
-  ],
-  top_comments: [
-    { id: 'c1', content: 'Comment 1', like_count: 50 },
-  ],
+  top_articles: [{ id: 'a1', content: 'Article 1', like_count: 100 }],
+  top_comments: [{ id: 'c1', content: 'Comment 1', like_count: 50 }],
   propagation: {
     max_depth: 3,
     total_nodes: 100,
@@ -62,7 +58,14 @@ describe('AnalysisSnapshot contract', () => {
   })
 
   it('has all analysis data keys', () => {
-    const required = ['summary', 'trend', 'sentiment', 'top_articles', 'top_comments', 'propagation']
+    const required = [
+      'summary',
+      'trend',
+      'sentiment',
+      'top_articles',
+      'top_comments',
+      'propagation',
+    ]
     for (const key of required) {
       expect(demoSnapshot).toHaveProperty(key)
     }

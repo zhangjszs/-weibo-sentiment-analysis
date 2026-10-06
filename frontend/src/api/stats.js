@@ -16,7 +16,6 @@ export function getTodayStats() {
   })
 }
 
-
 export function getHotWords(hotWord = '') {
   return request({
     url: '/api/getTableData',

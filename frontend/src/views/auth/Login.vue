@@ -3,11 +3,7 @@
     <div class="login-box">
       <div class="login-header">
         <div class="logo-wrapper">
-          <img
-            src="@/assets/images/logo.png"
-            alt="Logo"
-            class="logo"
-          >
+          <img src="@/assets/images/logo.png" alt="Logo" class="logo" />
         </div>
         <h1>欢迎回来</h1>
         <p>登录微博舆情分析系统</p>
@@ -42,18 +38,11 @@
         </el-form-item>
 
         <div class="form-options">
-          <el-checkbox v-model="rememberMe">
-            记住我
-          </el-checkbox>
+          <el-checkbox v-model="rememberMe"> 记住我 </el-checkbox>
         </div>
 
         <el-form-item>
-          <el-button
-            type="primary"
-            :loading="loading"
-            class="login-btn"
-            @click="handleLogin"
-          >
+          <el-button type="primary" :loading="loading" class="login-btn" @click="handleLogin">
             {{ loading ? '登录中...' : '登 录' }}
           </el-button>
         </el-form-item>
@@ -61,9 +50,7 @@
 
       <div class="login-footer">
         <span>还没有账号？</span>
-        <router-link to="/register">
-          立即注册
-        </router-link>
+        <router-link to="/register"> 立即注册 </router-link>
       </div>
     </div>
   </div>

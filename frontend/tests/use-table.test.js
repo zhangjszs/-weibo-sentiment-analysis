@@ -61,9 +61,15 @@ describe('useTable 竞态防护 (#19)', () => {
       vi
         .fn()
         .mockImplementationOnce(
-          () => new Promise((resolve) => { resolveSlow = resolve })
+          () =>
+            new Promise((resolve) => {
+              resolveSlow = resolve
+            })
         )
-        .mockImplementationOnce(async () => ({ code: 200, data: { list: [{ id: 'fresh' }], total: 1 } })),
+        .mockImplementationOnce(async () => ({
+          code: 200,
+          data: { list: [{ id: 'fresh' }], total: 1 },
+        })),
       { immediate: false }
     )
 
@@ -86,7 +92,12 @@ describe('useTable 竞态防护 (#19)', () => {
     const table = useTable(
       vi
         .fn()
-        .mockImplementationOnce(() => new Promise((_, reject) => { rejectSlow = reject }))
+        .mockImplementationOnce(
+          () =>
+            new Promise((_, reject) => {
+              rejectSlow = reject
+            })
+        )
         .mockImplementationOnce(async () => ({ code: 200, data: { list: [], total: 0 } })),
       { immediate: false }
     )
