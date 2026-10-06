@@ -43,7 +43,7 @@
 
     <!-- Before first search -->
     <div v-else class="home-welcome">
-      <el-empty image-size="160" description="在上方输入关键词开始分析" />
+      <el-empty :image-size="160" description="在上方输入关键词开始分析" />
     </div>
   </div>
 </template>

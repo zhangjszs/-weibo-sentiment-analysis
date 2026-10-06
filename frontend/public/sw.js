@@ -1,10 +1,10 @@
 const CACHE_NAME = 'weibo-analytics-v2';
-const STATIC_CACHE = 'static-v2';
+const STATIC_CACHE = 'static-v3';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/favicon.ico'
+  '/vite.svg'
 ];
 
 self.addEventListener('install', (event) => {
@@ -78,7 +78,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.message || '您有新的预警信息',
     icon: '/logo.png',
-    badge: '/favicon.ico',
+    badge: '/vite.svg',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/alert-center'
