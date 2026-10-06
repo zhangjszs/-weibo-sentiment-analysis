@@ -45,6 +45,32 @@ def test_extract_potential_paths_ignores_camelcase():
     assert "src/services/sentiment_service.py" in paths
 
 
+def test_extract_potential_paths_normalizes_line_refs():
+    """`file.py:12` / `file.py:12-34` 应归一化为文件本身（#50）。"""
+    text = "Logic at `src/app.py:302-327` and single line `frontend/vite.config.js:33`."
+    paths = extract_potential_paths(text)
+    assert "src/app.py" in paths
+    assert "frontend/vite.config.js" in paths
+    assert "src/app.py:302-327" not in paths
+    assert "frontend/vite.config.js:33" not in paths
+
+
+def test_extract_potential_paths_ignores_route_patterns_with_params():
+    """带 <param> 占位符的路由模式不是文件路径（#50）。"""
+    text = "Endpoints: `/api/<path>` and legacy alias `/getAllData/<path>`."
+    paths = extract_potential_paths(text)
+    assert "/api/<path>" not in paths
+    assert "/getAllData/<path>" not in paths
+
+
+def test_check_document_reports_missing_line_ref_file(tmp_path):
+    """负例：带行号的引用指向不存在的文件时仍要报出（归一化后校验）。"""
+    doc = tmp_path / "test.md"
+    doc.write_text("Missing: `definitely/not/real_98765.py:10-20`.\n", encoding="utf-8")
+    missing = check_document(doc)
+    assert "definitely/not/real_98765.py" in missing
+
+
 def test_check_document_reports_missing(tmp_path):
     """A document referencing a non-existent path should report it missing."""
     doc = tmp_path / "test.md"

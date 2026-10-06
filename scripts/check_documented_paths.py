@@ -49,6 +49,9 @@ SKIP_REGEXPS = [
     re.compile(r"^[a-zA-Z0-9_]+/[a-zA-Z0-9_/*]+$"),  # code/msg, /getAllData/*
     re.compile(r"^/[a-zA-Z0-9_/*]+$"),  # /api, /getAllData, /api/*
     re.compile(r"^/[a-zA-Z0-9_]+/[a-zA-Z0-9_/*]*$"),  # /api/session/extend
+    # Route patterns with <param> placeholders, e.g. /api/<path>,
+    # /getAllData/<path> — URL templates, not filesystem paths.
+    re.compile(r"^/[a-zA-Z0-9_]+/<[^>]+>(/[a-zA-Z0-9_<>{}.-]+)*$"),
     re.compile(r"^[a-zA-Z_]+=[^\s`]+$"),  # key=value assignments (env vars)
     re.compile(r"^[a-zA-Z_]+\.[a-zA-Z_]+$"),  # dotted fields like data.token
     # Directory-only references without extension (shorthand in prose).
@@ -56,6 +59,10 @@ SKIP_REGEXPS = [
     # Anything containing a URL scheme is not a filesystem path.
     re.compile(r"://"),
 ]
+
+# `src/app.py:302-327` / `frontend/vite.config.js:33` style line references
+# point at a real file; keep only the file part for the existence check.
+LINE_REF_RE = re.compile(r"^(.+):\d+(?:-\d+)?$")
 
 # Known documented paths that don't map 1:1 to files (examples, templates,
 # deployment-specific paths that only exist in certain envs).
@@ -71,14 +78,20 @@ KNOWN_OK = {
 
 
 def extract_potential_paths(text: str) -> set[str]:
-    """Extract backtick-delimited tokens that look like file paths."""
+    """Extract backtick-delimited tokens that look like file paths.
+
+    Line-reference suffixes (`path/file.py:12` / `path/file.py:12-34`) are
+    normalized to the bare file path so the existence check targets the file.
+    """
     # Match `path/to/file` but not ``code spans with spaces``
     backtick_pattern = re.compile(r"`([^\s`]+)`")
     candidates: set[str] = set()
     for match in backtick_pattern.finditer(text):
         token = match.group(1)
-        if _looks_like_path(token):
-            candidates.add(token)
+        if not _looks_like_path(token):
+            continue
+        line_ref = LINE_REF_RE.match(token)
+        candidates.add(line_ref.group(1) if line_ref else token)
     return candidates
 
 

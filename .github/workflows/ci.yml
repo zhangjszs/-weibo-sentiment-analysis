@@ -18,6 +18,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # #50：文档死链门禁——README/docs 中反引号引用的文件路径必须存在。
+      # 纯标准库脚本，无需项目依赖；放 CI 而非 pre-commit：CI 对每次
+      # push/PR 强制生效，不依赖开发者本地安装钩子（CI 不跑 pre-commit）。
+      - name: Documented paths check
+        run: python3 scripts/check_documented_paths.py
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
