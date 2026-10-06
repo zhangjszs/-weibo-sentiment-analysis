@@ -2,6 +2,18 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useAnalysisStore } from '@/stores/analysis'
 import { ensureChinaMap } from '@/utils/chinaMap'
 
+// 空数据兜底（#52）：regionData 为空时 `Math.max()` 返回 -Infinity，
+// visualMap 连续渐变对 -Infinity 求色会抛
+// "Failed to execute 'addColorStop' ... could not be parsed as a color"。
+// 空时回落 1000，与 map 序列的演示数据同尺度；非空取真实最大值，
+// 且下限 1 避免「全 0 行」造成的 min=max 退化。
+export function resolveVisualMapMax(regionData) {
+  if (!regionData || regionData.length === 0) {
+    return 1000
+  }
+  return Math.max(...regionData.map((d) => d.value), 1)
+}
+
 export function useBigScreen() {
   const analysisStore = useAnalysisStore()
 
@@ -65,7 +77,8 @@ export function useBigScreen() {
     tooltip: { trigger: 'item' },
     visualMap: {
       min: 0,
-      max: Math.max(...(regionData.value.map((d) => d.value) || [1000])),
+      // 空数据兜底（#52）：见 resolveVisualMapMax
+      max: resolveVisualMapMax(regionData.value),
       left: 'left',
       top: 'bottom',
       text: ['高', '低'],
