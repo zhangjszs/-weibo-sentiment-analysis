@@ -3,12 +3,14 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：**候补 4 项全部完成**——#48 体积预算门禁、#49 vitest 共享 resolver、
-  #50 文档路径校验误报修复+CI 接线、#51 Prettier 全量格式化+format:check
-  入 CI，全部完成转 in-review 待 Planner 验收。**ready 队列已空**。
-- 状态：执行会话 `executor-glm-20261006T0406Z` 收尾释放锁。
-  下一棒应为 Planning：验收 in-review 累计 **9 项**（#43/#44/#45/#46/#47
-  M3 五项 + #48/#49/#50/#51 质量四项）+ 定级 #52/#53 + 规划下一阶段。
+- 任务：#52 [P3] 大屏空数据 addColorStop 崩溃——已修复关闭（d968188，
+  真实浏览器冒烟 RED→GREEN，附 3 分支单测，CI 绿）
+- 顺带入库：predict 页缺失 BaseChart import 修复 + 图标注册守护测试
+  （7c6a3f8，#39 后续）；空库冒烟脚本 scripts/smoke_bigscreen_empty_db.py
+- 状态：剩余队列 #54/#55（均 P4）、#53（needs-info）。
+- **提醒下一棒**：in-review 累计 9 项（#43~#47、#48~#51）仍待 Planner 验收；
+  AUTO_CREATE_DEMO_ADMIN 在 SQLite 上因 `no such function: NOW` 失效
+  （#52 冒烟中发现，可立项修 startup_service 的 SQL 方言）。
 
 ## 阻塞项
 - 无阻塞。CI 全绿（每项推送后实证）；fast gate 基线推进至
