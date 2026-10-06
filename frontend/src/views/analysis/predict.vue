@@ -171,6 +171,7 @@
 </template>
 
 <script setup>
+  import BaseChart from '@/components/Charts/BaseChart.vue'
   import PredictInput from '@/components/analysis/PredictInput.vue'
   import PredictResult from '@/components/analysis/PredictResult.vue'
   import { usePredict } from '@/composables/usePredict'
