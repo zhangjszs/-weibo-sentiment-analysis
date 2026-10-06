@@ -1,0 +1,10 @@
+{
+  "_meta": {
+    "说明": "#48 首屏体积预算门禁。判定口径 = dist/index.html 实载的入口 JS 与首屏 CSS 的 raw 字节数（确定性最高，跨 zlib 版本稳定）；gzip 仅在脚本输出中展示，不参与判定。",
+    "数值来源": "2026-10-06 本机实测（HEAD 90a5355，npm run build 后 node scripts/check-bundle-budget.mjs 输出）：入口 JS 273,199B（gzip 101,676B）、首屏 CSS 81,228B（gzip 13,123B）。与 #48 issue 记录的 M2 后基线（HEAD 3aab56d：273,166B / 81,228B）一致，+33B 为期间依赖常规升级的正常漂移。",
+    "余量": "预算 = 实测基线 × 1.2 后向下取整到千位（余量 ≤20%）：JS 273,199 → 327,000（+19.7%）；CSS 81,228 → 97,000（+19.4%）。",
+    "超限调整流程": "npm run check:bundle 失败时：1) 确认增长来源——正当功能增长则上调对应预算并在「数值来源」补充新基线实测记录；误引入（如路由级组件被静态 import、依赖升级拖入大包）则改回动态 import 或回退依赖，不许直接抬预算。诊断工具：VISUALIZER=1 npm run build 生成 dist/stats.json。"
+  },
+  "entryJs": 327000,
+  "firstScreenCss": 97000
+}

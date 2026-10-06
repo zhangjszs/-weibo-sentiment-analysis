@@ -75,6 +75,12 @@ jobs:
         working-directory: frontend
         run: npm run build
 
+      # #48：首屏体积预算门禁——构建后比对 dist/index.html 实载的入口 JS /
+      # 首屏 CSS 与 bundle-budget.json，超限 exit 1。守住 M2 传输体积收益。
+      - name: Bundle budget check
+        working-directory: frontend
+        run: npm run check:bundle
+
   # --- Integration tests: needs MySQL + Redis ---
   # PR 即跑（此前只在 main push 后跑，坏迁移合入才爆）；external/slow 仍手动/定时。
   integration:
