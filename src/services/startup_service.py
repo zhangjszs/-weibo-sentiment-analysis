@@ -141,11 +141,20 @@ def ensure_demo_admin() -> dict[str, Any]:
         hashed_password = hash_password(password)
 
         if not user_rows:
-            querys(
-                "INSERT INTO user (username, password, create_time) VALUES (%s, %s, NOW())",
-                [username, hashed_password],
-                "insert",
+            # 引导插入必须方言中立：NOW() 是 MySQL 函数，SQLite 下引导直接崩溃
+            # （#56）；create_time 显式落 naive UTC，与 User.create_time 列默认值
+            # 语义一致，MySQL / SQLite 等价
+            from database import db_session
+            from models.user import User
+
+            db_session.add(
+                User(
+                    username=username,
+                    password=hashed_password,
+                    create_time=datetime.utcnow(),
+                )
             )
+            db_session.commit()
             result["action"] = "created"
             result["enabled"] = True
             _set_admin_bootstrap_state(result)
@@ -167,6 +176,13 @@ def ensure_demo_admin() -> dict[str, Any]:
         _set_admin_bootstrap_state(result)
         return result
     except Exception as exc:
+        # ORM 插入失败时清掉 session 中的挂起对象，避免污染后续无关的 commit
+        try:
+            from database import db_session
+
+            db_session.rollback()
+        except Exception:
+            pass
         result["action"] = "error"
         result["error"] = str(exc)
         _set_admin_bootstrap_state(result)
