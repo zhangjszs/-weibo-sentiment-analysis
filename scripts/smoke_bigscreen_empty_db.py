@@ -2,7 +2,8 @@
 """大屏空数据冒烟（#52，重建 #43 的验证手段）。
 
 前置：
-- Flask 已以空 SQLite 库运行在 127.0.0.1:5000（demo admin 已开）
+- Flask 已以空 SQLite 库运行在 127.0.0.1:5000（demo admin 由
+  AUTO_CREATE_DEMO_ADMIN 引导创建，密码 e2e-demo-password）
 - Vite dev server 已运行在 http://localhost:3000
 
 输出：pageerror / console error 的 JSON 清单（供 issue 验收留证）。

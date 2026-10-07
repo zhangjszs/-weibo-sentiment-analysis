@@ -2,8 +2,9 @@
 """非大屏页面 console 告警冒烟（#55，重建 #43 的验证手段）。
 
 前置：
-- Flask 已以空 SQLite 库运行在 127.0.0.1:5000（admin 已手动种子，
-  密码 e2e-demo-password）
+- Flask 已以空 SQLite 库运行在 127.0.0.1:5000（admin 由
+  AUTO_CREATE_DEMO_ADMIN 引导创建，密码 e2e-demo-password，无需手动
+  INSERT——引导自 #56 修复后在 SQLite 直接可用）
 - Vite dev server 已运行在 http://localhost:3000
 
 输出：pageerror / console warning / console error / favicon 响应状态的
