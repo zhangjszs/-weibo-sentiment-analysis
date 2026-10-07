@@ -24,8 +24,10 @@
 - 浏览器冒烟（#43 实测可行）：playwright 已装 `.venv`；chromium 用
   `~/.cache/ms-playwright/chromium-*/chrome-linux*/chrome` 缓存，launch 时
   `executable_path=` 指定。后端 SQLite 文件库自举：`import models` 后
-  `database.init_db()`（顺序不可反）；admin 用户手动插（demo admin 引导的
-  `NOW()` 在 SQLite 不存在）；环境变量 shell 导出可覆盖 .env 同名项
+  `database.init_db()`（顺序不可反）；admin 引导自 #56 修复后在 SQLite
+  直接可用（`AUTO_CREATE_DEMO_ADMIN=True` + `FLASK_ENV=development` +
+  `DEMO_ADMIN_PASSWORD=<强密码>` 导出后再起 run.py，无需手动插行）；
+  环境变量 shell 导出可覆盖 .env 同名项
 - 冒烟脚本两枚（scripts/，复用同一套前置）：`smoke_bigscreen_empty_db.py`
   （#52 大屏空库）、`smoke_console_noise.py`（#55 console 清洁度）。
   前置：`TEST_DATABASE_URL=sqlite:///<库文件>` 下 `python -c` 自举
@@ -38,3 +40,4 @@
 ## 更新 2026-10-01T12:12:00Z，agent DeepSeek-V4.1-Flash-20261001T120450Z（补 ROS 插件屏蔽）
 ## 更新 2026-10-05T08:55:00Z，agent executor-glm-20261005T0714Z（补浏览器冒烟与代理注意事项）
 ## 更新 2026-10-07T02:30:00Z，agent executor-glm-20261007-relay（补两枚冒烟脚本前置 + python -c 需 sys.path 注入）
+## 更新 2026-10-07T05:45:00Z，agent executor-glm-20261007-r2（#56 修复后 SQLite 冒烟自举无需再手动种 admin）

@@ -3,17 +3,23 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无 in-progress——**ready 队列已清空**，本轮收尾（2026-10-07）。
-- #54 [P4] 死代码清理：完成转 in-review（053bff2）。/api/bigscreen/all +
-  AlertNotification.vue 已删；**/api/stats/today 保留**（base_page.html
-  loadTodayStats 实际消费且该模板被 8 个在用模板 extends，按 Issue 护栏）。
-- #55 [P4] console 告警清理：完成转 in-review（a0d44ed）。路由 meta.icon
-  全部字符串化（19 处）、favicon 三处指向 /vite.svg、sw.js static-v3。
-- 状态：in-review 累计 **11 项**（#43~#47、#48~#51、#54、#55）待 Planner 验收。
+- 任务：无 in-progress——**ready 队列已清空**（#56/#57 本轮完成转
+  in-review），本轮收尾（2026-10-07）。
+- #56 [P3] SQLite 方言引导修复：完成转 in-review（ce11292 → main dc0bb05）。
+  ensure_demo_admin 的 INSERT 改 ORM 创建 + create_time 显式 naive UTC；
+  RED→GREEN 文件库自举实证（修复前 no such function: NOW → 修复后 admin 行
+  create_time 非空）；mock 单测替换为 test_ensure_demo_admin_creates_user_sqlite
+  （真实 SQLite 内存库 + verify_password 哈希校验）。
+- #57 [P4] /logo.png 悬空引用清理：完成转 in-review（1890232 → main
+  0c9bbaf）。manifest.json 删两条悬空 PNG 条目（保留 vite.svg "any"）；
+  sw.js 通知 icon → /vite.svg（precache 未动）。
+- 状态：in-review 累计 **2 项**（#56、#57）待 Planner 验收。
 - 剩余队列：#53（needs-info，等 D-007）。ready 空。
 
 ## 阻塞项
-- 无阻塞。CI 全绿（两次推送后实证：run 37547491509 / 37549117841）。
+- 无阻塞。CI 全绿（本轮两次推送实证：dc0bb05 → CI run 37575319130 三 job
+  success + Security Scan 37575319243 success；0c9bbaf → CI run 37575800738
+  三 job success + Security Scan success）。
 
 ## 关键事实（已实测验证）
 - **基线推进**：fast gate 1463 → **1460 passed + 1 strict xfail**（−3 = #54
@@ -29,16 +35,19 @@
   调查须把**服务端模板**计入消费方（#45/#54 两轮都只扫了 SPA 五层）。
 - **sw.js precache 用 cache.addAll**：任一 404 → 整个 install 失败；
   precache 清单必须与 public/ 实际文件一致（现指向 /vite.svg，缓存
-  static-v2→static-v3）。manifest.json 仍引用 /logo.png（文件不存在，
-  仅 PWA 安装元数据、无 console 噪音，未清）。
+  static-v2→static-v3）。manifest.json / sw.js 的 /logo.png 悬空引用已随
+  #57 清除：manifest icons 仅剩 vite.svg（"any"），通知 icon 与 badge 均
+  为 /vite.svg；public/ 引用零悬空（git grep 可复核）。
 - **冒烟脚本两枚**（scripts/）：smoke_bigscreen_empty_db.py（#52 大屏空库）+
   smoke_console_noise.py（#55 非大屏页面 console 清洁度，RED→GREEN 两轮
   实证）。注意 headless Chromium 不主动请求 favicon——#55 脚本用显式请求
   核验 index.html 的 icon link。
 - **SQLite 自举**：`TEST_DATABASE_URL=... python -c` 需先
   `sys.path.insert(0, 'src')`（只有 run.py 做路径注入）；`import models` 后
-  `database.init_db()` 顺序不可反；admin 用 hash_password + querys 手动
-  INSERT（demo admin 引导 SQL 的 NOW() 在 SQLite 报错，方言问题未立项）。
+  `database.init_db()` 顺序不可反；demo admin 引导自 #56 修复后在 SQLite
+  可用（`AUTO_CREATE_DEMO_ADMIN=True` + `FLASK_ENV=development` +
+  `DEMO_ADMIN_PASSWORD` 环境变量，create_app 即落 admin 行），冒烟不再需要
+  手动 INSERT（smoke_*.py 内的手动种 admin 代码下次跑冒烟时可顺势简化）。
 - **大屏 trend 形状漂移（#53，未修）**：前端读 positive/neutral/negative
   （useBigScreen.js:219），后端两条路径都只返 {times, counts}；修法需产品
   决策（D-007），strict-xfail 钉住，修复落地时 XPASS 强制转正。
@@ -63,6 +72,11 @@
 - 前端 node 必须走 mise 的 PATH（ENV.md 有完整命令）。
 
 ## 已完成
+- **#57 完成转 in-review**：manifest.json 删两条 /logo.png 悬空条目（留
+  vite.svg "any"）+ sw.js 通知 icon → /vite.svg；五门禁全绿（1 commit 1890232）
+- **#56 完成转 in-review**：ensure_demo_admin INSERT 改 ORM + create_time
+  显式 naive UTC（消除 SQLite NOW() 崩溃）；RED→GREEN 文件库自举实证；
+  mock 单测替换为真实 SQLite 内存库引导测试（1 commit ce11292）
 - **#55 完成转 in-review**：meta.icon 字符串化 19 处 + favicon 三处指向
   vite.svg + el-empty 冒号修复；tabbar-icons 契约测试 3 用例（反例变红）
   + smoke_console_noise.py（RED 11 告警+404 → GREEN 0/0/0+200）
