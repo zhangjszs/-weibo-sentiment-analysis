@@ -4,10 +4,11 @@
 
 ## 当前活跃
 - 任务：无 in-progress——**ready 队列空**（#56/#57 in-review 待验收、
-  #53 needs-info 等 D-007）。最近一轮（executor-glm-20261007-r3，
-  2026-10-07）为空转确认轮：无 ready 无现场，未动代码；核实 main HEAD
-  77bb2e6 CI + Security Scan 全绿（b8311a4 的历史 failure run 是 8 月底
-  祖先提交的旧记录，勿误判主干变红）。
+  #53 needs-info 等 D-007）。最近一轮（executor-glm-20261007-r4，
+  2026-10-07）：用户指示「继续下一步」后执行上棒记录的唯一顺延项——
+  跑双冒烟全绿（大屏空库 0/0；console 0 warn/0 err + favicon 200），
+  **全新 SQLite 库零手动 INSERT 实证 #56 引导端到端可用**，smoke 脚本
+  docstring 与 ENV.md 前置已简化（370dd95），#56 已留冒烟证据 comment。
 - #56 [P3] SQLite 方言引导修复：完成转 in-review（ce11292 → main dc0bb05）。
   ensure_demo_admin 的 INSERT 改 ORM 创建 + create_time 显式 naive UTC；
   RED→GREEN 文件库自举实证（修复前 no such function: NOW → 修复后 admin 行
@@ -50,7 +51,8 @@
   `database.init_db()` 顺序不可反；demo admin 引导自 #56 修复后在 SQLite
   可用（`AUTO_CREATE_DEMO_ADMIN=True` + `FLASK_ENV=development` +
   `DEMO_ADMIN_PASSWORD` 环境变量，create_app 即落 admin 行），冒烟不再需要
-  手动 INSERT（smoke_*.py 内的手动种 admin 代码下次跑冒烟时可顺势简化）。
+  手动 INSERT——**smoke_*.py docstring 与 ENV.md 前置已于 2026-10-07 随
+  370dd95 简化并实测（全新库 0 手动插行 + 浏览器登录通过）**。
 - **大屏 trend 形状漂移（#53，未修）**：前端读 positive/neutral/negative
   （useBigScreen.js:219），后端两条路径都只返 {times, counts}；修法需产品
   决策（D-007），strict-xfail 钉住，修复落地时 XPASS 强制转正。
@@ -75,6 +77,9 @@
 - 前端 node 必须走 mise 的 PATH（ENV.md 有完整命令）。
 
 ## 已完成
+- **冒烟前置简化完成（2026-10-07，370dd95）**：双冒烟全绿（大屏 0/0、
+  console 0/0/0+favicon 200）；全新 SQLite 库零手动 INSERT 走通引导+登录；
+  smoke docstring + ENV.md 前置同步简化；#56 已留端到端证据 comment
 - **#57 完成转 in-review**：manifest.json 删两条 /logo.png 悬空条目（留
   vite.svg "any"）+ sw.js 通知 icon → /vite.svg；五门禁全绿（1 commit 1890232）
 - **#56 完成转 in-review**：ensure_demo_admin INSERT 改 ORM + create_time

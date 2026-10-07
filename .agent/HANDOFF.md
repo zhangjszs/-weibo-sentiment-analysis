@@ -5,43 +5,53 @@
 
 ## 上一棒是谁
 
-Agent `executor-glm-20261007-r3`（GLM 执行棒），UTC 2026-10-07 本轮。
-LOCK 在本轮开始时不存在（无接管现场），从 main 77bb2e6 起步。
+Agent `executor-glm-20261007-r4`（GLM 执行棒），UTC 2026-10-07 本轮。
+LOCK 在本轮开始时不存在（无接管现场），从 main 1deeca0 起步。
+本轮 ready 队列仍空，但用户明确指示「继续下一步」——据此执行了上棒
+HANDOFF 记录的唯一已知低风险顺延项（跑冒烟 + 顺势简化前置），未领取
+任何 Issue、未动 src/tests 代码。
 
 ## 本轮概要
 
-**空转确认轮：无代码变更。** GitHub 实时核对 ready 队列空（#56/#57 仍
-in-review 待验收、#53 仍 needs-info 等 D-007），无 in-progress 现场可恢复，
-按契约 2.4（ready 空）正常收尾。未领取任何 Issue，无执行报告产出。
+**冒烟验证轮：双冒烟全绿 + 冒烟前置简化落地（commit 370dd95）。**
 
-## 已完成
-
-- 无新完成 Issue。本轮仅为队列核实 + 现场确认。
+1. 全新 SQLite 文件库仅建表（实测 user 表 0 行，零手动 INSERT）。
+2. `AUTO_CREATE_DEMO_ADMIN=True + FLASK_ENV=development +
+   DEMO_ADMIN_PASSWORD=e2e-demo-password` 起 run.py：日志出现
+   「已创建演示管理员账号: admin」——**#56 修复在真实启动路径端到端成立**。
+3. `smoke_bigscreen_empty_db.py` → 退出码 0（真实 UI 登录走通 +
+   大屏 0 pageerror / 0 console error）。
+4. `smoke_console_noise.py` → 退出码 0（/home 等 4 页 0 warning /
+   0 error，favicon index.html link=/vite.svg → 200）。
+5. 证据落库：两枚 smoke 脚本 docstring 前置改为自动引导说明（370dd95，
+   正文 Refs #56）；ENV.md 冒烟前置重写为实测三步流程（建表 → 自动引导
+   起 run.py → vite dev，不再有手动 INSERT）；#56 留冒烟证据 comment
+   （Planner 验收 #56 时可一并核对）。
 
 ## 未完成 / 进行中（下一棒最优先看这里）
 
 - 无 in-progress。in-review 积压 2 项（#56、#57）待 Planner 验收。
+- 上棒遗留的「smoke 手动种 admin 简化」**已闭环**，不再是顺延项。
 
 ## 验证情况
 
-- 无代码改动，未跑测试门禁（不适用）。
-- 核实 main CI 全绿：HEAD 77bb2e6 → CI success + Security Scan success
-  （多轮 gh run list 交叉确认）。
-- 排查记录（下一棒免重复踩）：`gh run list` 一度把 `b8311a4`（2026-08-30
-  的历史提交「refactor: harden validation, jwt, db and cache layers」）的
-  4 条历史 failure run 顶到查询结果最前，乍看像 main 变红。已核实它是
-  main 历史第 118 位祖先提交，failure 为历史旧 run；当前 HEAD 77bb2e6
-  全绿。**判 CI 状态务必看 HEAD sha 对应的最新 run，别被排序怪象带偏。**
+- 冒烟两枚全绿（详见上）；`py_compile` 两脚本 OK（docstring-only 改动
+  后健全性检查）。
+- 未跑：后端 fast gate / 前端五门禁——本轮仅改 scripts/ 两枚脚本的
+  docstring 文本（无行为路径，scripts/ 不在 `ruff check src tests` 与
+  前端门禁范围），且冒烟脚本改动后经 py_compile + 改动前实测执行佐证。
+- CI：本轮推送 370dd95 未逐条核对 run 状态（docstring-only；上轮已证
+  main 全绿基线）。下一棒如需可 `gh run list --branch main` 复核。
 
 ## 风险与注意事项
 
 - in-review 积压 2 项（#56、#57）持续待验收；#53 等 D-007（第 2 次询问）。
 - D-006（M4 正式方向）pending：默认范围 A 已无存量待办，B/C/D 均需用户
   输入或授权。
+- 冒烟是「手动驱动」手段：两个 dev server + headless Chromium，跑完记得
+  杀进程（本轮已杀，3000/5000 端口确认释放）。
 - 工作区留有未跟踪 `src/data/commentsData.csv`（跑后端测试的既有产物，
   勿提交，STATE 有记）。
-- smoke_*.py 内手动种 admin 代码可在下次冒烟时顺势简化（#56 修复后
-  SQLite 自举已不需要手动插行）；这是唯一已知低风险顺延项，未立项不动。
 
 ## 给下一棒的第一步建议
 
@@ -53,6 +63,7 @@ in-review 待验收、#53 仍 needs-info 等 D-007），无 in-progress 现场�
 
 ## 给 Planner 的信号
 
-- **需要 Planner 介入：ready 队列空；请验收 #56/#57（in-review ×2），
-  并推动 D-006（M4 正式方向）/ D-007（趋势语义）的用户决策。**
-- 本轮无阻塞、CI 全绿、main 与 origin 同步。
+- **需要 Planner 介入：ready 队列空；请验收 #56/#57（in-review ×2，
+  #56 本轮已补端到端冒烟证据 comment），并推动 D-006（M4 正式方向）/
+  D-007（趋势语义）的用户决策。**
+- 本轮无阻塞、无新增 auto-discovered；冒烟前置简化已完成入库。

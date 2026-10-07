@@ -30,11 +30,16 @@
   环境变量 shell 导出可覆盖 .env 同名项
 - 冒烟脚本两枚（scripts/，复用同一套前置）：`smoke_bigscreen_empty_db.py`
   （#52 大屏空库）、`smoke_console_noise.py`（#55 console 清洁度）。
-  前置：`TEST_DATABASE_URL=sqlite:///<库文件>` 下 `python -c` 自举
-  （**先 `sys.path.insert(0, 'src')`**——只有 run.py 注入路径）→
-  `hash_password` + `querys` 手动 INSERT admin → 起 run.py（同库）→
-  vite dev 3000 → 跑脚本。headless Chromium 不主动请求 favicon（#55
-  脚本已改用显式请求核验 icon link）；跑完记得杀掉两个 dev server
+  前置（2026-10-07 实测简化，**无需手动 INSERT admin**）：
+  1) `TEST_DATABASE_URL=sqlite:///<库文件>` 下 `python -c` 建表
+     （**先 `sys.path.insert(0, 'src')`**——只有 run.py 注入路径；
+     `import models` 后 `database.init_db()`，顺序不可反；只建表不插数）
+  2) 同库环境变量起 run.py：`AUTO_CREATE_DEMO_ADMIN=True` +
+     `FLASK_ENV=development` + `DEMO_ADMIN_PASSWORD=e2e-demo-password`
+     （与脚本登录凭据一致）；启动日志出现「已创建演示管理员账号」即
+     引导成功（#56 修复后 SQLite 直接可用，浏览器登录实证通过）
+  3) vite dev 3000 → 跑脚本。headless Chromium 不主动请求 favicon（#55
+     脚本已改用显式请求核验 icon link）；跑完记得杀掉两个 dev server
 
 ## 探测于 2026-09-29T23:28:24Z，agent DeepSeek-V4.1-Flash-20260930T000000Z
 ## 更新 2026-10-01T12:12:00Z，agent DeepSeek-V4.1-Flash-20261001T120450Z（补 ROS 插件屏蔽）
