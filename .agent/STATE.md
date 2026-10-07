@@ -3,8 +3,11 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无 in-progress——**ready 队列已清空**（#56/#57 本轮完成转
-  in-review），本轮收尾（2026-10-07）。
+- 任务：无 in-progress——**ready 队列空**（#56/#57 in-review 待验收、
+  #53 needs-info 等 D-007）。最近一轮（executor-glm-20261007-r3，
+  2026-10-07）为空转确认轮：无 ready 无现场，未动代码；核实 main HEAD
+  77bb2e6 CI + Security Scan 全绿（b8311a4 的历史 failure run 是 8 月底
+  祖先提交的旧记录，勿误判主干变红）。
 - #56 [P3] SQLite 方言引导修复：完成转 in-review（ce11292 → main dc0bb05）。
   ensure_demo_admin 的 INSERT 改 ORM 创建 + create_time 显式 naive UTC；
   RED→GREEN 文件库自举实证（修复前 no such function: NOW → 修复后 admin 行
