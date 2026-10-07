@@ -40,8 +40,13 @@ HANDOFF 记录的唯一已知低风险顺延项（跑冒烟 + 顺势简化前置
 - 未跑：后端 fast gate / 前端五门禁——本轮仅改 scripts/ 两枚脚本的
   docstring 文本（无行为路径，scripts/ 不在 `ruff check src tests` 与
   前端门禁范围），且冒烟脚本改动后经 py_compile + 改动前实测执行佐证。
-- CI：本轮推送 370dd95 未逐条核对 run 状态（docstring-only；上轮已证
-  main 全绿基线）。下一棒如需可 `gh run list --branch main` 复核。
+- CI：本轮推送已核对——cb60d54（main HEAD）CI success + Security Scan
+  success；370dd95 CI cancelled 系被 cb60d54 的 concurrency 取代（新版
+  取代旧版，非失败），其 Security Scan success。1deeca0 亦双绿。
+- **`gh run list` 排序污染警告**：用户会手动 re-run 历史提交的旧 run
+  （847c68a=2026-08-01、b8311a4=2026-08-30 均为祖先提交），failure 会
+  顶到列表最前。**判 CI 状态必须 `gh run list --commit <全sha>` 精确
+  查询，不要看列表前几行。**
 
 ## 风险与注意事项
 
