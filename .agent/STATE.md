@@ -4,11 +4,11 @@
 
 ## 当前活跃
 - 任务：无 in-progress——**ready 队列空**（#56/#57 in-review 待验收、
-  #53 needs-info 等 D-007）。最近一轮（executor-glm-20261007-r4，
-  2026-10-07）：用户指示「继续下一步」后执行上棒记录的唯一顺延项——
-  跑双冒烟全绿（大屏空库 0/0；console 0 warn/0 err + favicon 200），
-  **全新 SQLite 库零手动 INSERT 实证 #56 引导端到端可用**，smoke 脚本
-  docstring 与 ENV.md 前置已简化（370dd95），#56 已留冒烟证据 comment。
+  #53 needs-info 等 D-007）。本轮（executor-20261007-r5，
+  2026-10-07）：空转确认轮——LOCK 不存在（无接管现场），从 main d8477b7
+  起步并已 fetch 确认与 origin 同步；`gh issue list` 核实无 ready 标签
+  Issue，可恢复现场无（STATE/HANDOFF 均无 in-progress）。未领取任何
+  Issue、未动 src/tests 代码。
 - #56 [P3] SQLite 方言引导修复：完成转 in-review（ce11292 → main dc0bb05）。
   ensure_demo_admin 的 INSERT 改 ORM 创建 + create_time 显式 naive UTC；
   RED→GREEN 文件库自举实证（修复前 no such function: NOW → 修复后 admin 行
