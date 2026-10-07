@@ -77,7 +77,7 @@ self.addEventListener('push', (event) => {
   const data = event.data.json();
   const options = {
     body: data.message || '您有新的预警信息',
-    icon: '/logo.png',
+    icon: '/vite.svg',
     badge: '/vite.svg',
     vibrate: [100, 50, 100],
     data: {
