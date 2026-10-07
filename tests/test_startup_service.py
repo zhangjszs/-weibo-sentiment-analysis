@@ -15,7 +15,33 @@ from config.settings import Config
 from services import startup_service
 
 
-def test_ensure_demo_admin_creates_user(monkeypatch):
+def test_ensure_demo_admin_creates_user_sqlite(monkeypatch):
+    """#56：SQLite 上引导创建 admin——NOW() 方言崩溃修复后必须真实落行。"""
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import scoped_session, sessionmaker
+    from sqlalchemy.pool import StaticPool
+
+    import database
+    import models  # noqa: F401  # 确保 ORM 表已注册再 create_all
+    import utils.query as query_module
+    from database import Base
+    from models.user import User
+    from utils.password_hasher import verify_password
+
+    test_engine = create_engine(
+        "sqlite:///:memory:",
+        poolclass=StaticPool,
+        connect_args={"check_same_thread": False},
+    )
+    Base.metadata.create_all(test_engine)
+    session = scoped_session(
+        sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    )
+    # querys 在 utils.query 模块内解析全局 engine；ORM 路径在函数调用时读取
+    # database.db_session——两处都 patch 到同一测试库，保证 SELECT 与 INSERT 同库
+    monkeypatch.setattr(database, "db_session", session)
+    monkeypatch.setattr(query_module, "engine", test_engine)
+
     monkeypatch.setattr(Config, "IS_DEVELOPMENT", True)
     monkeypatch.setattr(Config, "AUTO_CREATE_DEMO_ADMIN", True)
     monkeypatch.setattr(Config, "DEMO_ADMIN_USERNAME", "admin")
@@ -23,23 +49,16 @@ def test_ensure_demo_admin_creates_user(monkeypatch):
     monkeypatch.setattr(Config, "DEMO_ADMIN_RESET_PASSWORD", True)
     monkeypatch.setattr(Config, "ADMIN_USERS", set())
 
-    calls = []
-
-    def fake_querys(sql, params=None, type="no_select"):
-        calls.append((sql, params, type))
-        if "SELECT id, password FROM user" in sql:
-            return []
-        return "数据库语句执行成功"
-
-    monkeypatch.setattr(startup_service, "querys", fake_querys)
-    monkeypatch.setattr(startup_service, "hash_password", lambda raw: f"hashed:{raw}")
-
     result = startup_service.ensure_demo_admin()
 
     assert result["enabled"] is True
     assert result["action"] == "created"
     assert "admin" in Config.ADMIN_USERS
-    assert any("INSERT INTO user" in sql for sql, _, _ in calls)
+
+    row = session.query(User).filter_by(username="admin").one()
+    assert row.create_time is not None
+    assert verify_password("Admin123!", row.password)
+    session.remove()
 
 
 def test_ensure_demo_admin_resets_legacy_password(monkeypatch):
