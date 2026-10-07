@@ -5,11 +5,11 @@
 
 ## 当前方向
 
-M3 已结项（2026-10-06，9 项 in-review 验收关闭）。M4 默认范围「质量巩固」（D-06
-默认 A）三项全部闭环：#52 上轮关闭 + 本轮 Planner 追认、#54/#55 本轮验收关闭。
-**M4 正式方向仍待用户决策（D-006，第 2 次询问）**；#53（大屏趋势语义）待 D-007
-（第 2 次询问）。队列补入两个遗留小项 #56/#57。无外部阻塞，LOCK 不存在，
-main 与 origin 同步（本轮起点 HEAD 1a467af）。
+M4 默认范围「质量巩固」（D-006，2026-10-07 默认转正 A）五项全部验收闭环：
+#52/#54/#55（既往）+ #56/#57（本轮验收关闭，见下）。D-007 默认转正方案 2，
+#53 已按方案 2 重写为 ready 规格并转 ready-for-agent（P2），是当前唯一执行项；
+D-008 默认转正 C（不迁 Redis，无动作）。无外部阻塞，LOCK 不存在，main 与
+origin 同步（本轮起点 HEAD 14d5f8b）。
 
 > 澄清 Executor 信号：上棒 HANDOFF/STATE 称「in-review 积压 11 项」系陈旧计数
 > ——#43~#51 共 9 项已于上轮 Planner（03d3261）验收关闭，实际待验收仅 #54/#55，
@@ -35,7 +35,7 @@ main 与 origin 同步（本轮起点 HEAD 1a467af）。
 - 附带门禁 3 道（#48 体积预算 / #51 format:check / #50 文档死链）+ #49 vitest
   resolver 单源；九项验收证据见 03d3261 提交轮与各 Issue 验收 comment。
 
-### M4：质量巩固（默认范围已完成；正式方向待 D-006）
+### M4：质量巩固（默认范围已全部闭环；D-006 默认转正 A，待命）
 
 - 默认范围（D-06 默认 A）全部闭环：
   - [x] #52 大屏空数据 addColorStop 崩溃（d968188，真实浏览器冒烟 RED→GREEN，
@@ -45,24 +45,27 @@ main 与 origin 同步（本轮起点 HEAD 1a467af）。
     字段契约 13 端点，偏离有据）
   - [x] #55 console 告警清理（a0d44ed，2026-10-07 验收关闭；19 处 meta.icon
     字符串化 + favicon 三处指向 vite.svg + static-v3 + RED→GREEN 冒烟 + 3 用例契约）
-- 收尾小项入队：#56 SQLite 方言（P3）、#57 /logo.png 悬空引用（P4）。
-- #53（needs-info，P3）：待 D-007；strict-xfail 钉住，修复落地时 XPASS 强制转正。
+  - [x] #56 SQLite 方言引导修复（ce11292→dc0bb05，2026-10-07 验收关闭；Planner
+    复核 diff + 复跑单测 5 passed + 端到端冒烟证据 + dc0bb05 CI/安全双绿）
+  - [x] #57 /logo.png 悬空引用清理（1890232→0c9bbaf，2026-10-07 验收关闭；Planner
+    复核 grep 零悬空 + public/ 三文件 + 0c9bbaf CI/安全双绿）
+- 执行中：#53 大屏趋势改单系列（P2，ready-for-agent；D-007 方案 2，strict-xfail
+  待修复落地转正，方案 1 红线已放弃）。
 
-## 执行队列（给 Executor 的建议顺序）
+## 执行队列（给 Executor 的建议顺序；状态标签实为 `ready-for-agent`，`ready` 不存在）
 
-1. #56 修复 AUTO_CREATE_DEMO_ADMIN 引导 SQL 的 SQLite 方言崩溃（P3，ready-for-agent）
-2. #57 清理 PWA 元数据 /logo.png 悬空引用（P4，ready-for-agent）
-
-- blocked：#53（needs-info，待 D-007 产品决策）。
+1. #53 大屏趋势改单系列画 counts（P2，ready-for-agent；唯一执行项）
 
 ## 已知阻塞与依赖
 
-- 无外部阻塞。M4 正式方向等用户输入（D-006）；#53 等产品决策（D-007）；
-  Redis 迁移方向记 D-08（pending，默认不动）。
+- 无阻塞、无 pending 决策（D-006~D-008 已默认转正）。#53 完成后队列清空待命；
+  B/C/D 新方向需用户命题才可立项。
 
 ## 下一阶段
 
-- M4 收尾后候选同 D-06 备选：B 前端 TypeScript 渐进化（红线需授权）、
+- #53 验收关闭后 M4 彻底收尾：队列空，Executor 空转待命，Planner 不再主动立项，
+  等用户给出 M4 后方向（B/C/D 候选仍有效，见 D-006）。
+- 候选（需用户输入）：B 前端 TypeScript 渐进化（红线需授权）、
   C 部署/运维生产化（需可验证环境）、D 产品功能迭代（需具体需求）。
 
 ## 已放弃的方向
@@ -78,10 +81,11 @@ main 与 origin 同步（本轮起点 HEAD 1a467af）。
 | nginx /socket.io 握手 101 上线验证 | 需 Docker/线上环境，本地无法验证 |
 | china.json 精度简化 | 数据取舍需产品决策；资产可缓存，暂不处理 |
 | conftest 两套 SQLite 语义统一 | 测试架构取舍，无需求不动 |
-| AUTO_CREATE_DEMO_ADMIN SQLite 方言 | 已立项 #56（三轮冒烟重复踩坑，2026-10-07） |
+| AUTO_CREATE_DEMO_ADMIN SQLite 方言 | #56 验收关闭（2026-10-07），冒烟前置已简化为自动引导 |
+| 大屏趋势情感语义 | D-007 默认转正方案 2，#53 ready-for-agent（P2）执行中；方案 1（情感标注链路）红线已放弃 |
 | /api/alert/unread-count 无活跃消费方 | 候选清理项暂不立项；若动须先把 src/views/page/templates/ 服务端模板计入消费方调查（#54 教训） |
 | playwright 入库与否 | Planner 自决：暂维持 .venv 本地安装（冒烟非周期任务）；转常备验证手段时升格 dev 依赖并入 CI |
-| 登录锁定/限流/WS 广播迁 Redis | D-08 pending（#46 已文档化多 worker 缺口）；默认暂不迁、不改行为 |
+| 登录锁定/限流/WS 广播迁 Redis | D-008 默认转正 C（2026-10-07）：暂不迁、不改行为（#46 已文档化多 worker 缺口） |
 | docs/项目评估与规划.md:245 建议已用 /api/bigscreen/all | 该端点已随 #54 删除；历史评估文档按 #16 结论不再修 |
 
 ## 给 Executor 的指令（不超过 2 句）
