@@ -51,7 +51,7 @@ export function useBigScreen() {
   const hotTopics = ref([])
   const recentAlerts = ref([])
   const regionData = ref([])
-  const trendData = ref({ times: [], positive: [], neutral: [], negative: [] })
+  const trendData = ref({ times: [], counts: [] })
 
   let timeTimer = null
   let dataTimer = null
@@ -110,9 +110,13 @@ export function useBigScreen() {
     ],
   }))
 
+  // #53（方案 2）：趋势面板只画后端真实 counts（单系列「讨论量」）。
+  // 后端两条路径都只返 {times, counts}，三情感系列无数据源——此前三条曲线
+  // 全走硬编码假数据回退，现已删除；空数据时 series 直接为空数组（不崩，
+  // 见 #52 空数据兜底），xAxis 的 times 回退保留以维持坐标轴结构。
   const trendChartOptions = computed(() => ({
     tooltip: { trigger: 'axis' },
-    legend: { data: ['正面', '中性', '负面'], textStyle: { color: '#fff' }, top: 0 },
+    legend: { data: ['讨论量'], textStyle: { color: '#fff' }, top: 0 },
     xAxis: {
       type: 'category',
       data:
@@ -130,34 +134,11 @@ export function useBigScreen() {
     },
     series: [
       {
-        name: '正面',
+        name: '讨论量',
         type: 'line',
         smooth: true,
-        data:
-          trendData.value.positive.length > 0
-            ? trendData.value.positive
-            : [120, 132, 201, 234, 290, 330, 410],
-        itemStyle: { color: '#10B981' },
-      },
-      {
-        name: '中性',
-        type: 'line',
-        smooth: true,
-        data:
-          trendData.value.neutral.length > 0
-            ? trendData.value.neutral
-            : [80, 92, 141, 154, 190, 230, 280],
-        itemStyle: { color: '#64748B' },
-      },
-      {
-        name: '负面',
-        type: 'line',
-        smooth: true,
-        data:
-          trendData.value.negative.length > 0
-            ? trendData.value.negative
-            : [30, 42, 61, 74, 90, 110, 130],
-        itemStyle: { color: '#EF4444' },
+        data: trendData.value.counts,
+        itemStyle: { color: '#3B82F6' },
       },
     ],
   }))
@@ -300,9 +281,7 @@ export function useBigScreen() {
         const d = analysisStore.trend
         trendData.value = {
           times: d.times || [],
-          positive: d.positive || [],
-          neutral: d.neutral || [],
-          negative: d.negative || [],
+          counts: d.counts || [],
         }
       }
       if (analysisStore.hotTopics) {

@@ -117,25 +117,15 @@ class TestBigScreenFields:
         _assert_field(data["data"][0], "value", int)
 
     def test_trend_current_backend_shape(self, client, bearer_headers):
-        """当前后端形状 {times, counts}（bigscreen_api.py:121-139）。
+        """后端形状 {times, counts}（bigscreen_api.py:121-139）。
 
-        前端实际读取 positive/neutral/negative（useBigScreen.js:219）——
-        漂移已立 #53，见下方 strict-xfail 断言。
+        #53 已按 D-007 方案 2 落地：前端改单系列画 counts
+        （useBigScreen.js trendData {times, counts} + 趋势单系列「讨论量」），
+        后端形状即前端消费形状，无漂移。本测试即转正后的正式断言。
         """
         data = _get_data(client, "/api/bigscreen/trend", bearer_headers)
         _assert_field(data, "times", list)
         _assert_field(data, "counts", list)
-
-    @pytest.mark.xfail(
-        strict=True,
-        reason="前端读 positive/neutral/negative 而后端返回 counts——漂移 #53；"
-        "修复落地后本断言 XPASS，应移除标记转正式断言",
-    )
-    def test_trend_frontend_expected_series(self, client, bearer_headers):
-        """前端期望的三情感系列（useBigScreen.js:113-115,219）——当前缺失。"""
-        data = _get_data(client, "/api/bigscreen/trend", bearer_headers)
-        for f in ("positive", "neutral", "negative"):
-            _assert_field(data, f, list)
 
     def test_hot_topics(self, client, bearer_headers):
         """data.topics[]（useBigScreen.js:190,223），项 name/percent/heat（BigScreen.vue:155-162）。"""
