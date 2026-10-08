@@ -3,32 +3,31 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无 in-progress——**ready 队列空**（#56/#57 in-review 待验收、
-  #53 needs-info 等 D-007）。本轮（executor-20261007-r5，
-  2026-10-07）：空转确认轮——LOCK 不存在（无接管现场），从 main d8477b7
-  起步并已 fetch 确认与 origin 同步；`gh issue list` 核实无 ready 标签
-  Issue，可恢复现场无（STATE/HANDOFF 均无 in-progress）。未领取任何
-  Issue、未动 src/tests 代码。
-- #56 [P3] SQLite 方言引导修复：完成转 in-review（ce11292 → main dc0bb05）。
-  ensure_demo_admin 的 INSERT 改 ORM 创建 + create_time 显式 naive UTC；
-  RED→GREEN 文件库自举实证（修复前 no such function: NOW → 修复后 admin 行
-  create_time 非空）；mock 单测替换为 test_ensure_demo_admin_creates_user_sqlite
-  （真实 SQLite 内存库 + verify_password 哈希校验）。
-- #57 [P4] /logo.png 悬空引用清理：完成转 in-review（1890232 → main
-  0c9bbaf）。manifest.json 删两条悬空 PNG 条目（保留 vite.svg "any"）；
-  sw.js 通知 icon → /vite.svg（precache 未动）。
-- 状态：in-review 累计 **2 项**（#56、#57）待 Planner 验收。
-- 剩余队列：#53（needs-info，等 D-007）。ready 空。
+- 任务：无 in-progress——**ready 队列空**（#53 已完成转 in-review，
+  open 仅剩 #53 in-review 待验收）。本轮（executor-20261008-r1，
+  2026-10-08）：从 main 5f68c9b 起步并已 fetch 确认与 origin 同步；
+  无现场可恢复（STATE/HANDOFF 均无 in-progress），按 PLAN 执行队列领取 #53。
+- #53 [P2] 大屏趋势改单系列画 counts：完成转 in-review
+  （1909d9b → main c402b4d，已推送，临时分支已删）。
+  useBigScreen.js trendData 改 {times, counts} + fetch 映射取 counts +
+  trendChartOptions 单系列「讨论量」（删三组假数据回退）；
+  strict-xfail 测试删除转正式断言；新增 bigscreen-trend.test.js 3 用例
+  （RED→GREEN 实证：旧映射 3 failed → 新映射 3 passed）。
+- 状态：in-review 累计 **1 项**（#53）待 Planner 验收。
+- 剩余队列：无（open 仅 #53 in-review）。ready 空。
 
 ## 阻塞项
-- 无阻塞。CI 全绿（本轮两次推送实证：dc0bb05 → CI run 37575319130 三 job
-  success + Security Scan 37575319243 success；0c9bbaf → CI run 37575800738
-  三 job success + Security Scan success）。
+- 无阻塞。CI 双绿（c402b4d → CI run 37769996969 success +
+  Security Scan 37769997040 success，精确按 commit 查询）。
 
 ## 关键事实（已实测验证）
-- **基线推进**：fast gate 1463 → **1460 passed + 1 strict xfail**（−3 = #54
-  删 2 用例 + GET 契约按 url_map 枚举少 1 参数化用例，与删除一致非回退）；
-  前端 82 → **85**（#55 新增 tabbar-icons 3 用例）；五门禁 + 体积门禁绿。
+- **基线推进**：后端 fast gate **1460 passed**（xfail 测试删除后无 xfail，
+  门禁仍绿）；前端 85 → **88**（#53 新增 bigscreen-trend 3 用例）；
+  五门禁 + 体积门禁绿（入口 JS 余量 53648B / 首屏 CSS 余量 15772B）。
+- **#53 方案 2 落地形态**：trendData {times, counts}；trendChartOptions
+  单 series（name 讨论量，line+smooth+#3B82F6，data 直引 counts）；
+  空数据 series 为空数组（诚实无数据，#52 兜底保证不崩）；
+  xAxis times 回退保留；timelineData 回放滑块未动（独立演示数据）。
 - **路由 meta.icon 必须是字符串名**（#55 契约测试守护，反例变红实证）：
   组件对象进 Pinia reactive store 触发告警、JSON 持久化退化触发
   missing-template；字符串走 ICON_COMPONENTS 全局注册（#39）。
@@ -39,9 +38,7 @@
   调查须把**服务端模板**计入消费方（#45/#54 两轮都只扫了 SPA 五层）。
 - **sw.js precache 用 cache.addAll**：任一 404 → 整个 install 失败；
   precache 清单必须与 public/ 实际文件一致（现指向 /vite.svg，缓存
-  static-v2→static-v3）。manifest.json / sw.js 的 /logo.png 悬空引用已随
-  #57 清除：manifest icons 仅剩 vite.svg（"any"），通知 icon 与 badge 均
-  为 /vite.svg；public/ 引用零悬空（git grep 可复核）。
+  static-v2→static-v3）。
 - **冒烟脚本两枚**（scripts/）：smoke_bigscreen_empty_db.py（#52 大屏空库）+
   smoke_console_noise.py（#55 非大屏页面 console 清洁度，RED→GREEN 两轮
   实证）。注意 headless Chromium 不主动请求 favicon——#55 脚本用显式请求
@@ -51,13 +48,9 @@
   `database.init_db()` 顺序不可反；demo admin 引导自 #56 修复后在 SQLite
   可用（`AUTO_CREATE_DEMO_ADMIN=True` + `FLASK_ENV=development` +
   `DEMO_ADMIN_PASSWORD` 环境变量，create_app 即落 admin 行），冒烟不再需要
-  手动 INSERT——**smoke_*.py docstring 与 ENV.md 前置已于 2026-10-07 随
-  370dd95 简化并实测（全新库 0 手动插行 + 浏览器登录通过）**。
-- **大屏 trend 形状漂移（#53，未修）**：前端读 positive/neutral/negative
-  （useBigScreen.js:219），后端两条路径都只返 {times, counts}；修法需产品
-  决策（D-007），strict-xfail 钉住，修复落地时 XPASS 强制转正。
-- strict-xfail 是钉已知漂移的手段：修复落地时 XPASS 使门禁变红，
-  强制把断言转正。
+  手动 INSERT。
+- **大屏 trend 漂移已修（#53，本轮）**：前端单系列画 counts，后端
+  {times, counts} 即前端消费形状，无漂移；strict-xfail 已移除转正式断言。
 - user 模型自定义 `__init__` 不收 id：造数用
   `u = User(username=...); u.id = 1` 再 add。
 - 探测脚本「token 中毒」坑：`/api/auth/logout` 与 `/api/session/extend`
@@ -69,39 +62,36 @@
 - 本机 shell 有 http_proxy 系变量：curl localhost 加 `--noproxy '*'`。
 - 登录锁定/限流/WS 广播/通知队列/爬虫运行态从来不用 Redis（#46）：
   均为进程内存，详见 docs/DEPLOYMENT.md「Redis 依赖与降级行为」。
-- main 未设分支保护，可直接推送；commit 一律 `Refs #N`（不自动关闭），
+- main 未设分支保护，可直接推送；commit 一律 `Refs #N`（不自动关闭，
+  提交标题勿含「fix: #N」以免 GitHub 自动关闭——#52 已踩坑），
   `.agent/` 变更单独 `chore(agent):` 提交。
 - 命令行 `-q` 与 pytest.ini addopts 叠成 `-qq` 会吞汇总行：看计数用
   `-o addopts="" -q`；管道后判退出码用 `PIPESTATUS[0]`（tail 会吃掉）。
 - 跑后端测试会在 `src/data/` 留 commentsData.csv 未跟踪产物——勿提交。
 - 前端 node 必须走 mise 的 PATH（ENV.md 有完整命令）。
+- 前端 composable 全链路单测模式（#53 实证）：`vi.mock('@/api/stats')` +
+  `vi.mock('@/utils/chinaMap')` + harness 组件 mount 驱动 onMounted，
+  `flushPromises` 后断 vm 数据，`unmount` 清定时器；旧代码 RED→新代码
+  GREEN 可作护栏有效性实证。
 
 ## 已完成
-- **冒烟前置简化完成（2026-10-07，370dd95）**：双冒烟全绿（大屏 0/0、
-  console 0/0/0+favicon 200）；全新 SQLite 库零手动 INSERT 走通引导+登录；
-  smoke docstring + ENV.md 前置同步简化；#56 已留端到端证据 comment
-- **#57 完成转 in-review**：manifest.json 删两条 /logo.png 悬空条目（留
-  vite.svg "any"）+ sw.js 通知 icon → /vite.svg；五门禁全绿（1 commit 1890232）
-- **#56 完成转 in-review**：ensure_demo_admin INSERT 改 ORM + create_time
-  显式 naive UTC（消除 SQLite NOW() 崩溃）；RED→GREEN 文件库自举实证；
-  mock 单测替换为真实 SQLite 内存库引导测试（1 commit ce11292）
-- **#55 完成转 in-review**：meta.icon 字符串化 19 处 + favicon 三处指向
-  vite.svg + el-empty 冒号修复；tabbar-icons 契约测试 3 用例（反例变红）
-  + smoke_console_noise.py（RED 11 告警+404 → GREEN 0/0/0+200）
-  （1 commit a0d44ed）
-- **#54 完成转 in-review**：删 /api/bigscreen/all + AlertNotification.vue
-  （净 -409 行）；stats/today 按护栏保留（消费方调查结论）；契约收缩至
-  13 端点；接管上一棒崩溃现场并还原第一遍误删的服务单测（1 commit 053bff2）
-- **#52 完成关闭**（上一棒 2026-10-06）：大屏空数据 addColorStop 崩溃
-  （d968188，真实浏览器冒烟 RED→GREEN，CI 绿）；顺带入库 #39 后续
-  BaseChart import 修复 + 图标守护测试（7c6a3f8）
-- **#51 完成转 in-review**：Prettier 全量格式化 74 文件 + format:check
-  入 CI（1 commit 66c1d7b）
-- **#50 完成转 in-review**：文档路径校验误报修复 + CI 接线（1 commit 47b6606）
-- **#49 完成转 in-review**：vitest 接入共享 Components resolver +
-  模板解析契约 2 用例（1 commit bca6a53）
-- **#48 完成转 in-review**：构建体积预算门禁（1 commit 1f93c25）
+- **#53 完成转 in-review**：trend 单系列 counts（1909d9b → main c402b4d）；
+  bigscreen-trend.test.js 3 用例 RED→GREEN + 后端 fast gate 1460 passed +
+  前端五门禁全绿 + CI/安全双绿
+- **#57 完成转 in-review**（上一棒，Planner 已验收关闭）：manifest.json
+  删两条 /logo.png 悬空条目 + sw.js 通知 icon → /vite.svg
+- **#56 完成转 in-review**（上一棒，Planner 已验收关闭）：ensure_demo_admin
+  INSERT 改 ORM + create_time 显式 naive UTC；RED→GREEN 文件库自举实证
+- **冒烟前置简化完成（2026-10-07，370dd95）**：双冒烟全绿；全新 SQLite
+  库零手动 INSERT 走通引导+登录
+- **#55 完成并验收关闭**：meta.icon 字符串化 19 处 + favicon 三处指向
+  vite.svg + el-empty 冒号修复；tabbar-icons 契约测试 3 用例
+- **#54 完成并验收关闭**：删 /api/bigscreen/all + AlertNotification.vue
+  （净 -409 行）；stats/today 按护栏保留
+- **#52 完成关闭**（2026-10-06）：大屏空数据 addColorStop 崩溃
+  （d968188，真实浏览器冒烟 RED→GREEN，CI 绿）
+- **#51/#50/#49/#48 完成并验收关闭**：format:check 门禁 / 文档路径校验 /
+  vitest resolver 单源 / 体积预算门禁
 - **M3 五项（2026-10-05）**：#43 浏览器冒烟 / #44 GET envelope 契约 /
-  #47 写接口契约 / #45 字段契约（立 #53）/ #46 Redis 降级文档，
-  全部完成转 in-review
+  #47 写接口契约 / #45 字段契约（立 #53）/ #46 Redis 降级文档
 - #42 调研交付（验证码三候选对比 + 国内可用性核实，维持不上）
