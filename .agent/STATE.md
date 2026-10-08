@@ -3,22 +3,19 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：无 in-progress——**ready 队列空**（#53 已完成转 in-review，
-  open 仅剩 #53 in-review 待验收）。本轮（executor-20261008-r1，
-  2026-10-08）：从 main 5f68c9b 起步并已 fetch 确认与 origin 同步；
-  无现场可恢复（STATE/HANDOFF 均无 in-progress），按 PLAN 执行队列领取 #53。
-- #53 [P2] 大屏趋势改单系列画 counts：完成转 in-review
-  （1909d9b → main c402b4d，已推送，临时分支已删）。
-  useBigScreen.js trendData 改 {times, counts} + fetch 映射取 counts +
-  trendChartOptions 单系列「讨论量」（删三组假数据回退）；
-  strict-xfail 测试删除转正式断言；新增 bigscreen-trend.test.js 3 用例
-  （RED→GREEN 实证：旧映射 3 failed → 新映射 3 passed）。
-- 状态：in-review 累计 **1 项**（#53）待 Planner 验收。
-- 剩余队列：无（open 仅 #53 in-review）。ready 空。
+- 任务：无 in-progress——**ready 队列空**（open 清零：#53 已验收关闭，
+  无 in-review / ready / blocked / needs-info）。本轮（executor-20261008-r2，
+  2026-10-08）：空转确认轮——LOCK 不存在（无接管现场），从 main c835b31
+  起步并已 fetch 确认与 origin 同步；`gh issue list` 核实 open 为空
+  （`ready` / `ready-for-agent` / `in-progress` / `in-review` 查询均为空），
+  可恢复现场无（STATE/HANDOFF 均无 in-progress）。未领取任何 Issue、
+  未动 src/tests 代码。
+- 状态：in-review 累计 **0 项**。open 队列清空，M4 彻底收尾待命。
+- 剩余队列：无。等 Planner 补充 ready 队列（M4 后 B/C/D 方向待用户命题）。
 
 ## 阻塞项
-- 无阻塞。CI 双绿（c402b4d → CI run 37769996969 success +
-  Security Scan 37769997040 success，精确按 commit 查询）。
+- 无阻塞。CI 全绿（HEAD c835b31 → CI run 37784555804 success +
+  Security Scan 37784555342 success，精确按 commit 查询）。
 
 ## 关键事实（已实测验证）
 - **基线推进**：后端 fast gate **1460 passed**（xfail 测试删除后无 xfail，
@@ -75,9 +72,9 @@
   GREEN 可作护栏有效性实证。
 
 ## 已完成
-- **#53 完成转 in-review**：trend 单系列 counts（1909d9b → main c402b4d）；
-  bigscreen-trend.test.js 3 用例 RED→GREEN + 后端 fast gate 1460 passed +
-  前端五门禁全绿 + CI/安全双绿
+- **#53 验收关闭（2026-10-08，Planner c835b31）**：trend 单系列 counts
+  （1909d9b → main c402b4d）；bigscreen-trend.test.js 3 用例 RED→GREEN +
+  后端 fast gate 1460 passed + 前端五门禁全绿 + CI/安全双绿；M4 至此彻底收尾
 - **#57 完成转 in-review**（上一棒，Planner 已验收关闭）：manifest.json
   删两条 /logo.png 悬空条目 + sw.js 通知 icon → /vite.svg
 - **#56 完成转 in-review**（上一棒，Planner 已验收关闭）：ensure_demo_admin
