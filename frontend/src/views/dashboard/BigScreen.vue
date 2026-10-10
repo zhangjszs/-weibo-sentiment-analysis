@@ -17,6 +17,12 @@
     </div>
 
     <div class="screen-body">
+      <!-- 部分加载失败（U-1 #62）：不遮挡已加载数据，常驻提示 + 重试 -->
+      <div v-if="loadError && loadError.partial" class="screen-degraded" :title="loadError.message">
+        <span>{{ loadError.message }}</span>
+        <el-button link type="primary" size="small" @click="retryLoad">重试</el-button>
+      </div>
+
       <div class="left-panel">
         <div class="panel-item">
           <div class="panel-title">数据概览</div>
@@ -46,6 +52,18 @@
               <div class="stat-label">负面评价</div>
             </div>
           </div>
+          <div v-if="panelErrors.stats" class="panel-error">
+            <span>{{ panelErrors.stats }}</span>
+            <el-button
+              link
+              type="primary"
+              size="small"
+              :loading="retryingPanel === 'stats'"
+              @click="retryPanel('stats')"
+            >
+              重试
+            </el-button>
+          </div>
         </div>
 
         <div class="panel-item">
@@ -66,6 +84,18 @@
               <span class="alert-title">{{ alert.title }}</span>
             </div>
             <div v-if="recentAlerts.length === 0" class="no-alert">暂无预警</div>
+          </div>
+          <div v-if="panelErrors.alerts" class="panel-error">
+            <span>{{ panelErrors.alerts }}</span>
+            <el-button
+              link
+              type="primary"
+              size="small"
+              :loading="retryingPanel === 'alerts'"
+              @click="retryPanel('alerts')"
+            >
+              重试
+            </el-button>
           </div>
         </div>
       </div>
@@ -95,6 +125,18 @@
               </div>
               <span class="topic-heat">{{ topic.heat }}</span>
             </div>
+          </div>
+          <div v-if="panelErrors.topics" class="panel-error">
+            <span>{{ panelErrors.topics }}</span>
+            <el-button
+              link
+              type="primary"
+              size="small"
+              :loading="retryingPanel === 'topics'"
+              @click="retryPanel('topics')"
+            >
+              重试
+            </el-button>
           </div>
         </div>
 
@@ -150,6 +192,22 @@
         </div>
       </el-drawer>
     </div>
+
+    <!-- 首屏加载指示（U-1 #62）：数据未就绪时覆盖面板区 -->
+    <div v-if="loading" class="screen-overlay screen-loading">
+      <div class="overlay-card">
+        <div class="overlay-title">数据加载中…</div>
+        <el-skeleton :rows="4" animated />
+      </div>
+    </div>
+
+    <!-- 全量加载失败（U-1 #62）：区域级错误态 + 重试入口 -->
+    <div v-else-if="loadError && !loadError.partial" class="screen-overlay screen-error">
+      <div class="overlay-card">
+        <div class="overlay-title">{{ loadError.message }}</div>
+        <el-button type="primary" @click="retryLoad">重试</el-button>
+      </div>
+    </div>
   </div>
 </template>
 <script setup>
@@ -160,6 +218,12 @@
     isFullscreen,
     currentTime,
     currentDate,
+    loading,
+    loadError,
+    panelErrors,
+    retryingPanel,
+    retryLoad,
+    retryPanel,
     animatedStats,
     hotTopics,
     recentAlerts,
