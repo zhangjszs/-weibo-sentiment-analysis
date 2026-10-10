@@ -532,6 +532,69 @@
     .trend-container {
       flex: 1;
     }
+
+    // 部分加载失败提示（U-1 #62）：浮层不占布局，不遮挡面板
+    .screen-degraded {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 12px;
+      background: rgba(239, 68, 68, 0.18);
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+      font-size: 13px;
+      backdrop-filter: blur(6px);
+    }
+
+    // 单个面板的加载失败提示（U-1 #62）
+    .panel-error {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px dashed rgba(239, 68, 68, 0.4);
+      color: #fca5a5;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+  }
+
+  // 首屏加载 / 全量失败的覆盖层（U-1 #62）
+  .screen-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(4px);
+
+    .overlay-card {
+      width: min(560px, 80%);
+      padding: 32px;
+      border-radius: 16px;
+      background: rgba(30, 41, 59, 0.95);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+      .overlay-title {
+        margin-bottom: 16px;
+        font-size: 16px;
+        color: #94a3b8;
+        text-align: center;
+      }
+    }
   }
 
   .timeline-bar {

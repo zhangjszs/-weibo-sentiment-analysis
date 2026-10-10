@@ -14,6 +14,15 @@ export function resolveVisualMapMax(regionData) {
   return Math.max(...regionData.map((d) => d.value), 1)
 }
 
+// 面板中文名（#62）：失败提示按面板归属，便于用户定位是哪一块没数据
+const PANEL_LABELS = {
+  stats: '统计数据',
+  region: '地域分布',
+  trend: '舆情趋势',
+  topics: '热门话题',
+  alerts: '预警数据',
+}
+
 export function useBigScreen() {
   const analysisStore = useAnalysisStore()
 
@@ -21,6 +30,14 @@ export function useBigScreen() {
   const currentTime = ref('')
   const currentDate = ref('')
   const loading = ref(false)
+
+  // #62（U-1）：区域级失败态。api/request.js 的拦截器已对每个失败请求弹 ElMessage，
+  // 挂墙大屏不应依赖转瞬即逝的 toast，故这里改为常驻可见状态：
+  // - loadError：首屏/全量加载失败；partial=true 表示已有数据可展示，不遮挡面板
+  // - panelErrors：自动刷新中单个面板的失败（#19：失败不清空已渲染数据）
+  const loadError = ref(null)
+  const panelErrors = ref({ stats: null, topics: null, alerts: null })
+  const retryingPanel = ref(null)
 
   // #40：地图数据运行时拉取并注册（原先依赖「先访问 IP 页」的全局 registerMap
   // 状态，直接进大屏时地图系列渲染不出）。就绪后再挂载地图图表。
@@ -215,50 +232,90 @@ export function useBigScreen() {
   }
 
   // SWR 接线：经由 Pinia store，TTL 30s 内复用缓存
-  const loadStats = async () => {
+  const loadStats = async ({ force = false } = {}) => {
     try {
-      const data = await analysisStore.fetchStats()
-      if (data) {
-        stats.value = {
-          articleCount: data.articleCount || 0,
-          commentCount: data.commentCount || 0,
-          positiveCount: data.positiveCount || 0,
-          negativeCount: data.negativeCount || 0,
-          neutralCount: data.neutralCount || 0,
-        }
-        animateStats()
+      const data = await analysisStore.fetchStats({ force })
+      if (!data) {
+        // HTTP 200 但载荷缺失：与「真无数据」区分开，不再静默（#19 / #62）
+        panelErrors.value.stats = '统计数据返回为空，已保留上一次数据'
+        return
       }
+      stats.value = {
+        articleCount: data.articleCount || 0,
+        commentCount: data.commentCount || 0,
+        positiveCount: data.positiveCount || 0,
+        negativeCount: data.negativeCount || 0,
+        neutralCount: data.neutralCount || 0,
+      }
+      animateStats()
+      panelErrors.value.stats = null
     } catch (error) {
       console.error('加载统计数据失败:', error)
+      panelErrors.value.stats = '统计数据加载失败，已保留上一次数据'
     }
   }
 
-  const loadHotTopics = async () => {
+  const loadHotTopics = async ({ force = false } = {}) => {
     try {
-      const data = await analysisStore.fetchHotTopics()
-      if (data && data.topics) hotTopics.value = data.topics
+      const data = await analysisStore.fetchHotTopics({ force })
+      if (!data) {
+        panelErrors.value.topics = '热门话题返回为空，已保留上一次数据'
+        return
+      }
+      if (data.topics) hotTopics.value = data.topics
       else if (Array.isArray(data)) hotTopics.value = data
+      panelErrors.value.topics = null
     } catch (error) {
       console.error('加载热门话题失败:', error)
+      panelErrors.value.topics = '热门话题加载失败，已保留上一次数据'
     }
   }
 
-  const loadAlerts = async () => {
+  const loadAlerts = async ({ force = false } = {}) => {
     try {
-      const data = await analysisStore.fetchAlerts()
-      if (data && data.alerts) recentAlerts.value = data.alerts
+      const data = await analysisStore.fetchAlerts({ force })
+      if (!data) {
+        panelErrors.value.alerts = '预警数据返回为空，已保留上一次数据'
+        return
+      }
+      if (data.alerts) recentAlerts.value = data.alerts
       else if (Array.isArray(data)) recentAlerts.value = data
+      panelErrors.value.alerts = null
     } catch (error) {
       console.error('加载预警数据失败:', error)
+      panelErrors.value.alerts = '预警数据加载失败，已保留上一次数据'
     }
   }
 
-  const loadAllData = async () => {
+  const loadAllData = async ({ force = false } = {}) => {
     loading.value = true
+    loadError.value = null
     try {
-      await analysisStore.fetchAll()
+      await analysisStore.fetchAll({ force })
+      // fetchAll 内部 allSettled：部分失败不抛出，失败信息落在 store.error。
+      // 是否已有可用数据用 lastFetched 判定（只有成功返回才更新），
+      // 从而区分「全量失败」与「部分失败但旧数据仍在」两种降级形态。
+      const hasData = Object.values(analysisStore.lastFetched).some((t) => t > 0)
+      if (analysisStore.error) {
+        loadError.value = {
+          message: hasData ? '部分数据加载失败，已保留旧数据' : '数据加载失败，请重试',
+          partial: hasData,
+        }
+      } else {
+        // 无异常也没拿到数据（HTTP 200 载荷缺失）：与「真无数据」区分开，不静默显示零值（#19）
+        const missing = Object.keys(analysisStore.lastFetched)
+          .filter((key) => analysisStore.lastFetched[key] === 0)
+          .map((key) => PANEL_LABELS[key] || key)
+        if (missing.length > 0) {
+          loadError.value = {
+            message: `以下数据未返回：${missing.join('、')}`,
+            partial: hasData,
+          }
+        }
+      }
     } catch (e) {
       console.error('加载数据失败:', e)
+      loadError.value = { message: '数据加载失败，请重试', partial: false }
     }
     // 回填本地 refs 以保持图表 computed 响应
     try {
@@ -292,10 +349,33 @@ export function useBigScreen() {
         const d = analysisStore.alerts
         recentAlerts.value = d.alerts || d || []
       }
+      // 全量加载成功即视为三个刷新面板已就绪
+      panelErrors.value = { stats: null, topics: null, alerts: null }
     } catch (e) {
       console.error('回填失败:', e)
+      loadError.value = { message: '数据解析失败，请重试', partial: false }
+    } finally {
+      loading.value = false
     }
-    loading.value = false
+  }
+
+  // 全量重试：重新进入 loading 并绕过 SWR 缓存（#62 U-1 重试入口）
+  const retryLoad = () => loadAllData({ force: true })
+
+  // 自动刷新：三个面板各自记录失败态并保留旧数据（#19），互不拖累
+  const refreshPanels = () => Promise.all([loadStats(), loadHotTopics(), loadAlerts()])
+
+  // 面板级重试：仅重新触发对应 fetch，成功后清除该面板的错误态
+  const retryPanel = async (key) => {
+    if (!(key in panelErrors.value)) return
+    retryingPanel.value = key
+    try {
+      if (key === 'stats') await loadStats({ force: true })
+      else if (key === 'topics') await loadHotTopics({ force: true })
+      else if (key === 'alerts') await loadAlerts({ force: true })
+    } finally {
+      retryingPanel.value = null
+    }
   }
 
   const simulateDataUpdate = () => {
@@ -364,11 +444,7 @@ export function useBigScreen() {
     updateTime()
     timeTimer = setInterval(updateTime, 1000)
     loadAllData()
-    dataTimer = setInterval(() => {
-      loadStats()
-      loadHotTopics()
-      loadAlerts()
-    }, refreshInterval.value)
+    dataTimer = setInterval(refreshPanels, refreshInterval.value)
   })
 
   onUnmounted(() => {
@@ -381,6 +457,12 @@ export function useBigScreen() {
     currentTime,
     currentDate,
     loading,
+    loadError,
+    panelErrors,
+    retryingPanel,
+    retryLoad,
+    retryPanel,
+    refreshPanels,
     stats,
     animatedStats,
     hotTopics,
