@@ -8,19 +8,26 @@
 | 维度 | 数据 |
 |------|------|
 | .ts 文件 | 0 |
-| .js 文件 | 36（api/ 16 · utils/ 5 · stores/ 4 · composables/ 8 · router/ 1 · plugins/ 1 · main.js） |
-| .vue 文件 | 47（views/ 6305 行 · components/ 3734 行） |
+| .js 文件 | 32（api/ 14 · utils/ 5 · stores/ 4 · composables/ 6 · router/ 1 · plugins/ 1 · main.js） |
+| .vue 文件 | 45（views/ 6305 行 · components/ 3322 行） |
 | tsconfig.json | 无 |
 | typescript 依赖 | 无 |
 | @types/* | 无 |
-| JSDoc 注释 | 仅 2 文件（api/analysis.js 7 处 · api/user.js 2 处） |
-| 总代码量 | ~14,000 行（JS + Vue） |
+| JSDoc 注释 | 仅 1 文件（api/user.js 2 处） |
+| 总代码量 | ~13,700 行（JS + Vue） |
 
 **结论**：前端完全无 TypeScript 基础，需从基础设施搭建开始，分层渐进迁移。
 
 ## 2. 迁移顺序建议
 
 按「风险由低到高、依赖由底向上」原则分六批推进：
+
+> 维护注记（2026-10-10，#61 / D-1 死代码清理）：6 个零消费者模块
+> （`composables/useResponsive.js`、`composables/useTable.js`、
+> `composables/index.js`、`api/analysis.js`、`components/Common/DataTable.vue`、
+> `components/charts/SentimentPie.vue`，共 1,027 行）已删除，第四/六批
+> 工作量相应下调。`utils/websocket.js` **不在**删除范围（归 T-4 决策），
+> 第二批清单维持原样。
 
 ### 第一批：基础设施 + 低风险纯函数（本批目标）
 
@@ -49,7 +56,7 @@
 
 ### 第四批：composables/
 
-- 8 个 composable 文件（~2250 行），逻辑密集但与组件解耦程度较高
+- 6 个 composable 文件（~1900 行），逻辑密集但与组件解耦程度较高
 
 **选择理由**：composables 是业务逻辑核心，类型化收益大但难度中高，需在 stores 之后。
 
@@ -62,7 +69,7 @@
 
 ### 第六批：components/ + views/（最高风险）
 
-- 47 个 .vue 文件（~10,000 行），需逐组件迁移
+- 45 个 .vue 文件（~9,650 行），需逐组件迁移
 - 建议按页面维度拆分，每个页面一个子任务
 
 **选择理由**：Vue SFC 的 `<script setup lang="ts">` 迁移需处理 props/emits/slots 类型，工作量大且回归风险高，放最后。
