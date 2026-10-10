@@ -22,8 +22,9 @@
         </el-col>
       </el-row>
 
+      <!-- R-2（#63）：<768px 纵向堆叠（xs=24），≥768px 恢复并排（sm=12） -->
       <el-row :gutter="16">
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <AnalysisSection :status="sentimentStatus" empty-title="暂无情感数据">
             <BaseCard title="情感分布">
               <div class="chart-placeholder">情感分布图表区域</div>
@@ -31,7 +32,7 @@
           </AnalysisSection>
         </el-col>
 
-        <el-col :span="12">
+        <el-col :xs="24" :sm="12">
           <AnalysisSection :status="propagationStatus" empty-title="暂无传播数据">
             <BaseCard title="传播摘要">
               <div class="chart-placeholder">传播分析摘要区域</div>
