@@ -378,19 +378,6 @@ export function useBigScreen() {
     }
   }
 
-  const simulateDataUpdate = () => {
-    stats.value.articleCount += Math.floor(Math.random() * 10)
-    stats.value.commentCount += Math.floor(Math.random() * 50)
-    stats.value.positiveCount += Math.floor(Math.random() * 20)
-    stats.value.negativeCount += Math.floor(Math.random() * 5)
-    animatedStats.value = {
-      articleCount: stats.value.articleCount,
-      commentCount: stats.value.commentCount,
-      positiveCount: stats.value.positiveCount,
-      negativeCount: stats.value.negativeCount,
-    }
-  }
-
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen()
@@ -437,7 +424,7 @@ export function useBigScreen() {
 
   const onRefreshIntervalChange = (val) => {
     if (dataTimer) clearInterval(dataTimer)
-    dataTimer = setInterval(simulateDataUpdate, val)
+    dataTimer = setInterval(refreshPanels, val)
   }
 
   onMounted(() => {
