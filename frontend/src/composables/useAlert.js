@@ -93,45 +93,73 @@ export function useAlert() {
     return date.toLocaleString()
   }
 
+  const alertsError = ref(null)
+  const statsLoading = ref(false)
+  const statsError = ref(null)
+  const rulesLoading = ref(false)
+  const rulesError = ref(null)
+
   const fetchAlerts = async () => {
     loading.value = true
+    alertsError.value = null
     try {
       const res = await getAlertHistory({
         limit: pageSize.value,
         level: filterLevel.value || undefined,
       })
-      if (res.code === 200) {
-        alerts.value = res.data.alerts
-        total.value = res.data.total
+      if (res && res.code === 200 && res.data) {
+        alerts.value = res.data.alerts || []
+        total.value = res.data.total || 0
+      } else {
+        alertsError.value = (res && res.msg) || '获取预警历史失败，请重试'
       }
     } catch (error) {
       console.error('获取预警历史失败:', error)
+      alertsError.value = '获取预警历史失败，已保留原有数据'
     } finally {
       loading.value = false
     }
   }
 
   const fetchStats = async () => {
+    statsLoading.value = true
+    statsError.value = null
     try {
       const res = await getAlertStats()
-      if (res.code === 200) {
+      if (res && res.code === 200 && res.data) {
         stats.value = res.data
+      } else {
+        statsError.value = (res && res.msg) || '获取预警统计失败，请重试'
       }
     } catch (error) {
       console.error('获取预警统计失败:', error)
+      statsError.value = '获取预警统计失败，已保留原有数据'
+    } finally {
+      statsLoading.value = false
     }
   }
 
   const fetchRules = async () => {
+    rulesLoading.value = true
+    rulesError.value = null
     try {
       const res = await getAlertRules()
-      if (res.code === 200) {
-        rules.value = res.data.rules
+      if (res && res.code === 200 && res.data) {
+        rules.value = res.data.rules || []
+      } else {
+        rulesError.value = (res && res.msg) || '获取预警规则失败，请重试'
       }
     } catch (error) {
       console.error('获取预警规则失败:', error)
+      rulesError.value = '获取预警规则失败，已保留原有数据'
+    } finally {
+      rulesLoading.value = false
     }
   }
+
+  const retryAlerts = () => fetchAlerts()
+  const retryStats = () => fetchStats()
+  const retryRules = () => fetchRules()
 
   const showAlertDetail = (alert) => {
     selectedAlert.value = alert
@@ -206,6 +234,15 @@ export function useAlert() {
 
   return {
     loading,
+    alertsLoading: loading,
+    alertsError,
+    retryAlerts,
+    statsLoading,
+    statsError,
+    retryStats,
+    rulesLoading,
+    rulesError,
+    retryRules,
     alerts,
     stats,
     rules,

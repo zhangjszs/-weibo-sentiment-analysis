@@ -1,4 +1,29 @@
 .alert-center-container {
+  .region-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .region-error {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px dashed rgba(239, 68, 68, 0.4);
+    color: var(--el-color-danger);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
   .stat-card {
     .stat-content {
       display: flex;
