@@ -1,9 +1,22 @@
 <template>
   <div class="alert-center-container">
+    <div v-if="statsLoading" class="region-loading stats-loading">统计数据加载中...</div>
+    <div v-if="statsError" class="region-error stats-error">
+      <span>{{ statsError }}</span>
+      <el-button link type="primary" size="small" :loading="statsLoading" @click="retryStats">
+        重试
+      </el-button>
+    </div>
     <AlertChart :stats="stats" />
 
     <el-row :gutter="24">
       <el-col :xs="24" :lg="16">
+        <div v-if="alertsError" class="region-error alerts-error">
+          <span>{{ alertsError }}</span>
+          <el-button link type="primary" size="small" :loading="loading" @click="retryAlerts">
+            重试
+          </el-button>
+        </div>
         <AlertList
           :alerts="alerts"
           :loading="loading"
@@ -36,6 +49,14 @@
             </div>
           </template>
 
+          <div v-if="rulesLoading" class="region-loading rules-loading">规则数据加载中...</div>
+          <div v-if="rulesError" class="region-error rules-error">
+            <span>{{ rulesError }}</span>
+            <el-button link type="primary" size="small" :loading="rulesLoading" @click="retryRules">
+              重试
+            </el-button>
+          </div>
+
           <div class="rules-list">
             <div v-for="rule in rules" :key="rule.id" class="rule-item">
               <div class="rule-info">
@@ -50,6 +71,13 @@
                 <el-switch v-model="rule.enabled" @change="handleToggleRule(rule)" />
               </div>
             </div>
+
+            <el-empty
+              v-if="rules.length === 0 && !rulesError && !rulesLoading"
+              description="暂无预警规则"
+              :image-size="80"
+              class="rules-empty"
+            />
           </div>
         </el-card>
 
@@ -147,6 +175,14 @@
   import { useAlert } from '@/composables/useAlert'
   const {
     loading,
+    alertsError,
+    retryAlerts,
+    statsLoading,
+    statsError,
+    retryStats,
+    rulesLoading,
+    rulesError,
+    retryRules,
     alerts,
     stats,
     rules,
