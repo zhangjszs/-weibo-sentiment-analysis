@@ -3,10 +3,11 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：#62 已完成转 in-review（2026-10-10）。本席 executor-20261010T0300Z。
-- 状态：in-review 累计 **2 项**（#61、#62）。
-- 剩余队列：ready-for-agent 共 18 个（#63–#80，不含 #81 open / #82 needs-info）。
-- 本轮起点：main `f66b8c0`（与 origin 同步）。
+- 任务：本轮收尾（5 个 Issue 全部转 in-review，无 in-progress）。本席 executor-20261011T0526Z。
+- 状态：in-review 5 项（#64、#83、#65、#66、#82，待 Planner 验收）；auto-discovered 2 项
+  （#84、#85 待定级；本轮累计 2/3）。
+- 剩余队列：ready-for-agent 约 14 个（#67–#80；#59 needs-info；#81 open 待 #72）。
+- 本轮起点 main `34d84c9` → 现 main `edf707e`（与 origin 同步，5 merge 全部推送）。
 
 ## 阻塞项
 - 无阻塞。
@@ -15,7 +16,9 @@
 - **前端规模（#61 删除后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 ·
   router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）·
   JS+Vue 合计 13,731 行。
-- **前端测试基线（#62 后）**：16 files / **93 tests** 全绿（#61 后 84 + #62 新增 9）。
+- **前端测试基线（#82 后）**：20 files / **109 tests** 全绿（#66 后 112 − websocket 3）。
+  漂移说明：STATE 旧记 93 为 #62 时点；#63 +1 → 94，#64 +8 → 102，#83 +1 → 103，
+  #65 +5 → 108，#66 +4 → 112，#82 −3 → 109。
 - **大屏数据链路（#62 实测）**：`useBigScreen` 5 处失败路径原仅 `console.error`；
   `analysisStore.fetchAll` 内部 `allSettled`，**失败不抛出**，失败信息落在
   `store.error`（只记第一项）——所以只靠 try/catch 判失败会漏掉全部部分失败。
@@ -44,7 +47,25 @@
   reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
-- **#62 完成转 in-review（2026-10-10）**：大屏 loading 绑定 + 区域级错误态 +
+- **#82 完成转 in-review（2026-10-11）**：删 `frontend/src/utils/websocket.js`（198 行）+
+  `frontend/tests/websocket-client.test.js`（3 用例）；动手前复核零消费者（含服务端模板），
+  docs 历史引用保留；提交 d0b3025 → merge edf707e @ main（已推送）；前端五门禁全绿
+  （109/109 = 112-3）+ 后端 fast gate 1460 passed + ruff + CI/安全双绿。D-011 默认转正落地，
+  #58 第二批范围已干净。
+- **#66 完成转 in-review（2026-10-11）**：spider 页首屏加载/错误态（useSpider 新增
+  overviewLoading/overviewError/logsError + spider.vue 两区指示/错误块 + 重试 + 空态收紧；
+  scss 样式）；新增 4 用例；提交 381c81a → merge 272b5c6 @ main（已推送）；
+  前端五门禁全绿（112/112）+ 后端 fast gate 1460 passed + ruff + CI/安全双绿。
+- **#65 完成转 in-review（2026-10-11）**：platform 页三路 fetch 补加载/错误态（单文件 +
+  重试；失败不清旧数据）；新增 5 用例；提交 fdaf4e9 → merge e14d48c @ main（已推送）；
+  前端五门禁全绿（108/108）+ 后端 fast gate 1460 passed + ruff + CI/安全双绿。
+  附带 auto-discovered #85（对比/情感图写死假数据不消费接口）。
+- **#64 完成转 in-review（2026-10-11）**：登录/注册旅程 8 真实 mount 用例（单文件
+  `tests/login-journey.test.js`，零源码改动；真实 router + 真实 doLogin；ElMessage
+  spyOn；导航断言 vi.waitFor）；提交 91c592a → merge a1c6d1d @ main（已推送）；
+  前端五门禁全绿（102/102）+ 后端 fast gate 1460 passed + ruff + CI/安全双绿。
+  基线说明：全仓基线 #63 后为 94（STATE 旧记 93 为 #62 时点），#64 后 102。
+- **#62 完成转 in-review（2026-10-10，Planner 已验收关闭）**：大屏 loading 绑定 + 区域级错误态 +
   重试入口（全量/面板两级），5 处失败路径全部产生可见状态；新增 9 用例；
   提交 492356c → merge @ main；前端五门禁全绿（93/93）+ 后端 fast gate
   1460 passed + ruff + CI/安全双绿。
