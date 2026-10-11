@@ -14,6 +14,13 @@
       </div>
     </div>
 
+    <div v-if="overviewLoading" class="region-loading overview-loading">数据加载中...</div>
+    <div v-if="overviewError" class="region-error overview-error">
+      <span>{{ overviewError }}</span>
+      <el-button link type="primary" size="small" :loading="overviewLoading" @click="loadOverview">
+        重试
+      </el-button>
+    </div>
     <SpiderStats :overview="overview" />
 
     <!-- 运行状态栏 -->
@@ -234,8 +241,20 @@
             </div>
           </div>
           <div class="panel-body">
+            <div
+              v-if="logsLoading && filteredLogs.length === 0"
+              class="region-loading logs-loading"
+            >
+              日志加载中...
+            </div>
+            <div v-if="logsError" class="region-error logs-error">
+              <span>{{ logsError }}</span>
+              <el-button link type="primary" size="small" :loading="logsLoading" @click="loadLogs">
+                重试
+              </el-button>
+            </div>
             <div ref="logContainerRef" class="log-container">
-              <div v-if="filteredLogs.length === 0" class="empty-state">
+              <div v-if="filteredLogs.length === 0 && !logsError" class="empty-state">
                 <el-empty description="暂无日志" :image-size="60" />
               </div>
               <div v-else>
@@ -284,11 +303,16 @@
     refreshing,
     clearingCache,
     logsLoading,
+    overviewLoading,
+    overviewError,
+    logsError,
     logFilter,
     logContainerRef,
     trendChartRef,
     filteredLogs,
     refreshAll,
+    loadOverview,
+    loadLogs,
     handleClearCache,
     startCrawlAction,
     getLogLevel,
