@@ -31,6 +31,11 @@ export function useSpider() {
   const clearingCache = ref(false)
   const logs = ref([])
   const logsLoading = ref(false)
+  // U-3（#66）：首屏 loading / 错误态（#62 同款语义）。
+  // #19：失败只写错误态，从不清空已渲染旧数据、不伪装空态。
+  const overviewLoading = ref(false)
+  const overviewError = ref('')
+  const logsError = ref('')
   const logFilter = ref('all')
   const logContainerRef = ref(null)
   const trendChartRef = ref(null)
@@ -46,23 +51,33 @@ export function useSpider() {
   let statusTimer = null
   let pollErrorCount = 0
   async function loadOverview() {
+    overviewLoading.value = true
+    overviewError.value = ''
     try {
       const res = await getSpiderOverview()
       if (res.code === 200 && res.data) {
         Object.assign(overview, res.data)
         renderTrendChart()
+      } else {
+        overviewError.value = res.msg || '概览加载失败，已保留旧数据'
       }
     } catch (e) {
       console.error('加载概览失败:', e)
+      overviewError.value = '概览加载失败，已保留旧数据'
+    } finally {
+      overviewLoading.value = false
     }
   }
   async function loadLogs() {
     logsLoading.value = true
+    logsError.value = ''
     try {
       const res = await getSpiderLogs(200)
       if (res.code === 200 && res.data) logs.value = res.data.logs || []
+      else logsError.value = res.msg || '日志加载失败，已保留旧日志'
     } catch (e) {
       console.error('加载日志失败:', e)
+      logsError.value = '日志加载失败，已保留旧日志'
     } finally {
       logsLoading.value = false
     }
@@ -236,6 +251,9 @@ export function useSpider() {
     clearingCache,
     logs,
     logsLoading,
+    overviewLoading,
+    overviewError,
+    logsError,
     logFilter,
     logContainerRef,
     trendChartRef,
