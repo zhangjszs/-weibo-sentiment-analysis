@@ -26,6 +26,13 @@
     <el-row :gutter="24" class="mb-4">
       <el-col v-for="stat in currentStats" :key="stat.label" :xs="12" :sm="6" :md="4">
         <el-card class="stat-card">
+          <div v-if="statsLoading" class="region-loading stats-loading">数据加载中...</div>
+          <div v-if="statsError" class="region-error stats-error">
+            <span>{{ statsError }}</span>
+            <el-button link type="primary" size="small" :loading="statsLoading" @click="retryStats">
+              重试
+            </el-button>
+          </div>
           <div class="stat-content">
             <div class="stat-value">
               {{ stat.value }}
@@ -68,6 +75,19 @@
             </div>
           </template>
 
+          <div v-if="contentLoading" class="region-loading content-loading">数据加载中...</div>
+          <div v-if="contentError" class="region-error content-error">
+            <span>{{ contentError }}</span>
+            <el-button
+              link
+              type="primary"
+              size="small"
+              :loading="contentLoading"
+              @click="retryContent"
+            >
+              重试
+            </el-button>
+          </div>
           <div class="content-list">
             <div v-for="item in filteredContent" :key="item.content_id" class="content-item">
               <div class="content-header">
@@ -142,6 +162,19 @@
       </el-col>
 
       <el-col :xs="24" :lg="8">
+        <div v-if="compareLoading" class="region-loading compare-loading">数据加载中...</div>
+        <div v-if="compareError" class="region-error compare-error">
+          <span>{{ compareError }}</span>
+          <el-button
+            link
+            type="primary"
+            size="small"
+            :loading="compareLoading"
+            @click="retryComparison"
+          >
+            重试
+          </el-button>
+        </div>
         <el-card class="chart-card">
           <template #header>
             <span>各平台数据对比</span>
@@ -197,6 +230,15 @@
 
   const platformStats = ref({})
   const comparisonData = ref({})
+
+  // U-2（#65）：三路 fetch 各自的 loading / 错误态（#62 同款语义）。
+  // #19：失败只写错误态，从不清空已渲染旧数据、不伪装空态。
+  const contentLoading = ref(false)
+  const statsLoading = ref(false)
+  const compareLoading = ref(false)
+  const contentError = ref('')
+  const statsError = ref('')
+  const compareError = ref('')
 
   const currentStats = computed(() => {
     const stats = platformStats.value[activePlatform.value] || {}
@@ -290,6 +332,8 @@
   }
 
   const loadData = async () => {
+    contentLoading.value = true
+    contentError.value = ''
     try {
       const res = await getPlatformData(activePlatform.value, {
         page: currentPage.value,
@@ -300,33 +344,56 @@
       if (res.code === 200) {
         contentList.value = res.data.data
         total.value = res.data.pagination.total
+      } else {
+        contentError.value = res.msg || '数据加载失败，已保留旧数据'
       }
     } catch (error) {
       console.error('加载数据失败:', error)
+      contentError.value = '数据加载失败，已保留旧数据'
+    } finally {
+      contentLoading.value = false
     }
   }
 
   const loadStats = async () => {
+    statsLoading.value = true
+    statsError.value = ''
     try {
       const res = await getPlatformStats('all')
       if (res.code === 200) {
         platformStats.value = res.data
+      } else {
+        statsError.value = res.msg || '统计加载失败，已保留旧数据'
       }
     } catch (error) {
       console.error('加载统计失败:', error)
+      statsError.value = '统计加载失败，已保留旧数据'
+    } finally {
+      statsLoading.value = false
     }
   }
 
   const loadComparison = async () => {
+    compareLoading.value = true
+    compareError.value = ''
     try {
       const res = await comparePlatforms(['weibo', 'wechat', 'douyin', 'zhihu'])
       if (res.code === 200) {
         comparisonData.value = res.data.comparison
+      } else {
+        compareError.value = res.msg || '对比数据加载失败'
       }
     } catch (error) {
       console.error('加载对比数据失败:', error)
+      compareError.value = '对比数据加载失败'
+    } finally {
+      compareLoading.value = false
     }
   }
+
+  const retryContent = () => loadData()
+  const retryStats = () => loadStats()
+  const retryComparison = () => loadComparison()
 
   const handlePlatformChange = () => {
     currentPage.value = 1
@@ -342,6 +409,31 @@
 
 <style lang="scss" scoped>
   .platform-monitor-container {
+    .region-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+    }
+
+    .region-error {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px dashed rgba(239, 68, 68, 0.4);
+      color: var(--el-color-danger);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
     .platform-tabs-card {
       .platform-tab {
         display: flex;
