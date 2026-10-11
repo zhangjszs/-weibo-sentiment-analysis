@@ -8,7 +8,12 @@
               <span class="header-title">爬虫历史</span>
             </div>
           </template>
-          <el-table :data="spiderHistory" style="width: 100%" height="360">
+          <el-table
+            v-loading="spiderLoading"
+            :data="spiderHistory"
+            style="width: 100%"
+            height="360"
+          >
             <el-table-column prop="time" label="时间" width="180" />
             <el-table-column prop="action" label="动作" min-width="160" show-overflow-tooltip />
             <el-table-column prop="status" label="状态" width="120" align="center">
@@ -74,7 +79,12 @@
           <span class="header-title">预热结果</span>
         </div>
       </template>
-      <el-table :data="startupWarmupResults" style="width: 100%" max-height="260">
+      <el-table
+        v-loading="startupLoading"
+        :data="startupWarmupResults"
+        style="width: 100%"
+        max-height="260"
+      >
         <el-table-column prop="path" label="预热接口" min-width="280" show-overflow-tooltip />
         <el-table-column prop="status_code" label="状态码" width="110" align="center">
           <template #default="{ row }">
@@ -177,6 +187,10 @@
       type: Array,
       default: () => [],
     },
+    spiderLoading: {
+      type: Boolean,
+      default: false,
+    },
     logs: {
       type: Array,
       default: () => [],
@@ -192,6 +206,10 @@
     startupWarmupResults: {
       type: Array,
       default: () => [],
+    },
+    startupLoading: {
+      type: Boolean,
+      default: false,
     },
     taskId: {
       type: String,

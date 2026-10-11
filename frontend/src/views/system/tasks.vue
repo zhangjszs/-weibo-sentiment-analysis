@@ -18,10 +18,12 @@
 
     <TaskList
       :spider-history="spiderHistory"
+      :spider-loading="spiderLoading"
       :logs="logs"
       :logs-loading="logsLoading"
       :log-lines="logLines"
       :startup-warmup-results="startupWarmupResults"
+      :startup-loading="startupLoading"
       :task-id="taskId"
       :task-loading="taskLoading"
       :task-result="taskResult"
