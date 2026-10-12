@@ -29,7 +29,8 @@
     </el-row>
 
     <el-row :gutter="20" class="stat-row">
-      <el-col :span="8">
+      <!-- R-3（#73）：<768px 纵向堆叠（xs=24），≥768px 恢复 8/16 分栏（sm） -->
+      <el-col :xs="24" :sm="8">
         <el-card class="info-card">
           <el-descriptions title="热词信息" :column="1" border>
             <el-descriptions-item label="热词名称">
@@ -47,7 +48,7 @@
         </el-card>
       </el-col>
 
-      <el-col :span="16">
+      <el-col :xs="24" :sm="16">
         <el-card class="chart-card">
           <template #header>
             <span>热词年份变化趋势</span>
