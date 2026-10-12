@@ -23,7 +23,7 @@
         </router-view>
       </el-main>
     </el-container>
-    <MobileNav v-if="isMobile" />
+    <MobileNav :is-mobile="isMobile" />
   </el-container>
 </template>
 
@@ -50,6 +50,7 @@
     isMobileMenuOpen.value = !isMobileMenuOpen.value
   }
 
+  // R-1（#72）：全仓唯一移动端判定点（768px 阈值仅此一处），以 prop 下发 MobileNav。
   const checkMobile = () => {
     isMobile.value = window.innerWidth < 768
   }

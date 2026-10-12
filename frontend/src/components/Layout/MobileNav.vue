@@ -16,7 +16,6 @@
 </template>
 
 <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue'
   import {
     Bell,
     ChatDotRound,
@@ -26,8 +25,16 @@
   } from '@element-plus/icons-vue'
   import { useRoute } from 'vue-router'
 
+  // R-1（#72）：受控组件——isMobile 由 Layout 以 prop 传入，本文件不再持有
+  // 自有 ref/listener/768 字面量，全仓唯一判定点在 Layout/index.vue。
+  defineProps({
+    isMobile: {
+      type: Boolean,
+      default: false,
+    },
+  })
+
   const route = useRoute()
-  const isMobile = ref(false)
 
   const navItems = [
     { path: '/home', label: '首页', icon: HomeFilled },
@@ -37,22 +44,9 @@
     { path: '/hot-words', label: '热词', icon: DataAnalysis },
   ]
 
-  const checkMobile = () => {
-    isMobile.value = window.innerWidth < 768
-  }
-
   const isActive = (path) => {
     return route.path === path || route.path.startsWith(path + '/')
   }
-
-  onMounted(() => {
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-  })
-
-  onUnmounted(() => {
-    window.removeEventListener('resize', checkMobile)
-  })
 </script>
 
 <style lang="scss" scoped>
