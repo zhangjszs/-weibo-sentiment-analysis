@@ -3,17 +3,17 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮执行中（#77、#78 已完成转 in-review，无 in-progress）。本席 executor-20261012T1358Z。
-- 状态：in-review 2 项（#77、#78，待 Planner 验收）。
-- 剩余队列：ready-for-agent 6 个（#87, #79, #80, #84, #86, #81；#59 needs-info）。
-- 本轮起点 main `d09e034` → 现 main `89cb8b2`（与 origin 同步，2 merge 已推送）。
+- 任务：本轮执行中（#77、#78、#87 已完成转 in-review，无 in-progress）。本席 executor-20261012T1358Z。
+- 状态：in-review 3 项（#77、#78、#87，待 Planner 验收）。
+- 剩余队列：ready-for-agent 5 个（#79, #80, #84, #86, #81；#59 needs-info）。
+- 本轮起点 main `d09e034` → 现 main `5684b80`（与 origin 同步，3 merge 已推送）。
 
 ## 阻塞项
 - 无阻塞。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
-- **前端测试基线（#78 后）**：38 files / **181 tests** 全绿（#77 后 178 → #78 +3 → 181）。
+- **前端测试基线（#87 后）**：39 files / **184 tests** 全绿（#78 后 181 → #87 +3 → 184）。
   漂移说明：#82 后 109，#67 新增 `alert-center-states.test.js` (+5) → 114，#68 新增 `task-list-loading.test.js` (+3) → 117。
 - **大屏数据链路（#62 实测）**：`useBigScreen` 5 处失败路径原仅 `console.error`；`analysisStore.fetchAll` 内部 `allSettled`，**失败不抛出**，失败信息落在 `store.error`（只记第一项）。
 - **拦截器兜底（勿重复弹窗）**：`api/request.js:82-166` 对每个失败请求已弹 ElMessage（业务码/HTTP 码/网络错误三类）。
@@ -27,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#87 完成转 in-review（2026-10-12）**：comment 热门评论空态（.hot-comments-empty/暂无热门评论，仅空非 loading 时显；新增 `comment-empty.test.js` 3 用例）；提交 cde0a13 → merge 5684b80 @ main（已推送）；前端五门禁全绿（184/184）+ 后端 ruff clean。
 - **#78 完成转 in-review（2026-10-12）**：BigScreen 热门话题空态（.no-topics/暂无话题，仅空非 loading 非失败时显；新增 `bigscreen-topics-empty.test.js` 3 用例）；提交 0cc904f → merge 89cb8b2 @ main（已推送）；前端五门禁全绿（181/181）+ 后端 ruff clean。
 - **#77 完成转 in-review（2026-10-12）**：predict 模型信息错误态（modelInfoError + 重试；空态仅无错无数据时显；新增 `predict-model-error.test.js` 3 用例）；提交 e6383d0 → merge cba3445 @ main（已推送）；前端五门禁全绿（178/178）+ 后端 ruff clean。
 - **#76 完成转 in-review（2026-10-12）**：4 composable 底线（use-alert/tasks/spider/predict-floor 各 3 用例：成功/失败/空；只加测试未改源码）；提交 e276278 → merge 4f6393a @ main（已推送）；前端五门禁全绿（175/175）+ 后端 ruff clean。
