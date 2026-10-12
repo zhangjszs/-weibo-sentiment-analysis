@@ -1,41 +1,38 @@
 // #39 的守护测试：src/plugins/elementPlus.js 的最小全局注册必须覆盖 src 中
 // 所有「以字符串形式解析」的图标引用。字符串 icon（icon="Search" prop、
 // <component :is="'X'">、prop 默认值等）走全局组件解析，漏注册不会让
-// lint/build/其他测试报错，只会在运行时渲染空白——所以用源码扫描兜底。
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, resolve } from 'node:path'
-import { describe, expect, it } from 'vitest'
+// lint/build/其他测试报错，只会在运行时渲染空白。
+// #79（T-5）：原第 2 个 it 的静态源码扫描改为真实挂载——动态三元模式探针
+// （复刻 BigScreen 播放/暂停 `:icon="playing ? 'VideoPause' : 'VideoPlay'"`）
+// 挂载验证两态均渲染出 SVG，不再读源码文本。
+import { ref } from 'vue'
+import { mount, flushPromises } from '@vue/test-utils'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import { createApp } from 'vue'
 import * as icons from '@element-plus/icons-vue'
 import { ICON_COMPONENTS, installElementPlus } from '@/plugins/elementPlus'
 
 const ICON_NAMES = new Set(Object.keys(icons))
 
-// 与图标同名的非图标字符串（逐个核实过）：
-// - 'Help'：router/index.js 的路由名（name: 'Help'），与图标无关
-const NON_ICON_STRINGS = new Set(['Help'])
-
-// jsdom 环境下 import.meta.url 不是 file:// 协议；vitest 固定以 frontend/ 为 cwd
-const SRC_DIR = resolve(process.cwd(), 'src')
-
-// 收集 src 内以字符串字面量形式出现的图标名及其所在文件
-function collectIconStringRefs(dir, acc = {}) {
-  for (const entry of readdirSync(dir)) {
-    const full = join(dir, entry)
-    if (statSync(full).isDirectory()) {
-      collectIconStringRefs(full, acc)
-    } else if (/\.(vue|js)$/.test(entry)) {
-      const text = readFileSync(full, 'utf8')
-      for (const m of text.matchAll(/['"]([A-Z][A-Za-z0-9]+)['"]/g)) {
-        const name = m[1]
-        if (ICON_NAMES.has(name) && !NON_ICON_STRINGS.has(name)) {
-          ;(acc[name] ??= []).push(full.slice(SRC_DIR.length + 1))
-        }
-      }
+// 动态三元模式探针：复刻 BigScreen `:icon="playing ? 'VideoPause' : 'VideoPlay'"`
+// 注：探针不用 el-icon 包裹——单测环境不装载 element-plus 全局插件，
+// el-* 在运行时模板中无法解析；图标解析断言与 el-icon 无关。
+const TernaryProbe = {
+  setup() {
+    const playing = ref(false)
+    const toggle = () => {
+      playing.value = !playing.value
     }
-  }
-  return acc
+    return { playing, toggle }
+  },
+  template: `<span class="play-toggle"><component :is="playing ? 'VideoPause' : 'VideoPlay'" /></span>`,
 }
+
+let warnSpy
+
+afterEach(() => {
+  warnSpy?.mockRestore()
+})
 
 describe('#39 element-plus 最小全局注册守护', () => {
   it('ICON_COMPONENTS 每个名字都是真实图标且会被 installElementPlus 注册', () => {
@@ -49,14 +46,25 @@ describe('#39 element-plus 最小全局注册守护', () => {
     }
   })
 
-  it('src 中字符串引用的图标必须全部在 ICON_COMPONENTS 内', () => {
-    const refs = collectIconStringRefs(SRC_DIR)
-    const registered = new Set(Object.keys(ICON_COMPONENTS))
-    const missing = Object.keys(refs).filter((name) => !registered.has(name))
-    const detail = missing.map((name) => `${name} ← ${refs[name].join(', ')}`).join('\n')
-    expect(
-      missing,
-      `以下图标以字符串形式被引用但未全局注册，请补进 src/plugins/elementPlus.js 的 ICON_COMPONENTS：\n${detail}`
-    ).toEqual([])
+  it('动态三元引用的图标两态均真实渲染（BigScreen 播放/暂停模式）', async () => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const wrapper = mount(TernaryProbe, {
+      global: { components: ICON_COMPONENTS },
+    })
+    try {
+      await flushPromises()
+      // 暂停态（playing=false → VideoPlay）
+      expect(wrapper.find('svg').exists()).toBe(true)
+
+      // 播放态（playing=true → VideoPause）
+      wrapper.vm.toggle()
+      await flushPromises()
+      expect(wrapper.find('svg').exists()).toBe(true)
+
+      const noise = warnSpy.mock.calls.flat().join('\n')
+      expect(noise).not.toMatch(/Failed to resolve component/)
+    } finally {
+      wrapper.unmount()
+    }
   })
 })
