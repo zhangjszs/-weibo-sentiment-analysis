@@ -1,7 +1,14 @@
 <template>
   <div v-loading="searching" class="home-container">
     <!-- Analysis filters -->
-    <AnalysisFilters v-model="filters" @search="onSearch" />
+    <!-- U-11（#80）：受控更新代替 v-model——const reactive 保持引用稳定，
+         子组件 update:modelValue 以 Object.assign 原地同步，消除编译器
+         `v-model cannot update a const reactive binding` 告警 -->
+    <AnalysisFilters
+      :model-value="filters"
+      @update:model-value="Object.assign(filters, $event)"
+      @search="onSearch"
+    />
 
     <!-- Analysis summary (shown after search) -->
     <template v-if="snapshot">
