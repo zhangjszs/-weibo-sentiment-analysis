@@ -6,6 +6,7 @@
           <template #header>
             <span>评论时间分布</span>
           </template>
+          <div v-if="loading" class="region-loading charts-loading">数据加载中...</div>
           <BaseChart ref="timeChartRef" :options="timeChartOptions" height="350px" />
         </el-card>
       </el-col>
@@ -15,6 +16,7 @@
           <template #header>
             <span>评论用户活跃度</span>
           </template>
+          <div v-if="loading" class="region-loading charts-loading">数据加载中...</div>
           <BaseChart
             ref="userActivityChartRef"
             :options="userActivityChartOptions"
@@ -31,6 +33,7 @@
           <template #header>
             <span>评论情感分布</span>
           </template>
+          <div v-if="loading" class="region-loading charts-loading">数据加载中...</div>
           <BaseChart ref="sentimentPieRef" :options="sentimentPieOptions" height="300px" />
         </el-card>
       </el-col>
@@ -40,6 +43,7 @@
           <template #header>
             <span>热门评论</span>
           </template>
+          <div v-if="loading" class="region-loading hot-comments-loading">数据加载中...</div>
           <div class="hot-comments">
             <div v-for="(comment, index) in hotComments" :key="index" class="comment-item">
               <div class="comment-header">
@@ -352,6 +356,16 @@
 
 <style lang="scss" scoped>
   .comment-analysis-container {
+    .region-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+    }
+
     .chart-card {
       margin-bottom: 20px;
     }
