@@ -104,8 +104,7 @@
 
 <script setup>
   import { Refresh } from '@element-plus/icons-vue'
-  import { formatDateTime } from '@/utils'
-
+  import { formatDateTime, formatDuration } from '@/utils'
   defineProps({
     spiderOverview: {
       type: Object,
@@ -154,13 +153,6 @@
   })
 
   defineEmits(['refreshSpider', 'refreshStartup'])
-
-  const formatDuration = (seconds) => {
-    if (seconds == null || Number.isNaN(Number(seconds))) return '-'
-    const value = Number(seconds)
-    if (value < 1) return `${Math.round(value * 1000)} ms`
-    return `${value.toFixed(3)} s`
-  }
 </script>
 
 <style lang="scss" scoped>
