@@ -126,6 +126,10 @@
               <span class="topic-heat">{{ topic.heat }}</span>
             </div>
           </div>
+          <!-- U-10（#78）：空话题明确空态（加载中/失败时不显，#19：失败不伪装成空态） -->
+          <div v-if="hotTopics.length === 0 && !loading && !panelErrors.topics" class="no-topics">
+            暂无话题
+          </div>
           <div v-if="panelErrors.topics" class="panel-error">
             <span>{{ panelErrors.topics }}</span>
             <el-button

@@ -355,6 +355,16 @@
       }
     }
 
+    /* U-10（#78）：热门话题空态（panel-item 层级，与 .topic-list 同级） */
+    .no-topics {
+      text-align: center;
+      color: #64748b;
+      padding: 32px;
+      background: rgba(100, 116, 139, 0.1);
+      border-radius: 12px;
+      border: 1px dashed rgba(100, 116, 139, 0.3);
+    }
+
     .topic-list {
       max-height: 100%;
       overflow-y: auto;
