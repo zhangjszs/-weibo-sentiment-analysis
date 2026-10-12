@@ -3,17 +3,17 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮收尾（2 个 Issue 全部转 in-review，无 in-progress）。本席 executor-20261011T1534Z。
-- 状态：in-review 2 项（#67、#68，待 Planner 验收）。
-- 剩余队列：ready-for-agent 约 14 个（#69–#80, #84, #85；#59 needs-info；#81 open 待 #72）。
-- 本轮起点 main `64dbf57` → 现 main `5305683`（与 origin 同步，2 merge 全部推送）。
+- 任务：本轮执行中（#69 已完成转 in-review，无 in-progress）。本席 executor-20261012T1110Z。
+- 状态：in-review 3 项（#67、#68、#69，待 Planner 验收）。
+- 剩余队列：ready-for-agent 约 13 个（#70–#80, #84, #85；#59 needs-info；#81 open 待 #72）。
+- 本轮起点 main `2be8b9b` → 现 main `01a40ba`（与 origin 同步，1 merge 已推送）。
 
 ## 阻塞项
 - 无阻塞。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
-- **前端测试基线（#68 后）**：22 files / **117 tests** 全绿（#82 后 109 → #67 +5 → 114 → #68 +3 → 117）。
+- **前端测试基线（#69 后）**：23 files / **121 tests** 全绿（#68 后 117 → #69 +4 → 121）。
   漂移说明：#82 后 109，#67 新增 `alert-center-states.test.js` (+5) → 114，#68 新增 `task-list-loading.test.js` (+3) → 117。
 - **大屏数据链路（#62 实测）**：`useBigScreen` 5 处失败路径原仅 `console.error`；`analysisStore.fetchAll` 内部 `allSettled`，**失败不抛出**，失败信息落在 `store.error`（只记第一项）。
 - **拦截器兜底（勿重复弹窗）**：`api/request.js:82-166` 对每个失败请求已弹 ElMessage（业务码/HTTP 码/网络错误三类）。
@@ -27,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#69 完成转 in-review（2026-10-12）**：report.vue 补齐错误态（模板区 loading/error+重试+空成功空态；预览区 error+重试；守卫改依赖 reportError 根因；新增 `report-error-states.test.js` 4 用例）；提交 83b633d → merge 01a40ba @ main（已推送）；前端五门禁全绿（121/121）+ 后端 ruff clean。
 - **#68 完成转 in-review（2026-10-11）**：tasks.vue 两张表格补加载态（TaskList.vue 为 spiderHistory 绑定 spiderLoading，为 startupWarmupResults 绑定 startupLoading；tasks.vue 传入 prop；新增 `task-list-loading.test.js` 3 用例）；提交 1e6339d → merge 5305683 @ main（已推送）；前端五门禁全绿（117/117）+ 后端 ruff clean。
 - **#67 完成转 in-review（2026-10-11）**：alert 中心补齐错误态与规则空态（useAlert 增加 retryFetch/fetchError 并保留历史告警；center.vue 增加错误态重试条与规则空态；center.scss 补齐样式；新增 `alert-center-states.test.js` 5 用例）；提交 c424341 → merge f64318c @ main（已推送）；前端五门禁全绿（114/114）+ 后端 ruff clean。
 - **#82 验收关闭（2026-10-11）**：删 `frontend/src/utils/websocket.js`（198 行）+ `frontend/tests/websocket-client.test.js`（3 用例）；提交 d0b3025 → merge edf707e @ main。
