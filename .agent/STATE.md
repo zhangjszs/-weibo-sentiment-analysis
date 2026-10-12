@@ -3,13 +3,13 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮收尾（5 个 Issue 全部转 in-review，无 in-progress）。本席 executor-20261012T1358Z。
-- 状态：in-review 5 项（#77、#78、#87、#79、#80，待 Planner 验收）。
-- 剩余队列：ready-for-agent 3 个（#84, #86, #81；#59 needs-info）。
-- 本轮起点 main `d09e034` → 现 main `1c123c7`（与 origin 同步，5 merge 全部推送）。
+- 任务：本轮执行中（#77、#78、#87、#79、#80 已完成转 in-review；#84 调查后转 blocked，无 in-progress）。本席 executor-20261012T1506Z。
+- 状态：in-review 5 项（#77、#78、#87、#79、#80）；blocked 1 项（#84，待 Planner 裁决）。
+- 剩余队列：ready-for-agent 2 个（#86, #81；#59 needs-info）。
+- 本轮起点 main `d09e034` → 现 main `1c123c7`（#84 零变更，无提交）。
 
 ## 阻塞项
-- 无阻塞。
+- #84（el-form 测试环境短路）：12 轮实证后确认测试环境内拦截不可达（表单层吞无键拒绝→恒 true；async-validator 本体健康；blur 亦死），约束内无解，已转 blocked；建议 Planner 做真实浏览器空提交对照后定夺（close / 另立生产 Bug）。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
