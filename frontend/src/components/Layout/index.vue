@@ -28,7 +28,7 @@
 </template>
 
 <script setup>
-  import { ref, computed, onMounted, onUnmounted } from 'vue'
+  import { ref, computed, onMounted, onUnmounted, provide } from 'vue'
   import { useAppStore } from '@/stores/app'
   import Sidebar from './Sidebar.vue'
   import Header from './Header.vue'
@@ -40,6 +40,8 @@
   const appStore = useAppStore()
   const isCollapsed = computed(() => appStore.sidebarCollapsed)
   const isMobile = ref(false)
+  // R-4（#81）：平板档 768–1024，与 isMobile 同属 checkMobile 单源判定。
+  const isTablet = ref(false)
   const isMobileMenuOpen = ref(false)
 
   const toggleSidebar = () => {
@@ -51,9 +53,14 @@
   }
 
   // R-1（#72）：全仓唯一移动端判定点（768px 阈值仅此一处），以 prop 下发 MobileNav。
+  // R-4（#81）：同函数内扩展平板档（768–1024），以 provide 下发深层路由视图；
+  // 全仓仍只有一个 resize 监听、一个判定函数（不用 provide 的直系子组件沿用 prop）。
   const checkMobile = () => {
     isMobile.value = window.innerWidth < 768
+    isTablet.value = window.innerWidth >= 768 && window.innerWidth < 1024
   }
+
+  provide('isTablet', isTablet)
 
   onMounted(() => {
     checkMobile()

@@ -30,8 +30,9 @@
       </el-row>
 
       <!-- R-2（#63）：<768px 纵向堆叠（xs=24），≥768px 恢复并排（sm=12） -->
+      <!-- R-4（#81）：平板段（768–1024，isTablet）用中间档纵向堆叠（sm=24），桌面恢复并排 -->
       <el-row :gutter="16">
-        <el-col :xs="24" :sm="12">
+        <el-col :xs="24" :sm="isTablet ? 24 : 12" :md="12">
           <AnalysisSection :status="sentimentStatus" empty-title="暂无情感数据">
             <BaseCard title="情感分布">
               <div class="chart-placeholder">情感分布图表区域</div>
@@ -39,7 +40,7 @@
           </AnalysisSection>
         </el-col>
 
-        <el-col :xs="24" :sm="12">
+        <el-col :xs="24" :sm="isTablet ? 24 : 12" :md="12">
           <AnalysisSection :status="propagationStatus" empty-title="暂无传播数据">
             <BaseCard title="传播摘要">
               <div class="chart-placeholder">传播分析摘要区域</div>
@@ -57,7 +58,7 @@
 </template>
 
 <script setup>
-  import { reactive, ref } from 'vue'
+  import { reactive, ref, inject } from 'vue'
   import { ElMessage } from 'element-plus'
 
   import { http } from '@/api/request'
@@ -72,6 +73,9 @@
     endAt: '',
     demo: false,
   })
+
+  // R-4（#81）：消费 Layout 单源下发的平板档（无 provider 时按桌面渲染）。
+  const isTablet = inject('isTablet', ref(false))
 
   const snapshot = ref(null)
   const searching = ref(false)
