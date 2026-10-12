@@ -59,6 +59,10 @@
               </div>
             </div>
           </div>
+          <!-- U-13（#87）：热门评论空态（加载中不显，与 #71 loading 共存） -->
+          <div v-if="hotComments.length === 0 && !loading" class="hot-comments-empty">
+            暂无热门评论
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -407,6 +411,17 @@
           font-size: 12px;
         }
       }
+    }
+
+    /* U-13（#87）：热门评论空态 */
+    .hot-comments-empty {
+      text-align: center;
+      color: #999;
+      font-size: 13px;
+      padding: 24px;
+      background: rgba(100, 116, 139, 0.06);
+      border-radius: 8px;
+      border: 1px dashed rgba(100, 116, 139, 0.3);
     }
 
     .list-card {
