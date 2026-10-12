@@ -3,7 +3,12 @@
     <!-- 顶部资料卡片 -->
     <div class="profile-card">
       <div class="profile-card-bg" />
-      <div class="profile-card-content">
+      <!-- U-7（#70）：loadProfile 期间资料卡区域显示 skeleton，完成后渲染真实值；
+           加载中不渲染默认值「用户 / 未知」的中间态。 -->
+      <div v-if="profileLoading" class="profile-loading">
+        <el-skeleton :rows="3" animated />
+      </div>
+      <div v-else class="profile-card-content">
         <div class="avatar" :style="{ backgroundColor: profileData.avatar_color || '#2563EB' }">
           {{ avatarLetter }}
         </div>
@@ -149,6 +154,8 @@
   const activeTab = ref('profile')
   const profileSaving = ref(false)
   const passwordSaving = ref(false)
+  // U-7（#70）：loadProfile 期间资料卡区域的加载态（初始 true，首屏即 skeleton）。
+  const profileLoading = ref(true)
   const profileFormRef = ref(null)
   const passwordFormRef = ref(null)
 
@@ -234,6 +241,7 @@
   }
 
   const loadProfile = async () => {
+    profileLoading.value = true
     try {
       const res = await getProfile()
       if (res.code === 200) {
@@ -245,6 +253,8 @@
       }
     } catch {
       ElMessage.error('加载个人资料失败')
+    } finally {
+      profileLoading.value = false
     }
   }
 
@@ -342,6 +352,10 @@
     .profile-card-bg {
       height: 120px;
       background: linear-gradient(135deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+    }
+
+    .profile-loading {
+      padding: 24px 32px 28px;
     }
 
     .profile-card-content {
