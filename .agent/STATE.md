@@ -3,17 +3,17 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮收尾（4 个 Issue 全部转 in-review，无 in-progress）。本席 executor-20261012T1110Z。
-- 状态：in-review 6 项（#67、#68、#69、#70、#85、#71，待 Planner 验收）。
-- 剩余队列：ready-for-agent 约 10 个（#72–#80, #84；#59 needs-info；#81 open 待 #72）。
-- 本轮起点 main `2be8b9b` → 现 main `00eefd8`（与 origin 同步，4 merge 全部推送）。
+- 任务：本轮执行中（#72 已完成转 in-review，无 in-progress）。本席 executor-20261012T1135Z。
+- 状态：in-review 7 项（#67–#72 + #85，待 Planner 验收）。
+- 剩余队列：ready-for-agent 约 9 个（#73–#80, #84；#59 needs-info；#81 open 待 Planner 恢复 ready）。
+- 本轮起点 main `cb07597` → 现 main `73194bb`（与 origin 同步，1 merge 已推送）。
 
 ## 阻塞项
 - 无阻塞。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
-- **前端测试基线（#71 后）**：26 files / **128 tests** 全绿（#70 后 123 → #85 +3 → 126 → #71 +2 → 128）。
+- **前端测试基线（#72 后）**：27 files / **132 tests** 全绿（#71 后 128 → #72 +4 → 132）。
   漂移说明：#82 后 109，#67 新增 `alert-center-states.test.js` (+5) → 114，#68 新增 `task-list-loading.test.js` (+3) → 117。
 - **大屏数据链路（#62 实测）**：`useBigScreen` 5 处失败路径原仅 `console.error`；`analysisStore.fetchAll` 内部 `allSettled`，**失败不抛出**，失败信息落在 `store.error`（只记第一项）。
 - **拦截器兜底（勿重复弹窗）**：`api/request.js:82-166` 对每个失败请求已弹 ElMessage（业务码/HTTP 码/网络错误三类）。
@@ -27,10 +27,10 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#72 完成转 in-review（2026-10-12）**：移动端判定收敛为 Layout 单源（MobileNav 删自有 ref/listener/768 改 prop 受控；新增 `mobile-single-source.test.js` 4 用例）；提交 bbc4b41 → merge 73194bb @ main（已推送）；前端五门禁全绿（132/132）+ 后端 ruff clean。
 - **#71 完成转 in-review（2026-10-12）**：comment.vue 死 loading 绑定到图表与热门评论区（三 .charts-loading + 一 .hot-comments-loading；新增 `comment-loading.test.js` 2 用例）；提交 3dc6bfa → merge 00eefd8 @ main（已推送）；前端五门禁全绿（128/128）+ 后端 ruff clean。
 - **#85 完成转 in-review（2026-10-12）**：platform 对比/情感图接入真实口径（compareChart 读 total_* 真实字段；情感饼聚合 sentiment_distribution；空兜底零值+双空态；删假常量；新增 `platform-compare-real-data.test.js` 3 用例）；提交 106ddb3 → merge be657b6 @ main（已推送）；前端五门禁全绿（126/126）+ 后端 ruff clean。
 - **#70 完成转 in-review（2026-10-12）**：Profile.vue 补资料加载态（profileLoading 初始 true + skeleton/v-else；新增 `profile-loading.test.js` 2 用例）；提交 2f114b1 → merge ff4da46 @ main（已推送）；前端五门禁全绿（123/123）+ 后端 ruff clean。
-- **#69 完成转 in-review（2026-10-12）**：report.vue 补齐错误态（模板区 loading/error+重试+空成功空态；预览区 error+重试；守卫改依赖 reportError 根因；新增 `report-error-states.test.js` 4 用例）；提交 83b633d → merge 01a40ba @ main（已推送）；前端五门禁全绿（121/121）+ 后端 ruff clean。
 - **#69 完成转 in-review（2026-10-12）**：report.vue 补齐错误态（模板区 loading/error+重试+空成功空态；预览区 error+重试；守卫改依赖 reportError 根因；新增 `report-error-states.test.js` 4 用例）；提交 83b633d → merge 01a40ba @ main（已推送）；前端五门禁全绿（121/121）+ 后端 ruff clean。
 - **#68 完成转 in-review（2026-10-11）**：tasks.vue 两张表格补加载态（TaskList.vue 为 spiderHistory 绑定 spiderLoading，为 startupWarmupResults 绑定 startupLoading；tasks.vue 传入 prop；新增 `task-list-loading.test.js` 3 用例）；提交 1e6339d → merge 5305683 @ main（已推送）；前端五门禁全绿（117/117）+ 后端 ruff clean。
 - **#67 完成转 in-review（2026-10-11）**：alert 中心补齐错误态与规则空态（useAlert 增加 retryFetch/fetchError 并保留历史告警；center.vue 增加错误态重试条与规则空态；center.scss 补齐样式；新增 `alert-center-states.test.js` 5 用例）；提交 c424341 → merge f64318c @ main（已推送）；前端五门禁全绿（114/114）+ 后端 ruff clean。
