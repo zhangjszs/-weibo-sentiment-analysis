@@ -3,17 +3,17 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮执行中（#77、#78、#87、#79、#80 已完成转 in-review；#84 调查后转 blocked，无 in-progress）。本席 executor-20261012T1506Z。
-- 状态：in-review 5 项（#77、#78、#87、#79、#80）；blocked 1 项（#84，待 Planner 裁决）。
-- 剩余队列：ready-for-agent 2 个（#86, #81；#59 needs-info）。
-- 本轮起点 main `d09e034` → 现 main `1c123c7`（#84 零变更，无提交）。
+- 任务：本轮执行中（#77、#78、#87、#79、#80、#86 已完成转 in-review；#84 blocked；无 in-progress）。本席 executor-20261012T1506Z。
+- 状态：in-review 6 项；blocked 1 项（#84，待 Planner 裁决）。
+- 剩余队列：ready-for-agent 1 个（#81；#59 needs-info）。
+- 本轮起点 main `d09e034` → 现 main `3a0b33a`（6 merge 已推送；#84 零变更）。
 
 ## 阻塞项
 - #84（el-form 测试环境短路）：12 轮实证后确认测试环境内拦截不可达（表单层吞无键拒绝→恒 true；async-validator 本体健康；blur 亦死），约束内无解，已转 blocked；建议 Planner 做真实浏览器空提交对照后定夺（close / 另立生产 Bug）。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
-- **前端测试基线（#80 后）**：40 files / **185 tests** 全绿（#79 后 184 → #80 +1 → 185）。
+- **前端测试基线（#86 后）**：40 files / **187 tests** 全绿（#80 后 185 → #86 +2 → 187）。
   漂移说明：#82 后 109，#67 新增 `alert-center-states.test.js` (+5) → 114，#68 新增 `task-list-loading.test.js` (+3) → 117。
 - **大屏数据链路（#62 实测）**：`useBigScreen` 5 处失败路径原仅 `console.error`；`analysisStore.fetchAll` 内部 `allSettled`，**失败不抛出**，失败信息落在 `store.error`（只记第一项）。
 - **拦截器兜底（勿重复弹窗）**：`api/request.js:82-166` 对每个失败请求已弹 ElMessage（业务码/HTTP 码/网络错误三类）。
@@ -27,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#86 完成转 in-review（2026-10-12）**：formatDuration 收敛 utils 单源（2 处本地删除；`format-utils.test.js` +2 用例）；提交 25578f7 → merge 3a0b33a @ main（已推送）；前端五门禁全绿（187/187）+ 后端 ruff clean。
 - **#80 完成转 in-review（2026-10-12）**：home filters 受控更新（:model-value + Object.assign，const 保持；告警 1→0；新增 `home-filters-update.test.js` 1 用例）；提交 532d2a9 → merge 1c123c7 @ main（已推送）；前端五门禁全绿（185/185）+ 后端 ruff clean。
 - **#79 完成转 in-review（2026-10-12）**：静态 grep 替换真实挂载（icon-registration 重写 + element-plus 三元探针 + tabbar 路由记录挂载；三组 RED→GREEN 实证；只改测试未改源码）；提交 9caacfd → merge 53f8c57 @ main（已推送）；前端五门禁全绿（184/184）+ 后端 ruff clean。
 - **#87 完成转 in-review（2026-10-12）**：comment 热门评论空态（.hot-comments-empty/暂无热门评论，仅空非 loading 时显；新增 `comment-empty.test.js` 3 用例）；提交 cde0a13 → merge 5684b80 @ main（已推送）；前端五门禁全绿（184/184）+ 后端 ruff clean。
