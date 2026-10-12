@@ -31,6 +31,18 @@
             <span class="header-title">模型信息</span>
           </template>
           <div v-loading="loadingModelInfo" class="model-info">
+            <div v-if="modelInfoError" class="region-error model-info-error">
+              <span>{{ modelInfoError }}</span>
+              <el-button
+                link
+                type="primary"
+                size="small"
+                :loading="loadingModelInfo"
+                @click="retryLoadModelInfo"
+              >
+                重试
+              </el-button>
+            </div>
             <el-descriptions v-if="modelInfo" :column="1" border>
               <el-descriptions-item label="模型类型">
                 {{ modelInfo.model_type || 'TF-IDF + 分类器' }}
@@ -51,7 +63,7 @@
                 {{ modelInfo.last_updated || 'N/A' }}
               </el-descriptions-item>
             </el-descriptions>
-            <el-empty v-else description="暂无模型信息" />
+            <el-empty v-else-if="!modelInfoError" description="暂无模型信息" />
           </div>
         </el-card>
       </el-col>
@@ -183,6 +195,8 @@
     historyList,
     loadingModelInfo,
     modelInfo,
+    modelInfoError,
+    retryLoadModelInfo,
     gaugeChartRef,
     showBatchDialog,
     showBatchResultDialog,
