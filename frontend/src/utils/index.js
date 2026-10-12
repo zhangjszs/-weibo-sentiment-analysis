@@ -80,6 +80,14 @@ export function formatLocalMonthDay(value) {
   })
 }
 
+// D-2 后续（#86）：秒→ms/s 口径单源（收敛 useTasks/TaskProgress 旧本地实现）。
+export function formatDuration(seconds) {
+  if (seconds == null || Number.isNaN(Number(seconds))) return '-'
+  const value = Number(seconds)
+  if (value < 1) return `${Math.round(value * 1000)} ms`
+  return `${value.toFixed(3)} s`
+}
+
 export function formatRelativeTime(date) {
   if (!date) return '-'
 

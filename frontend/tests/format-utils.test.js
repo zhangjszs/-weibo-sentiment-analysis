@@ -17,6 +17,7 @@ import {
   formatDateTime,
   formatLocalDate,
   formatLocalMonthDay,
+  formatDuration,
 } from '../src/utils/index.js'
 
 describe('formatNumber 默认口径（#74 D-2）', () => {
@@ -94,5 +95,20 @@ describe('日期口径单源（#74 D-2）', () => {
     )
     expect(formatLocalMonthDay('')).toBe('')
     expect(formatLocalMonthDay(null)).toBe('')
+  })
+})
+
+describe('formatDuration 单源（#86）', () => {
+  it('毫秒与秒两态映射', () => {
+    expect(formatDuration(0.5)).toBe('500 ms')
+    expect(formatDuration(0)).toBe('0 ms')
+    expect(formatDuration(1)).toBe('1.000 s')
+    expect(formatDuration(2.34567)).toBe('2.346 s')
+  })
+
+  it('空值与非法输入守卫', () => {
+    expect(formatDuration(null)).toBe('-')
+    expect(formatDuration(undefined)).toBe('-')
+    expect(formatDuration('abc')).toBe('-')
   })
 })
