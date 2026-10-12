@@ -27,11 +27,32 @@
             </el-row>
 
             <el-form-item label="报告模板">
+              <div v-if="templatesLoading" class="region-loading templates-loading">
+                模板加载中...
+              </div>
+              <div v-if="templatesError" class="region-error templates-error">
+                <span>{{ templatesError }}</span>
+                <el-button
+                  link
+                  type="primary"
+                  size="small"
+                  :loading="templatesLoading"
+                  @click="retryTemplates"
+                >
+                  重试
+                </el-button>
+              </div>
               <el-radio-group v-model="reportForm.template">
                 <el-radio-button v-for="t in templates" :key="t.id" :label="t.id">
                   {{ t.name }}
                 </el-radio-button>
               </el-radio-group>
+              <el-empty
+                v-if="!templatesLoading && !templatesError && templates.length === 0"
+                description="暂无可用模板"
+                :image-size="60"
+                class="templates-empty"
+              />
             </el-form-item>
 
             <el-form-item label="数据来源">
@@ -79,6 +100,18 @@
           </template>
 
           <div v-loading="loadingDemo" class="preview-content">
+            <div v-if="reportError" class="region-error preview-error">
+              <span>{{ reportError }}</span>
+              <el-button
+                link
+                type="primary"
+                size="small"
+                :loading="loadingDemo"
+                @click="retryReportData"
+              >
+                重试
+              </el-button>
+            </div>
             <el-descriptions :column="1" border size="small">
               <el-descriptions-item label="总文章数">
                 {{ demoData.summary?.total_articles || 0 }}
@@ -192,6 +225,19 @@
 
   const templates = ref([])
 
+  // U-6（#69）：两路 fetch 各自的 loading / 错误态（#65 同款语义）。
+  // #19：失败只写错误态，从不清空已渲染旧数据、不伪装空态。
+  const templatesLoading = ref(false)
+  const templatesError = ref('')
+  const reportError = ref('')
+
+  const getErrorDetail = (error) => {
+    const serverMsg = error?.response?.data?.msg || error?.response?.data?.message
+    if (serverMsg) return serverMsg
+    if (error?.message) return error.message
+    return '网络错误'
+  }
+
   // 模板选择后自动同步 sections
   watch(
     () => reportForm.value.template,
@@ -218,35 +264,50 @@
   }
 
   const fetchTemplates = async () => {
+    templatesLoading.value = true
+    templatesError.value = ''
     try {
       const res = await getReportTemplates()
       if (res.code === 200) {
         templates.value = res.data.templates
+      } else {
+        templatesError.value = `获取报告模板失败：${res.msg || '服务端错误'}，请重试`
       }
     } catch (error) {
       console.error('获取模板失败:', error)
+      templatesError.value = `获取报告模板失败：${getErrorDetail(error)}，请重试`
+    } finally {
+      templatesLoading.value = false
     }
   }
 
   const fetchReportData = async () => {
     loadingDemo.value = true
+    reportError.value = ''
     try {
       const res = await getReportData({ demo: useDemoData.value })
       if (res.code === 200) {
         demoData.value = res.data
+      } else {
+        reportError.value = `获取报告数据失败：${res.msg || '服务端错误'}，请重试`
       }
     } catch (error) {
       console.error('获取报告数据失败:', error)
+      reportError.value = `获取报告数据失败：${getErrorDetail(error)}，请重试`
     } finally {
       loadingDemo.value = false
     }
   }
 
+  const retryTemplates = () => fetchTemplates()
+  const retryReportData = () => fetchReportData()
+
   const handleGenerate = async () => {
     // 空导出拦截：报告数据未加载成功（如 fetchReportData 失败只 console.error
     // 时 demoData 仍为空对象）就生成，只会产出一份空报告（#19）
+    // U-6（#69）：守卫改为依赖错误状态判断——失败时直接暴露 reportError 根因。
     if (!demoData.value || Object.keys(demoData.value).length === 0) {
-      ElMessage.warning('报告数据未加载，请先等待数据加载成功后再生成')
+      ElMessage.warning(reportError.value || '报告数据未加载，请先等待数据加载成功后再生成')
       return
     }
     generating.value = true
@@ -275,7 +336,7 @@
 
   const handleGenerateAll = async () => {
     if (!demoData.value || Object.keys(demoData.value).length === 0) {
-      ElMessage.warning('报告数据未加载，请先等待数据加载成功后再生成')
+      ElMessage.warning(reportError.value || '报告数据未加载，请先等待数据加载成功后再生成')
       return
     }
     generatingAll.value = true
@@ -336,6 +397,35 @@
 
 <style lang="scss" scoped>
   .report-container {
+    .region-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+    }
+
+    .region-error {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px dashed rgba(239, 68, 68, 0.4);
+      color: var(--el-color-danger);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .templates-empty {
+      margin-top: 8px;
+    }
+
     .generator-card {
       .el-radio-group {
         flex-wrap: wrap;
