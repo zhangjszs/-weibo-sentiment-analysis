@@ -86,7 +86,7 @@ describe('移动端判定单源（#72 R-1）', () => {
     // 全仓 JS 阈值断言锚点：所有 innerWidth 判定收敛于 checkMobile 单源函数
     // （#81 起含平板档，共 3 处），resize 监听仍唯一。
     // Mobile 端阈值语义不变（<768），#81 只在其旁扩展平板档。
-    const block = (LAYOUT_SOURCE.match(/const checkMobile[\s\S]*?\n  \}/) || [''])[0]
+    const block = (LAYOUT_SOURCE.match(/const checkMobile[\s\S]*?\n {2}\}/) || [''])[0]
     const inside = (block.match(/window\.innerWidth/g) || []).length
     const total = (LAYOUT_SOURCE.match(/window\.innerWidth/g) || []).length
     expect(inside).toBe(3)
