@@ -1,60 +1,70 @@
-import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
-import { join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 
 import { ICON_COMPONENTS } from '../src/plugins/elementPlus.js'
+import Help from '../src/views/system/Help.vue'
+import router from '../src/router/index.js'
 
-// #39：element-plus 组件与图标改为按需加载后，模板里以**字符串**形式引用
-// 的图标（icon="X"、icon: 'X'、动态三元）仍依赖最小全局注册（ICON_COMPONENTS）。
-// 本测试静态扫描源码，确保每个被字符串引用的图标都已注册，防止运行期图标
-// 静默消失。
+// #79（T-5）：原静态源码扫描（walk src + 正则）替换为真实挂载断言。
+// 注册表完整性不再读源码文本：逐个挂载验证每个注册名真实解析出 SVG；
+// 字符串引用不断链由真实消费者（Help 特性卡 `icon: 'X'`）挂载覆盖。
 
-const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const SRC = join(ROOT, 'src')
+const REGISTERED = Object.keys(ICON_COMPONENTS)
 
-function* walk(dir) {
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name)
-    const st = statSync(full)
-    if (st.isDirectory()) {
-      yield* walk(full)
-    } else if (/\.(vue|js)$/.test(name)) {
-      yield full
-    }
-  }
+const AllIconsProbe = {
+  setup() {
+    return { names: REGISTERED }
+  },
+  template: '<div><component v-for="n in names" :key="n" :is="n" /></div>',
 }
 
-describe('字符串图标引用的注册完整性（#39）', () => {
-  it('源码中所有字符串形式引用的图标都在 ICON_COMPONENTS 中注册', () => {
-    const referenced = new Set()
-    const patterns = [
-      /icon="([A-Z][A-Za-z]+)"/g, // icon="CircleCheck"
-      /icon: '([A-Z][A-Za-z]+)'/g, // icon: 'Document'（Help 特性卡等）
-      /:icon="'([A-Z][A-Za-z]+)'"/g, // :icon="'Search'"
-      /'(VideoPause|VideoPlay)'/g, // 动态三元字面量（BigScreen 播放/暂停）
-    ]
+let warnSpy
+const mountProbe = () => {
+  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  return mount(AllIconsProbe, {
+    // 复刻生产入口的全局图标注册
+    global: { components: ICON_COMPONENTS },
+  })
+}
 
-    for (const file of walk(SRC)) {
-      // plugins/elementPlus.js 是注册表本身，排除
-      if (file.endsWith('elementPlus.js')) continue
-      const content = readFileSync(file, 'utf8')
-      for (const re of patterns) {
-        for (const match of content.matchAll(re)) {
-          referenced.add(match[1])
-        }
-      }
+afterEach(() => {
+  warnSpy?.mockRestore()
+})
+
+describe('字符串图标引用的注册完整性（#39，真实挂载版）', () => {
+  it('每个注册名都真实解析并渲染出 SVG', async () => {
+    // 防空转：注册表非空
+    expect(REGISTERED.length).toBeGreaterThan(0)
+    const wrapper = mountProbe()
+    try {
+      await flushPromises()
+      // 每个注册图标恰好渲染一个 svg（缺注册即渲染空白，计数对不上）
+      expect(wrapper.findAll('svg')).toHaveLength(REGISTERED.length)
+      const noise = warnSpy.mock.calls.flat().join('\n')
+      expect(noise).not.toMatch(/Failed to resolve component/)
+    } finally {
+      wrapper.unmount()
     }
-
-    const registered = new Set(Object.keys(ICON_COMPONENTS))
-    const missing = [...referenced].filter((name) => !registered.has(name))
-    expect(missing).toEqual([])
   })
 
-  it('ICON_COMPONENTS 的每个键都是 @element-plus/icons-vue 的真实导出', async () => {
-    const icons = await import('@element-plus/icons-vue')
-    for (const name of Object.keys(ICON_COMPONENTS)) {
-      expect(icons[name], `未知图标名: ${name}`).toBeTruthy()
+  it('字符串引用消费者（Help 特性卡 icon: X）图标全部渲染', async () => {
+    const wrapper = mount(Help, {
+      global: {
+        plugins: [router],
+        // 字符串 icon 走全局组件解析，复刻生产注册
+        components: ICON_COMPONENTS,
+      },
+    })
+    try {
+      await flushPromises()
+      const icons = wrapper.findAll('.feature-icon')
+      // 防空转：特性卡真实存在
+      expect(icons.length).toBeGreaterThan(0)
+      for (const icon of icons) {
+        expect(icon.find('svg').exists()).toBe(true)
+      }
+    } finally {
+      wrapper.unmount()
     }
   })
 })
