@@ -3,10 +3,10 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮执行中（#77、#78、#87 已完成转 in-review，无 in-progress）。本席 executor-20261012T1358Z。
-- 状态：in-review 3 项（#77、#78、#87，待 Planner 验收）。
-- 剩余队列：ready-for-agent 5 个（#79, #80, #84, #86, #81；#59 needs-info）。
-- 本轮起点 main `d09e034` → 现 main `5684b80`（与 origin 同步，3 merge 已推送）。
+- 任务：本轮执行中（#77、#78、#87、#79 已完成转 in-review，无 in-progress）。本席 executor-20261012T1358Z。
+- 状态：in-review 4 项（#77、#78、#87、#79，待 Planner 验收）。
+- 剩余队列：ready-for-agent 4 个（#80, #84, #86, #81；#59 needs-info）。
+- 本轮起点 main `d09e034` → 现 main `53f8c57`（与 origin 同步，4 merge 已推送）。
 
 ## 阻塞项
 - 无阻塞。
@@ -27,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#79 完成转 in-review（2026-10-12）**：静态 grep 替换真实挂载（icon-registration 重写 + element-plus 三元探针 + tabbar 路由记录挂载；三组 RED→GREEN 实证；只改测试未改源码）；提交 9caacfd → merge 53f8c57 @ main（已推送）；前端五门禁全绿（184/184）+ 后端 ruff clean。
 - **#87 完成转 in-review（2026-10-12）**：comment 热门评论空态（.hot-comments-empty/暂无热门评论，仅空非 loading 时显；新增 `comment-empty.test.js` 3 用例）；提交 cde0a13 → merge 5684b80 @ main（已推送）；前端五门禁全绿（184/184）+ 后端 ruff clean。
 - **#78 完成转 in-review（2026-10-12）**：BigScreen 热门话题空态（.no-topics/暂无话题，仅空非 loading 非失败时显；新增 `bigscreen-topics-empty.test.js` 3 用例）；提交 0cc904f → merge 89cb8b2 @ main（已推送）；前端五门禁全绿（181/181）+ 后端 ruff clean。
 - **#77 完成转 in-review（2026-10-12）**：predict 模型信息错误态（modelInfoError + 重试；空态仅无错无数据时显；新增 `predict-model-error.test.js` 3 用例）；提交 e6383d0 → merge cba3445 @ main（已推送）；前端五门禁全绿（178/178）+ 后端 ruff clean。
