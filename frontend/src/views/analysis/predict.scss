@@ -72,6 +72,21 @@
 
   .model-info {
     padding: 8px 0;
+
+    .region-error {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px dashed rgba(239, 68, 68, 0.4);
+      color: var(--el-color-danger);
+      font-size: 13px;
+      line-height: 1.4;
+    }
   }
 
   .text-success {

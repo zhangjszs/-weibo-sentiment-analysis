@@ -11,6 +11,8 @@ export function usePredict() {
   const historyList = ref([])
   const loadingModelInfo = ref(false)
   const modelInfo = ref(null)
+  // U-9（#77）：模型信息加载错误态（与「暂无模型」空态区分，#65 同款语义）。
+  const modelInfoError = ref('')
 
   const gaugeChartRef = ref(null)
   const showBatchDialog = ref(false)
@@ -180,17 +182,25 @@ export function usePredict() {
 
   const loadModelInfo = async () => {
     loadingModelInfo.value = true
+    modelInfoError.value = ''
     try {
       const res = await getModelInfo()
       if (res.code === 200) {
         modelInfo.value = res.data
+      } else {
+        modelInfoError.value = `获取模型信息失败：${res.msg || '服务端错误'}，请重试`
       }
     } catch (error) {
       console.error('获取模型信息失败:', error)
+      const detail =
+        error?.response?.data?.msg || error?.response?.data?.message || error?.message || '网络错误'
+      modelInfoError.value = `获取模型信息失败：${detail}，请重试`
     } finally {
       loadingModelInfo.value = false
     }
   }
+
+  const retryLoadModelInfo = () => loadModelInfo()
 
   const handleFileChange = (file) => {
     const reader = new FileReader()
@@ -263,6 +273,8 @@ export function usePredict() {
     historyList,
     loadingModelInfo,
     modelInfo,
+    modelInfoError,
+    retryLoadModelInfo,
     gaugeChartRef,
     showBatchDialog,
     showBatchResultDialog,
