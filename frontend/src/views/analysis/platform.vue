@@ -180,6 +180,12 @@
             <span>各平台数据对比</span>
           </template>
           <BaseChart ref="compareChartRef" :options="compareChartOptions" height="300px" />
+          <el-empty
+            v-if="!compareLoading && !compareError && !hasCompareData"
+            description="暂无对比数据"
+            :image-size="60"
+            class="chart-empty compare-empty"
+          />
         </el-card>
 
         <el-card class="trend-card mt-4">
@@ -187,6 +193,12 @@
             <span>情感分布</span>
           </template>
           <BaseChart ref="sentimentChartRef" :options="sentimentChartOptions" height="250px" />
+          <el-empty
+            v-if="!compareLoading && !compareError && !hasSentimentData"
+            description="暂无情感分布数据"
+            :image-size="60"
+            class="chart-empty sentiment-empty"
+          />
         </el-card>
       </el-col>
     </el-row>
@@ -271,21 +283,71 @@
     return list
   })
 
-  const compareChartOptions = computed(() => ({
-    tooltip: { trigger: 'axis' },
-    legend: { data: ['内容数', '点赞数', '评论数'], textStyle: { fontSize: 10 } },
-    xAxis: {
-      type: 'category',
-      data: ['微博', '微信', '抖音', '知乎'],
-      axisLabel: { fontSize: 10 },
-    },
-    yAxis: { type: 'value' },
-    series: [
-      { name: '内容数', type: 'bar', data: [50, 30, 45, 25] },
-      { name: '点赞数', type: 'bar', data: [1200, 800, 1500, 900] },
-      { name: '评论数', type: 'bar', data: [300, 200, 400, 250] },
-    ],
-  }))
+  // U-12（#85）：对比/情感图改读 comparisonData 真实口径。
+  // 后端 POST /api/platform/compare 返回 data.comparison[platform] =
+  // {total_content, total_likes, total_comments, total_views, avg_*,
+  //  sentiment_distribution{positive,neutral,negative}, ...}。
+  // 缺失平台按 0 兜底；空 comparison 时图表画零值 + 模板显式空态
+  // （#52 教训：空数据不断言崩溃；此前写死的假常量已删除）。
+  const COMPARE_PLATFORMS = [
+    { id: 'weibo', name: '微博' },
+    { id: 'wechat', name: '微信' },
+    { id: 'douyin', name: '抖音' },
+    { id: 'zhihu', name: '知乎' },
+  ]
+  const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+
+  const compareChartOptions = computed(() => {
+    const pick = (id, key) => num(comparisonData.value?.[id]?.[key])
+    return {
+      tooltip: { trigger: 'axis' },
+      legend: { data: ['内容数', '点赞数', '评论数'], textStyle: { fontSize: 10 } },
+      xAxis: {
+        type: 'category',
+        data: COMPARE_PLATFORMS.map((p) => p.name),
+        axisLabel: { fontSize: 10 },
+      },
+      yAxis: { type: 'value' },
+      series: [
+        {
+          name: '内容数',
+          type: 'bar',
+          data: COMPARE_PLATFORMS.map((p) => pick(p.id, 'total_content')),
+        },
+        {
+          name: '点赞数',
+          type: 'bar',
+          data: COMPARE_PLATFORMS.map((p) => pick(p.id, 'total_likes')),
+        },
+        {
+          name: '评论数',
+          type: 'bar',
+          data: COMPARE_PLATFORMS.map((p) => pick(p.id, 'total_comments')),
+        },
+      ],
+    }
+  })
+
+  const sentimentTotals = computed(() => {
+    const totals = { positive: 0, neutral: 0, negative: 0 }
+    for (const p of COMPARE_PLATFORMS) {
+      const dist = comparisonData.value?.[p.id]?.sentiment_distribution
+      if (!dist) continue
+      for (const key of Object.keys(totals)) {
+        totals[key] += num(dist[key])
+      }
+    }
+    return totals
+  })
+
+  const hasCompareData = computed(() =>
+    COMPARE_PLATFORMS.some((p) => {
+      const c = comparisonData.value?.[p.id]
+      return c && num(c.total_content) + num(c.total_likes) + num(c.total_comments) > 0
+    })
+  )
+
+  const hasSentimentData = computed(() => Object.values(sentimentTotals.value).some((v) => v > 0))
 
   const sentimentChartOptions = computed(() => ({
     tooltip: { trigger: 'item' },
@@ -295,9 +357,21 @@
         type: 'pie',
         radius: ['40%', '70%'],
         data: [
-          { value: 45, name: '正面', itemStyle: { color: '#10B981' } },
-          { value: 30, name: '中性', itemStyle: { color: '#64748B' } },
-          { value: 25, name: '负面', itemStyle: { color: '#EF4444' } },
+          {
+            value: sentimentTotals.value.positive,
+            name: '正面',
+            itemStyle: { color: '#10B981' },
+          },
+          {
+            value: sentimentTotals.value.neutral,
+            name: '中性',
+            itemStyle: { color: '#64748B' },
+          },
+          {
+            value: sentimentTotals.value.negative,
+            name: '负面',
+            itemStyle: { color: '#EF4444' },
+          },
         ],
         label: { fontSize: 10 },
       },
@@ -574,6 +648,10 @@
     }
     .mb-4 {
       margin-bottom: 16px;
+    }
+
+    .chart-empty {
+      margin-top: 8px;
     }
   }
 </style>
