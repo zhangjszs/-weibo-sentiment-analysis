@@ -104,7 +104,7 @@
                   </div>
                 </div>
                 <div class="content-meta">
-                  <span class="publish-time">{{ formatTime(item.published_at) }}</span>
+                  <span class="publish-time">{{ formatLocalMonthDay(item.published_at) }}</span>
                 </div>
               </div>
 
@@ -115,19 +115,19 @@
               <div class="content-stats">
                 <span class="stat-item">
                   <el-icon><View /></el-icon>
-                  {{ formatNumber(item.view_count) }}
+                  {{ formatNumber(item.view_count, 1, { compact: 'wk' }) }}
                 </span>
                 <span class="stat-item">
                   <el-icon><Star /></el-icon>
-                  {{ formatNumber(item.like_count) }}
+                  {{ formatNumber(item.like_count, 1, { compact: 'wk' }) }}
                 </span>
                 <span class="stat-item">
                   <el-icon><ChatDotRound /></el-icon>
-                  {{ formatNumber(item.comment_count) }}
+                  {{ formatNumber(item.comment_count, 1, { compact: 'wk' }) }}
                 </span>
                 <span class="stat-item">
                   <el-icon><Share /></el-icon>
-                  {{ formatNumber(item.repost_count) }}
+                  {{ formatNumber(item.repost_count, 1, { compact: 'wk' }) }}
                 </span>
                 <el-tag :type="getSentimentType(item.sentiment)" size="small" class="sentiment-tag">
                   {{ getSentimentLabel(item.sentiment) }}
@@ -218,6 +218,7 @@
   } from '@element-plus/icons-vue'
   import BaseChart from '@/components/Charts/BaseChart.vue'
   import { getPlatformData, getPlatformStats, comparePlatforms } from '@/api/platform'
+  import { formatNumber, formatLocalMonthDay } from '@/utils'
 
   const activePlatform = ref('weibo')
   const demoMode = import.meta.env.VITE_DEMO_MODE === 'true'
@@ -255,11 +256,13 @@
   const currentStats = computed(() => {
     const stats = platformStats.value[activePlatform.value] || {}
     return [
-      { label: '内容总数', value: formatNumber(stats.total_content || 0) },
-      { label: '用户总数', value: formatNumber(stats.total_users || 0) },
+      { label: '内容总数', value: formatNumber(stats.total_content || 0, 1, { compact: 'wk' }) },
+      { label: '用户总数', value: formatNumber(stats.total_users || 0, 1, { compact: 'wk' }) },
       {
         label: '互动总量',
-        value: formatNumber((stats.total_likes || 0) + (stats.total_comments || 0)),
+        value: formatNumber((stats.total_likes || 0) + (stats.total_comments || 0), 1, {
+          compact: 'wk',
+        }),
       },
       { label: '增长率', value: `${((stats.growth_rate || 0) * 100).toFixed(1)}%` },
     ]
@@ -377,23 +380,6 @@
       },
     ],
   }))
-
-  const formatNumber = (num) => {
-    if (num >= 10000) return (num / 10000).toFixed(1) + 'w'
-    if (num >= 1000) return (num / 1000).toFixed(1) + 'k'
-    return num.toString()
-  }
-
-  const formatTime = (timeStr) => {
-    if (!timeStr) return ''
-    const date = new Date(timeStr)
-    return date.toLocaleDateString('zh-CN', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
 
   const getSentimentType = (sentiment) => {
     const types = { positive: 'success', neutral: 'info', negative: 'danger' }

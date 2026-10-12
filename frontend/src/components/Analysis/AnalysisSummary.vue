@@ -31,7 +31,8 @@
         <span class="source-label">数据范围：</span>
         <span class="source-value">
           <template v-if="meta.time_range?.start">
-            {{ formatDate(meta.time_range.start) }} ~ {{ formatDate(meta.time_range.end) }}
+            {{ formatLocalDate(meta.time_range.start) }} ~
+            {{ formatLocalDate(meta.time_range.end) }}
           </template>
           <template v-else>未指定</template>
           ｜ 数据量：{{ meta.data_count ?? '-' }}
@@ -56,6 +57,7 @@
   import { computed } from 'vue'
   import { DataAnalysis } from '@element-plus/icons-vue'
   import ProvenanceBadge from '@/components/Common/ProvenanceBadge.vue'
+  import { formatLocalDate } from '@/utils'
 
   const props = defineProps({
     meta: { type: Object, default: null },
@@ -74,15 +76,6 @@
     if (total === 0) return '暂无足够数据进行分析。'
     return `共采集到 ${total} 条相关内容进行分析。`
   })
-
-  function formatDate(iso) {
-    if (!iso) return '-'
-    try {
-      return new Date(iso).toLocaleDateString('zh-CN')
-    } catch {
-      return iso
-    }
-  }
 
   function formatIndex(meta) {
     const idx = meta?.data_count > 0 ? 'available' : '-'

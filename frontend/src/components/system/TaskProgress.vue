@@ -104,6 +104,7 @@
 
 <script setup>
   import { Refresh } from '@element-plus/icons-vue'
+  import { formatDateTime } from '@/utils'
 
   defineProps({
     spiderOverview: {
@@ -153,13 +154,6 @@
   })
 
   defineEmits(['refreshSpider', 'refreshStartup'])
-
-  const formatDateTime = (value) => {
-    if (!value) return '-'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '-'
-    return date.toLocaleString()
-  }
 
   const formatDuration = (seconds) => {
     if (seconds == null || Number.isNaN(Number(seconds))) return '-'
