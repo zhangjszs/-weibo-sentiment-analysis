@@ -83,9 +83,16 @@ describe('移动端判定单源（#72 R-1）', () => {
     expect(LAYOUT_SOURCE).toMatch(/window\.innerWidth < 768/)
     expect(LAYOUT_SOURCE).toMatch(/:is-mobile="isMobile"/)
 
-    // 全仓 JS 阈值断言锚点：两处源码合计仅一处 innerWidth 判定
-    const hits = (LAYOUT_SOURCE.match(/window\.innerWidth/g) || []).length
-    expect(hits).toBe(1)
+    // 全仓 JS 阈值断言锚点：所有 innerWidth 判定收敛于 checkMobile 单源函数
+    // （#81 起含平板档，共 3 处），resize 监听仍唯一。
+    // Mobile 端阈值语义不变（<768），#81 只在其旁扩展平板档。
+    const block = (LAYOUT_SOURCE.match(/const checkMobile[\s\S]*?\n  \}/) || [''])[0]
+    const inside = (block.match(/window\.innerWidth/g) || []).length
+    const total = (LAYOUT_SOURCE.match(/window\.innerWidth/g) || []).length
+    expect(inside).toBe(3)
+    expect(total).toBe(3)
+    const listeners = (LAYOUT_SOURCE.match(/addEventListener\('resize'/g) || []).length
+    expect(listeners).toBe(1)
   })
 
   it('桌面宽：侧边栏在、底部导航缺席', async () => {
