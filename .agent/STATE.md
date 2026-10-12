@@ -3,17 +3,17 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮执行中（#72、#73 已完成转 in-review，无 in-progress）。本席 executor-20261012T1135Z。
-- 状态：in-review 8 项（#67–#73 + #85，待 Planner 验收）。
-- 剩余队列：ready-for-agent 约 8 个（#74–#80, #84；#59 needs-info；#81 open 待 Planner 恢复 ready）。
-- 本轮起点 main `cb07597` → 现 main `df93fd8`（与 origin 同步，2 merge 已推送）。
+- 任务：本轮执行中（#72、#73、#74 已完成转 in-review，无 in-progress）。本席 executor-20261012T1135Z。
+- 状态：in-review 9 项（#67–#74 + #85，待 Planner 验收）。
+- 剩余队列：ready-for-agent 约 7 个（#75–#80, #84；#59 needs-info；#81 open 待 Planner 恢复 ready；新增 auto-discovered #86 待定级）。
+- 本轮起点 main `cb07597` → 现 main `bbe0732`（与 origin 同步，3 merge 已推送）。
 
 ## 阻塞项
 - 无阻塞。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
-- **前端测试基线（#73 后）**：28 files / **133 tests** 全绿（#72 后 132 → #73 +1 → 133）。
+- **前端测试基线（#74 后）**：29 files / **150 tests** 全绿（#73 后 133 → #74 +17 → 150）。
   漂移说明：#82 后 109，#67 新增 `alert-center-states.test.js` (+5) → 114，#68 新增 `task-list-loading.test.js` (+3) → 117。
 - **大屏数据链路（#62 实测）**：`useBigScreen` 5 处失败路径原仅 `console.error`；`analysisStore.fetchAll` 内部 `allSettled`，**失败不抛出**，失败信息落在 `store.error`（只记第一项）。
 - **拦截器兜底（勿重复弹窗）**：`api/request.js:82-166` 对每个失败请求已弹 ElMessage（业务码/HTTP 码/网络错误三类）。
@@ -27,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#74 完成转 in-review（2026-10-12）**：日期数字格式化收敛 utils 单源（formatNumber compact 'wk' + formatDateTime/formatLocalDate/formatLocalMonthDay；4 文件本地实现全删；新增 `format-utils.test.js` 17 用例；另立 auto-discovered #86 记录 formatDuration 残留重复）；提交 24ad448 → merge bbe0732 @ main（已推送）；前端五门禁全绿（150/150）+ 后端 ruff clean。
 - **#73 完成转 in-review（2026-10-12）**：热词页 8/16 分栏改响应式（:xs=24 :sm=8/16；新增 `hotwords-responsive.test.js` 1 用例）；提交 2eec5f0 → merge df93fd8 @ main（已推送）；前端五门禁全绿（133/133）+ 后端 ruff clean。
 - **#72 完成转 in-review（2026-10-12）**：移动端判定收敛为 Layout 单源（MobileNav 删自有 ref/listener/768 改 prop 受控；新增 `mobile-single-source.test.js` 4 用例）；提交 bbc4b41 → merge 73194bb @ main（已推送）；前端五门禁全绿（132/132）+ 后端 ruff clean。
 - **#71 完成转 in-review（2026-10-12）**：comment.vue 死 loading 绑定到图表与热门评论区（三 .charts-loading + 一 .hot-comments-loading；新增 `comment-loading.test.js` 2 用例）；提交 3dc6bfa → merge 00eefd8 @ main（已推送）；前端五门禁全绿（128/128）+ 后端 ruff clean。
