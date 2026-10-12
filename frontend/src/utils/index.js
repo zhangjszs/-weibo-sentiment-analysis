@@ -1,5 +1,17 @@
-export function formatNumber(num, decimals = 2) {
+export function formatNumber(num, decimals = 2, options = {}) {
   if (num === null || num === undefined) return '-'
+
+  // D-2（#74）：compact 'wk' 复刻 platform.vue 旧本地口径（w/k 缩写），
+  // 调用方显式 opt-in，默认 亿/万/k 口径不变。
+  if (options.compact === 'wk') {
+    if (num >= 10000) {
+      return (num / 10000).toFixed(decimals) + 'w'
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(decimals) + 'k'
+    }
+    return num.toString()
+  }
 
   if (num >= 100000000) {
     return (num / 100000000).toFixed(decimals) + '亿'
@@ -37,6 +49,35 @@ export function formatDate(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
     .replace('HH', hour)
     .replace('mm', minute)
     .replace('ss', second)
+}
+
+// D-2（#74）：本地 locale 日期口径单源（以下三函数分别收敛
+// AnalysisSummary / useTasks+TaskProgress / platform formatTime 的旧本地实现，
+// 可见输出与收敛前逐字一致）。
+export function formatDateTime(value) {
+  if (!value) return '-'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '-'
+  return date.toLocaleString()
+}
+
+export function formatLocalDate(value) {
+  if (!value) return '-'
+  try {
+    return new Date(value).toLocaleDateString('zh-CN')
+  } catch {
+    return value
+  }
+}
+
+export function formatLocalMonthDay(value) {
+  if (!value) return ''
+  return new Date(value).toLocaleDateString('zh-CN', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 export function formatRelativeTime(date) {

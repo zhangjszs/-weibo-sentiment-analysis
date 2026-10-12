@@ -2,6 +2,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getSpiderLogs, getSpiderOverview } from '@/api/spider'
 import { getStartupStatus, getTaskStatus } from '@/api/tasks'
+import { formatDateTime } from '@/utils'
 
 export function useTasks() {
   const spiderLoading = ref(false)
@@ -128,13 +129,6 @@ export function useTasks() {
     } finally {
       startupLoading.value = false
     }
-  }
-
-  const formatDateTime = (value) => {
-    if (!value) return '-'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return '-'
-    return date.toLocaleString()
   }
 
   const formatDuration = (seconds) => {
