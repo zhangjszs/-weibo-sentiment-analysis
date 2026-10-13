@@ -79,3 +79,22 @@
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 无（D-011/D-012 已于 2026-10-11 默认转正，本轮无新增 pending 事项）。
+
+## D-013 / 2026-10-14 / #90 CI 依赖提速选型
+
+- 问题：uv 迁移 / requirements 分层 / pip 自管缓存三选一。
+- Planner 决定：**方案 2 requirements 分层**（torch 系大包独立层 + 现有 pip 缓存）。
+- 理由：`uv.lock` 实为单包空壳，uv 迁移需从零锁定 + torch CPU index 适配，成本超预期且动 CI 安装路径；分层增量可回滚。验收放宽为 install 合计 <110s（<60s 需 uv 级改造，本轮不做）。
+- 影响范围：#90 已重写为 ready（P2）。
+
+## D-014 / 2026-10-14 / #92 慢测试治理选型
+
+- 问题：降规模 / session 缓存 / 标 slow 三选一。
+- Planner 决定：**方案 1 降规模保语义**；test_performance（#88 后 0.77s）移出范围维持观察；3.01s ×2 只归因不修；session 缓存等 #91 结论；标 slow 需另行决策。
+- 影响范围：#92 已重写为 ready（P3）。
+
+## D-015 / 2026-10-14 / #81 验收备注
+
+- 问题：执行报告“lint 退出码 0”与 CI 史实（a03c720 frontend-fast no-regex-spaces 红灯）不符。
+- Planner 决定：**通过不 reopen**——交付物本身无问题，lint 瑕疵已由 50ade33 修复且现 main 全绿；reopen 无剩余工作。备注已记入验收 comment，后续 lint 声称以 CI 为准。
+- 影响范围：#81 关闭。
