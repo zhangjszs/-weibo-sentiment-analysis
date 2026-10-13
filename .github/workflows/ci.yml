@@ -97,7 +97,7 @@ jobs:
   # PR 即跑（此前只在 main push 后跑，坏迁移合入才爆）；external/slow 仍手动/定时。
   integration:
     runs-on: ubuntu-latest
-    needs: [backend-fast, frontend-fast]
+    needs: [backend-fast]
 
     services:
       mysql:
