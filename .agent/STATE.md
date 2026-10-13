@@ -3,10 +3,11 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：本轮收尾（7 完成转 in-review + #84 blocked，无 in-progress；ready 队列已清空）。本席 executor-20261012T1506Z。
-- 状态：in-review 7 项（#77、#78、#87、#79、#80、#86、#81）；blocked 1 项（#84，待 Planner 裁决）。
-- 剩余队列：无 ready（#59 needs-info；#84 blocked）。
-- 本轮起点 main `d09e034` → 现 main `abb3b98`（7 merge 已推送；#84 零变更）。
+- 任务：PERF 轮（#88、#89 完成转 in-review，ready 队列清空）。本席 executor-20261013T0130Z。
+- 状态：in-review 9 项（#77、#78、#87、#79、#80、#86、#81、#88、#89）；blocked 1 项（#84，待 Planner 裁决）。
+- 剩余队列：无 ready（#59 needs-info；#84 blocked；#90-#93 needs-triage 待 Planner 定级补全）。
+- 本轮起点 main `50ade33` → 现 main `3a0471c`（2 merge 已推送）。CI 全绿（run 38407777184 三 job success + Security success）。
+- 后端 fast gate 本地基线更新：182.9s → **34.9s**（#88 落地后实测）；前端测试基线仍 41 files / 190 tests（本轮未动前端用例）。
 
 ## 阻塞项
 - #84（el-form 测试环境短路）：12 轮实证后确认测试环境内拦截不可达（表单层吞无键拒绝→恒 true；async-validator 本体健康；blur 亦死），约束内无解，已转 blocked；建议 Planner 做真实浏览器空提交对照后定夺（close / 另立生产 Bug）。
@@ -27,6 +28,8 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#89 完成转 in-review（2026-10-13）**：ci.yml integration needs 去掉 frontend-fast（1 行；job 内零前端引用已 grep 实证；YAML 解析通过）；提交 2caabe8 → merge 3a0471c @ main（已推送）；CI 全绿核对通过（integration 紧随 backend 启动，不再等 frontend；本次 frontend 本就更快，1m19s 为结构性收益）。
+- **#88 完成转 in-review（2026-10-13）**：conftest 会话级强制 jti 黑名单内存回退（+7 行；定向 43 passed/5s；fast gate 182.9s→34.9s，-81%；ruff clean；计数 1460/69/196 与基线一致）；提交 4cd99a6 → merge b19432a @ main（已推送）；CI backend-fast success 不回归。
 - **#81 完成转 in-review（2026-10-12）**：平板档差异化（Layout checkMobile 单源扩展 isTablet + provide；home R-2 条件 sm 中间档；新增 `tablet-tier.test.js` 3 用例；mobile-single-source 计数断言连带更新）；提交 d5a1312 → merge abb3b98 @ main（已推送）；前端五门禁全绿（190/190）+ 后端 ruff clean。
 - **#86 完成转 in-review（2026-10-12）**：formatDuration 收敛 utils 单源（2 处本地删除；`format-utils.test.js` +2 用例）；提交 25578f7 → merge 3a0b33a @ main（已推送）；前端五门禁全绿（187/187）+ 后端 ruff clean。
 - **#80 完成转 in-review（2026-10-12）**：home filters 受控更新（:model-value + Object.assign，const 保持；告警 1→0；新增 `home-filters-update.test.js` 1 用例）；提交 532d2a9 → merge 1c123c7 @ main（已推送）；前端五门禁全绿（185/185）+ 后端 ruff clean。
