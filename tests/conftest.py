@@ -68,6 +68,13 @@ configure_sandbox_temp_dir()
 def apply_sandbox_temp_dir() -> None:
     configure_sandbox_temp_dir()
 
+    # jti 黑名单不走真 Redis：与 Celery memory:// 同理。避免无 Redis 环境
+    # 下首个鉴权测试阻塞在 TCP 连接超时（本地实测 134s）。
+    from utils import token_blacklist
+
+    token_blacklist._client = None
+    token_blacklist._client_checked = True
+
 
 @pytest.fixture(autouse=True)
 def _reset_spider_state():
