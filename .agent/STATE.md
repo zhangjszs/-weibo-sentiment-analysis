@@ -3,10 +3,10 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：M6 PERF 轮（#91 完成转 in-review；下一棒 #92）。本席 executor-20261014Z。
-- 状态：in-review 1 项（#91）；ready 3 项（#90、#92、#93，其中 #93 为后备）。
-- 本轮起点 main `83b2e3b` → 现 main `7be3df9`（#91 docs merge 已推送）。CI 回归旁观中（本任务无 CI 文件改动）。
-- 后端 fast gate 本机基线（无覆盖率口径）：串行 50.42s；-n 4：30.64s/31.55s；-n 8：25.20s（#91 实测；与 #88 机 34.9s 系机器方差）。前端测试基线仍 41 files / 190 tests（本轮未动前端用例）。
+- 任务：M6 PERF 轮（#91、#92 完成转 in-review；下一棒 #90）。本席 executor-20261014Z。
+- 状态：in-review 2 项（#91、#92）；ready 2 项（#90 今日队列、#93 后备）。
+- 本轮起点 main `83b2e3b` → 现 main `0730b7f`（#91 docs merge 7be3df9 + #92 test merge 0730b7f，均已推送）。CI 回归旁观中（test/docs 改动）。
+- 后端 fast gate 本机基线（无覆盖率口径）：#92 后串行 39.33s（改前 47.98s，-18%）；-n 4：~31s；-n 8：25.2s（#91 实测）。前端测试基线仍 41 files / 190 tests（本轮未动前端用例）。
 
 ## 阻塞项
 - #84（历史）：曾 blocked，已由 Planner 在上轮关闭，不再是阻塞项；勿重开。
@@ -27,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#92 完成转 in-review（2026-10-14）**：sentiment_model 评估 ×2 取 NB+LogReg 子集（5.60/5.63s → 2.53/2.37s，断言未动）+ model_training 抽样 500 条补 2 断言 + 3.01s×2 归因（/ready redis 3s 超时，CI 同样中招，不修）+ test_performance 0.83s 记录；gate 47.98s → 39.33s（计数一致）；提交 23818f3 → merge 0730b7f @ main（已推送）；ruff clean。
 - **#91 完成转 in-review（2026-10-14）**：xdist 本机灰度三轮全绿（串行 50.42s → -n 4：30.64s/31.55s → -n 8：25.20s；计数 1460/69 一致，collect-only 1526/1722 选择一致；零顺序污染）+ TEST_PERF §6/§7 回写；结论暂不纳入 AGENTS.md 默认门禁（xdist 未进 requirements）；提交 12336ba → merge 7be3df9 @ main（已推送）；无 src 改动故 ruff/覆盖率全量/CI 逐项说明未跑原因，见执行报告。
 - **#89 完成转 in-review（2026-10-13）**：ci.yml integration needs 去掉 frontend-fast（1 行；job 内零前端引用已 grep 实证；YAML 解析通过）；提交 2caabe8 → merge 3a0471c @ main（已推送）；CI 全绿核对通过（integration 紧随 backend 启动，不再等 frontend；本次 frontend 本就更快，1m19s 为结构性收益）。
 - **#88 完成转 in-review（2026-10-13）**：conftest 会话级强制 jti 黑名单内存回退（+7 行；定向 43 passed/5s；fast gate 182.9s→34.9s，-81%；ruff clean；计数 1460/69/196 与基线一致）；提交 4cd99a6 → merge b19432a @ main（已推送）；CI backend-fast success 不回归。

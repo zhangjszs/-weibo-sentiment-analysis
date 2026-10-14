@@ -9,7 +9,7 @@
 | # | 标题 | P | 状态 | 备注 |
 |---|---|---|---|---|
 | #91 | 本地并行化评估：引入 pytest-xdist | P2 | in-review | 三轮全绿 50.42s→30.64s/31.55s→25.20s；§6/§7 已回写；结论：暂不纳入默认门禁 |
-| #92 | 慢测试治理：sentiment_model ×2 降规模 | P3 | ready-for-agent | 用串行门禁测量，与 #91 错开跑 |
+| #92 | 慢测试治理：sentiment_model ×2 降规模 | P3 | in-review | gate 47.98s→39.33s（-18%）；3.01s×2 已归因（/ready redis 3s 超时）；perf 0.83s 不动 |
 | #90 | CI：Python 依赖安装提速 | P2 | ready-for-agent | CI 迭代慢（每次 push 约 5 分钟），放最后 |
 
 ## 后备（ready，本轮不进队列）
