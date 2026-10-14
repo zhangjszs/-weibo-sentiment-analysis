@@ -9,10 +9,37 @@ import pytest
 pytestmark = pytest.mark.unit
 
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+
+@contextmanager
+def _available_font():
+    """#92：测试进程无 SimHei/YaHei/SimSun（trainModel 默认中文字体），
+    headless 下切可用的 DejaVu Sans 消 findfont 噪声；boxplot/tight_layout
+    照常执行，崩溃覆盖不丢。生产默认（CJK 优先）零改动。
+    （注：实测切字体不降时，主耗时在 CV 进程开销，见 _downscaled_models。）"""
+    import matplotlib
+
+    with matplotlib.rc_context({"font.family": "DejaVu Sans"}):
+        yield
+
+
+def _downscaled_models():
+    """#92 降规模：只取 MODELS 中 NaiveBayes + LogReg（真实配置实例，零修改）。
+
+    实测本机每模型 CV 固定开销 ~1.2s（loky spawn + worker 内 jieba 载入，
+    与数据量/树数无关——RF 300→25 树已验证无效），降模型数是唯一有效杠杆。
+    调用方断言一行未动；生产配置零改动（patch 仅作用于 with 块内）。
+    覆盖说明：移出的 RF/LinearSVM 其 CV 路径与保留两者完全一致；
+    本断言本就只查 dict 非空/类型，不校验逐模型数值。
+    """
+    from model.trainModel import MODELS
+
+    return {"NaiveBayes": MODELS["NaiveBayes"], "LogReg": MODELS["LogReg"]}
 
 
 class TestSentimentModel:
@@ -329,7 +356,8 @@ class TestModelEvaluation:
         """测试模型评估"""
         from model.trainModel import evaluate_models
 
-        results = evaluate_models(sample_dataframe, k_folds=2, scoring="macro_f1")
+        with patch("model.trainModel.MODELS", _downscaled_models()), _available_font():
+            results = evaluate_models(sample_dataframe, k_folds=2, scoring="macro_f1")
 
         assert results is not None
         assert isinstance(results, dict)
@@ -341,7 +369,8 @@ class TestModelEvaluation:
         min_class = sample_dataframe["label"].value_counts().min()
 
         if min_class < 5:
-            results = evaluate_models(sample_dataframe, scoring="macro_f1")
+            with patch("model.trainModel.MODELS", _downscaled_models()), _available_font():
+                results = evaluate_models(sample_dataframe, scoring="macro_f1")
             assert results is not None
 
 

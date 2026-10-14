@@ -22,6 +22,8 @@ def test_model_training():
     print("\n=== 测试模型训练 ===")
     base_dir = Path(__file__).resolve().parent.parent / "src" / "model"
     df = load_data(base_dir / "target.csv")
+    # #92 降规模：固定种子抽样 500 条（全量 1472 条），训练路径/产物/落盘行为不变
+    df = df.sample(n=min(500, len(df)), random_state=42).reset_index(drop=True)
     print(f"加载数据: {len(df)} 条")
 
     # 训练模型
@@ -29,6 +31,9 @@ def test_model_training():
     model = train_best_model(df)
     training_time = time.time() - start_time
     print(f"训练时间: {training_time:.2f} 秒")
+
+    assert model is not None
+    assert hasattr(model, "predict")
 
     return model
 
