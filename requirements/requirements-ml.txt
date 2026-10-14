@@ -1,0 +1,20 @@
+# ===========================================
+# 微博舆情分析系统 - 重型 ML 依赖层（低频变更）
+# （#90 CI 依赖分层：torch 系大包独立成层，利用 pip 缓存分层命中）
+# 安装（CPU 版 torch，避免拉数 GB 的 CUDA 包）：
+#   pip install -r requirements/requirements-ml.txt \
+#     --extra-index-url https://download.pytorch.org/whl/cpu
+# 说明：版本号与拆分前 requirements.txt 内完全一致（verbatim 迁移，
+#   零漂移）；CI 先装本层再装基础层；Docker/部署脚本两层都装（见各调用方）。
+# ===========================================
+
+# 科学计算核心（大包）
+scikit-learn~=1.6.1
+
+# BERT 情感分析（Phase 3，大包）
+transformers~=4.44
+torch>=2.2,<3.0
+onnxruntime>=1.17
+optimum[onnxruntime]>=1.17
+sentencepiece>=0.2
+huggingface_hub>=0.20
