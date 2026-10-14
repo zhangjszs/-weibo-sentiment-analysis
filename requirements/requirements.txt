@@ -4,8 +4,9 @@
 # ===========================================
 # torch 安装 CPU 版本（避免拉 GPU 大包）：
 #   pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
-# 完整安装：
-#   pip install -r requirements/requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+# 完整安装（两层，顺序：ML 层先）：
+#   pip install -r requirements/requirements-ml.txt --extra-index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
 # ===========================================
 
 # 基础依赖
@@ -13,7 +14,6 @@ jieba==0.42.1
 snownlp==0.12.3
 pandas~=2.2.3
 numpy~=2.2.3
-scikit-learn~=1.6.1
 PyMySQL==1.1.1
 matplotlib>=3.8.0
 wordcloud==1.9.4
@@ -66,13 +66,9 @@ joblib>=1.0
 seaborn>=0.12
 emoji>=2.0
 
-# BERT 情感分析（Phase 3）
-transformers~=4.44
-torch>=2.2,<3.0
-onnxruntime>=1.17
-optimum[onnxruntime]>=1.17
-sentencepiece>=0.2
-huggingface_hub>=0.20
+# 说明：重型 ML 依赖（torch / transformers / scikit-learn 等）已拆至
+# requirements-ml.txt（#90 CI 依赖分层），本文件不再重复声明；
+# 需全量安装时两层都装（CI / Dockerfile / scripts/deploy.py 均已同步）。
 
 # 其他工具
 jsonpath>=0.82

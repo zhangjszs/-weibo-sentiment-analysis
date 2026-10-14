@@ -29,13 +29,21 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: |
+            requirements/requirements-ml.txt
+            requirements/requirements.txt
+            requirements/requirements-dev.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # CPU 版 torch（默认会拉数 GB 的 CUDA 包，又慢又 OOM），见 requirements 注释
-          pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt \
+          # ML 大包层（低频变更，#90 分层；CPU 版 torch，避免拉数 GB 的 CUDA 包）
+          pip install -r requirements/requirements-ml.txt \
             --extra-index-url https://download.pytorch.org/whl/cpu
+          # 基础层 + 开发层（不再经过 PyTorch CPU 索引，解析更快）
+          pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
+          # 关键包版本漂移探针（#90 验收证据：只回显，不阻断）
+          pip freeze | grep -Ei "^(torch|transformers|scikit-learn|numpy|scipy)==" || true
 
       - name: Ruff check
         run: ruff check src/ tests/
@@ -130,12 +138,21 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: |
+            requirements/requirements-ml.txt
+            requirements/requirements.txt
+            requirements/requirements-dev.txt
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt \
+          # ML 大包层（低频变更，#90 分层；CPU 版 torch，避免拉数 GB 的 CUDA 包）
+          pip install -r requirements/requirements-ml.txt \
             --extra-index-url https://download.pytorch.org/whl/cpu
+          # 基础层 + 开发层（不再经过 PyTorch CPU 索引，解析更快）
+          pip install -r requirements/requirements.txt -r requirements/requirements-dev.txt
+          # 关键包版本漂移探针（#90 验收证据：只回显，不阻断）
+          pip freeze | grep -Ei "^(torch|transformers|scikit-learn|numpy|scipy)==" || true
 
       - name: Initialize test database
         env:

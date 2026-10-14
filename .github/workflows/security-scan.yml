@@ -29,7 +29,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install bandit safety pip-audit
-        pip install -r requirements/requirements.txt
+        pip install -r requirements/requirements-ml.txt -r requirements/requirements.txt
     
     # 扫描器默认「报告而不阻断」：发现写入报告产物，退出码不使 CI 失败，
     # 避免依赖 CVE 长期把常驻状态检查染红而掩盖真实回归。
