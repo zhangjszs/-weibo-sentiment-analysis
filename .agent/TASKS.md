@@ -8,7 +8,7 @@
 
 | # | 标题 | P | 状态 | 备注 |
 |---|---|---|---|---|
-| #91 | 本地并行化评估：引入 pytest-xdist | P2 | ready-for-agent | 先跑：本地验证快，结论影响后续测量口径；含 TEST_PERF §6 回写（一并刷新 §7 状态） |
+| #91 | 本地并行化评估：引入 pytest-xdist | P2 | in-review | 三轮全绿 50.42s→30.64s/31.55s→25.20s；§6/§7 已回写；结论：暂不纳入默认门禁 |
 | #92 | 慢测试治理：sentiment_model ×2 降规模 | P3 | ready-for-agent | 用串行门禁测量，与 #91 错开跑 |
 | #90 | CI：Python 依赖安装提速 | P2 | ready-for-agent | CI 迭代慢（每次 push 约 5 分钟），放最后 |
 

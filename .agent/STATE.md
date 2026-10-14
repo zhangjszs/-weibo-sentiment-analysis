@@ -3,14 +3,13 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：PERF 轮（#88、#89 完成转 in-review，ready 队列清空）。本席 executor-20261013T0130Z。
-- 状态：in-review 9 项（#77、#78、#87、#79、#80、#86、#81、#88、#89）；blocked 1 项（#84，待 Planner 裁决）。
-- 剩余队列：无 ready（#59 needs-info；#84 blocked；#90-#93 needs-triage 待 Planner 定级补全）。
-- 本轮起点 main `50ade33` → 现 main `3a0471c`（2 merge 已推送）。CI 全绿（run 38407777184 三 job success + Security success）。
-- 后端 fast gate 本地基线更新：182.9s → **34.9s**（#88 落地后实测）；前端测试基线仍 41 files / 190 tests（本轮未动前端用例）。
+- 任务：M6 PERF 轮（#91 完成转 in-review；下一棒 #92）。本席 executor-20261014Z。
+- 状态：in-review 1 项（#91）；ready 3 项（#90、#92、#93，其中 #93 为后备）。
+- 本轮起点 main `83b2e3b` → 现 main `7be3df9`（#91 docs merge 已推送）。CI 回归旁观中（本任务无 CI 文件改动）。
+- 后端 fast gate 本机基线（无覆盖率口径）：串行 50.42s；-n 4：30.64s/31.55s；-n 8：25.20s（#91 实测；与 #88 机 34.9s 系机器方差）。前端测试基线仍 41 files / 190 tests（本轮未动前端用例）。
 
 ## 阻塞项
-- #84（el-form 测试环境短路）：12 轮实证后确认测试环境内拦截不可达（表单层吞无键拒绝→恒 true；async-validator 本体健康；blur 亦死），约束内无解，已转 blocked；建议 Planner 做真实浏览器空提交对照后定夺（close / 另立生产 Bug）。
+- #84（历史）：曾 blocked，已由 Planner 在上轮关闭，不再是阻塞项；勿重开。
 
 ## 关键事实（已实测验证）
 - **前端规模（#68 后）**：.js 32（api 14 · utils 5 · stores 4 · composables 6 · router 1 · plugins 1 · main.js）· .vue 45（views 6305 行 · components 3322 行）· JS+Vue 合计 13,731 行。
@@ -28,6 +27,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#91 完成转 in-review（2026-10-14）**：xdist 本机灰度三轮全绿（串行 50.42s → -n 4：30.64s/31.55s → -n 8：25.20s；计数 1460/69 一致，collect-only 1526/1722 选择一致；零顺序污染）+ TEST_PERF §6/§7 回写；结论暂不纳入 AGENTS.md 默认门禁（xdist 未进 requirements）；提交 12336ba → merge 7be3df9 @ main（已推送）；无 src 改动故 ruff/覆盖率全量/CI 逐项说明未跑原因，见执行报告。
 - **#89 完成转 in-review（2026-10-13）**：ci.yml integration needs 去掉 frontend-fast（1 行；job 内零前端引用已 grep 实证；YAML 解析通过）；提交 2caabe8 → merge 3a0471c @ main（已推送）；CI 全绿核对通过（integration 紧随 backend 启动，不再等 frontend；本次 frontend 本就更快，1m19s 为结构性收益）。
 - **#88 完成转 in-review（2026-10-13）**：conftest 会话级强制 jti 黑名单内存回退（+7 行；定向 43 passed/5s；fast gate 182.9s→34.9s，-81%；ruff clean；计数 1460/69/196 与基线一致）；提交 4cd99a6 → merge b19432a @ main（已推送）；CI backend-fast success 不回归。
 - **#81 完成转 in-review（2026-10-12）**：平板档差异化（Layout checkMobile 单源扩展 isTablet + provide；home R-2 条件 sm 中间档；新增 `tablet-tier.test.js` 3 用例；mobile-single-source 计数断言连带更新）；提交 d5a1312 → merge abb3b98 @ main（已推送）；前端五门禁全绿（190/190）+ 后端 ruff clean。
