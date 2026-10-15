@@ -240,6 +240,14 @@ def create_app() -> Flask:
 
     app = Flask(__name__)
 
+    # ---- wire: 可观测性（OTel，默认关闭；OTEL_ENABLED=1 启用，见 #99）----
+    try:
+        from utils.observability import init_otel
+
+        init_otel(app)
+    except Exception as exc:  # pragma: no cover - 观测失败绝不阻断启动
+        logger.warning(f"可观测性初始化失败（已降级为无观测）: {exc}")
+
     # ---- wire: 响应压缩 ----
     Compress(app)
     app.config["COMPRESS_ALGORITHM"] = ["br", "gzip", "deflate"]

@@ -1,0 +1,468 @@
+{
+    "name": "GET /ping",
+    "context": {
+        "trace_id": "0x218fb001954bdc52033be440f5358240",
+        "span_id": "0xaaca39c2808fffa1",
+        "trace_state": "[]"
+    },
+    "kind": "SpanKind.SERVER",
+    "parent_id": null,
+    "start_time": "2026-10-15T07:24:05.252765Z",
+    "end_time": "2026-10-15T07:24:05.253290Z",
+    "status": {
+        "status_code": "UNSET"
+    },
+    "attributes": {
+        "http.method": "GET",
+        "http.server_name": "localhost",
+        "http.scheme": "http",
+        "net.host.name": "localhost",
+        "http.host": "localhost",
+        "net.host.port": 80,
+        "http.target": "/ping",
+        "net.peer.ip": "127.0.0.1",
+        "http.user_agent": "Werkzeug/3.1.8",
+        "http.flavor": "1.1",
+        "http.route": "/ping",
+        "http.status_code": 200
+    },
+    "events": [],
+    "links": [],
+    "resource": {
+        "attributes": {
+            "telemetry.sdk.language": "python",
+            "telemetry.sdk.name": "opentelemetry",
+            "telemetry.sdk.version": "1.45.1",
+            "service.instance.id": "e04d1eb8-e19f-4bd5-865c-c5a4a20274a7",
+            "service.name": "weibo-sentiment-analysis"
+        },
+        "schema_url": ""
+    }
+}
+{
+    "resource_metrics": [
+        {
+            "resource": {
+                "attributes": {
+                    "telemetry.sdk.language": "python",
+                    "telemetry.sdk.name": "opentelemetry",
+                    "telemetry.sdk.version": "1.45.1",
+                    "service.instance.id": "e04d1eb8-e19f-4bd5-865c-c5a4a20274a7",
+                    "service.name": "weibo-sentiment-analysis"
+                },
+                "schema_url": ""
+            },
+            "scope_metrics": [
+                {
+                    "scope": {
+                        "name": "opentelemetry.instrumentation.flask",
+                        "version": "0.66b1",
+                        "schema_url": "https://opentelemetry.io/schemas/1.11.0",
+                        "attributes": null
+                    },
+                    "metrics": [
+                        {
+                            "name": "http.server.active_requests",
+                            "description": "Measures the number of concurrent HTTP requests that are currently in-flight.",
+                            "unit": "requests",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "http.method": "GET",
+                                            "http.server_name": "localhost",
+                                            "http.scheme": "http",
+                                            "http.host": "localhost",
+                                            "http.flavor": "1.1"
+                                        },
+                                        "start_time_unix_nano": 1792049045252863967,
+                                        "time_unix_nano": 1792049045253906011,
+                                        "value": 0,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2,
+                                "is_monotonic": false
+                            }
+                        },
+                        {
+                            "name": "http.server.duration",
+                            "description": "Measures the duration of inbound HTTP requests.",
+                            "unit": "ms",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "http.method": "GET",
+                                            "http.server_name": "localhost",
+                                            "http.scheme": "http",
+                                            "net.host.name": "localhost",
+                                            "http.host": "localhost",
+                                            "net.host.port": 80,
+                                            "http.flavor": "1.1",
+                                            "http.status_code": 200,
+                                            "http.target": "/ping"
+                                        },
+                                        "start_time_unix_nano": 1792049045253613998,
+                                        "time_unix_nano": 1792049045253906011,
+                                        "count": 1,
+                                        "sum": 1,
+                                        "bucket_counts": [
+                                            0,
+                                            1,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "explicit_bounds": [
+                                            0.0,
+                                            5.0,
+                                            10.0,
+                                            25.0,
+                                            50.0,
+                                            75.0,
+                                            100.0,
+                                            250.0,
+                                            500.0,
+                                            750.0,
+                                            1000.0,
+                                            2500.0,
+                                            5000.0,
+                                            7500.0,
+                                            10000.0
+                                        ],
+                                        "min": 1,
+                                        "max": 1,
+                                        "exemplars": [
+                                            {
+                                                "filtered_attributes": {},
+                                                "value": 1,
+                                                "time_unix_nano": 1792049045253533145,
+                                                "span_id": 12306712439286661025,
+                                                "trace_id": 44610592141196085698308234841708397120
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "aggregation_temporality": 2
+                            }
+                        }
+                    ],
+                    "schema_url": "https://opentelemetry.io/schemas/1.11.0"
+                },
+                {
+                    "scope": {
+                        "name": "weibo-sentiment",
+                        "version": "",
+                        "schema_url": "",
+                        "attributes": null
+                    },
+                    "metrics": [
+                        {
+                            "name": "weibo.sentiment.analyze.count",
+                            "description": "sync sentiment analyses",
+                            "unit": "",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "mode": "simple",
+                                            "ok": "true"
+                                        },
+                                        "start_time_unix_nano": 1792049045253829266,
+                                        "time_unix_nano": 1792049045253906011,
+                                        "value": 1,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2,
+                                "is_monotonic": true
+                            }
+                        },
+                        {
+                            "name": "weibo.sentiment.analyze.duration",
+                            "description": "sync sentiment analysis duration",
+                            "unit": "ms",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "mode": "simple",
+                                            "ok": "true"
+                                        },
+                                        "start_time_unix_nano": 1792049045253882266,
+                                        "time_unix_nano": 1792049045253906011,
+                                        "count": 1,
+                                        "sum": 12.5,
+                                        "bucket_counts": [
+                                            0,
+                                            0,
+                                            0,
+                                            1,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "explicit_bounds": [
+                                            0.0,
+                                            5.0,
+                                            10.0,
+                                            25.0,
+                                            50.0,
+                                            75.0,
+                                            100.0,
+                                            250.0,
+                                            500.0,
+                                            750.0,
+                                            1000.0,
+                                            2500.0,
+                                            5000.0,
+                                            7500.0,
+                                            10000.0
+                                        ],
+                                        "min": 12.5,
+                                        "max": 12.5,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2
+                            }
+                        }
+                    ],
+                    "schema_url": ""
+                }
+            ],
+            "schema_url": ""
+        }
+    ]
+}
+PROBE_OK
+{
+    "resource_metrics": [
+        {
+            "resource": {
+                "attributes": {
+                    "telemetry.sdk.language": "python",
+                    "telemetry.sdk.name": "opentelemetry",
+                    "telemetry.sdk.version": "1.45.1",
+                    "service.instance.id": "e04d1eb8-e19f-4bd5-865c-c5a4a20274a7",
+                    "service.name": "weibo-sentiment-analysis"
+                },
+                "schema_url": ""
+            },
+            "scope_metrics": [
+                {
+                    "scope": {
+                        "name": "opentelemetry.instrumentation.flask",
+                        "version": "0.66b1",
+                        "schema_url": "https://opentelemetry.io/schemas/1.11.0",
+                        "attributes": null
+                    },
+                    "metrics": [
+                        {
+                            "name": "http.server.active_requests",
+                            "description": "Measures the number of concurrent HTTP requests that are currently in-flight.",
+                            "unit": "requests",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "http.method": "GET",
+                                            "http.server_name": "localhost",
+                                            "http.scheme": "http",
+                                            "http.host": "localhost",
+                                            "http.flavor": "1.1"
+                                        },
+                                        "start_time_unix_nano": 1792049045252863967,
+                                        "time_unix_nano": 1792049045254990084,
+                                        "value": 0,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2,
+                                "is_monotonic": false
+                            }
+                        },
+                        {
+                            "name": "http.server.duration",
+                            "description": "Measures the duration of inbound HTTP requests.",
+                            "unit": "ms",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "http.method": "GET",
+                                            "http.server_name": "localhost",
+                                            "http.scheme": "http",
+                                            "net.host.name": "localhost",
+                                            "http.host": "localhost",
+                                            "net.host.port": 80,
+                                            "http.flavor": "1.1",
+                                            "http.status_code": 200,
+                                            "http.target": "/ping"
+                                        },
+                                        "start_time_unix_nano": 1792049045253613998,
+                                        "time_unix_nano": 1792049045254990084,
+                                        "count": 1,
+                                        "sum": 1,
+                                        "bucket_counts": [
+                                            0,
+                                            1,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "explicit_bounds": [
+                                            0.0,
+                                            5.0,
+                                            10.0,
+                                            25.0,
+                                            50.0,
+                                            75.0,
+                                            100.0,
+                                            250.0,
+                                            500.0,
+                                            750.0,
+                                            1000.0,
+                                            2500.0,
+                                            5000.0,
+                                            7500.0,
+                                            10000.0
+                                        ],
+                                        "min": 1,
+                                        "max": 1,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2
+                            }
+                        }
+                    ],
+                    "schema_url": "https://opentelemetry.io/schemas/1.11.0"
+                },
+                {
+                    "scope": {
+                        "name": "weibo-sentiment",
+                        "version": "",
+                        "schema_url": "",
+                        "attributes": null
+                    },
+                    "metrics": [
+                        {
+                            "name": "weibo.sentiment.analyze.count",
+                            "description": "sync sentiment analyses",
+                            "unit": "",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "mode": "simple",
+                                            "ok": "true"
+                                        },
+                                        "start_time_unix_nano": 1792049045253829266,
+                                        "time_unix_nano": 1792049045254990084,
+                                        "value": 1,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2,
+                                "is_monotonic": true
+                            }
+                        },
+                        {
+                            "name": "weibo.sentiment.analyze.duration",
+                            "description": "sync sentiment analysis duration",
+                            "unit": "ms",
+                            "data": {
+                                "data_points": [
+                                    {
+                                        "attributes": {
+                                            "mode": "simple",
+                                            "ok": "true"
+                                        },
+                                        "start_time_unix_nano": 1792049045253882266,
+                                        "time_unix_nano": 1792049045254990084,
+                                        "count": 1,
+                                        "sum": 12.5,
+                                        "bucket_counts": [
+                                            0,
+                                            0,
+                                            0,
+                                            1,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0,
+                                            0
+                                        ],
+                                        "explicit_bounds": [
+                                            0.0,
+                                            5.0,
+                                            10.0,
+                                            25.0,
+                                            50.0,
+                                            75.0,
+                                            100.0,
+                                            250.0,
+                                            500.0,
+                                            750.0,
+                                            1000.0,
+                                            2500.0,
+                                            5000.0,
+                                            7500.0,
+                                            10000.0
+                                        ],
+                                        "min": 12.5,
+                                        "max": 12.5,
+                                        "exemplars": []
+                                    }
+                                ],
+                                "aggregation_temporality": 2
+                            }
+                        }
+                    ],
+                    "schema_url": ""
+                }
+            ],
+            "schema_url": ""
+        }
+    ]
+}

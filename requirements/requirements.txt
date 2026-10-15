@@ -40,6 +40,11 @@ pybloom-live==4.0.0
 # 其他工具
 python-dotenv==1.0.0
 prometheus-client==0.19.0
+# 可观测性（OTel，#99；均为轻量纯 Python 包，默认关闭零开销）
+opentelemetry-api==1.45.1
+opentelemetry-sdk==1.45.1
+opentelemetry-exporter-otlp==1.45.1
+opentelemetry-instrumentation-flask==0.66b1
 flask-cors>=4.0.0
 gunicorn==22.0.0
 gevent==23.9.1

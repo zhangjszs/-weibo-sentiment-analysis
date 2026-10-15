@@ -1,0 +1,31 @@
+# OpenTelemetry collector config (observability profile, #99).
+#
+# Pipeline: app --OTLP/HTTP--> collector --OTLP/gRPC--> Jaeger.
+# Jaeger UI: http://localhost:16686 after
+#   docker compose --profile observability up -d jaeger otel-collector
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/jaeger]

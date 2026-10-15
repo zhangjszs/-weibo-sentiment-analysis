@@ -367,6 +367,32 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # ---- 可观测性（#99，默认不启动）：docker compose --profile observability up ----
+  jaeger:
+    image: jaegertracing/all-in-one:1.62
+    container_name: weibo-jaeger
+    profiles: ["observability"]
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4318:4318" # OTLP HTTP（traces + metrics）
+      - "4317:4317" # OTLP gRPC
+    restart: unless-stopped
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    container_name: weibo-otel-collector
+    profiles: ["observability"]
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./docs/observability/otelcol-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4319:4318" # 备用 OTLP HTTP 入口（宿主 4319，避免与 Jaeger 4318 冲突）
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+
 volumes:
   mysql_data:
   redis_data:

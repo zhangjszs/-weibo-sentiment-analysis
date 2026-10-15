@@ -3,6 +3,8 @@
 聚合 ``/api/sentiment/*``、``/api/predict/*``、``/api/model/*`` 三组 ML 相关端点。
 """
 
+import time
+
 from flask import request
 
 from config.settings import Config
@@ -14,6 +16,7 @@ from services.nlp_task_service import (
 )
 from utils.api_response import error, ok
 from utils.authz import admin_required
+from utils.observability import observe_sentiment_analysis
 from utils.rate_limiter import rate_limit
 from utils.request_validation import get_bounded_str, require_json_body
 
@@ -69,7 +72,9 @@ def analyze_sentiment():
                 code=202,
             ), 202
 
+        _started = time.perf_counter()
         result = analyze_text(text=text, mode=mode)
+        observe_sentiment_analysis(mode, (time.perf_counter() - _started) * 1000.0, True)
         return ok(result), 200
     except (ValueError, KeyError, TypeError) as e:
         logger.error("情感分析参数异常: %s", e)
