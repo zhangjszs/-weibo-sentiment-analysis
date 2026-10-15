@@ -58,7 +58,22 @@ jobs:
           ADMIN_USERS: admin
         run: |
           # --cov 激活 pyproject.toml 的覆盖率门禁（fail_under=50 为唯一真相）
-          pytest -m "unit or api" -q --maxfail=1 --cov=src --cov-report=term-missing
+          # #93：软预算告警——步骤耗时 >120s 时输出 Actions warning + Top10 时长，
+          # 不阻断，只告警；失败的话 --maxfail=1 仍以 pytest 退出码为准。
+          set +e
+          START=$(date +%s)
+          pytest -m "unit or api" -q --maxfail=1 --cov=src --cov-report=term-missing --durations=10
+          STATUS=$?
+          ELAPSED=$(( $(date +%s) - START ))
+          {
+            echo "## Backend fast tests"
+            echo "- elapsed: ${ELAPSED}s"
+            echo "- exit: ${STATUS}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${ELAPSED}" -gt 120 ]; then
+            echo "::warning::Backend fast tests took ${ELAPSED}s, over 120s budget. See --durations Top10 above."
+          fi
+          exit "${STATUS}"
 
   # --- Frontend gate: lint + build ---
   frontend-fast:
