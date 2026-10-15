@@ -1,7 +1,7 @@
 # 0005 Rust 加速核：范围与 FFI 边界
 
 ## 状态
-Accepted (2026-10-15, M7-0 scaffold)
+Accepted (2026-10-15, M7-0 scaffold)；#98 修订（见“补充决策”）。
 
 ## 上下文
 项目 M7 引入 Rust 加速核（`rust/weibo_core`，PyO3 + maturin）以降低文本预处理/去重/爬虫Normalize的CPU耗时并作为展示亮点，但不能破坏现有 Flask/SQLAlchemy/Celery/ORM 与测试基线。
@@ -18,5 +18,10 @@ Accepted (2026-10-15, M7-0 scaffold)
 - CI 增加 rust-core job（fmt/clippy/test/maturin build）；导出的 wheel 不入 main 依赖，按 opt-in 安装。
 - 测试基线（1460 unit/api）保持 100% 绿；bridge 函数必须在两 impl 下相等。
 
+## 补充决策（#98 实测后，2026-10-15）
+- **切片选择规则收紧**：薄字符串 op（`str.lower/split/join`、set 去重这类 CPython 已是 C 速度的）不迁——实测 per-item FFI ~0.66x、batch ~0.9x、dedup ~0.4x（marshaling 主导，数据见 `docs/benchmarks/m7-1-dedup.md`）。后续切片必须先 profile，目标锁定“Rust 自有 buffer 上的重计算”或“纯 Python 慢循环”。
+- **批量优先**：凡跨 FFI 的批量数据一律走单次调用 API（如 `normalize_posts`），逐条调用只保留作兼容。
+- **版本**：首个真实切片落地即 bump 到 0.2.0（已执行）；规则不变。
+
 ## 相关
-- Issue #96 (epic), #97 (M7-0), #98..#103.
+- Issue #96 (epic), #97 (M7-0), #98 (M7-1, benchmarks), #99..#103.
