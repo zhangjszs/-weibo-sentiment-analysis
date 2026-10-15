@@ -27,6 +27,12 @@ sys.path.insert(0, str(PROJECT_ROOT))
 if not os.environ.get("TEST_DATABASE_URL"):
     os.environ["TEST_DATABASE_URL"] = "sqlite:///:memory:"
 
+# 测试侧消灭 /ready 3s×2 等待（#95）：production 已有 REDIS_URL=disabled 旁路，
+# 这里只在调用方未显式给值时设默认，尊重 CI integration job 的真实 Redis 服务；
+# 必须在 src/config 导入前设，settings 类属性加载时读 os.getenv("REDIS_URL")。
+if not os.environ.get("REDIS_URL"):
+    os.environ["REDIS_URL"] = "disabled"
+
 
 def sandbox_mkdtemp(
     suffix: str | None = None,

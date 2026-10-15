@@ -195,6 +195,9 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 |---|---|---|---|---|
 | 2026-10-13 | conftest 会话级强制 jti 黑名单内存回退（fast gate 无覆盖率口径） | 182.9s → 34.9s（-81%），1460 passed / 69 skipped / 196 deselected 计数不变 | b19432a | #88 |
 | 2026-10-14 | pytest-xdist 本地灰度（同机无覆盖率口径；串行基线 50.42s，与 #88 行机器不同不可直接对比） | 串行 50.42s → -n 4：30.64s / 31.55s（两轮，-39%）→ -n 8：25.20s（-50%）；三轮计数均为 1460 passed / 69 skipped（collect-only 核对 1526/1722，196 deselected 与串行一致），零顺序污染暴露 | （评估未合入，无代码提交） | #91 |
+| 2026-10-14 | 慢测试降规模：sentiment_model 评估取 NB+LogReg 子集 + model_training 抽样 500 条补断言（无覆盖率口径） | 47.98s → 39.33s（-18%），计数不变 1460 passed / 69 skipped / 196 deselected | 0730b7f (merge) | #92 |
+| 2026-10-14 | requirements 分层：requirements-ml.txt 新建 + ci 两 job 分层安装 + freeze 探针；CI install 182s → 141s（<110s 未达成，wheel 解包天花板，归档 D-016） | install 182s → 141s（-22.5%）；本地 gate 不变 39.33s | 26ce9ed (merge) | #90 |
+| 2026-10-15 | conftest 测试会话 REDIS_URL=disabled（/ready 3s×2 消除，纯测试侧，零产品改动） | 39.33s → 27.71s（-29.6%，-11.62s），计数不变 1460 passed / 69 skipped / 196 deselected | 本次 commit | #95 |
 
 ## 7. 待办建议（未实施，等确认）
 
@@ -202,10 +205,11 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 |---|---|---|---|
 | [#88](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/88) | P1 | done | conftest 强制 jti 黑名单内存回退（本地 -134s / 58%，b19432a 已合入） |
 | [#89](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/89) | P2 | done | CI integration 解耦 frontend-fast（关键路径结构性 -1m19s，已合入） |
-| [#90](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/90) | P2 | ready-for-agent | CI 依赖安装提速（requirements 分层，D-013） |
-| [#91](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/91) | P2 | in-progress | 本地 pytest-xdist 并行化评估（先 `-n 4` 灰度；结论：暂不纳入默认门禁，见 §6） |
-| [#92](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/92) | P3 | ready-for-agent | 慢测试降规模（sentiment_model ×2 + model_training；test_performance 已恢复移出范围，D-014） |
+| [#90](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/90) | P2 | done (partial) | CI 依赖安装提速（requirements 分层，install 182s→141s，<110s 未达成，归档 D-016） |
+| [#91](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/91) | P2 | done | 本地 pytest-xdist 灰度（结论：暂不纳入默认门禁；数据入 §6） |
+| [#92](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/92) | P3 | done | 慢测试降规模（sentiment_model ×2 + model_training；gate 47.98s→39.33s） |
 | [#93](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/93) | P3 | ready-for-agent | 机制包：时长预算告警 + pytest-randomly 探针 + unit 层禁网评估 |
+| [#95](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/95) | P3 | done | 测试侧消灭 /ready 3s×2 等待：conftest REDIS_URL=disabled（gate 39.33s→27.71s） |
 | [#94](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/94) | P4 | done | chore：`.gitignore` 增加 `src/data/`（爬虫运行时产物，已合入） |
 
 **建议实施顺序**：#88 → #89（低风险高收益，落地后按 §6 回写实测数据）→ #90/#91 并行评估 → #92/#93。
