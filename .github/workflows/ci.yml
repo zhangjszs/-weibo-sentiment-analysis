@@ -214,3 +214,41 @@ jobs:
           name: integration-coverage
           path: coverage-integration.xml
           retention-days: 14
+
+
+  rust-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements/requirements.txt
+
+      - name: Verify Rust toolchain
+        working-directory: rust
+        run: rustc --version && cargo --version && rustfmt --version
+
+      - name: Cargo fmt
+        working-directory: rust
+        run: cargo fmt --manifest-path weibo_core/Cargo.toml -- --check
+
+      - name: Cargo clippy
+        working-directory: rust
+        run: cargo clippy --manifest-path weibo_core/Cargo.toml -- -D warnings
+
+      - name: Cargo test
+        working-directory: rust
+        run: cargo test --manifest-path weibo_core/Cargo.toml
+
+      - name: Maturin build + smoke import
+        working-directory: rust/weibo_core
+        run: |
+          python -m pip install --upgrade pip maturin
+          python -m maturin build --release
+          python -m pip install --find-links target/wheels weibo_core
+          python -c "import weibo_core; print('weibo_core', weibo_core.version())"
