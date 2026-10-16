@@ -8,7 +8,7 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#104 修复 Rust bridge 的 Unicode 等价性与 iterator 回退丢数](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/104) | P2 | ready | `A\x1cB` 与代理字符 iterator 已真实复现；恢复 canonical 语义/数据不丢失，native/fallback 回归与 gate 均绿。不接生产新消费者。 |
+| 1 | [#104 修复 Rust bridge 的 Unicode 等价性与 iterator 回退丢数](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/104) | P2 | in-review | **2026-10-16 Executor 完成**：`9a75875` → merge `a88fd7a` @ main（已推送）。修前三组失败真实复现（iterator 回退返回 `[]`、`A\x1cB` 不等价），修后 0 mismatch。Rust 空白谓词改为 `White_Space` ∪ U+001C–U+001F（穷举双向验证）；bridge 批量输入进入 FFI 前物化一次。变异验证：回退任一修复均 4 用例红。cargo 11 passed、fmt/clippy/ruff 干净；native 1483/69/196、fallback 1481/71/196 均绿（+8 用例，Rust-only skip 1 已说明）。已知有界差异 55 个 Unicode 16.0 未分配码点，不修理由已报告。**不关闭 #98**。 |
 | 2 | [#105 校正去重基准的真实重复率并提交实际 Criterion 结果](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/105) | P2 | ready | 10k/100k、90%重复集的 actual unique=1000/10000；Criterion 调真实内核并真正执行；更新现有 JSON/Markdown，不要求正收益。与 #104 无硬依赖，串行测量避免 CPU 干扰。 |
 | 3 | [#107 补齐现有可观测模块的行为验证并恢复分支覆盖率基线](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | ready | 补真实降级/多 app/指标内容行为；local 与 CI branch >=68.49%，不改分母/阈值，不污染 global provider；复用实际 app console smoke。无需 Docker。 |
 | 4 | [#106 补齐 M6 预算报告、socket 审计与跨天交接证据](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | ready | summary 含真实 Top10、逐项 socket 表、修单例测试隔离并删除偶然默认断言；补 #95 可比较证据；真实记录未达预算，Executor 自行修复日报/交接链。只改已有 CI 步骤，不扩展拓扑。 |
