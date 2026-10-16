@@ -23,5 +23,11 @@ Accepted (2026-10-15, M7-0 scaffold)；#98 修订（见“补充决策”）。
 - **批量优先**：凡跨 FFI 的批量数据一律走单次调用 API（如 `normalize_posts`），逐条调用只保留作兼容。
 - **版本**：首个真实切片落地即 bump 到 0.2.0（已执行）；规则不变。
 
+## 补充决策（#104 实测后，2026-10-16）
+- **canonical 语义只有一个**：`*_py` 是唯一权威定义，Rust 必须逐 code point 等价，不得"更合理地"解释。“等价”指 CPython 的实际行为，不是 Unicode 规范行为——CPython `str.split()` 的空白集是 Unicode `White_Space` **加上** U+001C–U+001F（bidi class `S`，规范刻意排除），Rust `char::is_whitespace` 只等于 `White_Space`。这是 #104 的根因，已在 `rust/weibo_core/src/text.rs` 用显式谓词修正并双向穷举验证。
+- **批量输入只消费一次**：适配层在进入 FFI **之前**把一次性 iterable 物化成 list；Rust 抛错时 fallback 用同一份已保存输入回退。禁止在 `try` 内部消费、在 `except` 之后重新读取调用方 iterable——那会静默返回空批次。list 输入不额外复制。
+- **parity 测试必须证明没走 fallback**：等价性测试需断言 native 路径未触发降级，否则“Rust 抛错 + Python 兜底”会让错误内核以正确结果的形式长期潜伏。
+- **已知有界差异（不修）**：case 映射绑定 Unicode 数据版本。Rust 表比 CPython 3.12 新，55 个 CPython 仍视为未分配（`Cn`）的 code point 在 Rust 侧有小写映射。刻意不硬编码 deny-list：会在下次 CPython 升级时腐化，且会让含这些未分配码点的文本与其它 Python 消费者行为不一致。已穷举确认这 55 个是全部差异。
+
 ## 相关
-- Issue #96 (epic), #97 (M7-0), #98 (M7-1, benchmarks), #99..#103.
+- Issue #96 (epic), #97 (M7-0), #98 (M7-1, benchmarks), #99..#103, #104 (parity 修正).
