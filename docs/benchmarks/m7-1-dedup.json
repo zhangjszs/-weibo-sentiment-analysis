@@ -1,104 +1,208 @@
 {
   "issue": 98,
+  "corrected_by": 105,
   "weibo_core_version": "0.2.0",
   "rust_available": true,
   "repeats": 7,
+  "statistic": "median of per-run wall clock; each run preceded by one warmup",
+  "provenance": {
+    "git_commit": "60c2c28",
+    "git_dirty": false,
+    "python": "3.12.14",
+    "rustc": "unavailable on PATH (exit 1)",
+    "toolchain_channel": "1.99.0"
+  },
   "normalize": {
     "posts": 2000,
-    "python_ms": 0.567,
+    "python_ms": 0.638,
     "python_runs_ms": [
+      0.689,
       0.556,
-      0.554,
-      0.567,
-      0.59,
-      0.643,
+      0.638,
+      0.703,
+      0.541,
       0.569,
-      0.565
+      0.66
     ],
-    "rust_ms": 0.825,
+    "rust_ms": 0.887,
     "rust_runs_ms": [
-      0.825,
-      0.847,
+      0.968,
+      0.887,
+      0.764,
+      0.727,
       0.822,
-      0.812,
-      0.811,
-      0.858,
-      0.836
+      0.961,
+      0.954
     ],
-    "speedup": 0.69
+    "speedup": 0.72
   },
   "normalize_batch": {
     "posts": 2000,
-    "python_ms": 0.564,
+    "python_ms": 0.648,
     "python_runs_ms": [
-      0.564,
-      0.557,
+      0.588,
+      0.631,
+      0.648,
+      0.87,
+      0.733,
       0.556,
-      0.572,
-      0.601,
-      0.556,
-      0.572
+      0.68
     ],
-    "rust_ms": 0.616,
+    "rust_ms": 0.672,
     "rust_runs_ms": [
-      0.598,
-      0.616,
-      0.599,
-      1.249,
-      0.88,
-      0.774,
-      0.606
+      0.672,
+      0.773,
+      0.75,
+      0.695,
+      0.555,
+      0.578,
+      0.553
     ],
-    "speedup": 0.92
+    "speedup": 0.96
   },
   "dedup_10k": {
     "keys": 10000,
-    "unique": 999,
-    "python_ms": 0.547,
+    "duplicate_ratio": "9/10",
+    "unique_reported": 1000,
+    "unique_actual": 1000,
+    "python_ms": 0.206,
     "python_runs_ms": [
-      0.773,
-      0.561,
-      0.543,
-      0.581,
-      0.547,
-      0.528,
-      0.511
+      0.206,
+      0.328,
+      0.256,
+      0.206,
+      0.202,
+      0.199,
+      0.205
     ],
-    "rust_ms": 1.37,
+    "rust_ms": 0.853,
     "rust_runs_ms": [
-      1.372,
-      1.436,
-      1.334,
-      1.359,
-      1.37,
-      1.349,
-      1.445
+      0.714,
+      0.853,
+      0.862,
+      0.978,
+      0.961,
+      0.733,
+      0.756
     ],
-    "speedup": 0.4
+    "speedup": 0.24
   },
   "dedup_100k": {
     "keys": 100000,
-    "unique": 9999,
-    "python_ms": 7.41,
+    "duplicate_ratio": "9/10",
+    "unique_reported": 10000,
+    "unique_actual": 10000,
+    "python_ms": 2.813,
     "python_runs_ms": [
-      9.588,
-      7.1,
-      7.143,
-      7.03,
-      7.464,
-      7.41,
-      7.616
+      2.884,
+      2.719,
+      2.813,
+      2.884,
+      2.886,
+      2.449,
+      2.779
     ],
-    "rust_ms": 18.275,
+    "rust_ms": 10.701,
     "rust_runs_ms": [
-      18.301,
-      18.291,
-      18.669,
-      18.275,
-      17.95,
-      17.978,
-      17.728
+      8.811,
+      10.27,
+      10.701,
+      10.52,
+      10.753,
+      10.965,
+      10.871
     ],
-    "speedup": 0.41
+    "speedup": 0.26
+  },
+  "dedup_10k_all_unique": {
+    "keys": 10000,
+    "duplicate_ratio": "0/1",
+    "unique_reported": 10000,
+    "unique_actual": 10000,
+    "python_ms": 0.601,
+    "python_runs_ms": [
+      0.544,
+      0.601,
+      0.537,
+      0.777,
+      0.593,
+      0.649,
+      0.639
+    ],
+    "rust_ms": 0.955,
+    "rust_runs_ms": [
+      1.022,
+      0.953,
+      0.955,
+      0.828,
+      0.945,
+      1.211,
+      1.052
+    ],
+    "speedup": 0.63
+  },
+  "dedup_100k_all_unique": {
+    "keys": 100000,
+    "duplicate_ratio": "0/1",
+    "unique_reported": 100000,
+    "unique_actual": 100000,
+    "python_ms": 8.068,
+    "python_runs_ms": [
+      7.995,
+      8.487,
+      8.043,
+      8.334,
+      8.068,
+      8.815,
+      7.924
+    ],
+    "rust_ms": 22.166,
+    "rust_runs_ms": [
+      21.417,
+      22.166,
+      21.669,
+      21.454,
+      23.806,
+      23.904,
+      22.341
+    ],
+    "speedup": 0.36
+  },
+  "criterion": {
+    "normalize_post/short": {
+      "median_ns": 205.63,
+      "ci95_low_ns": 205.3,
+      "ci95_high_ns": 206.95
+    },
+    "normalize_post/long_x200": {
+      "median_ns": 41370.7,
+      "ci95_low_ns": 41159.26,
+      "ci95_high_ns": 42687.35
+    },
+    "dedup_keys/n=1000/dupe=90pct": {
+      "median_ns": 16460.99,
+      "ci95_low_ns": 16452.0,
+      "ci95_high_ns": 16469.38
+    },
+    "dedup_keys/n=10000/dupe=90pct": {
+      "median_ns": 178134.27,
+      "ci95_low_ns": 177980.29,
+      "ci95_high_ns": 179472.54
+    },
+    "dedup_keys/n=100000/dupe=90pct": {
+      "median_ns": 2287646.09,
+      "ci95_low_ns": 2284167.45,
+      "ci95_high_ns": 2291359.5
+    },
+    "dedup_keys/n=10000/dupe=0pct": {
+      "median_ns": 379140.06,
+      "ci95_low_ns": 377891.68,
+      "ci95_high_ns": 392363.38
+    },
+    "dedup_keys/n=100000/dupe=0pct": {
+      "median_ns": 4535672.05,
+      "ci95_low_ns": 4530323.73,
+      "ci95_high_ns": 4541044.95
+    }
   }
 }
