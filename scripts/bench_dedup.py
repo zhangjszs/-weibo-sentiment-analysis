@@ -420,27 +420,43 @@ def main() -> int:
             "",
         ]
 
-    lines += [
-        "## Finding (honest)",
-        "",
-        "For these thin string ops over Python-owned data, CPython's C-speed",
-        "builtins (`str.lower/split/join`, set hashing) already saturate, and",
-        "Rust pays UTF-8 marshaling both ways. The Rust path stays below 1.0x",
-        "on every workload measured here; this slice's value is the FFI",
-        "boundary, the parity proof, and the decision rule: next Rust slices",
-        "must target compute-heavy kernels on Rust-owned buffers or pure-Python",
-        "slow loops (profile first), not thin wrappers over C-speed builtins.",
-        "",
-        "The duplicate-heavy workloads are *faster* than the all-unique control",
-        "in both implementations (fewer output allocations and a smaller hash",
-        "table), but Rust benefits proportionally less, which is why its",
-        "dedup ratio drops on the 90% workload.",
-        "",
-        "This is a negative result and is reported as one. No conclusion is",
-        "drawn from it about Rust in general -- only about these thin ops over",
-        "Python-owned strings.",
-        "",
-    ]
+    # Derive the summary from the measured numbers rather than asserting a
+    # fixed conclusion: the previous revision hardcoded "~0.4x dedup" in prose
+    # and went stale the moment the workload changed (#105).
+    ratios = {
+        key: payload[key]["speedup"]
+        for key in ("normalize", "normalize_batch", "dedup_10k", "dedup_100k",
+                    "dedup_10k_all_unique", "dedup_100k_all_unique")
+        if payload[key].get("speedup") is not None
+    }
+    if ratios:
+        best_key = max(ratios, key=lambda k: ratios[k])
+        best = ratios[best_key]
+        worst_key = min(ratios, key=lambda k: ratios[k])
+        lines += [
+            "## Finding (honest)",
+            "",
+            "CPython's C-speed builtins (`str.lower/split/join`, set hashing) already",
+            "saturate on these thin string ops over Python-owned data, and Rust pays",
+            "UTF-8 marshaling in both directions. Measured speedup range this run:",
+            f"**{ratios[worst_key]}x ({worst_key}) to {best}x ({best_key})**.",
+            "",
+            "Read that as what it is: for this workload class the Rust path is at or",
+            "below parity, with the batch FFI entry point the only place that comes",
+            "close. The slice's value is the FFI boundary, the parity proof, and the",
+            "decision rule: a future Rust slice must target compute-heavy kernels on",
+            "Rust-owned buffers or pure-Python slow loops (profile first), not thin",
+            "wrappers over C-speed builtins.",
+            "",
+            "Duplicate-heavy workloads run *faster* than the all-unique control in both",
+            "implementations (fewer output allocations, smaller hash table), but Rust",
+            "benefits proportionally less, which is why its dedup ratio drops on the",
+            "90% workload.",
+            "",
+            "This is a negative result and is reported as one. It says nothing about",
+            "Rust in general -- only about these thin ops over Python-owned strings.",
+            "",
+        ]
     (out_dir / "m7-1-dedup.md").write_text("\n".join(lines), encoding="utf-8")
     print("\n".join(lines))
     return 0
