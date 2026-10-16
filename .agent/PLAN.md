@@ -55,7 +55,8 @@ D-009 的前端 TypeScript 渐进化方向继续有效；#96/M7 扩展仍停在 
 
 ## 已知阻塞与依赖
 
-- **#107 现场（最高优先）**：分支 `agent/issue-107-observability-behavior`（= main，无自有提交）上有未提交的 `tests/test_observability.py`（+381/−86）；当前 `4 failed, 10 passed`，`ruff` 报 `test_observability.py:241` C416；patch 只读副本 `/tmp/opencode/issue-107-wip-2026-10-17.patch`。Planner **不重置**该 in-progress，恢复/放弃由 Executor 判断。
+- **#107 现场（最高优先）**：分支 `agent/issue-107-observability-behavior`（= `ae0f848`，无自有提交）上有未提交的 `tests/test_observability.py`（+381/−86）；当前 `4 failed, 10 passed`，`ruff` 报 `test_observability.py:241` C416；patch 只读副本 `/tmp/opencode/issue-107-wip-2026-10-17.patch`。Planner **不重置**该 in-progress，恢复/放弃由 Executor 判断。
+  - **分支提示（本轮新增）**：Planner 的 `.agent` 更新已提交在 **main**（`ee83a0f`，已推送）。该分支仍停在 `ae0f848`，切回分支工作区时 `.agent` 会退回旧版本 —— 请先 `git checkout main`（未提交改动会跟着走）或先 `git rebase main`，再继续 #107。
 - **#98**：in-progress 父任务，真实生产迁移与完整双模式验收未交付，受 D-019 门禁约束；#104/#105 只是其正确性/基准子项，不代其关闭。若下一次验收仍失败，必须重新拆解，不准第三次盲试。
 - **#109**：本机无 Docker、无已知已授权 Docker 主机；OTLP metrics 接收与 Jaeger/UI 仍 blocked（console smoke 不等于 OTLP 链路证明）。
 - **D-019 / #96 / #100 / #101 / #102**：M7 方向、重要依赖、重大 CI 扩展未获明确批准，全部 needs-info；默认 A 已运行无异常，但不自动授权红线。
