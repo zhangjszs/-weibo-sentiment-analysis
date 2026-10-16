@@ -76,7 +76,9 @@ def bench_normalize(repeats: int, scale: int) -> dict:
         result["rust_ms"] = round(statistics.median(rs), 3)
         result["rust_runs_ms"] = [round(v, 3) for v in rs]
         result["speedup"] = (
-            round(result["python_ms"] / result["rust_ms"], 2) if result["rust_ms"] else None
+            round(result["python_ms"] / result["rust_ms"], 2)
+            if result["rust_ms"]
+            else None
         )
     return result
 
@@ -131,7 +133,9 @@ def bench_dedup(repeats: int, scale: int, num: int = 9, den: int = 10) -> dict:
         result["rust_ms"] = round(statistics.median(rs), 3)
         result["rust_runs_ms"] = [round(v, 3) for v in rs]
         result["speedup"] = (
-            round(result["python_ms"] / result["rust_ms"], 2) if result["rust_ms"] else None
+            round(result["python_ms"] / result["rust_ms"], 2)
+            if result["rust_ms"]
+            else None
         )
     # sanity: both backends agree on this workload
     assert bridge.dedup_keys(keys) == dedup_keys_py(keys)
@@ -154,7 +158,9 @@ def bench_normalize_batch(repeats: int, scale: int) -> dict:
         result["rust_ms"] = round(statistics.median(rs), 3)
         result["rust_runs_ms"] = [round(v, 3) for v in rs]
         result["speedup"] = (
-            round(result["python_ms"] / result["rust_ms"], 2) if result["rust_ms"] else None
+            round(result["python_ms"] / result["rust_ms"], 2)
+            if result["rust_ms"]
+            else None
         )
     assert bridge.normalize_posts(posts) == normalize_posts_py(posts)
     return result
@@ -167,7 +173,11 @@ def _declared_toolchain() -> str:
     #108 renames it to ``rust-toolchain.toml``. Accept both so the provenance
     block survives that change.
     """
-    for name in ("rust/rust-toolchain.toml", "rust/toolchain.toml", "rust-toolchain.toml"):
+    for name in (
+        "rust/rust-toolchain.toml",
+        "rust/toolchain.toml",
+        "rust-toolchain.toml",
+    ):
         path = PROJECT_ROOT / name
         if not path.is_file():
             continue
@@ -182,7 +192,11 @@ def _resolved_rustc() -> str:
     """`rustc --version` if the environment can resolve one, else the reason."""
     try:
         proc = subprocess.run(
-            ["rustc", "--version"], capture_output=True, text=True, check=False, timeout=30
+            ["rustc", "--version"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
         )
     except (OSError, subprocess.SubprocessError) as exc:  # pragma: no cover
         return f"unavailable ({type(exc).__name__})"
@@ -311,7 +325,9 @@ def main() -> int:
     }
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / "m7-1-dedup.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2))
+    (out_dir / "m7-1-dedup.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2)
+    )
 
     prov = payload["provenance"]
     lines = [
@@ -425,8 +441,14 @@ def main() -> int:
     # and went stale the moment the workload changed (#105).
     ratios = {
         key: payload[key]["speedup"]
-        for key in ("normalize", "normalize_batch", "dedup_10k", "dedup_100k",
-                    "dedup_10k_all_unique", "dedup_100k_all_unique")
+        for key in (
+            "normalize",
+            "normalize_batch",
+            "dedup_10k",
+            "dedup_100k",
+            "dedup_10k_all_unique",
+            "dedup_100k_all_unique",
+        )
         if payload[key].get("speedup") is not None
     }
     if ratios:
