@@ -6,8 +6,13 @@ extension (via ``services.rust_bridge``) and writes machine-readable JSON
 plus a Markdown summary to ``docs/benchmarks/``.
 
 Usage:
+    # Build the extension in RELEASE mode first. `maturin develop` defaults to
+    # an unoptimized dev build that is ~20x slower, which silently invalidates
+    # every Rust number this script reports.
+    (cd rust/weibo_core && ../../.venv/bin/maturin develop --release --locked)
+
     .venv/bin/python scripts/bench_dedup.py [--repeats N] [--out DIR]
-    cargo bench --manifest-path rust/weibo_core/Cargo.toml   # Rust absolute numbers
+    cargo bench --manifest-path rust/weibo_core/Cargo.toml --locked   # Rust absolute numbers
 """
 
 from __future__ import annotations
@@ -155,6 +160,40 @@ def bench_normalize_batch(repeats: int, scale: int) -> dict:
     return result
 
 
+def _declared_toolchain() -> str:
+    """Toolchain the repository pins, read from whichever file carries it.
+
+    #98 shipped ``rust/toolchain.toml``, which rustup does not recognise;
+    #108 renames it to ``rust-toolchain.toml``. Accept both so the provenance
+    block survives that change.
+    """
+    for name in ("rust-toolchain.toml", "rust/toolchain.toml", "toolchain.toml"):
+        path = PROJECT_ROOT / "rust" / name if "/" in name else PROJECT_ROOT / name
+        if not path.is_file():
+            continue
+        for line in path.read_text().splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() == "channel":
+                return value.strip().strip('"')
+    return "unpinned"
+
+
+def _resolved_rustc() -> str:
+    """`rustc --version` if the environment can resolve one, else the reason."""
+    try:
+        proc = subprocess.run(
+            ["rustc", "--version"], capture_output=True, text=True, check=False, timeout=30
+        )
+    except (OSError, subprocess.SubprocessError) as exc:  # pragma: no cover
+        return f"unavailable ({type(exc).__name__})"
+    out = (proc.stdout or "").strip()
+    if proc.returncode == 0 and out:
+        return out
+    # A shim that exits non-zero (mise, for example) tells us nothing about
+    # the toolchain, so say so instead of recording an empty version.
+    return f"unavailable on PATH (exit {proc.returncode})"
+
+
 def _provenance() -> dict:
     """Record enough to tell which code produced these numbers (#105)."""
     try:
@@ -176,18 +215,71 @@ def _provenance() -> dict:
         )
     except (OSError, subprocess.CalledProcessError):  # pragma: no cover
         commit, dirty = "unknown", None
-    try:
-        rustc = subprocess.run(
-            ["rustc", "--version"], capture_output=True, text=True, check=False
-        ).stdout.strip()
-    except OSError:  # pragma: no cover
-        rustc = "unknown"
     return {
         "git_commit": commit,
         "git_dirty": dirty,
         "python": sys.version.split()[0],
-        "rustc": rustc or "unknown",
+        "rustc": _resolved_rustc(),
+        "toolchain_channel": _declared_toolchain(),
     }
+
+
+# Criterion flattens `group/bench/case` into one directory name, so the
+# original separators cannot be recovered unambiguously from the path alone.
+# This mapping pins the display name and doubles as a tripwire: a benchmark
+# added or renamed in `benches/dedup.rs` makes the set comparison fail rather
+# than being silently mislabelled here.
+CRITERION_NAMES = {
+    "normalize_post_short": "normalize_post/short",
+    "normalize_post_long_x200": "normalize_post/long_x200",
+    "dedup_keys_n=1000_dupe=90pct": "dedup_keys/n=1000/dupe=90pct",
+    "dedup_keys_n=10000_dupe=90pct": "dedup_keys/n=10000/dupe=90pct",
+    "dedup_keys_n=100000_dupe=90pct": "dedup_keys/n=100000/dupe=90pct",
+    "dedup_keys_n=10000_dupe=0pct": "dedup_keys/n=10000/dupe=0pct",
+    "dedup_keys_n=100000_dupe=0pct": "dedup_keys/n=100000/dupe=0pct",
+}
+
+
+def _criterion_results() -> dict:
+    """Read the executed Criterion estimates off disk (#105).
+
+    The #98 report only ever proved ``cargo bench --no-run``. Reading the
+    artifacts ``cargo bench`` actually produced keeps the published numbers
+    tied to a real run instead of to hand-copied console text.
+    """
+    root = PROJECT_ROOT / "rust" / "weibo_core" / "target" / "criterion"
+    if not root.is_dir():
+        return {}
+    found: dict[str, dict] = {}
+    for path in sorted(root.glob("*/new/estimates.json")):
+        flat = path.parent.parent.name
+        if flat not in CRITERION_NAMES:
+            raise SystemExit(
+                f"criterion produced unknown benchmark {flat!r}; add it to "
+                f"CRITERION_NAMES so it is not reported under a wrong name"
+            )
+        try:
+            est = json.loads(path.read_text())["median"]
+        except (OSError, KeyError, ValueError):  # pragma: no cover
+            continue
+        found[CRITERION_NAMES[flat]] = {
+            "median_ns": round(est["point_estimate"], 2),
+            "ci95_low_ns": round(est["confidence_interval"]["lower_bound"], 2),
+            "ci95_high_ns": round(est["confidence_interval"]["upper_bound"], 2),
+        }
+    missing = sorted(set(CRITERION_NAMES.values()) - set(found))
+    if missing:
+        raise SystemExit(f"criterion results missing for {missing}; re-run cargo bench")
+    # Report in benchmark declaration order, not alphabetical.
+    return {name: found[name] for name in CRITERION_NAMES.values()}
+
+
+def _fmt_ns(value: float) -> str:
+    if value >= 1_000_000:
+        return f"{value / 1_000_000:.4g} ms"
+    if value >= 1_000:
+        return f"{value / 1_000:.4g} µs"
+    return f"{value:.4g} ns"
 
 
 def main() -> int:
@@ -215,6 +307,7 @@ def main() -> int:
         # hashing/insert cost from the duplicate-hit cost.
         "dedup_10k_all_unique": bench_dedup(args.repeats, 10_000, 0, 1),
         "dedup_100k_all_unique": bench_dedup(args.repeats, 100_000, 0, 1),
+        "criterion": _criterion_results(),
     }
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -227,7 +320,8 @@ def main() -> int:
         f"weibo_core={payload['weibo_core_version']} repeats={args.repeats} "
         f"rust_available={payload['rust_available']}",
         f"git={prov['git_commit']} (dirty={prov['git_dirty']}) "
-        f"python={prov['python']} {prov['rustc']}",
+        f"python={prov['python']} toolchain={prov['toolchain_channel']} "
+        f"rustc={prov['rustc']}",
         "",
         "Statistic: median of per-run wall clock, one warmup before sampling.",
         "",
@@ -280,6 +374,9 @@ def main() -> int:
         "## Reproduce",
         "",
         "```sh",
+        "# release build is mandatory: a debug extension is ~20x slower and",
+        "# silently invalidates every Rust number below",
+        "cd rust/weibo_core && ../.venv/bin/maturin develop --release --locked && cd ../..",
         ".venv/bin/python scripts/bench_dedup.py --repeats 7",
         "cargo bench --manifest-path rust/weibo_core/Cargo.toml --locked",
         "```",
@@ -292,6 +389,38 @@ def main() -> int:
         "#98 bench re-declared the algorithms locally and so measured code that",
         "never shipped.",
         "",
+    ]
+
+    crit = payload.get("criterion") or {}
+    if crit:
+        lines += [
+            "## Criterion (executed)",
+            "",
+            "`cargo bench` output, median of 100 samples with 95% CI. Read back",
+            "from `rust/weibo_core/target/criterion/*/new/estimates.json` rather",
+            "than transcribed. These are pure-Rust numbers with no FFI, so the",
+            "gap to the Python table above is the marshaling cost.",
+            "",
+            "| benchmark | median | 95% CI |",
+            "|---|---|---|",
+        ]
+        for name, stats in crit.items():
+            lines.append(
+                f"| {name} | {_fmt_ns(stats['median_ns'])} "
+                f"| {_fmt_ns(stats['ci95_low_ns'])} – {_fmt_ns(stats['ci95_high_ns'])} |"
+            )
+        lines.append("")
+    else:
+        lines += [
+            "## Criterion (executed)",
+            "",
+            "No Criterion artifacts found under `rust/weibo_core/target/criterion`.",
+            "Run `cargo bench --manifest-path rust/weibo_core/Cargo.toml --locked`",
+            "first; this file does not fabricate numbers when they are absent.",
+            "",
+        ]
+
+    lines += [
         "## Finding (honest)",
         "",
         "For these thin string ops over Python-owned data, CPython's C-speed",
@@ -301,6 +430,11 @@ def main() -> int:
         "boundary, the parity proof, and the decision rule: next Rust slices",
         "must target compute-heavy kernels on Rust-owned buffers or pure-Python",
         "slow loops (profile first), not thin wrappers over C-speed builtins.",
+        "",
+        "The duplicate-heavy workloads are *faster* than the all-unique control",
+        "in both implementations (fewer output allocations and a smaller hash",
+        "table), but Rust benefits proportionally less, which is why its",
+        "dedup ratio drops on the 90% workload.",
         "",
         "This is a negative result and is reported as one. No conclusion is",
         "drawn from it about Rust in general -- only about these thin ops over",
