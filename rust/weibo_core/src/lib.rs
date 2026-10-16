@@ -5,7 +5,13 @@
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
 
-mod text;
+// Public so `benches/dedup.rs` benchmarks *this* kernel instead of a copy of
+// it. The #98 benchmark re-declared the algorithms locally, which meant the
+// numbers described code that no longer existed in the shipped extension (and
+// whose copy silently kept the pre-#104 whitespace bug). Exposing the module
+// on the rlib surface keeps the benchmark honest; the Python-visible module
+// surface is still exactly the `#[pymodule]` list below.
+pub mod text;
 
 /// Lower-case normalization of a Unicode string.
 #[pyfunction]
