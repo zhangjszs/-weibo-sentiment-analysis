@@ -9,6 +9,15 @@ rather than importing ``weibo_core`` directly.
 The ``*_py`` functions are the canonical pure-Python references; the
 public names try Rust first and fall back on any error, so both backends
 are contract-equal (parity is covered by ``tests/test_rust_dedup.py``).
+
+Batch entry points materialize a one-shot iterable exactly once, before
+handing it to the extension, so a failing FFI call can still fall back on
+the same items instead of an exhausted iterator (#104).
+
+Known bounded divergence: case mapping is Unicode-data-version bound. The
+Rust crate's tables are newer than CPython 3.12's, so 55 code points that
+CPython still treats as unassigned (``Cn``) have a lowercase mapping on the
+Rust side. Every code point Python knows a rule for is equivalent.
 """
 
 from __future__ import annotations
@@ -132,15 +141,32 @@ def generate_comment_key(comment_id: str, article_id: str) -> str:
     return generate_comment_key_py(comment_id, article_id)
 
 
+def _materialize(values: Iterable[str]) -> list[str]:
+    """Return *values* as a list, consuming a one-shot iterable only once.
+
+    Batch entry points must materialize their input **before** handing it to
+    the extension, because a failure part-way through (e.g. PyO3 rejecting a
+    lone surrogate with ``UnicodeEncodeError``) forces the Python fallback --
+    and the fallback needs the very same items. Consuming inside the ``try``
+    meant the fallback re-read an already-exhausted iterator and silently
+    returned ``[]``, losing the whole batch (#104).
+
+    A ``list`` is passed through untouched: the extension takes it by value
+    anyway, so copying would only add cost on the hot path.
+    """
+    return values if isinstance(values, list) else list(values)
+
+
 def dedup_keys(keys: Iterable[str]) -> list[str]:
     """Order-preserving batch dedup (Rust if available, else Python)."""
+    items = _materialize(keys)
     fn = _rust_fn("dedup_keys")
     if fn is not None:
         try:
-            return fn(list(keys) if not isinstance(keys, list) else keys)
+            return fn(items)
         except Exception as exc:  # pragma: no cover - defensive fallback
             logger.warning("weibo_core.dedup_keys failed, falling back: %s", exc)
-    return dedup_keys_py(keys)
+    return dedup_keys_py(items)
 
 
 def normalize_posts_py(texts: Iterable[str]) -> list[str]:
@@ -150,13 +176,14 @@ def normalize_posts_py(texts: Iterable[str]) -> list[str]:
 
 def normalize_posts(texts: Iterable[str]) -> list[str]:
     """Batch post normalization: one FFI call (Rust if available, else Python)."""
+    items = _materialize(texts)
     fn = _rust_fn("normalize_posts")
     if fn is not None:
         try:
-            return fn(list(texts) if not isinstance(texts, list) else texts)
+            return fn(items)
         except Exception as exc:  # pragma: no cover - defensive fallback
             logger.warning("weibo_core.normalize_posts failed, falling back: %s", exc)
-    return normalize_posts_py(texts)
+    return normalize_posts_py(items)
 
 
 def version() -> str | None:
