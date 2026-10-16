@@ -167,8 +167,8 @@ def _declared_toolchain() -> str:
     #108 renames it to ``rust-toolchain.toml``. Accept both so the provenance
     block survives that change.
     """
-    for name in ("rust-toolchain.toml", "rust/toolchain.toml", "toolchain.toml"):
-        path = PROJECT_ROOT / "rust" / name if "/" in name else PROJECT_ROOT / name
+    for name in ("rust/rust-toolchain.toml", "rust/toolchain.toml", "rust-toolchain.toml"):
+        path = PROJECT_ROOT / name
         if not path.is_file():
             continue
         for line in path.read_text().splitlines():
