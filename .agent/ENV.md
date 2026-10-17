@@ -11,11 +11,13 @@
     ROS 2 launch_testing 以 pytest11 entry point 注册插件，其依赖 `osrf_pycommon` 缺失，
     会在 collection 阶段直接崩溃（`ModuleNotFoundError: No module named 'osrf_pycommon'`）。
     屏蔽这两个插件不影响项目本身，CI 无此问题。
-  - 实测：HEAD 全绿 = `1261 passed, 197 deselected`（本机；`-o addopts=""` 时可看全部失败）
-  - 注意：`pytest.ini` 的 `addopts` 已含 `-q --maxfail=1`，覆盖时需 `-o addopts=""`
+  - 实测（2026-10-17，HEAD=2f6790c）：native（`WEIBO_CORE_RUST=1`）1494 passed / 69 skipped / 196 deselected；fallback（`WEIBO_CORE_RUST=0`）1492/71/196；均 exit 0（`-o addopts=""` 时可看全部失败）
+  - 注意：`pytest.ini` 的 `addopts` 已含 `-q --maxfail=1`；**不要再手动加 `-q`**（verbosity 降到 −2，汇总行不打印）；覆盖 addopts 时需 `-o addopts=""`
+  - no-cov 口径 ~35s；`--cov=src` 口径 ~80–86s（插桩 ~45–50s），两种口径分开记录不可混用
+  - 覆盖率对文件缓存状态敏感：同 HEAD 复跑 native 68.5259%–68.66% 波动；最低可复现 68.5259%（11106/16207）
 - 前端依赖：`frontend/node_modules` 已安装
 - 前端 Node：mise 管理，需先 `export PATH="$HOME/.local/share/mise/installs/node/22.23.2/bin:$PATH"`（系统 PATH 中无 node/npm）
-- 前端测试：`cd frontend && npm run test:run`（实测 4 files / 45 tests 全过）
+- 前端测试：`cd frontend && npm run test:run`（2026-10-17 基线 41 files / 190 tests 全过）
 - 前端 Lint：`cd frontend && npm run lint`
 - 前端构建：`cd frontend && npm run build`
 - CI：`.github/workflows/ci.yml`（backend-fast / frontend-fast / integration），`.github/workflows/security-scan.yml`
@@ -46,3 +48,18 @@
 ## 更新 2026-10-05T08:55:00Z，agent executor-glm-20261005T0714Z（补浏览器冒烟与代理注意事项）
 ## 更新 2026-10-07T02:30:00Z，agent executor-glm-20261007-relay（补两枚冒烟脚本前置 + python -c 需 sys.path 注入）
 ## 更新 2026-10-07T05:45:00Z，agent executor-glm-20261007-r2（#56 修复后 SQLite 冒烟自举无需再手动种 admin）
+
+## 补记（2026-10-17，executor 轮：#106/#107 实测补充）
+
+- **Rust 工具链**：`rustc` 不在 PATH（mise shim 未配置）；用 `~/.cargo/bin/cargo +1.99.0` 显式调。
+  `maturin develop` 默认 **dev 构建慢约 20x**，基准/交付必须 `--release`（#105 实测）。
+- **前后对比测量法（不污染工作区）**：`git worktree add --detach /tmp/opencode/wt-<label> <commit>`，
+  各 worktree 用同一 `.venv/bin/python` 同机串行跑，配对两次取稳（#106 复测 #95 用法）。
+- **socket 审计方法（#106，仅审计、不入库）**：临时探针拦截 `socket.socket`（AF_INET/AF_INET6，
+  不设 localhost 白名单）记录连接尝试；本机 `localhost:6379` 超时 3.005s——即 /ready 3s×2 的复现根源。
+- **CI 证据读取**：Actions job 的 step summary 无法经 REST/check-runs 读到（`output.summary` 恒 null，
+  网页需会话态）；需要 agent 可验收时把 summary 内容 echo 进 job log（折叠 `::group::`），
+  再用 `gh api repos/<slug>/actions/jobs/<id>/logs --allow-escape-sequences` 读取。
+- **git**：`git pull --rebase` 在 `.agent` 有未提交改动时会被拒——先提交 .agent 再拉。
+
+## 更新 2026-10-17T11:30:00Z，agent executor（#106/#107：Rust 工具链、worktree 复测法、socket 探针、CI summary 读法、pytest 口径）

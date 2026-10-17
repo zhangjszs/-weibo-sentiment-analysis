@@ -3,11 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-17 执行轮。本席 executor-20261017Z；#107 已恢复完成转 in-review（报告与 CI 证据在 Issue）；#106 已领取（in-progress，分支 `agent/issue-106-budget-socket-handoff`）。
-- 状态：in-review：#107；ready：#106、#108、#110。
-- 本轮起点 main `ae0f848` → 现 main `be32bd0`（#107 test `1d78f05` + docs `339c891` + merge `be32bd0`，已推送）。CI run 38995283704 四 job success；Security Scan 38995283769 success。
-- 后端 fast gate 本机基线（2026-10-17，HEAD=be32bd0）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected；fallback 1493/71/196；均绿。覆盖率（--cov=src branch 口径）：local native **68.5259%**（11106/16207）、local fallback 68.51%、CI（fallback）68.62% —— 均 ≥68.49%（M6 阈值）；60% gate 与分母未动。注意：带覆盖率运行显著慢于 no-cov（本机 ~83s vs ~35s），两种口径不可混用（#106 处理）。前端测试基线仍 41 files / 190 tests。
-- 跨天链缺口（归 #106）：2026-10-15/16 日报缺失、STATE/HANDOFF/ENV 需全量回填、TEST_PERF §6/§7 更新。
+- 任务：2026-10-17 执行轮。本席 executor-20261017Z；#107 已恢复完成转 in-review；#106 已交付（执行报告 + 合并 9a13987）转 in-review；队列剩 #108、#110。
+- 状态：in-review：#106、#107；ready：#108、#110。
+- 本轮起点 main `ae0f848` → 现 main `1ef3612`（#107 test `1d78f05` + docs `339c891` + merge `be32bd0`；#106 ci `cafe8ed` + test `2f6790c` + docs `e23ba43` + merge `9a13987` + docs follow-up `1ef3612`，均已推送）。
+- CI：run 38998104877 @ `9a13987` 四 job success（critical path 304s；backend-fast 步骤 elapsed 65s，step summary 含真实 Top10 且经日志 group 核对）；Security Scan 38998104756 success。此前 run 38995283704 @ `be32bd0` 四 job success（critical path 247s）。
+- 后端 fast gate 本机基线（2026-10-17，HEAD=2f6790c，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（34.65s）；fallback 1492/71/196（35.75s）；均绿。覆盖率（--cov=src）：local native 68.5259–68.66%（文件缓存敏感）、local fallback 68.5259%、CI 68.62%–68.63% —— 均 ≥68.49%（M6 阈值）；60% gate 与分母未动。前端测试基线仍 41 files / 190 tests。
+- 跨天链：已修复（2026-10-17）——STATE/ENV 已刷新、HANDOFF 于本轮末重写；DIARY 补 2026-10-15（补记 2026-10-17）、2026-10-16（补记 2026-10-17）与 2026-10-17 当日。
 
 ## 阻塞项
 - #84（历史）：曾 blocked，已由 Planner 在上轮关闭，不再是阻塞项；勿重开。
@@ -29,6 +30,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#106 完成转 in-review（2026-10-17）**：CI backend-fast 步骤真实 `--durations` Top10 写入 step summary（tee + PIPESTATUS 保退出码；>120s 软告警保留；summary 以折叠 group 回显日志供无 UI 验收；演练 4/4）+ 单例串扰隔离（删 `test_predictor_singleton`，autouse fixture 恢复 `_model`，生产缓存未动）+ socket 审计（探针不豁免 localhost：3 来源逐项，不修/仅记录）+ #95 同机前后复测（目标两用例 6.02s→<0.01s；full gate 37.49s→30.54s，-18.5%）+ TEST_PERF §6/§6.1/§7 重写 + .agent 跨天链回填（STATE/ENV/HANDOFF/日报 10-15、10-16 补记 2026-10-17）；提交 `cafe8ed`+`2f6790c`+`e23ba43` → merge `9a13987` @ main（已推送）；CI 38998104877 四 job 绿、step summary 经日志核对；计数变化 −1 已在报告解释。
 - **#107 完成转 in-review（2026-10-17）**：可观测模块行为验证恢复——四处失败真因=SDK console exporter 导入期绑定 `sys.stdout`（非未 flush），`_bind_console_streams(out)` 重指已构造 exporter 流；删除 incidental 测试、合并重复探针、拆出 `test_observability_disabled.py`（150 行）；native 1495/69/196、fallback 1493/71/196 双绿；覆盖率 native 68.5259%（11106/16207，JSON 复核）/ fallback 68.51% / CI 68.62% ≥68.49%；`observability.py` 98% stmt / 94% branch；提交 `1d78f05`（test）+ `339c891`（docs）→ merge `be32bd0` @ main（已推送）；CI 38995283704 四 job 绿；`scripts/demo_otel_trace.py` 退出 0。
 - **#105 验收关闭（2026-10-17，交付 2026-10-16）**：去重基准真实重复率校正（10k/100k 实测 distinct=1000/10000 + 全唯一对照）+ 真跑 Criterion（7 bench × 100 采样，estimates.json 程序化读回）+ 发现 `maturin develop` dev 构建慢 ~20x（必须 `--release`）；提交 `48e00c0`…`515c8c4` → merge `85f7f44` @ main。
 - **#104 验收关闭（2026-10-17，交付 2026-10-16）**：Rust bridge Unicode 等价性（空白谓词改 White_Space ∪ U+001C–U+001F）+ iterator 回退丢数修复；`cargo test` 11 passed；native 1483/69/196、fallback 1481/71/196；提交 `9a75875` → merge `a88fd7a` @ main。
@@ -48,22 +50,3 @@
 - **#75 完成转 in-review（2026-10-12）**：视图挂载矩阵（普查 11 已有 + 13 新增 = 24/24；新增 views-analysis-matrix 7 + views-system-user-matrix 3 + views-error-matrix 3 用例；只加测试未改源码）；提交 82875f4 → merge f5935b5 @ main（已推送）；前端五门禁全绿（163/163）+ 后端 ruff clean。
 - **#74 完成转 in-review（2026-10-12）**：日期数字格式化收敛 utils 单源（formatNumber compact 'wk' + formatDateTime/formatLocalDate/formatLocalMonthDay；4 文件本地实现全删；新增 `format-utils.test.js` 17 用例；另立 auto-discovered #86 记录 formatDuration 残留重复）；提交 24ad448 → merge bbe0732 @ main（已推送）；前端五门禁全绿（150/150）+ 后端 ruff clean。
 - **#73 完成转 in-review（2026-10-12）**：热词页 8/16 分栏改响应式（:xs=24 :sm=8/16；新增 `hotwords-responsive.test.js` 1 用例）；提交 2eec5f0 → merge df93fd8 @ main（已推送）；前端五门禁全绿（133/133）+ 后端 ruff clean。
-- **#72 完成转 in-review（2026-10-12）**：移动端判定收敛为 Layout 单源（MobileNav 删自有 ref/listener/768 改 prop 受控；新增 `mobile-single-source.test.js` 4 用例）；提交 bbc4b41 → merge 73194bb @ main（已推送）；前端五门禁全绿（132/132）+ 后端 ruff clean。
-- **#71 完成转 in-review（2026-10-12）**：comment.vue 死 loading 绑定到图表与热门评论区（三 .charts-loading + 一 .hot-comments-loading；新增 `comment-loading.test.js` 2 用例）；提交 3dc6bfa → merge 00eefd8 @ main（已推送）；前端五门禁全绿（128/128）+ 后端 ruff clean。
-- **#85 完成转 in-review（2026-10-12）**：platform 对比/情感图接入真实口径（compareChart 读 total_* 真实字段；情感饼聚合 sentiment_distribution；空兜底零值+双空态；删假常量；新增 `platform-compare-real-data.test.js` 3 用例）；提交 106ddb3 → merge be657b6 @ main（已推送）；前端五门禁全绿（126/126）+ 后端 ruff clean。
-- **#70 完成转 in-review（2026-10-12）**：Profile.vue 补资料加载态（profileLoading 初始 true + skeleton/v-else；新增 `profile-loading.test.js` 2 用例）；提交 2f114b1 → merge ff4da46 @ main（已推送）；前端五门禁全绿（123/123）+ 后端 ruff clean。
-- **#69 完成转 in-review（2026-10-12）**：report.vue 补齐错误态（模板区 loading/error+重试+空成功空态；预览区 error+重试；守卫改依赖 reportError 根因；新增 `report-error-states.test.js` 4 用例）；提交 83b633d → merge 01a40ba @ main（已推送）；前端五门禁全绿（121/121）+ 后端 ruff clean。
-- **#68 完成转 in-review（2026-10-11）**：tasks.vue 两张表格补加载态（TaskList.vue 为 spiderHistory 绑定 spiderLoading，为 startupWarmupResults 绑定 startupLoading；tasks.vue 传入 prop；新增 `task-list-loading.test.js` 3 用例）；提交 1e6339d → merge 5305683 @ main（已推送）；前端五门禁全绿（117/117）+ 后端 ruff clean。
-- **#67 完成转 in-review（2026-10-11）**：alert 中心补齐错误态与规则空态（useAlert 增加 retryFetch/fetchError 并保留历史告警；center.vue 增加错误态重试条与规则空态；center.scss 补齐样式；新增 `alert-center-states.test.js` 5 用例）；提交 c424341 → merge f64318c @ main（已推送）；前端五门禁全绿（114/114）+ 后端 ruff clean。
-- **#82 验收关闭（2026-10-11）**：删 `frontend/src/utils/websocket.js`（198 行）+ `frontend/tests/websocket-client.test.js`（3 用例）；提交 d0b3025 → merge edf707e @ main。
-- **#66 验收关闭（2026-10-11）**：spider 页首屏加载/错误态（useSpider 新增 overviewLoading/overviewError/logsError + spider.vue 两区指示/错误块 + 重试 + 空态收紧）；新增 4 用例；提交 381c81a → merge 272b5c6 @ main。
-- **#65 验收关闭（2026-10-11）**：platform 页三路 fetch 补加载/错误态（单文件 + 重试；失败不清旧数据）；新增 5 用例；提交 fdaf4e9 → merge e14d48c @ main。
-- **#83 验收关闭（2026-10-11）**：大屏刷新间隔真实数据刷新被假数据替换修复；提交 0512896 → merge b9554b0 @ main。
-- **#64 验收关闭（2026-10-11）**：登录/注册旅程 8 真实 mount 用例；提交 91c592a → merge a1c6d1d @ main。
-- **#62 验收关闭（2026-10-10）**：大屏 loading 绑定 + 区域级错误态 + 重试入口；新增 9 用例；提交 492356c → merge @ main。
-- **#61 验收关闭（2026-10-10）**：删除 6 个零消费者死模块（1,027 行）+ 孤儿测试（113 行）；提交 30f4d2a → merge 5910646 @ main。
-- **#60 验收关闭（2026-10-09）**：UX 与技术债务调研文档（abf466f → merge 9a039c3 @ main）。
-- **#58 验收关闭（2026-10-09）**：前端 TS 迁移策略文档（f586877）。
-- **#53 验收关闭（2026-10-08）**：trend 单系列 counts（1909d9b → main c402b4d）。
-- **#57/#56/#55/#54/#52 验收关闭**：manifest 悬空条目 / ensure_demo_admin / meta.icon 字符串化 / 死代码清理 / 大屏空数据 addColorStop 崩溃。
-- **M3 五项（2026-10-05）**：#43 浏览器冒烟 / #44 GET envelope 契约 / #47 写接口契约 / #45 字段契约 / #46 Redis 降级文档。
