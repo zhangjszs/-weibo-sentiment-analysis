@@ -198,18 +198,66 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | 2026-10-14 | 慢测试降规模：sentiment_model 评估取 NB+LogReg 子集 + model_training 抽样 500 条补断言（无覆盖率口径） | 47.98s → 39.33s（-18%），计数不变 1460 passed / 69 skipped / 196 deselected | 0730b7f (merge) | #92 |
 | 2026-10-14 | requirements 分层：requirements-ml.txt 新建 + ci 两 job 分层安装 + freeze 探针；CI install 182s → 141s（<110s 未达成，wheel 解包天花板，归档 D-016） | install 182s → 141s（-22.5%）；本地 gate 不变 39.33s | 26ce9ed (merge) | #90 |
 | 2026-10-15 | conftest 测试会话 REDIS_URL=disabled（/ready 3s×2 消除，纯测试侧，零产品改动） | 39.33s → 27.71s（-29.6%，-11.62s），计数不变 1460 passed / 69 skipped / 196 deselected | 本次 commit | #95 |
+| 2026-10-17 | #95 同机前后复测（补记：上表 #95 行"本次 commit"= `3b4da68`；用原提交 worktree `cc0cfe7` → `3b4da68`，同机串行无覆盖率，WEIBO_CORE_RUST=1） | 目标两用例 call 6.02s → <0.01s；full gate 37.49s（37.45/37.53 两次）→ 30.54s（31.23/29.85 两次），-6.95s / -18.5%；计数 1460/69/196 双端一致 | （复测，无代码提交） | #106 |
+| 2026-10-17 | 可观测模块行为验证恢复（#107）：enabled 路径进程内隔离 fixture、disabled/降级拆独立文件、删除 incidental 测试 | `src/utils/observability.py` 主进程覆盖 33% → 98% stmt / 94% branch；branch 口径 local native 68.5259%（11106/16207，JSON 复核）/ CI 68.62%（fallback 口径）；两文件共 17 用例 | be32bd0 (merge) | #107 |
+| 2026-10-17 | CI backend-fast 步骤：真实 `--durations` Top10 写入 step summary（tee + PIPESTATUS 保退出码；>120s 软告警保留；summary 以折叠 group 回显日志供无 UI 验收） | 机制 wiring：四场景临时 shell 演练通过（正常/超预算/失败/无 durations）；真实 CI 绿 | cafe8ed | #106 |
 
-## 7. 待办建议（未实施，等确认）
+### 6.1 M6 成功阈值现状（2026-10-17）
 
-| Issue | 优先级 | 状态标签 | 摘要 |
+| 阈值 | 目标 | 现状（同机实测 / CI 实测） | 判定 |
+|---|---|---|---|
+| 串行无覆盖率 fast gate | <30s | 当前 HEAD（2f6790c）：34.65s（native）/ 35.75s（fallback）；同机在 #95 后快照（3b4da68，1460 用例）重测 29.85–31.23s | **未达成**（当前 HEAD 差 ~5s；旧快照接近线） |
+| 完整 CI 关键路径 | <240s | run 38995283704 = **247s**（created 02:31:55Z → integration 完成 02:36:02Z；backend-fast 107s → integration 136s 垫底） | **未达成**（差 7s；历史 302s / 315s） |
+| branch 覆盖率（--cov=src） | ≥68.49% | local native 68.5259–68.66%（文件缓存状态敏感）；local fallback 68.5259%；CI 68.62%（fallback 口径） | **达成**（余量薄，+0.03pp 级） |
+
+**口径分列（不得混用）**：
+- **raw 秒数**：同机串行、无覆盖率、`-m "unit or api"`，本机 24 核 / Python 3.12.14。
+- **cov 口径**：同命令加 `--cov=src`，本机 ~80–86s（插桩开销 ~45–50s，与 §1.1 基准的 49s 一致）；CI backend-fast 步骤另含安装时间，不与 raw 秒数混用。
+- **full CI 关键路径**：run created → 最后 job 完成（墙钟），不以单 job 时长冒充。
+- CI 与 local 为不同机器 / Python（CI 3.11.17）条件，数值不可互作性能差。
+
+## 7. 议题状态与待确认建议（2026-10-17 重写）
+
+> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-17）。
+
+### 7.1 议题状态总表
+
+| Issue | 优先级 | 状态 | 摘要 |
 |---|---|---|---|
 | [#88](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/88) | P1 | done | conftest 强制 jti 黑名单内存回退（本地 -134s / 58%，b19432a 已合入） |
 | [#89](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/89) | P2 | done | CI integration 解耦 frontend-fast（关键路径结构性 -1m19s，已合入） |
-| [#90](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/90) | P2 | done (partial) | CI 依赖安装提速（requirements 分层，install 182s→141s，<110s 未达成，归档 D-016） |
-| [#91](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/91) | P2 | done | 本地 pytest-xdist 灰度（结论：暂不纳入默认门禁；数据入 §6） |
+| [#90](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/90) | P2 | done (partial) | CI 依赖安装提速（requirements 分层，install 182s→141s；<110s 未达成 → D-016 归档） |
+| [#91](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/91) | P2 | done | pytest-xdist 本地灰度（数据入 §6；结论=不纳入默认门禁，见 7.2） |
 | [#92](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/92) | P3 | done | 慢测试降规模（sentiment_model ×2 + model_training；gate 47.98s→39.33s） |
-| [#93](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/93) | P3 | ready-for-agent | 机制包：时长预算告警 + pytest-randomly 探针 + unit 层禁网评估 |
-| [#95](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/95) | P3 | done | 测试侧消灭 /ready 3s×2 等待：conftest REDIS_URL=disabled（gate 39.33s→27.71s） |
-| [#94](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/94) | P4 | done | chore：`.gitignore` 增加 `src/data/`（爬虫运行时产物，已合入） |
+| [#93](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/93) | P3 | done (partial) | 机制包：时长预算告警**已落地**（cafe8ed：CI step summary 真实 Top10 + >120s 软告警）；顺序依赖探针结论=不引入 randomly；unit 层禁网评估 → socket 审计（7.3） |
+| [#95](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/95) | P3 | done | conftest REDIS_URL=disabled（gate 39.33s→27.71s；#106 同机前后复测 -6.95s / -18.5%，入 §6） |
+| [#94](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/94) | P4 | done | chore：`.gitignore` 增加 `src/data/`（已合入） |
+| [#106](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | in-review | M6 预算报告 + socket 审计 + 跨天交接证据（本文件 §6/§6.1/§7 即交付物之一；执行报告见 Issue） |
+| [#107](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | in-review | 可观测模块行为验证恢复 + 分支覆盖率基线（be32bd0 已合入；CI 全绿，见 §6） |
+| [#108](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | ready | rustup 工具链 pin 生效 + maturin/README 构建边界 + `.env.example` 补全 + ADR-0005 |
+| [#110](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | ready | `scripts/` lint 门禁缺口（9 errors，含 `append_api.py` 语法错误）+ 8 项机械修复；不设 milestone |
 
-**建议实施顺序**：#88 → #89（低风险高收益，落地后按 §6 回写实测数据）→ #90/#91 并行评估 → #92/#93。
+### 7.2 已归档的机制决策（回应 §5 待办）
+
+1. **pytest-xdist 不纳入默认门禁**（#91 结论）：灰度两轮 -39%~-50% 且零顺序污染暴露，但默认门禁保持串行，与 CI 计数/覆盖率口径对齐；本地需要时手动 `-n` 即可。
+2. **requirements 分层止步于 install 141s**（#90 → D-016）：<110s 受 wheel 解包天花板限制；uv/venv 迁移已归档为方向，未获授权不实施。
+3. **时长预算告警已机制化**（#93 → cafe8ed）：CI backend-fast 步骤把真实 `--durations` Top10 写入 step summary，>120s 软告警保留；无 UI 环境经日志折叠 group 验收。
+4. **不引入 pytest-randomly**（#93 结论）：K5 无 flaky 证据，串行 gate 下顺序探针无可观测收益，避免为探针引入测试顺序变量。
+
+### 7.3 socket 审计结论（#106；审计 only，未改代码）
+
+方法：临时探针拦截 AF_INET/AF_INET6（不设 localhost 白名单），native/fallback 双模式跑 fast gate，逐条抓取真实连接尝试。三个来源：
+
+| # | 来源 | 时机 | 现状 / 处置建议 |
+|---|---|---|---|
+| 1 | urllib3 导入期 IPv6 能力探测 | import | 上游行为、不可控且无副作用；不修 |
+| 2 | `src/services/sentiment_service/cache.py:49` 导入期 `redis_client.ping()` | import | fail-fast 且有降级路径；不修 |
+| 3 | `tests/test_notification_service.py::test_send_invalid_email` → `smtplib.SMTP_SSL("invalid.host", 465)` 无 timeout | 用例内 | 仅记录；如修，加 timeout 即可，留待后续低风险批次 |
+
+**建议（待 Planner 确认）**：暂不引入 pytest-socket 全局禁网——现存 3 来源均属可控（上游探测 / fail-fast 降级 / 单点用例），全局封锁需白名单机制且易掩盖 Redis 类真实等待，维护成本高于收益；#93 的「unit 层禁网」评估至此收口。
+
+### 7.4 仍待确认的低风险候选
+
+- 前端 vitest 覆盖率配置（#93 遗留项；未配置，纳入下次前端议题时评估）；
+- integration 层补用例（196 用例偏薄，低覆盖集中在 `views/user`、`views/api/user_routes`；补 integration 优先于加 unit）；
+- 测试规范固化：>1s 用例 PR 需说明理由；mock 样板 >20 行必须提共享 fixture（§3 R3 教训）。
