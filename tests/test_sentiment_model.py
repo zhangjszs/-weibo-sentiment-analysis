@@ -290,11 +290,14 @@ class TestSentimentService:
 class TestSentimentPredictor:
     """预测器测试"""
 
-    def test_predictor_singleton(self):
-        """测试单例模式"""
+    @pytest.fixture(autouse=True)
+    def _restore_predictor_singleton(self):
+        """隔离 SentimentPredictor._model 类级单例：用例内可自由设置，用例结束恢复原值（防串扰）"""
         from model.trainModel import SentimentPredictor
 
-        assert SentimentPredictor._model is None
+        original = SentimentPredictor._model
+        yield
+        SentimentPredictor._model = original
 
     @patch("model.trainModel.joblib.load")
     def test_predictor_load(self, mock_load):
