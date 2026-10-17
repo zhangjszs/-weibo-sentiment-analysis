@@ -207,8 +207,8 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | 阈值 | 目标 | 现状（同机实测 / CI 实测） | 判定 |
 |---|---|---|---|
 | 串行无覆盖率 fast gate | <30s | 当前 HEAD（2f6790c）：34.65s（native）/ 35.75s（fallback）；同机在 #95 后快照（3b4da68，1460 用例）重测 29.85–31.23s | **未达成**（当前 HEAD 差 ~5s；旧快照接近线） |
-| 完整 CI 关键路径 | <240s | run 38995283704 = **247s**（created 02:31:55Z → integration 完成 02:36:02Z；backend-fast 107s → integration 136s 垫底） | **未达成**（差 7s；历史 302s / 315s） |
-| branch 覆盖率（--cov=src） | ≥68.49% | local native 68.5259–68.66%（文件缓存状态敏感）；local fallback 68.5259%；CI 68.62%（fallback 口径） | **达成**（余量薄，+0.03pp 级） |
+| 完整 CI 关键路径 | <240s | run 38998104877（本交付 merge 9a13987）= **304s**（created 03:15:45Z → integration 完成 03:20:49Z；backend-fast job 160s 含安装、步骤 elapsed 65s → integration 139s 垫底）；近期 best run 38995283704 = 247s（backend-fast 107s） | **未达成**（差 64s；run 间方差主要在 install 107→160s；历史 302s / 315s） |
+| branch 覆盖率（--cov=src） | ≥68.49% | local native 68.5259–68.66%（文件缓存状态敏感）；local fallback 68.5259%；CI 68.62%–68.63%（fallback 口径，两 run） | **达成**（余量薄，+0.03pp 级） |
 
 **口径分列（不得混用）**：
 - **raw 秒数**：同机串行、无覆盖率、`-m "unit or api"`，本机 24 核 / Python 3.12.14。
