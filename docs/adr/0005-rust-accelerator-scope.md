@@ -1,7 +1,7 @@
 # 0005 Rust 加速核：范围与 FFI 边界
 
 ## 状态
-Accepted (2026-10-15, M7-0 scaffold)；#98 修订（见“补充决策”）。
+Accepted (2026-10-15, M7-0 scaffold)；#98/#104/#108 修订（见“补充决策”）。
 
 ## 上下文
 项目 M7 引入 Rust 加速核（`rust/weibo_core`，PyO3 + maturin）以降低文本预处理/去重/爬虫Normalize的CPU耗时并作为展示亮点，但不能破坏现有 Flask/SQLAlchemy/Celery/ORM 与测试基线。
@@ -29,5 +29,11 @@ Accepted (2026-10-15, M7-0 scaffold)；#98 修订（见“补充决策”）。
 - **parity 测试必须证明没走 fallback**：等价性测试需断言 native 路径未触发降级，否则“Rust 抛错 + Python 兜底”会让错误内核以正确结果的形式长期潜伏。
 - **已知有界差异（不修）**：case 映射绑定 Unicode 数据版本。Rust 表比 CPython 3.12 新，55 个 CPython 仍视为未分配（`Cn`）的 code point 在 Rust 侧有小写映射。刻意不硬编码 deny-list：会在下次 CPython 升级时腐化，且会让含这些未分配码点的文本与其它 Python 消费者行为不一致。已穷举确认这 55 个是全部差异。
 
+## 补充决策（#108 复核后，2026-10-17）
+- **工具链固定生效（已实现事实）**：pin 文件更名 `rust/toolchain.toml` → `rust/rust-toolchain.toml`（rustup 只识别后者）。实测：`rustup show` 在 `rust/` 与 `rust/weibo_core/` 均报 `overridden by .../rust/rust-toolchain.toml`；把文件暂时移开则回落为 `it's the default toolchain`（A/B 对照）。CI 的 rust-core job 因此自动使用 1.99.0 + rustfmt/clippy，不再依赖 runner 全局默认。
+- **当前单 crate、为何暂不拆（已实现事实 + 边界）**：Rust 侧只有 `rust/weibo_core` 一个 crate；maturin 配置（`rust/weibo_core/pyproject.toml`）只管理这一个可选扩展，根 Flask 包的构建/运行依赖不受影响（maturin/cargo 不进根 requirements）。暂不拆的理由：目前只有一组 FFI 函数与一个 abi3 产物，拆 crate 只会增加版本对齐/编译/发布协调成本，收益为零。**多 crate 触发条件**（满足其一再评估，需走门禁）：出现第二个独立可发布的扩展单元；crate 编译时间或依赖图显著分叉；需要独立 ABI/发布矩阵。
+- **wheel 本地构建/安装、不自动发布（已实现事实 + 未决边界）**：`maturin develop --release` 与 `maturin build --release` + 本地 pip 安装均已实测（Linux/WSL；macOS/Windows 未实测）。**不自动发布 PyPI**；任何发布动作（含 CI 自动上传制品）需 Planner/用户明确批准。跨版本 CI 与 artifact 归 #102（当前未授权、未实施）。
+- **事实与授权分离**：本节只记录已落地事实与待决边界；ADR 的 Accepted 状态不构成对 M7 新切片/新服务/重大 CI 扩展的用户授权（D-019 pending，D-018 约束维持）。
+
 ## 相关
-- Issue #96 (epic), #97 (M7-0), #98 (M7-1, benchmarks), #99..#103, #104 (parity 修正).
+- Issue #96 (epic), #97 (M7-0), #98 (M7-1, benchmarks), #99..#103, #104 (parity 修正), #108 (pin/打包/边界).
