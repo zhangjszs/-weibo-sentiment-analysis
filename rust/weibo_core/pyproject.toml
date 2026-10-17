@@ -1,0 +1,17 @@
+# Rust-local maturin configuration (#108). Scoped to this crate only: the
+# optional weibo_core extension. Build/install instructions live in the repo
+# README ("可选：Rust 加速扩展"); wheels are built for local/CI use and are
+# never published to PyPI automatically.
+[build-system]
+requires = ["maturin>=1.15,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "weibo-core"
+description = "Rust-accelerated core for weibo sentiment analysis (optional PyO3 extension)"
+requires-python = ">=3.11"
+license = "MIT"
+dynamic = ["version"]
+
+[tool.maturin]
+bindings = "pyo3"
