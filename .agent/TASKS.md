@@ -1,73 +1,67 @@
 # TASKS — GitHub Issue 本地镜像
 
-> 更新于 2026-10-17，Planning 轮整体重写。**GitHub Issue 为权威来源**；本轮开头重新拉取真实状态（gh 可用、账号 zhangjszs、scope repo+workflow），未降级、未重复创建。
+> 更新于 2026-10-18，Planning 轮整体重写。**GitHub Issue 为权威来源**；本轮开头重新拉取真实状态（gh 可用、账号 zhangjszs、scope repo+workflow），未降级、未重复创建。
 > 生命周期标签：`ready` / `in-progress` / `in-review` / `blocked` / `needs-info` / `done`；优先级 `priority:P0`–`P4`。
 > Executor：先改 Issue 标签/comment，再同步本行；只改执行状态与报告，不改任务范围。完整规格/非目标/checklist 见对应 Issue。
 
-## 今日队列（建议顺序；4 项，无硬依赖）
+## 今日队列（建议顺序；2 项，无硬依赖）
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#107 补齐现有可观测模块的行为验证并恢复分支覆盖率基线](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | in-review | **2026-10-17 Executor 完成（原现场恢复）**：`1d78f05`（test）→ `339c891`（docs）→ merge `be32bd0` @ main（已推送）。四处失败真因=SDK console exporter **导入期**绑定 `sys.stdout`（非"未 flush 就断言"），用 `_bind_console_streams(out)` 重指已构造 exporter 的流修复；incidental 测试删除（非换词重钉）、重复 console 探针合并、拆出 `tests/test_observability_disabled.py`（150 行）。native 1495/69/196、fallback 1493/71/196 双绿；覆盖率 local native **68.5259%**（11106/16207，JSON 复核）、local fallback 68.51%、CI 68.62%，均 ≥68.49%；`observability.py` 98% stmt / 94% branch；CI run 38995283704 四 job 绿；demo 探针退出 0。覆盖率余量薄（+0.02pp 级）与文件缓存状态敏感性已列入执行报告风险。 |
-| 2 | [#106 补齐 M6 预算报告、socket 审计与跨天交接证据](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | in-review | **2026-10-17 Executor 完成**：`cafe8ed`（CI step summary 真实 Top10 + tee/PIPESTATUS 保退出码）→ `2f6790c`（单例串扰隔离，删偶然默认断言）→ `e23ba43`+`1ef3612`（TEST_PERF §6/§6.1/§7 重写）→ merge `9a13987` @ main（已推送）。演练 4/4（normal/overbudget/failure/nodurations）；CI run 38998104877 四 job 绿、summary 经日志 group 逐行核对；socket 3 来源逐项表（不豁免 localhost，审计 only）；#95 同机复测：目标两用例 6.02s→<0.01s、full gate 37.49→30.54s（-18.5%）；计数 1494/1492（+11 = #107 净 +12 − 本项 1）；M6 三阈值如实（<30s 未达 34.65s / <240s 未达 304s / ≥68.49% 达成薄余量）；跨天链回填（STATE/ENV/HANDOFF + 10-15/16 补记日报）已入 main（`64c76cf`）。 |
-| 3 | [#108 使 Rust 工具链固定生效并补齐可选模块配置和构建边界](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | in-review | **2026-10-17 Executor 完成**：`1889b6f`（`rust/toolchain.toml`→`rust-toolchain.toml`，内容不变）→ `0665da4`（`rust/weibo_core/pyproject.toml`）→ `eb944f7`（README 构建说明含 `--release` 强制）→ `9687b29`（`.env.example` 四变量）→ `a4791cf`（ADR-0005 边界）→ `e2ecb5c`（triage-labels）→ merge `ddea0a9` @ main（已推送）。pin 双证据：rustup `overridden by .../rust-toolchain.toml` + A/B 回落对照；CI run 38999122715 四 job 绿，runner **未预装** 1.99.0、由 pin 触发 rustup 自动安装后输出 `rustc 1.99.0`；maturin build/develop + wheel 安装 + smoke 全过；native 1494/69/196、fallback 1492/71/196 双绿；执行报告见 Issue（comment 6229127684）。 |
-| 4 | [#110 处置 scripts/ lint 门禁缺口与无法解析的脚本](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | in-review | **2026-10-17 Executor 完成**：`cd0ea53`（fix）→ `21535bc`（ci）→ merge `1abfaf0` @ main（已推送）。`append_api.py` 第 4 行拆分 + 删 UP009（**未运行**；`docs/API.md` sha256 前后一致 `71f7dcb8…d9ea1f`）；batch_add_markers/download_bert_model/word_cloud_picture 机械修复；`scripts` 纳入 ruff 门禁（AGENTS.md 两行 + ci.yml 一行）；`ruff check src tests scripts` 0 error；CI run 38999825154 四 job 绿、Ruff 步骤按新路径 `All checks passed!`；native 1494/69/196、fallback 1492/71/196（+11 归因 #107 +12 − #106 1）；执行报告见 Issue（comment 6229255290）。 |
+| 1 | [#112 M6 残余差距只读分析：串行 gate <30s 与 CI <240s 的可行杠杆](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/112) | P2 | ready | **只分析，不改代码/CI/阈值**：当前 HEAD 双模式计数、wall time、`--durations=30` Top ≥10；至少 3 个 CI run 的 created→完成墙钟与 install/pytest 分项；≥4 项候选杠杆（预期收益/风险/红线判断）。产出写入 `docs/TEST_PERF.md` 新小节；为 D-023 提供证据。 |
+| 2 | [#111 同步旧 ruff 命令并刷新 TEST_PERF 议题状态表](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/111) | P4 | ready | 同步 `scripts/verify_project.ps1`、`docs/DEVELOPMENT.md`、`docs/RELEASE_CHECKLIST.md`、`README.md` 的旧 `ruff check src tests`；刷新 `docs/TEST_PERF.md` §7.1 状态；更正 #108 的 2m37s 关键路径误写（实际 run 287s）。不运行 `append_api.py`、不改历史快照/CI/规则。 |
 
-队列说明：P0=0、P1=0，未为填容量升级优先级；四项均为"已入库能力的低风险纠偏"，**不等于批准 M7 新方向**。今日队列 4 项全部完成转 in-review（#107/#106/#108/#110，执行报告与 CI 证据见各 Issue），ready 队列清空；本机 fast gate 已绿。
-
-## 验收恢复现场（不占 ready 队列，不代 Executor 重置）
-
-| Issue | P | 状态 | 验收结论与剩余职责 |
-|---|---|---|---|
-| [#98 Rust 第一切片](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | P2 | in-progress | 2026-10-16 首次验收失实后 reopen；#104/#105 已恢复其 parity/丢数与基准真实性，但**原生产迁移、既有用例双 backend、真实 Criterion 标准仍留本 Issue**，且受 D-019 授权门禁约束。不是 Executor 已重新领取；Planner 不代领取、不代重置。若下一次验收仍失败，必须重新拆解，不准第三次盲试。 |
+队列说明：P0=0、P1=0；两项均属低风险收尾，**不等于批准 M7 扩展或 M6 阈值修订**。若时间不足，优先完成 #112（D-023 的决策输入），不要两项各做一半。D-019 已于今日默认转正 A（暂停 M7 扩展）；D-023 待用户决定 M6 两个未达阈值，默认 A = 先分析、不关闭、不改阈值。
 
 ## 等待验收（in-review）
 
-- #106（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue（comment 6228995377），待 Planner 独立复跑验收。
-- #107（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue，待 Planner 独立复跑验收。昨日新增两项已验收关闭（见下）。
-- #108（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue（comment 6229127684），待 Planner 独立复跑验收。
-- #110（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue（comment 6229255290），待 Planner 独立复跑验收。
+- 无。昨日 #106/#107/#108/#110 已于 2026-10-18 全部验收关闭（见下）。
 
 ## 阻塞 / 待决策（全部保留，不可领取实现）
 
 | Issue | P | 状态 | 阻塞事实 / 下一步 |
 |---|---|---|---|
+| [#98 Rust 第一切片](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | P2 | in-progress | 2026-10-16 首次验收失实后 reopen；#104/#105 已恢复其 parity/丢数与基准真实性，但**原生产迁移、既有用例双 backend、真实 Criterion 标准仍留本 Issue**。D-019 默认 A 生效后继续冻结；保持现场不重置，但下一棒不得领取。 |
 | [#109 OTLP metrics 接收与 Jaeger 展示](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | P2 | blocked | 本机无 Docker、无已知已授权 Docker 主机；console smoke 不替代真实 profile/UI 验收。解除环境阻塞后验证，禁止自行新增 metrics 服务/长期成本。 |
-| [#96 M7 候选 Epic](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | P2 | needs-info | D-019 第 2 天未答复，默认 A = 冻结扩展；Epic 不纳入子项计数。 |
+| [#96 M7 候选 Epic](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | P2 | needs-info | D-019 于 2026-10-18 默认转正 A = 暂停 M7 扩展。B/C 未批准；Epic 不纳入子项计数，保持冻结。 |
 | [#100 Qdrant 语义搜索候选](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/100) | P3 | needs-info | 新服务/模型与资源边界未授权；不得默认下载模型、启动 Qdrant 或返回假成功。 |
 | [#101 SSE 摘要候选](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/101) | P3 | needs-info | 产品入口、LLM 成本与数据范围未定；不得变更认证模型或发出付费请求。 |
-| [#102 ABI/CI 矩阵](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) | P2 | needs-info | 待 D-019 授权，且 #98 未 done；不得以 abi3 标记代替 3.11/3.12 双实现执行。 |
+| [#102 ABI/CI 矩阵](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) | P2 | needs-info | 待 D-019 B/C 授权，且 #98 未 done；不得以 abi3 标记代替 3.11/3.12 双实现执行。 |
 | [#59 产品功能需求收集](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/59) | P2 | needs-info | D-012 默认 A 有效；#100/#101 是候选而非用户已确认需求，本轮不重复追问输入方式。 |
 
-## 本轮验收账（2026-10-17）
+## 本轮验收账（2026-10-18）
 
-昨日（2026-10-16）无日报、STATE/HANDOFF/ENV 仍停 2026-10-14，故以 `git log cc0cfe7..ae0f848`、Issue 执行报告、关键 diff、CI run 与本轮独立复跑反推。
+昨日（2026-10-17）日报存在且 append-only；本轮以 `git show`、Issue 执行报告/comment、CI 日志、worktree 复跑与独立命令逐项核对。
 
 | 昨日交付 | 结论 / GitHub 当前状态 | 独立复跑证据（Planner，只读） | 未完成项去向 |
 |---|---|---|---|
-| #104 · `9a75875` → merge `a88fd7a` | **通过**，done / CLOSED | 三组原反例全部与 canonical 一致（真实 extension 0.2.0）；`cargo test` 11 passed（原 6）；native 1483/69/196（30.55s）、fallback 1481/71/196（29.97s）双绿，与报告逐字一致；`ruff check src tests` clean；改动仅 4 文件、无新依赖/消费者；55 码点有界差异逐点复核为 CPython 未分配码点 | — （变异实验需改码，未独立复现，按报告采信） |
-| #105 · `48e00c0`…`515c8c4` → merge `85f7f44` | **通过**，done / CLOSED | 独立重建工作集：10k→1000 unique、100k→10000 unique，`dedup_keys == dedup_keys_py`；`target/criterion/*/new/estimates.json` 7 项 mtime 2026-10-16 21:51–21:52，JSON median 与 estimates 逐项吻合；md 已撤回 #98 的错误重复率；门禁与 #104 完全一致 | `scripts/` 门禁缺口 → **#110**（今日新立项）；`--release` 构建说明 → #108 |
-| #107 · 无提交（在途） | **已恢复完成**，转 in-review（2026-10-17） | Executor 在 main 重建：`1d78f05` → `339c891` → merge `be32bd0`（已推送）；根因=SDK console exporter 导入期绑定 stdout；native 1495/69/196、fallback 1493/71/196 双绿；覆盖率 68.5259% / 68.51% / CI 68.62% ≥68.49%；CI 38995283704 四 job 绿 | 已转 in-review 等待 Planner 验收；覆盖率余量薄已列入执行报告风险 |
+| #107 · `1d78f05`+`339c891` → merge `be32bd0` | **通过**，done / CLOSED | `git diff ae0f848..be32bd0 -- src` 为空；两测试文件 17 passed；native 1494/69/196（40.71s）、fallback 1492/71/196（38.45s）双绿；覆盖率 JSON **68.5259%**（9268/13077，与报告逐位一致）；`observability.py` 98% stmt / 94% branch；CI 38995283704 四 job success、68.62%；demo 按文档命令 exit 0，health/ready 真实 span | 覆盖率余量薄 + SDK `.out` 实现细节风险，转入 M6 风险清单 |
+| #106 · `cafe8ed`+`2f6790c`+`e23ba43`+`1ef3612` → merge `9a13987` | **通过**，done / CLOSED | CI 38998104877 日志 group 实读 elapsed 65s/exit 0 + 真实 Top10；Planner 临时 shell 演练 normal/overbudget/failure 退出码保持；socket 3 来源表与代码一致；#95 worktree `cc0cfe7`→`3b4da68` 目标两用例 6.02s→<0.005s，full gate 38.99s→32.16s，计数 1460/69/196 一致；TEST_PERF §6/§6.1/§7 与 10-17 日报完整 | M6 两个阈值未达，转 #112 分析 / D-023 决策 |
+| #108 · `1889b6f`…`e2ecb5c` → merge `ddea0a9` | **通过**，done / CLOSED（附事实更正） | `rustup show active-toolchain` → overridden by `rust/rust-toolchain.toml`；cargo fmt/clippy/test 全绿 11 passed；requirements 无 maturin/cargo/pyo3；README/.env.example/ADR/triage 均核对；CI 38999122715 四 job success、rust-core 由 pin 自动安装 1.99.0、wheel smoke 0.2.0 | 报告把 backend-fast 2m37s 误称 critical path；实际 run 287s，已在验收 comment 更正，转 #111 文档刷新 |
+| #110 · `cd0ea53`+`21535bc` → merge `1abfaf0` | **通过**，done / CLOSED | `ruff check src tests scripts` → All checks passed（exit 0）；ast.parse 成功；`docs/API.md` sha256 `71f7dcb8…d9ea1f` 不变；AGENTS.md/ci.yml 均含 scripts；CI 38999825154 四 job success、Ruff 按新路径通过；双模式 1494/1492 绿 | 旧命令残留（verify_project.ps1、DEVELOPMENT.md 等）→ #111 |
 
-## Milestone 实际计数（按 GitHub state，不凭报告）
+**报告失实检查**：四项交付本身均有独立证据支持，未发现“声称完成但证据不支持”。#108 有一处 CI 口径误写（单 job 时长当完整关键路径），已更正并转 #111 修文档；不构成 reopen 交付物的理由（D-015 先例）。#106 的 socket 审计为临时探针，Planner 未重跑探针，按 Issue 表 + 代码现状 + 审计方法采信。
 
-- **M6 测试性能优化：8 / 10 CLOSED，未收敛**。CLOSED：#88–#95（其中 #90/#93/#95 为部分通过后转交余项）；OPEN：#106、#107。成功阈值仍为串行无覆盖率 <30s、完整 CI <240s、branch ≥68.49%。
-- **M7 候选与既有交付纠偏：5 / 11 CLOSED**。#97/#99/#103/#104/#105 done；OPEN：#98（in-progress）、#108（in-review）、#100/#101/#102（needs-info）、#109（blocked）。#96 为候选 Epic，不计入分母，milestone 名称不构成方向授权。
-- **#110 不设 milestone**（仓库卫生，不计入任何成功信号分母，见 D-021）；若同类问题再现，由下一轮 Planner 决定是否开「工程卫生」里程碑。
+## Milestone 实际计数（按 GitHub issue state，不凭报告/API 计数器）
 
-## 本轮已运行验证（Planner，只读；基线 HEAD `ae0f848`）
+- **M6 测试性能优化：10 / 10 CLOSED，未收敛**。CLOSED：#88–#95、#106、#107。成功信号 1/3：覆盖率达成（68.5259% 本地 / 68.62% CI），串行 <30s 与完整 CI <240s 均未达。**成员关闭 ≠ 里程碑收敛**。
+- **M7 候选与既有交付纠偏：6 / 11 CLOSED**。#97/#99/#103/#104/#105/#108 done；OPEN：#98（in-progress 冻结）、#100/#101/#102（needs-info）、#109（blocked）。#96 为候选 Epic，不计入分母。
+- **#110 不设 milestone**（仓库卫生，不计入任何成功信号分母，D-021）；#111/#112 同样不设 milestone。
+- 计数口径：M6 按 issue state 为 10/10 CLOSED（milestone `open_issues=0`、`closed_issues=10`），但 milestone 保持 open；description 明确“未达成不得结项”。成功信号 2 项未达，故不关闭 milestone。
 
-- 独立 worktree `git worktree add --detach /tmp/opencode/verify-main ae0f848`，避开在途 #107 的未提交文件（在途文件会让本机 fast gate 变红，`--maxfail=1` 停在该文件）。
-- native 全门禁：`WEIBO_CORE_RUST=1`、serial、`--no-cov` → **1483 passed / 69 skipped / 196 deselected**，exit 0，30.55s。
-- fallback 全门禁：`WEIBO_CORE_RUST=0` → **1481 passed / 71 skipped / 196 deselected**，exit 0，29.97s。
-- `~/.cargo/bin/cargo +1.99.0 test --manifest-path rust/weibo_core/Cargo.toml --locked` → **11 passed**；`ruff check src tests` → **All checks passed**。
-- 真实 extension 行为复核（退出 0）：`normalize_post("A\x1cB")`→`'a b'`；`normalize_posts(iter([...\ud800...]))` 全量保留；`dedup_keys(iter(...))` 全量保留；`weibo_core` 未新增 Python 侧公共符号（`pub mod text` 不外露）。
-- 基准产物核对：`scripts/bench_dedup.py::_dedup_workload` 重建工作集 distinct=1000/10000；7 个 Criterion `estimates.json` 与 `docs/benchmarks/m7-1-dedup.json` 对得上。
-- CI run [38916769148](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38916769148) @ `ae0f848`：rust-core / backend-fast / frontend-fast / integration **四 job 全 success**；created 14:33:48Z → 最后 job 14:39:31Z = **343s**；backend-fast **branch 68.22%**（60% 门禁通过）。
-- #110 事实复核：`ruff check scripts` → **9 errors**（含 `scripts/append_api.py:4 invalid-syntax`）；`ast.parse` 同样失败；全仓 grep 无 `append_api` 引用；CI 已执行 `scripts/check_documented_paths.py`。
-- #107 现场复核：`pytest tests/test_observability.py -o addopts="" --no-cov` → `4 failed, 10 passed`；`ruff check src tests` 唯一错误即该文件的 C416。
-- 注意（操作细节，供后续复用）：`pytest.ini` 的 `addopts` 已含 `-q`，命令行再给一次 `-q` 会把 verbosity 降到 −2，**汇总行不打印**；要拿计数就不要重复 `-q`。
+## 本轮已运行验证（Planner，只读；基线 HEAD `048af63`）
+
+- `ruff check src tests scripts` → **All checks passed**（exit 0）；`ast.parse('scripts/append_api.py')` → exit 0；`sha256sum docs/API.md` = `71f7dcb8149bf5e9aa099b8a60de0a2bd11466ecf66ac76dbad1bb98c7d9ea1f`。
+- `pytest tests/test_observability.py tests/test_observability_disabled.py --no-cov` → **17 passed**。
+- native 全门禁（`WEIBO_CORE_RUST=1`、serial、`--no-cov`）→ **1494 passed / 69 skipped / 196 deselected**，exit 0，40.71s。
+- fallback 全门禁（`WEIBO_CORE_RUST=0`）→ **1492 passed / 71 skipped / 196 deselected**，exit 0，38.45s。
+- 覆盖率（`--cov=src`，native）→ **68.5259%**（JSON `percent_covered` 68.52594557907078，9268/13077），exit 0，86.37s；`observability.py` 98% stmt / 94% branch。
+- Rust：`rustup show active-toolchain` → 1.99.0 `overridden by rust/rust-toolchain.toml`；`cargo fmt --check`、`cargo clippy --locked --all-targets -- -D warnings`、`cargo test --locked` → 全绿，**11 passed**。
+- #95 同机配对：worktree `cc0cfe7` → `3b4da68`，目标两用例 call **6.02s → <0.005s**；full gate **38.99s → 32.16s**，计数 1460/69/196 双端一致。
+- CI run [38995283704](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38995283704)、[38998104877](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38998104877)、[38999122715](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38999122715)、[38999825154](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38999825154) 均四 job success；关键路径分别 247s / 304s / 287s / 329s。
+- `scripts/demo_otel_trace.py`（`OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=console`）→ exit 0，`/health`、`/ready` 各有真实 span；`scripts/check_documented_paths.py` → OK。
+- 未跑：integration/external 本地层（CI integration 已绿）；前端全量门禁（本轮未动前端，CI frontend-fast 已绿）；macOS/Windows Rust 构建（环境不具备）。
 
 ## 给 Executor 的握手要求
 
-接手先按真实 Git/Issue 修复自己拥有的 STATE/HANDOFF/ENV，并按 D-021 补当日 DIARY（缺失历史只能带补记日期追加，不得回写成当日实测）；先收口 #107 现场，再按 #106 → #108 → #110 领取，逐项按契约 1.7 报执行报告并转 in-review，绝不自行 close；`.agent` 变更与代码分开提交，未授权的 M7 扩展保持不动。
+接手先按真实 Git/Issue 核对 STATE/HANDOFF/ENV，并按 D-022 写当日 DIARY；只领取 #112 → #111，逐项按契约 1.7 报执行报告并转 in-review，**绝不自行 close**。#98/#109/#96/#100/#101/#102 保持冻结/阻塞；不启动 M7 扩展、不改 M6 阈值、不做 CI 拓扑改造。`.agent` 变更与代码/文档变更分开提交；未授权的 M7 扩展保持不动。
