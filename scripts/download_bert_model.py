@@ -64,8 +64,8 @@ def _resolve_paths() -> tuple[str, str]:
 
 def main() -> int:
     try:
-        from transformers import AutoTokenizer
         from optimum.onnxruntime import ORTModelForSequenceClassification
+        from transformers import AutoTokenizer
     except ImportError as e:
         print(
             f"缺少依赖: {e}。请先安装: "
@@ -98,9 +98,9 @@ def main() -> int:
         return 1
 
     print("[download_bert_model] 完成。")
-    print(f"  backend: optimum.onnxruntime.ORTModelForSequenceClassification")
+    print("  backend: optimum.onnxruntime.ORTModelForSequenceClassification")
     print(f"  id2label: {model.config.id2label}")
-    print(f"  设置 SENTIMENT_BACKEND=bert 即可启用 BERT 推理。")
+    print("  设置 SENTIMENT_BACKEND=bert 即可启用 BERT 推理。")
     return 0
 
 

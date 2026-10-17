@@ -2,7 +2,7 @@ import jieba  # 分词
 import numpy as np  # 矩阵运算
 from matplotlib import pylab as plt  # 绘图，数据可视化
 from PIL import Image  # 图片处理
-from pymysql import *
+from pymysql import connect
 from wordcloud import WordCloud  # 词云
 
 # wordCloud
@@ -40,7 +40,7 @@ def get_img(field, targetImgSrc, resImgSrc):
     wc.generate_from_text(string)
 
     # 绘制图片
-    fig = plt.figure(1)
+    plt.figure(1)
     plt.imshow(wc)
     plt.axis("off")  # 不显示坐标轴
 
