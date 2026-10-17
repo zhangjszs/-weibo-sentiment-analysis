@@ -8,12 +8,12 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#107 补齐现有可观测模块的行为验证并恢复分支覆盖率基线](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | in-progress（**疑似中断**） | **先读 Issue 中的 Planner 现场记录**：分支 `agent/issue-107-observability-behavior`（= `ae0f848`，无自有提交）有未提交 `tests/test_observability.py`（+381/−86），现 `4 failed/10 passed`，`ruff` 报 `:241` C416；四处失败均为"导出流为空"（疑未 flush 就断言）。恢复优先于放弃，放弃前先留 patch（副本 `/tmp/opencode/issue-107-wip-2026-10-17.patch`）。**分支提示**：Planning 的 .agent 提交在 main（`ee83a0f`），该分支停在 `ae0f848` —— 开工前先 `git checkout main`（未提交改动会跟随）或 `git rebase main`，否则读到的是旧 PLAN/TASKS。达标线不变：local 与真实 CI 的 `--cov=src` branch ≥68.49%，不改分母/阈值，不污染 global provider。**Planner 不重置该现场**。 |
+| 1 | [#107 补齐现有可观测模块的行为验证并恢复分支覆盖率基线](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | in-review | **2026-10-17 Executor 完成（原现场恢复）**：`1d78f05`（test）→ `339c891`（docs）→ merge `be32bd0` @ main（已推送）。四处失败真因=SDK console exporter **导入期**绑定 `sys.stdout`（非"未 flush 就断言"），用 `_bind_console_streams(out)` 重指已构造 exporter 的流修复；incidental 测试删除（非换词重钉）、重复 console 探针合并、拆出 `tests/test_observability_disabled.py`（150 行）。native 1495/69/196、fallback 1493/71/196 双绿；覆盖率 local native **68.5259%**（11106/16207，JSON 复核）、local fallback 68.51%、CI 68.62%，均 ≥68.49%；`observability.py` 98% stmt / 94% branch；CI run 38995283704 四 job 绿；demo 探针退出 0。覆盖率余量薄（+0.02pp 级）与文件缓存状态敏感性已列入执行报告风险。 |
 | 2 | [#106 补齐 M6 预算报告、socket 审计与跨天交接证据](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | ready | summary 含真实 Top10；逐项 socket 来源表（不放宽 localhost）；删 `tests/test_sentiment_model.py:293-311` 偶然默认断言并隔离单例串扰；补 #95 同机前后记录（原提交/worktree，不污染工作区）；更新 TEST_PERF §6/§7 并分开记 raw 秒数 / full CI 关键路径 / cov 与 no-cov；**Executor 自行补 STATE/HANDOFF/ENV 与缺失日报（带补记日期，不改历史行）**。阈值未达就如实保留差距。 |
 | 3 | [#108 使 Rust 工具链固定生效并补齐可选模块配置和构建边界](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | ready | 把 `rust/toolchain.toml` 改成 rustup 识别文件名并实测命中仓库 pin；补 Rust-local maturin 配置 + README 构建说明（含 **`maturin develop` 默认 dev 构建慢约 20x、必须 `--release`**，#105 发现）；`.env.example` 补 `WEIBO_CORE_RUST` / `OTEL_ENABLED` / `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_SERVICE_NAME`；ADR-0005 补单 crate 与不发布边界；`docs/agents/triage-labels.md` 同步生命周期标签。 |
 | 4 | [#110 处置 scripts/ lint 门禁缺口与无法解析的脚本](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | ready | 今日新立项（规格已写入 Issue）：修 `scripts/append_api.py` 第 4 行语法错误（**不得真的运行它**，`docs/API.md` 的 sha256 必须不变）；`scripts/` 纳入 `ruff check src tests scripts` 并同步 AGENTS.md 与 CI 的 Ruff 步骤；其余 8 项机械修复逐条说明"为何行为不变"；双模式 fast gate 计数与 #104/#105 基线一致。 |
 
-队列说明：P0=0、P1=0，未为填容量升级优先级；四项均为"已入库能力的低风险纠偏"，**不等于批准 M7 新方向**。#107 是唯一在途现场，故排第一；只有它能立刻把本机 fast gate 从红变绿。
+队列说明：P0=0、P1=0，未为填容量升级优先级；四项均为"已入库能力的低风险纠偏"，**不等于批准 M7 新方向**。#107 现场已恢复完成并转 in-review（执行报告与 CI 证据见 Issue），本机 fast gate 已绿；余下按 #106 → #108 → #110 顺序领取。
 
 ## 验收恢复现场（不占 ready 队列，不代 Executor 重置）
 
@@ -23,7 +23,7 @@
 
 ## 等待验收（in-review）
 
-无。昨日新增两项已验收关闭（见下）。
+- #107（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue，待 Planner 独立复跑验收。昨日新增两项已验收关闭（见下）。
 
 ## 阻塞 / 待决策（全部保留，不可领取实现）
 
@@ -44,7 +44,7 @@
 |---|---|---|---|
 | #104 · `9a75875` → merge `a88fd7a` | **通过**，done / CLOSED | 三组原反例全部与 canonical 一致（真实 extension 0.2.0）；`cargo test` 11 passed（原 6）；native 1483/69/196（30.55s）、fallback 1481/71/196（29.97s）双绿，与报告逐字一致；`ruff check src tests` clean；改动仅 4 文件、无新依赖/消费者；55 码点有界差异逐点复核为 CPython 未分配码点 | — （变异实验需改码，未独立复现，按报告采信） |
 | #105 · `48e00c0`…`515c8c4` → merge `85f7f44` | **通过**，done / CLOSED | 独立重建工作集：10k→1000 unique、100k→10000 unique，`dedup_keys == dedup_keys_py`；`target/criterion/*/new/estimates.json` 7 项 mtime 2026-10-16 21:51–21:52，JSON median 与 estimates 逐项吻合；md 已撤回 #98 的错误重复率；门禁与 #104 完全一致 | `scripts/` 门禁缺口 → **#110**（今日新立项）；`--release` 构建说明 → #108 |
-| #107 · 无提交（在途） | **疑似中断**，保持 in-progress | 分支 `agent/issue-107-observability-behavior`（= main）有未提交 `tests/test_observability.py`；`4 failed / 10 passed`；`ruff` 报 C416；四处失败均为"导出流为空" | 由 Executor 决定恢复/放弃；Planner 已在 Issue 留现场记录 |
+| #107 · 无提交（在途） | **已恢复完成**，转 in-review（2026-10-17） | Executor 在 main 重建：`1d78f05` → `339c891` → merge `be32bd0`（已推送）；根因=SDK console exporter 导入期绑定 stdout；native 1495/69/196、fallback 1493/71/196 双绿；覆盖率 68.5259% / 68.51% / CI 68.62% ≥68.49%；CI 38995283704 四 job 绿 | 已转 in-review 等待 Planner 验收；覆盖率余量薄已列入执行报告风险 |
 
 ## Milestone 实际计数（按 GitHub state，不凭报告）
 
