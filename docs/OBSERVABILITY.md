@@ -64,10 +64,11 @@ endpoint 保持 `http://localhost:4318`（Jaeger 原生收 OTLP/HTTP）。
 
 ## 测试
 
-`tests/test_observability.py`（unit）：默认关闭断言 + 子进程端到端
-（console exporter：span JSON 可解析、counter/histogram 出现、mode 属性）。
-Enabled 路径刻意放在子进程，避免给 gate 进程安装全局 provider
-（否则每个后续请求都同步导出 span，拖慢门禁）。
+`tests/test_observability.py`（unit）：默认关闭断言 + 进程内 enabled 行为验证
+（真实 SDK + 隔离 fixture：span 的 kind/trace_id、counter/histogram 精确值与
+mode/ok 属性、多 app 与重复接入不重复 span、指标记录失败不影响业务、
+OTLP endpoint 接线），外加一次性子进程 console 端到端探针。fixture 保存并
+恢复全部 SDK 全局（provider 与 Once latch），不会给 gate 进程留下全局 provider。
 
 ## 指标一览
 
