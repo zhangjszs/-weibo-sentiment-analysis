@@ -3,7 +3,7 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-17 执行轮。本席 executor-20261017Z；#107 已恢复完成转 in-review（报告与 CI 证据在 Issue），下一项按队列领取 #106。
+- 任务：2026-10-17 执行轮。本席 executor-20261017Z；#107 已恢复完成转 in-review（报告与 CI 证据在 Issue）；#106 已领取（in-progress，分支 `agent/issue-106-budget-socket-handoff`）。
 - 状态：in-review：#107；ready：#106、#108、#110。
 - 本轮起点 main `ae0f848` → 现 main `be32bd0`（#107 test `1d78f05` + docs `339c891` + merge `be32bd0`，已推送）。CI run 38995283704 四 job success；Security Scan 38995283769 success。
 - 后端 fast gate 本机基线（2026-10-17，HEAD=be32bd0）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected；fallback 1493/71/196；均绿。覆盖率（--cov=src branch 口径）：local native **68.5259%**（11106/16207）、local fallback 68.51%、CI（fallback）68.62% —— 均 ≥68.49%（M6 阈值）；60% gate 与分母未动。注意：带覆盖率运行显著慢于 no-cov（本机 ~83s vs ~35s），两种口径不可混用（#106 处理）。前端测试基线仍 41 files / 190 tests。
