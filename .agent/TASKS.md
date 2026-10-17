@@ -10,10 +10,10 @@
 |---|---|---|---|---|
 | 1 | [#107 补齐现有可观测模块的行为验证并恢复分支覆盖率基线](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | in-review | **2026-10-17 Executor 完成（原现场恢复）**：`1d78f05`（test）→ `339c891`（docs）→ merge `be32bd0` @ main（已推送）。四处失败真因=SDK console exporter **导入期**绑定 `sys.stdout`（非"未 flush 就断言"），用 `_bind_console_streams(out)` 重指已构造 exporter 的流修复；incidental 测试删除（非换词重钉）、重复 console 探针合并、拆出 `tests/test_observability_disabled.py`（150 行）。native 1495/69/196、fallback 1493/71/196 双绿；覆盖率 local native **68.5259%**（11106/16207，JSON 复核）、local fallback 68.51%、CI 68.62%，均 ≥68.49%；`observability.py` 98% stmt / 94% branch；CI run 38995283704 四 job 绿；demo 探针退出 0。覆盖率余量薄（+0.02pp 级）与文件缓存状态敏感性已列入执行报告风险。 |
 | 2 | [#106 补齐 M6 预算报告、socket 审计与跨天交接证据](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | in-review | **2026-10-17 Executor 完成**：`cafe8ed`（CI step summary 真实 Top10 + tee/PIPESTATUS 保退出码）→ `2f6790c`（单例串扰隔离，删偶然默认断言）→ `e23ba43`+`1ef3612`（TEST_PERF §6/§6.1/§7 重写）→ merge `9a13987` @ main（已推送）。演练 4/4（normal/overbudget/failure/nodurations）；CI run 38998104877 四 job 绿、summary 经日志 group 逐行核对；socket 3 来源逐项表（不豁免 localhost，审计 only）；#95 同机复测：目标两用例 6.02s→<0.01s、full gate 37.49→30.54s（-18.5%）；计数 1494/1492（+11 = #107 净 +12 − 本项 1）；M6 三阈值如实（<30s 未达 34.65s / <240s 未达 304s / ≥68.49% 达成薄余量）；跨天链回填（STATE/ENV/HANDOFF + 10-15/16 补记日报）已入 main（`64c76cf`）。 |
-| 3 | [#108 使 Rust 工具链固定生效并补齐可选模块配置和构建边界](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | in-progress（2026-10-17 领取，分支 `agent/issue-108-toolchain-config`） | 把 `rust/toolchain.toml` 改成 rustup 识别文件名并实测命中仓库 pin；补 Rust-local maturin 配置 + README 构建说明（含 **`maturin develop` 默认 dev 构建慢约 20x、必须 `--release`**，#105 发现）；`.env.example` 补 `WEIBO_CORE_RUST` / `OTEL_ENABLED` / `OTEL_EXPORTER_OTLP_ENDPOINT` / `OTEL_SERVICE_NAME`；ADR-0005 补单 crate 与不发布边界；`docs/agents/triage-labels.md` 同步生命周期标签。 |
+| 3 | [#108 使 Rust 工具链固定生效并补齐可选模块配置和构建边界](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | in-review | **2026-10-17 Executor 完成**：`1889b6f`（`rust/toolchain.toml`→`rust-toolchain.toml`，内容不变）→ `0665da4`（`rust/weibo_core/pyproject.toml`）→ `eb944f7`（README 构建说明含 `--release` 强制）→ `9687b29`（`.env.example` 四变量）→ `a4791cf`（ADR-0005 边界）→ `e2ecb5c`（triage-labels）→ merge `ddea0a9` @ main（已推送）。pin 双证据：rustup `overridden by .../rust-toolchain.toml` + A/B 回落对照；CI run 38999122715 四 job 绿，runner **未预装** 1.99.0、由 pin 触发 rustup 自动安装后输出 `rustc 1.99.0`；maturin build/develop + wheel 安装 + smoke 全过；native 1494/69/196、fallback 1492/71/196 双绿；执行报告见 Issue（comment 6229127684）。 |
 | 4 | [#110 处置 scripts/ lint 门禁缺口与无法解析的脚本](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | ready | 今日新立项（规格已写入 Issue）：修 `scripts/append_api.py` 第 4 行语法错误（**不得真的运行它**，`docs/API.md` 的 sha256 必须不变）；`scripts/` 纳入 `ruff check src tests scripts` 并同步 AGENTS.md 与 CI 的 Ruff 步骤；其余 8 项机械修复逐条说明"为何行为不变"；双模式 fast gate 计数与 #104/#105 基线一致。 |
 
-队列说明：P0=0、P1=0，未为填容量升级优先级；四项均为"已入库能力的低风险纠偏"，**不等于批准 M7 新方向**。#107/#106 现场已恢复/完成并转 in-review（执行报告与 CI 证据见 Issue），本机 fast gate 已绿；余下按 #108 → #110 顺序领取。
+队列说明：P0=0、P1=0，未为填容量升级优先级；四项均为"已入库能力的低风险纠偏"，**不等于批准 M7 新方向**。#107/#106/#108 已完成转 in-review（执行报告与 CI 证据见 Issue），本机 fast gate 已绿；余下按 #110 顺序领取。
 
 ## 验收恢复现场（不占 ready 队列，不代 Executor 重置）
 
@@ -25,6 +25,7 @@
 
 - #106（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue（comment 6228995377），待 Planner 独立复跑验收。
 - #107（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue，待 Planner 独立复跑验收。昨日新增两项已验收关闭（见下）。
+- #108（2026-10-17 Executor 完成）：执行报告与验证证据已留 Issue（comment 6229127684），待 Planner 独立复跑验收。
 
 ## 阻塞 / 待决策（全部保留，不可领取实现）
 
@@ -50,7 +51,7 @@
 ## Milestone 实际计数（按 GitHub state，不凭报告）
 
 - **M6 测试性能优化：8 / 10 CLOSED，未收敛**。CLOSED：#88–#95（其中 #90/#93/#95 为部分通过后转交余项）；OPEN：#106、#107。成功阈值仍为串行无覆盖率 <30s、完整 CI <240s、branch ≥68.49%。
-- **M7 候选与既有交付纠偏：5 / 11 CLOSED**。#97/#99/#103/#104/#105 done；OPEN：#98（in-progress）、#108（ready）、#100/#101/#102（needs-info）、#109（blocked）。#96 为候选 Epic，不计入分母，milestone 名称不构成方向授权。
+- **M7 候选与既有交付纠偏：5 / 11 CLOSED**。#97/#99/#103/#104/#105 done；OPEN：#98（in-progress）、#108（in-review）、#100/#101/#102（needs-info）、#109（blocked）。#96 为候选 Epic，不计入分母，milestone 名称不构成方向授权。
 - **#110 不设 milestone**（仓库卫生，不计入任何成功信号分母，见 D-021）；若同类问题再现，由下一轮 Planner 决定是否开「工程卫生」里程碑。
 
 ## 本轮已运行验证（Planner，只读；基线 HEAD `ae0f848`）
