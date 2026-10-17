@@ -306,6 +306,38 @@ ruff check src/
 
 详见 [docs/CODING_STANDARDS.md](docs/CODING_STANDARDS.md)
 
+### 可选：Rust 加速扩展（weibo_core）
+
+仓库自带**可选**的 Rust 加速核（`rust/weibo_core`，PyO3 + maturin）。不构建不影响任何功能：
+适配层 `src/services/rust_bridge` 默认自动探测，扩展缺失时回退纯 Python 参考实现；可用
+`WEIBO_CORE_RUST=0` 强制禁用（变量说明见 `.env.example`）。
+
+前置条件：
+
+- rustup 可用（工具链由仓库固定：`rust/rust-toolchain.toml` 声明 1.99.0 + rustfmt + clippy，
+  在 `rust/` 及其子目录下自动生效，不依赖全局默认工具链）；
+- Python 侧已安装 `maturin`（项目 venv 中即可，wheel 为 abi3-py3.11，Python 3.11/3.12 可用）。
+
+构建（**Linux/WSL 已实测**；macOS/Windows 预计相同但未实测）：
+
+```bash
+# 方式一：脚本（等价于下面的 maturin develop --release）
+bash scripts/build_rust.sh
+
+# 方式二：手动（在项目 venv 中执行，如 .venv/bin/python -m maturin ...）
+cd rust/weibo_core
+python -m maturin develop --release     # 开发安装（editable）
+# 或构建 wheel 并本地安装（wheel 仅本地/CI 使用，不自动发布 PyPI）：
+python -m maturin build --release
+python -m pip install --force-reinstall target/wheels/weibo_core-*.whl
+
+# 冒烟
+python -c "import weibo_core; print(weibo_core.version())"
+```
+
+> ⚠️ `maturin develop` 默认是 **dev 未优化构建，比 `--release` 慢约 20x**——日常使用与基准测量
+> 必须带 `--release`（#105 实测）。
+
 ## 🏭 生产部署
 
 生产部署我们推荐使用 `Gunicorn` 或 `uWSGI` 挂载 Flask 后端，使用 `Nginx` 代理编译后的静态前端文件。
