@@ -46,7 +46,7 @@ jobs:
           pip freeze | grep -Ei "^(torch|transformers|scikit-learn|numpy|scipy)==" || true
 
       - name: Ruff check
-        run: ruff check src/ tests/
+        run: ruff check src/ tests/ scripts/
 
       - name: Backend fast tests (unit + api)
         env:
