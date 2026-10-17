@@ -2,11 +2,11 @@
 
 ## Commands
 
-- Fast backend gate: `python -m ruff check src tests && python -m pytest -m "unit or api" -q --maxfail=1`
+- Fast backend gate: `python -m ruff check src tests scripts && python -m pytest -m "unit or api" -q --maxfail=1`
 - All backend tests: `python -m pytest -q --maxfail=1`
 - Integration tests: `pytest -m integration -q` (needs MySQL + Redis running)
 - External tests: `pytest -m external -q` (needs Weibo cookie / remote NLP)
-- Format/lint: `pre-commit run --all-files` or `black src/ tests/ && isort src/ tests/ && ruff check src/ tests/`
+- Format/lint: `pre-commit run --all-files` or `black src/ tests/ && isort src/ tests/ && ruff check src/ tests/ scripts/`
 - Windows dev start: `scripts\start.bat` (Flask 5000 + Vite 3000). Stop with `scripts\start.bat stop`
 - Full quality gate: `pwsh -NoProfile -File scripts/verify_project.ps1`
 - Frontend: `cd frontend && npm ci && npm run lint && npm run test:run && npm run build`
