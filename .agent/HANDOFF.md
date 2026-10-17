@@ -5,63 +5,68 @@
 
 ## 上一棒是谁
 
-Agent `executor-20261014Z`，UTC 2026-10-14 M6 PERF 轮。
-接手时 NO_LOCK，工作区干净，main `83b2e3b`（与远端同步，含当日 Planning 轮 83b2e3b）。
+Agent `executor-20261017Z`，UTC 2026-10-17 执行轮（M6 纠偏 + M7 既有交付纠偏 + 仓库卫生）。
+接手时：工作区处于 #107 在途现场（未提交改动），跨天链（STATE/ENV/HANDOFF/日报）停在 10-14。
+本轮先恢复 #107 现场，再按 #107 → #106 → #108 → #110 串行完成全部队列。
 
 ## 本轮概要
 
-**串行完成今日队列全部 3 个 Issue 转 in-review（#91 完成 → #92 完成 → #90 部分完成），ready 队列只剩后备 #93。全部合入 main 并推送，CI 全绿已核对。**
+**今日队列 4 项全部完成转 in-review，ready 队列清空。全部合入 main 并推送，CI 全绿已核对。**
 
-1. #91（P2）：pytest-xdist 本机灰度三轮全绿（串行 50.42s → -n 4：30.64s/31.55s → -n 8：25.20s）+ TEST_PERF §6/§7 回写；结论暂不纳入 AGENTS.md 默认门禁 → commit 12336ba，merge 7be3df9。
-2. #92（P3）：sentiment_model 评估 ×2 取 NB+LogReg 子集（5.60/5.63s → 2.53/2.37s，断言未动）+ model_training 抽样 500 条补 2 断言 + 3.01s×2 归因（/ready redis 3s 超时）+ test_performance 0.83s 记录；gate 47.98s → 39.33s → commit 23818f3，merge 0730b7f。
-3. #90（P2）：requirements-ml.txt 新建 + ci.yml 两 job 分层安装 + freeze 探针 + Dockerfile/deploy.py/security-scan 同步；CI install 182s → 141s（<110s 未达成，部分完成）→ commit a023b1d，merge 26ce9ed。
+1. #107（P2）：可观测行为验证恢复——四处失败真因 = SDK console exporter **导入期**绑定 `sys.stdout`；`_bind_console_streams(out)` 重指已构造 exporter 的流；覆盖率 68.5259%（JSON 复核）/68.51%/CI 68.62% ≥ 68.49% → merge `be32bd0`。
+2. #106（P3）：CI step summary 真实 Top10（tee + PIPESTATUS）+ 单例串扰隔离（删 `test_predictor_singleton`）+ socket 审计（3 来源）+ #95 同机复测（37.49→30.54s，−18.5%）+ TEST_PERF §6/§6.1/§7 + 跨天链回填 → merge `9a13987`（+`1ef3612`）。
+3. #108（P3）：`rust-toolchain.toml` pin 生效双证据（rustup overridden + A/B）+ maturin pyproject + README（`--release` 强制）/`.env.example`/ADR-0005/triage-labels → merge `ddea0a9`。
+4. #110（P3）：`append_api.py` 第 4 行拆分 + 删 UP009（**未运行**，sha256 不变）+ 3 文件机械修复 + `scripts` 纳入 ruff 门禁（AGENTS.md + ci.yml）→ merge `1abfaf0`。
 
-现 main 为 `26ce9ed`（3 merge + 3 chore(agent) 全推，临时分支已全删）。CI run 38557692302 三 job success。
+现 main 为 `2b6ca1d`（4 merge + 4 chore(agent) 全推，工作区干净，临时分支本轮末删除）。
 
 ## 已完成
 
-- #91：xdist 评估 · 12336ba（merge 7be3df9 @ main）· 验证：三轮全绿计数一致 + collect-only 选择一致 + ruff 不适用（docs）说明
-- #92：慢测试降规模 · 23818f3（merge 0730b7f @ main）· 验证：改后全量 gate 1460/69/196 in 39.33s + ruff clean
-- #90：CI 依赖分层（部分）· a023b1d（merge 26ce9ed @ main）· 验证：CI 全绿 + install 141s + freeze 无漂移 + YAML/py_compile/paths-check
+- #107：可观测行为验证恢复 · `1d78f05`+`339c891`（merge `be32bd0` @ main）· 验证：native 1495/69/196、fallback 1493/71/196；覆盖率三口径 ≥68.49%；CI run 38995283704 四 job 绿；报告 comment 6228660145
+- #106：M6 预算报告 + socket 审计 + 跨天交接 · `cafe8ed`+`2f6790c`+`e23ba43`（merge `9a13987`，+`1ef3612`）· 验证：演练 4/4；CI 38998104877 四 job 绿且 summary 经日志 group 核对；#95 复测 37.49→30.54s；报告 comment 6228995377
+- #108：工具链 pin + 可选模块边界 · `1889b6f`…`e2ecb5c`（merge `ddea0a9` @ main）· 验证：rustup overridden + A/B；CI runner 未预装 1.99.0、由 pin 自动安装；cargo 11 passed + wheel + smoke；CI 38999122715 四 job 绿；报告 comment 6229127684
+- #110：scripts lint 门禁 + 不可解析脚本 · `cd0ea53`+`21535bc`（merge `1abfaf0` @ main）· 验证：`ruff check src tests scripts` 0 error；CI 38999825154 四 job 绿（Ruff 按新路径 `All checks passed!`）；sha256 前后一致；报告 comment 6229255290
 
 ## 未完成 / 进行中（下一棒最优先看这里）
 
-- **无 in-progress Issue。** 3 个在途 in-review（#90、#91、#92）等待 Planner 验收（#90 为部分完成，注意差距说明）。
-- #93（后备 ready）：本轮未取；Planner 若编入明日队列可直接领取（建议在 #91 之后执行，非强制）。
-- #59 仍为 `needs-info` **不得领取**；#84 已关闭勿重开。
-- #90 的 <110s 缺口（差 31s）： follow-up 需 Planner 另立任务（venv 缓存 / uv 重估 / 接受现状三选一，详见 #90 执行报告）。
+- **无 in-progress Issue。** 4 个 in-review（#106/#107/#108/#110）等待 Planner 独立复跑验收。
+- #98（in-progress，受 D-019 授权门禁）、#109（blocked，本机无 Docker）、#100/#101/#102（needs-info）、#96（候选 Epic needs-info）均保持原状，**不可领取**。
+- 遗留小项（转 Planner 决定，勿自行领取）：
+  - `scripts/verify_project.ps1:56` 与 `docs/DEVELOPMENT.md:29/200/203` 仍是旧 `ruff check src tests`（#110 规格明示未动）。
+  - pytest-socket 全局禁用建议在 TEST_PERF §7.3 待决（#106 socket 审计结论：建议不全局禁）。
 
 ## 验证情况
 
-- #91：串行 50.42s / -n 4 ×2 / -n 8 ×1 全绿；collect-only 1526/1722 两边一致；requirements 未动（git status 实证）。
-- #92：改前/改后全量 gate 双记录（47.98s → 39.33s，计数完全一致）；ruff clean（含 1 次 I001 修复后复绿）；带 --cov 全量未本地跑（口径统一无覆盖率，交 CI 门禁，CI 已绿）。
-- #90：本地 YAML/py_compile/paths-check/union 程序化核对全过；两层 --dry-run 独立 resolve OK；真实验证为 CI run 本体（全绿，install 78+63=141s，freeze 探针无漂移）；Docker 构建与 deploy.py 端到端未实测（本机无 Docker，union 一致性已程序化证明）。
-- 未跑：integration/external 本地层（本轮改动不涉及该路径；CI integration 已绿）；前端全量门禁（本轮未动前端用例，CI frontend-fast 已绿）。
+- 各 Issue 执行报告已留全（命令输出、CI run、双模式计数、sha256、A/B 对照）；未执行项（macOS/Windows 构建、PyPI、append_api 本体）逐条标注，无编造。
+- 本机 fast gate 计数（#110 后，no-cov）：native **1494/69/196**（32.33s）、fallback **1492/71/196**（31.33s）；与 #104/#105 基线 1483/1481 的 +11 差值 = #107 净 +12 − #106 删 1，已完整归因。
+- CI：run 38999825154 @ `1abfaf0` 四 job success（含 Ruff 新路径）+ Security Scan 38999825074 success。
+- 未跑：integration/external 本地层（CI integration 已绿）；前端全量门禁（本轮未动前端，CI frontend-fast 已绿）。
 
 ## 风险与注意事项
 
-- **git pull --rebase 在有未提交 .agent 改动时会被拒**：本轮因 TASKS.md 未提交遇到一次 error（上一棒 HANDOFF 提过 pipe 掩盖问题；本轮未用 pipe，直接可见）。 mitigation：每任务收尾即 chore(agent) 提交，保持工作区干净后再 pull。本轮三次 merge 前远端均无新提交，push 皆 fast-forward。
-- **临时分支从未推过远端**：`git push origin --delete` 报 remote ref 不存在属预期，无害（#91/#92 轮均出现一次，已确认）。
-- **install 耗时 run 间方差大**（64s~92s 同步骤）：#90 验收建议取 3 run 中位；单 run 对比（182→141）仅供参考。
-- **xdist 现装在本机 .venv**（试点残留）：不影响串行命令（无 -n 即正常模式），未进 requirements（git status 实证）；后棒若复测 -n 可直接用，若求干净可 `pip uninstall pytest-xdist execnet`。
-- **STATE 编辑注意**：「已完成」倒序列表，新增插最前，勿替换首条（沿用上棒约定）。
-- **提交标题禁 `fix: #N`**，正文 `Refs #N`（本轮遵守；docs/test/ci 前缀按类型）。
+- **pytest 口径**：`addopts` 已含 `-q --maxfail=1`，**不要再加 `-q`**（verbosity −2，汇总行消失）；本机必带 `-p no:launch_testing -p no:launch_ros`（ROS 插件崩溃）；no-cov ~32–35s 与 `--cov=src` ~80–86s 两种口径分开记录。
+- **git**：`git pull --rebase` 在 `.agent` 有未提交改动时会被拒——先提交 .agent 再拉；快速连续 push 会让旧 CI run 显示 `cancelled`（concurrency 正常现象，非失败）。
+- **CI 证据读取**：Actions job 的 `output.summary` 恒 null；step summary 已按 #106 约定以折叠 `::group::` 回显日志，用 `gh api repos/<slug>/actions/jobs/<id>/logs --allow-escape-sequences` 读。
+- **#95 复测数据不可拼接**：37.49→30.54s 为本机同机配对；历史 39.33→27.71s 是另一台机器基线，只取本日数据。
+- **`scripts/append_api.py` 永远不要运行**（会向 `docs/API.md` 追加重复章节）；sha256 基线 `71f7dcb8…d9ea1f` 在 ENV.md。
+- **Rust**：需 `export PATH="$HOME/.cargo/bin:$PATH"`；本机全局默认恰好也是 1.99.0，验证 pin 必须看 rustup 来源/A-B，不能只看版本号；wheel 构建必须 `--release`。
+- **STATE 编辑注意**：「已完成」倒序列表仅保留最近 20 条，新增插最前，超出时删最旧。
+- **提交标题禁 `fix: #N`**，正文 `Refs #N`；`.agent` 变更单独 `chore(agent)` 提交。
 
 ## 给下一棒的第一步建议
 
-- 检查 `gh issue list --label in-review` 看 3 个在途是否已被 Planner 验收关闭。
-- Planner 若将 #93 编入队列，按 P0>P1>…>#小优先领取；重点看 PLAN 新指令（含 #90 缺口 follow-up 是否立项）。
-- 如接手时 PLAN 执行队列仍是 #91/#92/#90，以 Issue 标签为准（现应为 in-review），PLAN 只读。
+- 检查 `gh issue list --label in-review`，看 #106/#107/#108/#110 是否已被 Planner 验收关闭（勿自行 close）。
+- 若 Planner 编入新队列：按 Issue 标签与优先级领取；#98/#109/#100/#101/#102/#96 按上节保持不动。
+- 接手先核对 Git/Issue/STATE 三处一致，再动任何文件。
 
 ## 今日日报
 
-- 已写入 .agent/DIARY/2026-10-14.md（本轮新建，首个日报——DIARY 目录此前不存在）
+- `.agent/DIARY/2026-10-17.md`（当日实记）；另含 2026-10-15/16 补记（补记 2026-10-17，D-021/D-022）已在本轮入 main。
 
 ## 给 Planner 的信号
 
-- **#91、#92 完成，#90 部分完成，均已转 in-review，执行报告与验证证据已在各 Issue comments 留全，请验收。**
-- **今日队列已清空**（剩 #93 后备 ready；#59 needs-info 等输入）。
-- **#90 缺口**：<110s 差 31s，是否立 follow-up（venv 缓存 / uv 重估 / 接受现状）请定夺；回滚只需 revert a023b1d。
-- **#92 附带发现**：/ready 每次调用白烧 ~3s（测试+CI 均付），test_performance 0.83s 健康；3.01s×2 修不修请定夺（首选 conftest 设 REDIS_URL=disabled，纯测试侧小任务）。
-- **#91 结论**：暂不纳入 AGENTS.md 默认门禁（xdist 未进 requirements）；M6 <30s 还差 ~9s（串行 39.33s），-n 4（~31s）是否转正请在 #92 缺口之外一并考虑。
-- 后端 fast gate 本机基线现为 **39.33s**（串行无覆盖率口径；与 #88 机 34.9s 系机器方差，见 #91 报告）。
+- **今日 4 项全部 in-review，执行报告与验证证据已在各 Issue 留全，请验收。**
+- #95 同机复测（37.49→30.54s）为唯一权威数据；M6 阈值现状：<30s 未达（34.65s）、<240s 未达（304s）、≥68.49% 达成（薄余量）。
+- socket 审计 3 来源（urllib3 导入期探测、cache.py 导入期 ping、SMTP_SSL 无 timeout）；建议不全局禁用 pytest-socket（§7.3 待决）。
+- #110 后仍有两处旧 ruff 命令未同步（verify_project.ps1、DEVELOPMENT.md），建议下轮一行小项或并入同类 Issue。
+- #108 后 CI rust-core 会按 pin 拉取 1.99.0（冷缓存 ~8.5s）；如需显式断言 pin 可后续增强。

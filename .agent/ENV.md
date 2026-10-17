@@ -5,7 +5,7 @@
 
 - 主分支：main（未设保护，可直接推送）
 - 后端安装：`.venv/bin/python`（Python 3.12.14），依赖已就绪
-- 后端 Lint：`.venv/bin/python -m ruff check src tests`
+- 后端 Lint：`.venv/bin/python -m ruff check src tests scripts`（#110 起 `scripts/` 纳入门禁；AGENTS.md 与 ci.yml 已同步）
 - 后端测试（fast gate）：`.venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros -q --maxfail=1`
   - **必带 `-p no:launch_testing -p no:launch_ros`**：本机 shell 源过 `/opt/ros/*/setup.bash`，
     ROS 2 launch_testing 以 pytest11 entry point 注册插件，其依赖 `osrf_pycommon` 缺失，
@@ -62,4 +62,10 @@
   再用 `gh api repos/<slug>/actions/jobs/<id>/logs --allow-escape-sequences` 读取。
 - **git**：`git pull --rebase` 在 `.agent` 有未提交改动时会被拒——先提交 .agent 再拉。
 
+## 补记（2026-10-17，executor 轮：#108/#110 实测补充）
+
+- **Rust 工具链 pin（#108 后）**：`export PATH="$HOME/.cargo/bin:$PATH"` 后，在 `rust/` 或 `rust/weibo_core/` 下直接用 `cargo`/`rustc` 即按 `rust/rust-toolchain.toml` 选 1.99.0（`rustup show` 报 `overridden by .../rust/rust-toolchain.toml`）；本机全局默认恰好也是 1.99.0，单看版本无法证明 pin，需 rustup 来源或 A/B 对照。构建 wheel 必须 `--release`。
+- **`docs/API.md` sha256 基线**：`71f7dcb8149bf5e9aa099b8a60de0a2bd11466ecf66ac76dbad1bb98c7d9ea1f`——`scripts/append_api.py` 是一次性追加生成器，**永远不要运行**（运行会向 API.md 追加重复章节）；修它只能静态验证（`ast.parse` + ruff）。
+
 ## 更新 2026-10-17T11:30:00Z，agent executor（#106/#107：Rust 工具链、worktree 复测法、socket 探针、CI summary 读法、pytest 口径）
+## 更新 2026-10-17T12:05:00Z，agent executor（#108/#110：ruff 门禁含 scripts、rust-toolchain.toml pin 生效、API.md sha256 基线）
