@@ -216,6 +216,98 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 - **full CI 关键路径**：run created → 最后 job 完成（墙钟），不以单 job 时长冒充。
 - CI 与 local 为不同机器 / Python（CI 3.11.17）条件，数值不可互作性能差。
 
+### 6.2 M6 残余差距只读分析（#112，2026-10-18）
+
+> 本小节为 D-023 决策提供只读事实依据。只分析、不改生产代码、不改测试用例、不改 CI 配置、不改阈值。
+
+#### 6.2.1 本地 Fast Gate 耗时分解（当前 HEAD 实测）
+
+- **测试环境**：AMD 24 核 / Python 3.12.14 / Linux 6.18 WSL2 / HEAD `b130e4d`（基线 `048af63`）
+- **Collection / 模块导入开销**：
+  - 命令：`time .venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros --collect-only`
+  - 结果：`1560/1756 tests collected (196 deselected) in 10.94s`（real 12.66s, user 10.69s, sys 1.64s）
+  - 归因：pytest 单是遍历 1756 个用例并完成模块 import（含 torch, transformers, sklearn, spacy, jieba 等重量级库）即需 **~11s**，占 fast gate 总耗时（~40s）的 **27%**。
+
+- **Native 模式（WEIBO_CORE_RUST=1，无覆盖率）**：
+  - 命令：`WEIBO_CORE_RUST=1 time .venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros --durations=30`
+  - 退出码：0；计数：**1494 passed, 69 skipped, 196 deselected, 159 warnings**
+  - 耗时：pytest 自报 **40.62s**，进程 wall time **42.72s**（user 46.08s, sys 5.03s）
+  - `--durations=30` 最慢 Top 15 详情（单位：秒）：
+    1. `2.86s call  tests/test_sentiment_model.py::TestModelEvaluation::test_evaluate_models`
+    2. `2.65s call  tests/test_sentiment_model.py::TestModelEvaluation::test_cross_validation_splits`
+    3. `1.16s call  tests/test_api_write_contract.py::TestWriteRoutesContract::test_admin_bad_payload[POST /api/model/retrain]`
+    4. `0.96s call  tests/test_sentiment_optimization.py::test_performance`
+    5. `0.47s call  tests/test_observability.py::test_enabled_emits_real_span_for_request`
+    6. `0.41s call  tests/test_startup_service.py::test_ensure_demo_admin_creates_user_sqlite`
+    7. `0.37s setup tests/test_api_write_contract.py::TestWriteRoutesContract::test_anonymous[POST /api/alert/read-all]`
+    8. `0.35s setup tests/test_auth_jwt.py::TestLoginAPI::test_api_logout_clears_auth_cookie`
+    9. `0.34s call  tests/test_api_write_contract.py::TestWriteRoutesContract::test_admin_bad_payload[POST /api/spider/comments]`
+    10. `0.30s setup tests/test_api_get_contract.py::TestGetEndpointsEnvelope::test_anonymous[/api/sentiment/strategy/stats]`
+    11. `0.30s call  tests/test_model_improvements.py::test_model_training`
+    12. `0.29s setup tests/test_api_get_contract.py::TestGetEndpointsEnvelope::test_authenticated_non_admin[/api/spider/overview]`
+    13. `0.26s call  tests/test_sentiment_monitoring.py::TestCleanupMemoryCache::test_expired_and_overflow_combined`
+    14. `0.26s setup tests/test_observability.py::test_console_probe_serves_real_requests`
+    15. `0.25s call  tests/test_report_charts.py::test_pdf_with_charts_larger_than_without`
+  - 耗时结构汇总：
+    - Collection / 导入：~10.9s（27%）
+    - 最慢 Top 30 用例总耗时：13.2s（32.5%），其中 Top 2 占 5.51s
+    - 其余 ~1530 个轻量用例长尾总计：~16.5s（40.5%，平均每个用例 ~10.8ms）
+    - 合计：10.9s + 13.2s + 16.5s ≈ 40.6s
+
+- **Fallback 模式（WEIBO_CORE_RUST=0，无覆盖率）**：
+  - 命令：`WEIBO_CORE_RUST=0 time .venv/bin/python -m pytest -m "unit or api" -p no:launch_testing -p no:launch_ros --durations=30`
+  - 退出码：0；计数：**1492 passed, 71 skipped, 196 deselected, 156 warnings**
+  - 耗时：pytest 自报 **40.12s**，进程 wall time **42.30s**（user 46.98s, sys 4.50s）
+  - 最慢用例分布与 native 一致：Top 2 仍为 `test_evaluate_models`（2.73s）与 `test_cross_validation_splits`（2.52s），Top 30 合计 12.9s。
+
+- **本地 <30s 差距成因诊断**：
+  - 从 #95 时的 27.71s（1460 用例）到当前 40.62s（1563 用例），增加了 103 个用例（#104/#105/#107/#110 及可观测性测试等）；
+  - 测试用例执行时间净值约为 29.7s（非常接近 30s 阈值），但 **Collection 阶段固定消耗 10.9s**，使得串行总时长始终停留在 40s 左右。
+  - **核心结论**：在当前 1560 个用例规模下，即使把 Top 2 慢用例（5.5s）优化至 1s，总时长仍约为 10.9s + 8.7s + 16.5s = 36.1s，单凭局部慢测试治理无法将串行总时间稳定压进 <30s。
+
+#### 6.2.2 CI 关键路径实测表（近期 4 个 Run 逐 Run 分解）
+
+数据源自 GitHub Actions REST API（`gh api /repos/zhangjszs/-weibo-sentiment-analysis/actions/runs/<id>/jobs` 及 `--allow-escape-sequences` 读取 step 日志）：
+
+| Run ID | Commit / 事件 | 关键路径墙钟 (created→最后 job 完成) | backend-fast 耗时 | backend-fast: Install 步骤 | backend-fast: Pytest 步骤 | rust-core | frontend-fast | integration | pip 缓存判定与证据 |
+|---|---|---|---|---|---|---|---|---|---|
+| [38995283704](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38995283704) | merge be32bd0 (#107) | **247s** (02:31:55Z→02:36:02Z) | 107s (02:31:57Z→02:33:44Z) | **54s** (02:32:05Z→02:32:59Z) | **43s** (02:32:59Z→02:33:42Z) | 55s | 72s | 136s (02:33:46Z→02:36:02Z) | **Cache Hit**: `Cache restored from key: setup-python-...-pip-d06c0e...`；379 wheels cached，0 download |
+| [38998104877](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38998104877) | merge 9a13987 (#106) | **304s** (03:15:45Z→03:20:49Z) | 160s (03:15:48Z→03:18:28Z) | **82s** (03:15:58Z→03:17:20Z) | **65s** (03:17:20Z→03:18:25Z) | 42s | 58s | 139s (03:18:30Z→03:20:49Z) | **Cache Hit**: 同一 primary key 命中；379 wheels cached，0 download |
+| [38999122715](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38999122715) | merge ddea0a9 (#108) | **287s** (03:31:41Z→03:36:28Z) | 157s (03:31:43Z→03:34:20Z) | **80s** (03:31:49Z→03:33:09Z) | **69s** (03:33:09Z→03:34:18Z) | 53s | 65s | 126s (03:34:22Z→03:36:28Z) | **Cache Hit**: 同一 primary key 命中；379 wheels cached，0 download（#108 报告误将 backend-fast 2m37s 当关键路径，真实为 287s） |
+| [38999825154](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/38999825154) | merge 1abfaf0 (#110) | **329s** (03:42:44Z→03:48:13Z) | 148s (03:43:16Z→03:45:44Z) | **73s** (03:43:26Z→03:44:39Z) | **61s** (03:44:40Z→03:45:41Z) | 51s | 77s | 146s (03:45:47Z→03:48:13Z) | **Cache Hit**: 同一 primary key 命中；379 wheels cached，0 download |
+
+- **CI <240s 差距成因诊断**：
+  1. **流水线拓扑串行是数学瓶颈**：`.github/workflows/ci.yml:140` 规定 `integration` 的 `needs: [backend-fast]`。完整关键路径 = `backend-fast` 耗时 + runner 调度排队 + `integration` 耗时。即使在最理想的 Run 38995283704 中，backend-fast (107s) + integration (136s) 已经达到 243s，加上排队即达 247s。
+  2. **Install 步骤解包耗时方差大**：即使 pip cache 100% 命中，runner 解包 600MB+ 大轮子（PyTorch/Transformers/SciPy）的耗时在 54s 与 82s 之间剧烈波动（受 GitHub 免费 runner 宿主机磁盘 I/O 影响），为关键路径引入高达 28s 的不可控方差。
+
+#### 6.2.3 候选优化杠杆深度评估表
+
+| 杠杆编号 | 方案名称与具体做法 | 预期收益 | 验证方式 | 主要风险与副作用 | 契约 1.10 / D-019 红线判断 | 需否用户批准 / 决策归类 |
+|---|---|---|---|---|---|---|
+| **L1** | **本地 fast gate 默认开启 pytest-xdist（如 `-n 4`）**：在 `pytest.ini` 或门禁命令加入 `-n 4`。 | 本地 fast gate 从 40s 降至 **~22–26s**（#91 灰度实测 50s→30s，-39%）。直接达成 <30s。 | 本地同机多轮测试，核对计数 1494/69/196 与 0 退出码。 | **概念冲突**：M6 成功信号定义为「**串行**无覆盖率 <30s」；启用 xdist 本质上是改变了衡量口径，非串行优化；需保证 in-memory DB 与单例并发安全。 | 不触犯 1.10 红线；但**属于成功信号口径修订**。 | **需用户批准**（分类三：需修订信号） |
+| **L2** | **慢测试重点治理与 Collection 优化**：精简 Top 2 慢用例（`test_evaluate_models` 2.86s + `test_cross_validation_splits` 2.65s，改用更小合成数据）；按需延迟导入重量级模块压缩 collection。 | 慢用例压缩 ~3–4s；Collection 压缩 ~1–2s；合计本地减少 **4–6s**（40s 降至 ~34–36s）。 | `git worktree` 对照测量，断言数不减少，测试逻辑不弱化。 | 进一步降低样本可能影响分类器评测边界；且仍受制于 1500+ 用例的长尾底噪，**无法单独达成 <30s 目标**。 | 无红线；纯测试内部优化。 | **无需授权即可实施，但无法彻底闭合差距**（分类一：可缩小） |
+| **L3** | **CI 虚拟环境整包缓存（actions/cache 缓存 .venv）**：跳过 pip install 解包，直接从 cache 还原整个已安装的 python 虚拟环境。 | Install 步骤耗时从 70–80s 降至 **10–15s**（净减 **55–65s**）；backend-fast 从 150s 降至 ~90s。 | CI 观察 cache hit 后的安装耗时与 pip freeze 校验。 | venv 包含解释器硬编码路径与依赖符号链接，runner 镜像微小变更可能导致环境损坏；且 D-016 已明确记录「接受 141s，不重启 venv 整包缓存」。 | 触碰 D-016 决策约束；需推翻已归档决策。 | **需用户批准**（分类二：需授权） |
+| **L4** | **CI 流水线解耦（移除 integration.needs: [backend-fast]）**：让 integration 与 backend-fast / frontend-fast / rust-core 并行启动。 | 消除 107–160s 串行等待，CI 关键路径从 287–329s 直接降至 **~160–180s**（彻底达成 <240s 目标）。 | 修改 ci.yml 查看关键路径墙钟与各 job 并发状态。 | 若 backend 发生语法或基础错误，integration 仍会启动并拉起 MySQL/Redis 服务容器，浪费少量 Actions runner 配额；改变级联失败行为。 | 属于**主要 CI/CD 流程变化**（契约 1.10 红线项）。 | **需用户明确批准**（分类二：需授权） |
+| **L5** | **CI 覆盖率门禁分流（fast gate 去除 --cov 或单独拆 job）**：`backend-fast` 仅跑 `--no-cov`（35s），覆盖率统计移至单独非阻塞或定时 job。 | `backend-fast` 步骤减少 **25–30s**（插桩与 term-missing 打印开销）。 | CI job 时长对比。 | 降低 PR 期的覆盖率实时反馈强度，可能导致低于 68.49% 的代码被更晚发现。 | 变更核心质量门禁策略。 | **需用户批准**（分类二：需授权） |
+
+#### 6.2.4 结论分类与 D-023 建议
+
+为支撑 D-023 决策，将上述杠杆归为三类：
+
+1. **可在不改变成功信号、无需用户特殊授权下缩小的差距（分类一）**：
+   - **L2 慢测试与 Collection 治理**：可将本地串行 fast gate 从 ~40s 进一步压缩至 ~34–36s。但由于 10.9s Collection 开销与 1500+ 用例长尾（16s+），**在当前测试规模与串行口径下，不可能仅靠测试优化稳定进入 <30s**。
+2. **能实质达成目标、但必须获得用户红线授权的杠杆（分类二）**：
+   - **L4 CI integration 并行化**：这是**唯一**能将完整 CI 关键路径彻底打进 <240s（降至 ~160–180s）的高 ROI 杠杆；但需用户批准变更 CI/CD 级联规则。
+   - **L3 venv 整包缓存**：可节省 ~55s，但需推翻 D-016 并承担 runner 漂移风险。
+3. **必须修订成功信号才能“达成”的杠杆（分类三）**：
+   - **L1 xdist 并行**：能轻易把本地时间降到 ~22s，但它改变了“串行”的承诺。如果用户决定修订目标为“本地多核并行 <30s”，则当前技术栈已完全就绪（#91 已验证无冲突）。
+
+**给 Planner 与用户的建议（供 D-023 参考）**：
+- **关于本地 <30s**：在用例数达到 1560+ 时，11s collection + 30s 执行是健康的单元/API 覆盖常态。建议 D-023 采纳以下二选一：
+  - **路径 A1**：接受现状并将 M6 串行阈值修订为 `<40s`（已非常接近），保持串行严谨性；
+  - **路径 A2**：将成功信号修订为「本地 `-n auto` 并行稳定 `<30s`」（技术上已达成，实测 ~25s），更贴合 2026 年多核开发习惯。
+- **关于 CI <240s**：只要 `integration` 串行依赖 `backend-fast`，在现有 379 个依赖解包开销下几乎不可能稳定 <240s。建议 D-023 授权 **L4**（解除 integration 依赖），一步达成 ~170s 且零依赖风险。
+
 ## 7. 议题状态与待确认建议（2026-10-17 重写）
 
 > M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-17）。
