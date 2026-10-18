@@ -8,7 +8,7 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#112 M6 残余差距只读分析：串行 gate <30s 与 CI <240s 的可行杠杆](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/112) | P2 | ready | **只分析，不改代码/CI/阈值**：当前 HEAD 双模式计数、wall time、`--durations=30` Top ≥10；至少 3 个 CI run 的 created→完成墙钟与 install/pytest 分项；≥4 项候选杠杆（预期收益/风险/红线判断）。产出写入 `docs/TEST_PERF.md` 新小节；为 D-023 提供证据。 |
+| 1 | [#112 M6 残余差距只读分析：串行 gate <30s 与 CI <240s 的可行杠杆](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/112) | P2 | in-progress | **只分析，不改代码/CI/阈值**：当前 HEAD 双模式计数、wall time、`--durations=30` Top ≥10；至少 3 个 CI run 的 created→完成墙钟与 install/pytest 分项；≥4 项候选杠杆（预期收益/风险/红线判断）。产出写入 `docs/TEST_PERF.md` 新小节；为 D-023 提供证据。 |
 | 2 | [#111 同步旧 ruff 命令并刷新 TEST_PERF 议题状态表](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/111) | P4 | ready | 同步 `scripts/verify_project.ps1`、`docs/DEVELOPMENT.md`、`docs/RELEASE_CHECKLIST.md`、`README.md` 的旧 `ruff check src tests`；刷新 `docs/TEST_PERF.md` §7.1 状态；更正 #108 的 2m37s 关键路径误写（实际 run 287s）。不运行 `append_api.py`、不改历史快照/CI/规则。 |
 
 队列说明：P0=0、P1=0；两项均属低风险收尾，**不等于批准 M7 扩展或 M6 阈值修订**。若时间不足，优先完成 #112（D-023 的决策输入），不要两项各做一半。D-019 已于今日默认转正 A（暂停 M7 扩展）；D-023 待用户决定 M6 两个未达阈值，默认 A = 先分析、不关闭、不改阈值。
