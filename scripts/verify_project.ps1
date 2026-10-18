@@ -53,7 +53,7 @@ function Invoke-Step {
 
 if (-not $FrontendOnly) {
     Invoke-Step "Backend: ruff check" {
-        & $PythonExe -m ruff check src tests
+        & $PythonExe -m ruff check src tests scripts
     }
 
     Invoke-Step "Backend: pytest (unit + api)" {

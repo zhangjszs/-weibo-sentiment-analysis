@@ -124,7 +124,7 @@ isort src/ tests/
 
 # 检查代码（不修改）
 black --check src/
-ruff check src/
+ruff check src/ tests/ scripts/
 ```
 
 ### 提交代码

@@ -215,6 +215,7 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 - **cov 口径**：同命令加 `--cov=src`，本机 ~80–86s（插桩开销 ~45–50s，与 §1.1 基准的 49s 一致）；CI backend-fast 步骤另含安装时间，不与 raw 秒数混用。
 - **full CI 关键路径**：run created → 最后 job 完成（墙钟），不以单 job 时长冒充。
 - CI 与 local 为不同机器 / Python（CI 3.11.17）条件，数值不可互作性能差。
+- **事实口径更正（2026-10-18，#111）**：#108 执行报告曾将 backend-fast job 耗时 2m37s 误写为完整 CI 关键路径；实际 run 38999122715 为 created 03:31:41Z → integration 完成 03:36:28Z，完整关键路径墙钟实为 **287s**（分项详见 §6.2.2 表格）。文档刷新以此为准，不重算历史性能数据。
 
 ### 6.2 M6 残余差距只读分析（#112，2026-10-18）
 
@@ -308,9 +309,9 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
   - **路径 A2**：将成功信号修订为「本地 `-n auto` 并行稳定 `<30s`」（技术上已达成，实测 ~25s），更贴合 2026 年多核开发习惯。
 - **关于 CI <240s**：只要 `integration` 串行依赖 `backend-fast`，在现有 379 个依赖解包开销下几乎不可能稳定 <240s。建议 D-023 授权 **L4**（解除 integration 依赖），一步达成 ~170s 且零依赖风险。
 
-## 7. 议题状态与待确认建议（2026-10-17 重写）
+## 7. 议题状态与待确认建议（2026-10-18 刷新）
 
-> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-17）。
+> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-18 刷新）。
 
 ### 7.1 议题状态总表
 
@@ -324,10 +325,14 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#93](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/93) | P3 | done (partial) | 机制包：时长预算告警**已落地**（cafe8ed：CI step summary 真实 Top10 + >120s 软告警）；顺序依赖探针结论=不引入 randomly；unit 层禁网评估 → socket 审计（7.3） |
 | [#95](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/95) | P3 | done | conftest REDIS_URL=disabled（gate 39.33s→27.71s；#106 同机前后复测 -6.95s / -18.5%，入 §6） |
 | [#94](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/94) | P4 | done | chore：`.gitignore` 增加 `src/data/`（已合入） |
-| [#106](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | in-review | M6 预算报告 + socket 审计 + 跨天交接证据（本文件 §6/§6.1/§7 即交付物之一；执行报告见 Issue） |
-| [#107](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | in-review | 可观测模块行为验证恢复 + 分支覆盖率基线（be32bd0 已合入；CI 全绿，见 §6） |
-| [#108](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | ready | rustup 工具链 pin 生效 + maturin/README 构建边界 + `.env.example` 补全 + ADR-0005 |
-| [#110](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | ready | `scripts/` lint 门禁缺口（9 errors，含 `append_api.py` 语法错误）+ 8 项机械修复；不设 milestone |
+| [#106](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/106) | P3 | done | M6 预算报告 + socket 审计 + 跨天交接证据（已于 2026-10-18 验收关闭；M6 成员全关闭但两个阈值未达） |
+| [#107](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/107) | P2 | done | 可观测模块行为验证恢复 + 分支覆盖率基线（已于 2026-10-18 验收关闭；覆盖率 68.5259% 达成） |
+| [#108](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/108) | P3 | done | rustup 工具链 pin 生效 + maturin/README 构建边界 + `.env.example` 补全 + ADR-0005（已于 2026-10-18 验收关闭；附关键路径误写更正：实际 run 287s） |
+| [#110](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | done | `scripts/` lint 门禁缺口 + 8 项机械修复（已于 2026-10-18 验收关闭；不设 milestone） |
+| [#112](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/112) | P2 | in-review | M6 残余差距只读分析（本地 gate 耗时分解 + CI 关键路径实测 + 5 项候选杠杆，见 §6.2；为 D-023 准备依据） |
+| [#111](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/111) | P4 | in-progress | 同步旧 ruff 命令至各活文档/脚本，刷新 TEST_PERF 议题状态表并更正 #108 关键路径口径 |
+
+> **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
 ### 7.2 已归档的机制决策（回应 §5 待办）
 
