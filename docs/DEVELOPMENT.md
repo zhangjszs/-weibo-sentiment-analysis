@@ -26,7 +26,7 @@ pwsh -NoProfile -File scripts/verify_project.ps1
 
 该脚本按顺序执行：
 
-1. `python -m ruff check src tests` — 静态检查
+1. `python -m ruff check src tests scripts` — 静态检查
 2. `python -m pytest -m "unit or api" -q --maxfail=1` — 后端快速测试
 3. `npm run lint` — 前端 lint
 4. `npm run test:run` — 前端单元测试
@@ -197,10 +197,10 @@ pytest -m "unit or api" --cov=src --cov-report=term-missing
 
 ```powershell
 # 检查代码
-ruff check src tests
+ruff check src tests scripts
 
 # 自动修复
-ruff check --fix src tests
+ruff check --fix src tests scripts
 
 # 格式化
 black src tests

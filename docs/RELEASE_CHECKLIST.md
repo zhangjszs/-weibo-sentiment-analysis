@@ -55,7 +55,7 @@
 
 ```bash
 # 后端静态检查
-python -m ruff check src tests
+python -m ruff check src tests scripts
 
 # 后端门禁测试
 python -m pytest -m "unit or api" -q --maxfail=1

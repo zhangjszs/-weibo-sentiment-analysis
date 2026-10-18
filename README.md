@@ -295,7 +295,7 @@ black src/ tests/
 isort src/ tests/
 
 # 代码检查
-ruff check src/
+ruff check src/ tests/ scripts/
 ```
 
 ### 项目配置
