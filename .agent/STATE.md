@@ -3,8 +3,8 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-18 执行轮。本席 executor；领取 #112（M6 残余差距只读分析），分支 agent/issue-112-m6-gap-analysis。
-- 状态：in-progress：#112；in-review：无；ready：#111。
+- 任务：2026-10-18 执行轮。本席 executor；#112 已完成转 in-review，准备领取 #111。
+- 状态：in-review：#112；in-progress：无；ready：#111。
 - 本轮起点 main `ae0f848` → 现 main `1abfaf0`（#107 test `1d78f05` + docs `339c891` + merge `be32bd0`；#106 ci `cafe8ed` + test `2f6790c` + docs `e23ba43` + merge `9a13987` + docs follow-up `1ef3612`；#108 rename `1889b6f` + pyproject `0665da4` + README `eb944f7` + .env `9687b29` + ADR `a4791cf` + triage `e2ecb5c` → merge `ddea0a9`；#110 fix `cd0ea53` + ci `21535bc` → merge `1abfaf0`；均已推送）。
 - CI：run 38999825154 @ `1abfaf0` 四 job success（backend-fast 2m28s / frontend-fast 1m17s / rust-core 51s / integration 2m26s；Ruff 步骤按新路径 `ruff check src/ tests/ scripts/` → `All checks passed!`）；Security Scan 38999825074 success。此前 run 38999122715 @ `ddea0a9` 四 job success（rust-core pin 在 runner 生效——runner 未预装 1.99.0，rustup 自动安装后 `rustc 1.99.0`，cargo test 11 passed + maturin wheel + smoke `weibo_core 0.2.0`）；run 38998104877 @ `9a13987` 四 job success（critical path 304s；backend-fast 步骤 elapsed 65s，step summary 含真实 Top10 且经日志 group 核对）；run 38995283704 @ `be32bd0` 四 job success（critical path 247s）。
 - 后端 fast gate 本机基线（2026-10-17，HEAD=2f6790c，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（34.65s）；fallback 1492/71/196（35.75s）；均绿。覆盖率（--cov=src）：local native 68.5259–68.66%（文件缓存敏感）、local fallback 68.5259%、CI 68.62%–68.63% —— 均 ≥68.49%（M6 阈值）；60% gate 与分母未动。前端测试基线仍 41 files / 190 tests。
@@ -30,6 +30,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#112 完成转 in-review（2026-10-18）**：M6 残余差距只读分析（为 D-023 准备证据）——本地 fast gate 耗时分解（collection 10.94s 占 27%、native 40.62s、fallback 40.12s、最慢 Top15 详情与长尾结构）+ 4 个近期 CI run 实测分解（关键路径 247–329s、pip 缓存 100% 命中但解包方差 54–82s、串行流水线结构为主要耗时瓶颈）+ 5 项候选杠杆深度评估（L1-L5）与三类结论归纳；仅改 `docs/TEST_PERF.md`（+92 行），未改动任何生产代码/测试/CI/阈值；提交 `0c10122` → merge `33be94a` @ main（已推送）；报告 comment 6249381242。
 - **#110 完成转 in-review（2026-10-17）**：`append_api.py` 第 4 行拆分 + 删 UP009（**未运行**，`docs/API.md` sha256 前后一致 `71f7dcb8…d9ea1f`）+ batch_add_markers/download_bert_model/word_cloud_picture 机械修复（逐项行为不变已论证）+ `scripts` 纳入 ruff 门禁（AGENTS.md L5/L9 + ci.yml L49，同一 step 不新增 job）；`ruff check src tests scripts` 0 error；CI run 38999825154 四 job 绿、Ruff 步骤按新路径通过；native 1494/69/196、fallback 1492/71/196（+11 = #107 +12 − #106 1）；提交 `cd0ea53`+`21535bc` → merge `1abfaf0` @ main（已推送）；报告 comment 6229255290。
 - **#108 完成转 in-review（2026-10-17）**：Rust 工具链 pin 生效（`rust/toolchain.toml`→`rust-toolchain.toml`）+ `rust/weibo_core/pyproject.toml` + README 构建说明（`--release` 强制）+ `.env.example` 四变量 + ADR-0005 边界 + triage-labels 映射；pin 双证据（rustup overridden + A/B 回落），CI runner 未预装 1.99.0、由 pin 触发自动安装后 `rustc 1.99.0`（run 38999122715 四 job 绿）；maturin build/develop + wheel + smoke 全过；native 1494/69/196、fallback 1492/71/196；提交 `1889b6f`…`e2ecb5c` → merge `ddea0a9` @ main（已推送）；报告 comment 6229127684。
 - **#106 完成转 in-review（2026-10-17）**：CI backend-fast 步骤真实 `--durations` Top10 写入 step summary（tee + PIPESTATUS 保退出码；>120s 软告警保留；summary 以折叠 group 回显日志供无 UI 验收；演练 4/4）+ 单例串扰隔离（删 `test_predictor_singleton`，autouse fixture 恢复 `_model`，生产缓存未动）+ socket 审计（探针不豁免 localhost：3 来源逐项，不修/仅记录）+ #95 同机前后复测（目标两用例 6.02s→<0.01s；full gate 37.49s→30.54s，-18.5%）+ TEST_PERF §6/§6.1/§7 重写 + .agent 跨天链回填（STATE/ENV/HANDOFF/日报 10-15、10-16 补记 2026-10-17）；提交 `cafe8ed`+`2f6790c`+`e23ba43` → merge `9a13987` @ main（已推送）；CI 38998104877 四 job 绿、step summary 经日志核对；计数变化 −1 已在报告解释。
@@ -49,4 +50,3 @@
 - **#78 完成转 in-review（2026-10-12）**：BigScreen 热门话题空态（.no-topics/暂无话题，仅空非 loading 非失败时显；新增 `bigscreen-topics-empty.test.js` 3 用例）；提交 0cc904f → merge 89cb8b2 @ main（已推送）；前端五门禁全绿（181/181）+ 后端 ruff clean。
 - **#77 完成转 in-review（2026-10-12）**：predict 模型信息错误态（modelInfoError + 重试；空态仅无错无数据时显；新增 `predict-model-error.test.js` 3 用例）；提交 e6383d0 → merge cba3445 @ main（已推送）；前端五门禁全绿（178/178）+ 后端 ruff clean。
 - **#76 完成转 in-review（2026-10-12）**：4 composable 底线（use-alert/tasks/spider/predict-floor 各 3 用例：成功/失败/空；只加测试未改源码）；提交 e276278 → merge 4f6393a @ main（已推送）；前端五门禁全绿（175/175）+ 后端 ruff clean。
-- **#75 完成转 in-review（2026-10-12）**：视图挂载矩阵（普查 11 已有 + 13 新增 = 24/24；新增 views-analysis-matrix 7 + views-system-user-matrix 3 + views-error-matrix 3 用例；只加测试未改源码）；提交 82875f4 → merge f5935b5 @ main（已推送）；前端五门禁全绿（163/163）+ 后端 ruff clean。
