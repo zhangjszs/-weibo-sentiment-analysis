@@ -3,8 +3,8 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-18 执行轮。本席 executor；#112 已完成转 in-review，准备领取 #111。
-- 状态：in-review：#112；in-progress：无；ready：#111。
+- 任务：2026-10-18 执行轮。本席 executor；领取 #111（同步旧 ruff 命令并刷新 TEST_PERF 议题状态表），分支 agent/issue-111-sync-ruff-docs。
+- 状态：in-progress：#111；in-review：#112；ready：无。
 - 本轮起点 main `ae0f848` → 现 main `1abfaf0`（#107 test `1d78f05` + docs `339c891` + merge `be32bd0`；#106 ci `cafe8ed` + test `2f6790c` + docs `e23ba43` + merge `9a13987` + docs follow-up `1ef3612`；#108 rename `1889b6f` + pyproject `0665da4` + README `eb944f7` + .env `9687b29` + ADR `a4791cf` + triage `e2ecb5c` → merge `ddea0a9`；#110 fix `cd0ea53` + ci `21535bc` → merge `1abfaf0`；均已推送）。
 - CI：run 38999825154 @ `1abfaf0` 四 job success（backend-fast 2m28s / frontend-fast 1m17s / rust-core 51s / integration 2m26s；Ruff 步骤按新路径 `ruff check src/ tests/ scripts/` → `All checks passed!`）；Security Scan 38999825074 success。此前 run 38999122715 @ `ddea0a9` 四 job success（rust-core pin 在 runner 生效——runner 未预装 1.99.0，rustup 自动安装后 `rustc 1.99.0`，cargo test 11 passed + maturin wheel + smoke `weibo_core 0.2.0`）；run 38998104877 @ `9a13987` 四 job success（critical path 304s；backend-fast 步骤 elapsed 65s，step summary 含真实 Top10 且经日志 group 核对）；run 38995283704 @ `be32bd0` 四 job success（critical path 247s）。
 - 后端 fast gate 本机基线（2026-10-17，HEAD=2f6790c，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（34.65s）；fallback 1492/71/196（35.75s）；均绿。覆盖率（--cov=src）：local native 68.5259–68.66%（文件缓存敏感）、local fallback 68.5259%、CI 68.62%–68.63% —— 均 ≥68.49%（M6 阈值）；60% gate 与分母未动。前端测试基线仍 41 files / 190 tests。
