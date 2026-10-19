@@ -333,12 +333,18 @@ class TestEmailSender:
 
     def test_send_invalid_email(self):
         """测试无效邮箱"""
-        from services.notification_service import EmailSender
+        import socket
 
+        from services.notification_service import EmailSender
         sender = EmailSender({"smtp_host": "invalid.host", "smtp_port": 465})
 
-        success, error = sender.send("invalid@test.com", "测试", "内容")
+        with patch(
+            "smtplib.SMTP_SSL",
+            side_effect=socket.gaierror(-2, "Name or service not known"),
+        ) as mock_ssl:
+            success, error = sender.send("invalid@test.com", "测试", "内容")
         assert success is False
+        mock_ssl.assert_called_once_with("invalid.host", 465)
 
 
 class TestSMSSender:
