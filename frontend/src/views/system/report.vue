@@ -19,8 +19,8 @@
               <el-col :xs="24" :md="12">
                 <el-form-item label="报告格式">
                   <el-radio-group v-model="reportForm.format">
-                    <el-radio-button label="pdf"> PDF </el-radio-button>
-                    <el-radio-button label="ppt"> PPT </el-radio-button>
+                    <el-radio-button value="pdf"> PDF </el-radio-button>
+                    <el-radio-button value="ppt"> PPT </el-radio-button>
                   </el-radio-group>
                 </el-form-item>
               </el-col>
@@ -43,7 +43,7 @@
                 </el-button>
               </div>
               <el-radio-group v-model="reportForm.template">
-                <el-radio-button v-for="t in templates" :key="t.id" :label="t.id">
+                <el-radio-button v-for="t in templates" :key="t.id" :value="t.id">
                   {{ t.name }}
                 </el-radio-button>
               </el-radio-group>
@@ -66,10 +66,10 @@
 
             <el-form-item label="报告内容">
               <el-checkbox-group v-model="reportForm.sections">
-                <el-checkbox label="summary"> 数据概览 </el-checkbox>
-                <el-checkbox label="sentiment"> 情感分析 </el-checkbox>
-                <el-checkbox label="topics"> 热门话题 </el-checkbox>
-                <el-checkbox label="alerts"> 预警记录 </el-checkbox>
+                <el-checkbox value="summary"> 数据概览 </el-checkbox>
+                <el-checkbox value="sentiment"> 情感分析 </el-checkbox>
+                <el-checkbox value="topics"> 热门话题 </el-checkbox>
+                <el-checkbox value="alerts"> 预警记录 </el-checkbox>
               </el-checkbox-group>
             </el-form-item>
 
