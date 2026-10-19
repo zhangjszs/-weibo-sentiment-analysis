@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-18 执行轮。本席 executor；今日队列 2 项（#112/#111）全部完成转 in-review，ready 队列清空。
-- 状态：in-review：#112、#111；in-progress：无；ready：无。
-- 本轮起点 main `8b66634` → 现 main `73e0074`（#112 docs `0c10122` + merge `33be94a`；#111 docs/scripts `6834534` + merge `73e0074`；均已推送）。
-- CI：最新 run 39123822632 @ `db0f843` 四 job success（backend-fast 2m32s / frontend-fast 1m17s / rust-core 51s / integration 2m28s；全部步骤与门禁绿）；Security Scan 39123822662 success。
-- 后端 fast gate 本机基线（2026-10-18，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（40.62s，wall time 42.72s）；fallback 1492/71/196（40.12s，wall time 42.30s）；collection 10.94s（1560 collected）；均绿。
-- 跨天链：正常（2026-10-18）——STATE/ENV 已刷新、HANDOFF 于本轮末重写；DIARY 已写 2026-10-18 当日。
+- 任务：2026-10-19 执行轮。本席 executor；领取今日队列 #113。
+- 状态：in-review：无（#111/#112 已验收关闭）；in-progress：#113；ready：无。
+- 本轮起点 main `4a98069`；分支 `agent/issue-113-mock-invalid-email`。
+- CI：最新 run 39123822632 @ `db0f843` 四 job success。
+- 后端 fast gate 本机基线（2026-10-19 实测，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（37.02s，wall time 39.33s）；全绿。
+- 跨天链：正常（2026-10-19）——STATE 已刷新，领取 #113。
 
 ## 阻塞项
 - #84（历史）：曾 blocked，已由 Planner 在上轮关闭，不再是阻塞项；勿重开。

@@ -8,7 +8,7 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#113 消除 test_send_invalid_email 真实出站依赖并刷新 TEST_PERF §7.1](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/113) | P4 | ready | 复用 `test_notification_service.py:717/:743` 的 `patch("smtplib.SMTP_SSL")` 模式让 `test_send_invalid_email` 快速确定失败、不真实联网；`assert success is False` 不变；顺带把 `docs/TEST_PERF.md §7.1` 的 #111/#112 行刷新为 done。不改生产发送语义、不引 pytest-socket、不动历史归档快照。 |
+| 1 | [#113 消除 test_send_invalid_email 真实出站依赖并刷新 TEST_PERF §7.1](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/113) | P4 | in-progress | 复用 `test_notification_service.py:717/:743` 的 `patch("smtplib.SMTP_SSL")` 模式让 `test_send_invalid_email` 快速确定失败、不真实联网；`assert success is False` 不变；顺带把 `docs/TEST_PERF.md §7.1` 的 #111/#112 行刷新为 done。不改生产发送语义、不引 pytest-socket、不动历史归档快照。 |
 
 队列说明：P0=0、P1=0；仅 1 个 ready，符合「宁缺毋滥」。**这不是路线图饱和状态——pipeline 已到决策门**：M6 能否收口取决于 D-023（用户），M7 扩展被 D-019 A 冻结。除本卫生项外，其余未决项全部被冻结/阻塞/待用户决策，无可安全开工的 ready 任务。若用户今日给出 D-023 答复，下一轮据其扩大队列（B 授权 L4 或 C 收口 M6）。
 
