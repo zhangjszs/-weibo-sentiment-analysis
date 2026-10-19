@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-19 执行轮。本席 executor；领取今日队列 #113。
-- 状态：in-review：无（#111/#112 已验收关闭）；in-progress：#113；ready：无。
-- 本轮起点 main `4a98069`；分支 `agent/issue-113-mock-invalid-email`。
-- CI：最新 run 39123822632 @ `db0f843` 四 job success。
-- 后端 fast gate 本机基线（2026-10-19 实测，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（37.02s，wall time 39.33s）；全绿。
-- 跨天链：正常（2026-10-19）——STATE 已刷新，领取 #113。
+- 任务：2026-10-19 执行轮。本席 executor；今日队列 1 项（#113）全部完成转 in-review，ready 队列清空。
+- 状态：in-review：#113；in-progress：无；ready：无。
+- 本轮起点 main `4a98069` → 现 main `53a8140`（#113 test/docs `6c6a0b6` + merge `53a8140`；已推送）。
+- CI：最新 push run 39205993267 @ `53a8140`；前一代 run 39123822632 四 job success。
+- 后端 fast gate 本机基线（2026-10-19 实测，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected（37.81s，wall time 39.72s）；fallback（WEIBO_CORE_RUST=0）1492/71/196（34.30s，wall time 36.24s）；全绿。
+- 跨天链：正常（2026-10-19）——STATE 已刷新、HANDOFF 于本轮末重写；DIARY 已写 2026-10-19 当日。
 
 ## 阻塞项
 - #84（历史）：曾 blocked，已由 Planner 在上轮关闭，不再是阻塞项；勿重开。
@@ -30,6 +30,7 @@
 - **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
 
 ## 已完成
+- **#113 完成转 in-review（2026-10-19）**：`test_send_invalid_email` 复用 `patch("smtplib.SMTP_SSL")` 模式消除真实出站 DNS/网络调用（`call 0.01s`，`socket.getaddrinfo` 探针验证 0 次网络出站调用；`assert success is False` 与 `mock_ssl.assert_called_once_with` 断言通过）+ 刷新 `docs/TEST_PERF.md` §7.1 议题状态总表（#111/#112 刷新为 done）；未动生产代码/网络全局策略/历史归档；提交 `6c6a0b6` → merge `53a8140` @ main（已推送）；报告 comment 6260549034。
 - **#111 完成转 in-review（2026-10-18）**：同步旧 ruff 命令至各活文档与脚本（`scripts/verify_project.ps1`、`docs/DEVELOPMENT.md`、`docs/RELEASE_CHECKLIST.md`、`README.md`、`docs/CODING_STANDARDS.md` 统一包含 scripts）+ 刷新 `docs/TEST_PERF.md` §7.1 议题状态总表（#106/#107/#108/#110 done，补 #112 in-review，备注 M6 10/10 CLOSED 但保持 OPEN）+ §6.1 增加 #108 关键路径误写更正（实际 run 287s）；未动生产代码/测试代码/历史归档；提交 `6834534` → merge `73e0074` @ main（已推送）；报告 comment 6249412466。
 - **#112 完成转 in-review（2026-10-18）**：M6 残余差距只读分析（为 D-023 准备证据）——本地 fast gate 耗时分解（collection 10.94s 占 27%、native 40.62s、fallback 40.12s、最慢 Top15 详情与长尾结构）+ 4 个近期 CI run 实测分解（关键路径 247–329s、pip 缓存 100% 命中但解包方差 54–82s、串行流水线结构为主要耗时瓶颈）+ 5 项候选杠杆深度评估（L1-L5）与三类结论归纳；仅改 `docs/TEST_PERF.md`（+92 行），未改动任何生产代码/测试/CI/阈值；提交 `0c10122` → merge `33be94a` @ main（已推送）；报告 comment 6249381242。
 - **#110 完成转 in-review（2026-10-17）**：`append_api.py` 第 4 行拆分 + 删 UP009（**未运行**，`docs/API.md` sha256 前后一致 `71f7dcb8…d9ea1f`）+ batch_add_markers/download_bert_model/word_cloud_picture 机械修复（逐项行为不变已论证）+ `scripts` 纳入 ruff 门禁（AGENTS.md L5/L9 + ci.yml L49，同一 step 不新增 job）；`ruff check src tests scripts` 0 error；CI run 38999825154 四 job 绿、Ruff 步骤按新路径通过；native 1494/69/196、fallback 1492/71/196（+11 = #107 +12 − #106 1）；提交 `cd0ea53`+`21535bc` → merge `1abfaf0` @ main（已推送）；报告 comment 6229255290。
