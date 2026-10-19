@@ -8,15 +8,17 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#114 消除 test_model_improvements.py 的 PytestReturnNotNoneWarning 与假绿吞异常反模式](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/114) | P3 | ready | 修改 `tests/test_model_improvements.py`：移除 6 处测试函数末尾 `return <obj>` 使其返回 `None`；移除 `test_social_media_features` 与 `test_data_augmentation` 中的 `try...except Exception: return False` 吞异常假绿逻辑；为各用例补充有效断言。不改动 `src/model/` 生产代码与训练抽样参数。验证 6 passed 且警告列表中零 `PytestReturnNotNoneWarning`，fast gate 计数 1494/69/196 不变，ruff exit 0。 |
-| 2 | [#115 conftest 补全 Celery task_store_eager_result 配置以消除 eager 任务查询告警](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/115) | P4 | ready | 在 `tests/conftest.py` 的 `app` fixture 补全 Celery eager 存储配置：`monkeypatch.setitem(celery_app.conf, "task_store_eager_result", True)` 与 `monkeypatch.setenv("CELERY_TASK_STORE_EAGER_RESULT", "True")`。不改动 `src/tasks/celery_config.py` 生产配置。验证 `/api/tasks/<task_id>/status` 契约测试中消除 Celery `RuntimeWarning`，fast gate 计数保持一致，ruff exit 0。 |
-| 3 | [#116 收敛前端单选与复选组件的 Element Plus 3.0 label 废弃警告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/116) | P3 | ready | 将 `report.vue`、`Header.vue`、`PredictInput.vue`、`spider.vue` 中绑定值的 `<el-radio-button>` 和 `<el-checkbox>` 的 `label` 属性替换为 `value`；保留按钮文字 slot 与 `<el-form-item label="...">` 不变。不升级依赖版本、不改动样式与接口。验证前端 41 files / 190 tests 全绿，stderr 消除 `label act as value` 废弃警告，lint 与 build exit 0。 |
+| 1 | [#114 消除 test_model_improvements.py 的 PytestReturnNotNoneWarning 与假绿吞异常反模式](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/114) | P3 | in-review | 修改 `tests/test_model_improvements.py`：移除 6 处测试函数末尾 `return <obj>` 使其返回 `None`；移除 `test_social_media_features` 与 `test_data_augmentation` 中的 `try...except Exception: return False` 吞异常假绿逻辑；为各用例补充有效断言。不改动 `src/model/` 生产代码与训练抽样参数。验证 6 passed 且警告列表中零 `PytestReturnNotNoneWarning`，fast gate 计数 1494/69/196 不变，ruff exit 0。 |
+| 2 | [#115 conftest 补全 Celery task_store_eager_result 配置以消除 eager 任务查询告警](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/115) | P4 | in-review | 在 `tests/conftest.py` 的 `app` fixture 补全 Celery eager 存储配置：`monkeypatch.setitem(celery_app.conf, "task_store_eager_result", True)` 与 `monkeypatch.setenv("CELERY_TASK_STORE_EAGER_RESULT", "True")`。不改动 `src/tasks/celery_config.py` 生产配置。验证 `/api/tasks/<task_id>/status` 契约测试中消除 Celery `RuntimeWarning`，fast gate 计数保持一致，ruff exit 0。 |
+| 3 | [#116 收敛前端单选与复选组件的 Element Plus 3.0 label 废弃警告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/116) | P3 | in-review | 将 `report.vue`、`Header.vue`、`PredictInput.vue`、`spider.vue` 中绑定值的 `<el-radio-button>` 和 `<el-checkbox>` 的 `label` 属性替换为 `value`；保留按钮文字 slot 与 `<el-form-item label="...">` 不变。不升级依赖版本、不改动样式与接口。验证前端 41 files / 190 tests 全绿，stderr 消除 `label act as value` 废弃警告，lint 与 build exit 0。 |
 
 队列说明：P0=0、P1=0、P3=2、P4=1；共 3 项 ready，符合「2–5 个、宁缺毋滥」。各任务相互独立且均过 4.2 门禁。M6 收口取决于 D-023（用户决策中，默认 A 先行），M7 扩展受 D-019 A 冻结。本轮编排 3 项纯工程与测试卫生任务，无触碰契约 1.10 红线。
 
 ## 等待验收（in-review）
 
-- 无（#113 已于本轮独立复跑验收通过并关闭）。
+- [#114 消除 test_model_improvements.py 的 PytestReturnNotNoneWarning 与假绿吞异常反模式](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/114)（已完成，merge `b225c32` @ main，待验收）
+- [#115 conftest 补全 Celery task_store_eager_result 配置以消除 eager 任务查询告警](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/115)（已完成，merge `2a3b703` @ main，待验收）
+- [#116 收敛前端单选与复选组件的 Element Plus 3.0 label 废弃警告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/116)（已完成，merge `d4bce28` @ main，待验收）
 
 ## 阻塞 / 待决策（全部保留，不可领取实现）
 
