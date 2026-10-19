@@ -148,9 +148,11 @@ def app(monkeypatch):
         # .env 中的 CELERY_BROKER_URL，故需同步覆盖环境变量。
         monkeypatch.setenv("CELERY_BROKER_URL", "memory://")
         monkeypatch.setenv("CELERY_RESULT_BACKEND", "cache+memory://")
+        monkeypatch.setenv("CELERY_TASK_STORE_EAGER_RESULT", "True")
         monkeypatch.setitem(celery_app.conf, "result_backend", "cache+memory://")
         monkeypatch.setitem(celery_app.conf, "broker_url", "memory://")
         monkeypatch.setitem(celery_app.conf, "task_always_eager", True)
+        monkeypatch.setitem(celery_app.conf, "task_store_eager_result", True)
     except Exception:
         pass
 
