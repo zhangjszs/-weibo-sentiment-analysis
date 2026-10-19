@@ -8,9 +8,13 @@ import pytest
 
 pytestmark = pytest.mark.unit
 
+import sys
 import time
 from pathlib import Path
 
+_src_dir = Path(__file__).resolve().parent.parent / "src"
+if str(_src_dir) not in sys.path:
+    sys.path.insert(0, str(_src_dir))
 from model.model_monitor import ModelMonitor
 from model.model_version_manager import ModelVersionManager
 from model.trainModel import load_data, train_best_model
@@ -35,7 +39,7 @@ def test_model_training():
     assert model is not None
     assert hasattr(model, "predict")
 
-    return model
+    assert training_time >= 0
 
 
 def test_model_versions():
@@ -54,8 +58,9 @@ def test_model_versions():
     # 测试获取最佳版本
     best_version = mvm.get_best_version()
     print(f"最佳版本: {best_version}")
-
-    return mvm
+    assert isinstance(versions, list)
+    if versions:
+        assert isinstance(best_version, str) and len(best_version) > 0
 
 
 def test_model_monitoring():
@@ -77,7 +82,13 @@ def test_model_monitoring():
     print(f"平均延迟: {request_stats.get('average_latency', 0):.4f} 秒")
     print(f"预测分布: {request_stats.get('predictions', {})}")
 
-    return monitor
+    assert isinstance(health_status, dict)
+    assert "status" in health_status
+    assert "issues" in health_status
+    assert isinstance(request_stats, dict)
+    assert "total_requests" in request_stats
+    assert "average_latency" in request_stats
+    assert "predictions" in request_stats
 
 
 def test_sentiment_analysis():
@@ -125,48 +136,56 @@ def test_sentiment_analysis():
         print(f"结果: {result}")
         print("-" * 50)
 
-    return service
+    assert isinstance(batch_results, list)
+    assert len(batch_results) == len(test_texts)
+    for r in batch_results:
+        assert isinstance(r, dict)
+        assert "label" in r
+        assert "score" in r
 
 
 def test_social_media_features():
     """测试社交媒体特征提取"""
     print("\n=== 测试社交媒体特征提取 ===")
-    try:
-        from model.social_media_preprocessor import SocialMediaPreprocessor
-        preprocessor = SocialMediaPreprocessor()
+    from model.social_media_preprocessor import SocialMediaPreprocessor
 
-        test_text = "#情感分析# 这个产品真的很棒！👍 @用户 推荐给大家"
-        cleaned_text, features = preprocessor.transform([test_text])[0], preprocessor.get_social_features(test_text)
+    preprocessor = SocialMediaPreprocessor()
 
-        print(f"原始文本: {test_text}")
-        print(f"清理后文本: {cleaned_text}")
-        print(f"社交媒体特征: {features}")
+    test_text = "#情感分析# 这个产品真的很棒！👍 @用户 推荐给大家"
+    cleaned_text = preprocessor.transform([test_text])[0]
+    features = preprocessor.get_social_features(test_text)
 
-        return True
-    except Exception as e:
-        print(f"测试失败: {e}")
-        return False
+    print(f"原始文本: {test_text}")
+    print(f"清理后文本: {cleaned_text}")
+    print(f"社交媒体特征: {features}")
 
+    assert isinstance(cleaned_text, str)
+    assert len(cleaned_text) > 0
+    assert isinstance(features, dict)
+    assert features.get("hashtag_count") == 1
+    assert features.get("mention_count") == 1
+    assert features.get("emoji_count") == 1
 
 def test_data_augmentation():
     """测试数据增强"""
     print("\n=== 测试数据增强 ===")
-    try:
-        from model.social_media_augmenter import SocialMediaAugmenter
-        augmenter = SocialMediaAugmenter()
+    from model.social_media_augmenter import SocialMediaAugmenter
 
-        test_text = "这个产品真的很棒！"
-        augmentations = augmenter.augment(test_text, num_augmentations=3)
+    augmenter = SocialMediaAugmenter()
 
-        print(f"原始文本: {test_text}")
-        print("增强结果:")
-        for i, aug_text in enumerate(augmentations):
-            print(f"  {i+1}. {aug_text}")
+    test_text = "这个产品真的很棒！"
+    augmentations = augmenter.augment(test_text, num_augmentations=3)
 
-        return True
-    except Exception as e:
-        print(f"测试失败: {e}")
-        return False
+    print(f"原始文本: {test_text}")
+    print("增强结果:")
+    for i, aug_text in enumerate(augmentations):
+        print(f"  {i+1}. {aug_text}")
+
+    assert isinstance(augmentations, list)
+    assert len(augmentations) == 3
+    for aug in augmentations:
+        assert isinstance(aug, str)
+        assert len(aug) > 0
 
 
 def main():
@@ -203,21 +222,15 @@ def main():
 
     # 测试社交媒体特征提取
     try:
-        success = test_social_media_features()
-        if success:
-            print("✅ 社交媒体特征提取测试通过")
-        else:
-            print("❌ 社交媒体特征提取测试失败")
+        test_social_media_features()
+        print("✅ 社交媒体特征提取测试通过")
     except Exception as e:
         print(f"❌ 社交媒体特征提取测试失败: {e}")
 
     # 测试数据增强
     try:
-        success = test_data_augmentation()
-        if success:
-            print("✅ 数据增强测试通过")
-        else:
-            print("❌ 数据增强测试失败")
+        test_data_augmentation()
+        print("✅ 数据增强测试通过")
     except Exception as e:
         print(f"❌ 数据增强测试失败: {e}")
 
