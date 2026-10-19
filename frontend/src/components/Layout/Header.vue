@@ -75,13 +75,13 @@
       <el-form :model="crawlForm" label-position="top" class="crawl-form">
         <el-form-item label="爬取类型">
           <el-radio-group v-model="crawlForm.type">
-            <el-radio-button label="hot">
+            <el-radio-button value="hot">
               <el-icon><Sunny /></el-icon> 热门微博
             </el-radio-button>
-            <el-radio-button label="search">
+            <el-radio-button value="search">
               <el-icon><Search /></el-icon> 关键词搜索
             </el-radio-button>
-            <el-radio-button label="comments">
+            <el-radio-button value="comments">
               <el-icon><ChatLineRound /></el-icon> 评论数据
             </el-radio-button>
           </el-radio-group>

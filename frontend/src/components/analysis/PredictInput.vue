@@ -8,9 +8,9 @@
           size="small"
           @update:model-value="emit('update:predictMode', $event)"
         >
-          <el-radio-button label="custom"> 自定义模型 </el-radio-button>
-          <el-radio-button label="smart"> 智能分析 </el-radio-button>
-          <el-radio-button label="simple"> 快速分析 </el-radio-button>
+          <el-radio-button value="custom"> 自定义模型 </el-radio-button>
+          <el-radio-button value="smart"> 智能分析 </el-radio-button>
+          <el-radio-button value="simple"> 快速分析 </el-radio-button>
         </el-radio-group>
       </div>
     </template>

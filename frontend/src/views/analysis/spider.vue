@@ -230,10 +230,10 @@
             </h3>
             <div class="header-actions">
               <el-radio-group v-model="logFilter" size="small">
-                <el-radio-button label="all"> 全部 </el-radio-button>
-                <el-radio-button label="error"> 错误 </el-radio-button>
-                <el-radio-button label="warn"> 警告 </el-radio-button>
-                <el-radio-button label="info"> 信息 </el-radio-button>
+                <el-radio-button value="all"> 全部 </el-radio-button>
+                <el-radio-button value="error"> 错误 </el-radio-button>
+                <el-radio-button value="warn"> 警告 </el-radio-button>
+                <el-radio-button value="info"> 信息 </el-radio-button>
               </el-radio-group>
               <el-button size="small" text :loading="logsLoading" @click="loadLogs">
                 <el-icon><Refresh /></el-icon> 刷新
