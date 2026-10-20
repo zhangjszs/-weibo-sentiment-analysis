@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -60,9 +60,16 @@ const mountView = () =>
     global: { stubs: { BaseChart: true } },
   })
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockAllSuccess()
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('platform 加载/错误态（#65 U-2）', () => {
@@ -105,6 +112,7 @@ describe('platform 加载/错误态（#65 U-2）', () => {
       expect(wrapper.find('.content-error .el-button').exists()).toBe(true)
       // 旧数据仍在，未被清空或伪装成空态
       expect(wrapper.text()).toContain('测试内容一')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -123,6 +131,7 @@ describe('platform 加载/错误态（#65 U-2）', () => {
 
       expect(wrapper.find('.content-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('测试内容一')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -136,6 +145,7 @@ describe('platform 加载/错误态（#65 U-2）', () => {
       expect(wrapper.find('.stats-error').exists()).toBe(true)
       expect(wrapper.find('.stats-error').text()).toContain('统计加载失败')
       expect(wrapper.find('.stats-error .el-button').exists()).toBe(true)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -148,6 +158,7 @@ describe('platform 加载/错误态（#65 U-2）', () => {
       await flushPromises()
       expect(wrapper.find('.compare-error').exists()).toBe(true)
       expect(wrapper.find('.compare-error .el-button').exists()).toBe(true)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

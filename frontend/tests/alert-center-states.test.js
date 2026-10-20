@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -85,9 +85,16 @@ const mountView = () =>
     },
   })
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockAllSuccess()
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('alert 中心错误态与规则空态（#67 U-4）', () => {
@@ -135,6 +142,7 @@ describe('alert 中心错误态与规则空态（#67 U-4）', () => {
 
       // #19 语义：原有旧数据未被清空
       expect(wrapper.text()).toContain('高危预警')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -149,6 +157,7 @@ describe('alert 中心错误态与规则空态（#67 U-4）', () => {
       expect(wrapper.find('.stats-error').exists()).toBe(true)
       expect(wrapper.find('.stats-error').text()).toContain('获取预警统计失败')
       expect(wrapper.find('.stats-error .el-button').exists()).toBe(true)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -167,6 +176,7 @@ describe('alert 中心错误态与规则空态（#67 U-4）', () => {
       // 失败不伪装成空态：无「暂无预警规则」
       expect(wrapper.find('.rules-empty').exists()).toBe(false)
       expect(wrapper.text()).not.toContain('暂无预警规则')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -186,6 +196,7 @@ describe('alert 中心错误态与规则空态（#67 U-4）', () => {
 
       expect(wrapper.find('.rules-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('讨论量规则')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

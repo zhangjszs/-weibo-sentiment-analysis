@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -64,10 +64,17 @@ const logsOk = (lines = ['2026-10-01 INFO 启动成功']) => ({
 
 const mountView = () => mount(Spider)
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   getSpiderOverview.mockResolvedValue(overviewOk())
   getSpiderLogs.mockResolvedValue(logsOk())
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('spider 首屏加载/错误态（#66 U-3）', () => {
@@ -101,6 +108,7 @@ describe('spider 首屏加载/错误态（#66 U-3）', () => {
       expect(wrapper.find('.overview-error').exists()).toBe(true)
       expect(wrapper.find('.overview-error').text()).toContain('概览加载失败')
       expect(wrapper.find('.overview-error .el-button').exists()).toBe(true)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -124,6 +132,7 @@ describe('spider 首屏加载/错误态（#66 U-3）', () => {
       // 失败不伪装成空态：无「暂无日志」，旧日志仍在
       expect(wrapper.text()).not.toContain('暂无日志')
       expect(wrapper.text()).toContain('INFO 启动成功')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -142,6 +151,7 @@ describe('spider 首屏加载/错误态（#66 U-3）', () => {
 
       expect(wrapper.find('.overview-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('42')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -43,9 +43,16 @@ const mockAllSuccess = () => {
   getAlertRules.mockResolvedValue({ code: 200, msg: 'ok', data: { rules: [ruleItem] } })
 }
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockAllSuccess()
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('useAlert 底线（#76 T-3）', () => {
@@ -87,6 +94,7 @@ describe('useAlert 底线（#76 T-3）', () => {
       expect(wrapper.vm.alerts).toEqual([alertItem])
       expect(wrapper.vm.rules).toEqual([ruleItem])
       expect(wrapper.vm.loading).toBe(false)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

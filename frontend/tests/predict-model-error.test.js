@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -40,9 +40,16 @@ const mountView = () =>
     },
   })
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   getModelInfo.mockResolvedValue(modelInfoOk())
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('predict 模型信息错误态（#77 U-9）', () => {
@@ -59,6 +66,7 @@ describe('predict 模型信息错误态（#77 U-9）', () => {
 
       // 失败不伪装成空态
       expect(wrapper.text()).not.toContain('暂无模型信息')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -91,6 +99,7 @@ describe('predict 模型信息错误态（#77 U-9）', () => {
 
       expect(wrapper.find('.model-info-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('TF-IDF')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

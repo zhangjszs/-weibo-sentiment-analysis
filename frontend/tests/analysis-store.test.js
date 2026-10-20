@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 /**
@@ -26,9 +26,16 @@ import { useAnalysisStore } from '@/stores/analysis.js'
 
 const envelope = (data) => ({ code: 200, msg: 'ok', data })
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   setActivePinia(createPinia())
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('analysis store 缓存保护 (#19)', () => {
@@ -48,6 +55,7 @@ describe('analysis store 缓存保护 (#19)', () => {
     expect(store.hotTopics).toEqual({ topics: ['AI'] })
     expect(store.alerts).toEqual({ alerts: [] })
     expect(store.loading).toBe(false)
+    expect(consoleErrorSpy).toHaveBeenCalled()
   })
 
   it('空响应不覆盖已有缓存', async () => {

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -57,9 +57,16 @@ const mockAllSuccess = () => {
 
 const mountView = () => mount(Report)
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockAllSuccess()
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('report 错误态（#69 U-6）', () => {
@@ -77,6 +84,7 @@ describe('report 错误态（#69 U-6）', () => {
       // 失败不伪装成空态：无「暂无可用模板」
       expect(wrapper.find('.templates-empty').exists()).toBe(false)
       expect(wrapper.text()).not.toContain('暂无可用模板')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -92,6 +100,7 @@ describe('report 错误态（#69 U-6）', () => {
       expect(wrapper.find('.preview-error').text()).toContain('获取报告数据失败')
       expect(wrapper.find('.preview-error').text()).toContain('report data down')
       expect(wrapper.find('.preview-error .el-button').exists()).toBe(true)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -110,6 +119,7 @@ describe('report 错误态（#69 U-6）', () => {
 
       expect(wrapper.find('.templates-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('标准模板')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
 /**
@@ -56,9 +56,16 @@ const mockAllSuccess = () => {
   getSpiderLogs.mockResolvedValue({ code: 200, msg: 'ok', data: { logs: ['INFO ok'] } })
 }
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   mockAllSuccess()
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('useSpider 底线（#76 T-3）', () => {
@@ -95,6 +102,7 @@ describe('useSpider 底线（#76 T-3）', () => {
       expect(wrapper.vm.logs).toEqual(['INFO ok'])
       expect(wrapper.vm.overviewLoading).toBe(false)
       expect(wrapper.vm.logsLoading).toBe(false)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

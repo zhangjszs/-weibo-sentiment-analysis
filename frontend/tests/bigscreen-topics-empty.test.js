@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -50,10 +50,17 @@ const mountView = () =>
     global: { stubs: { BaseChart: true } },
   })
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   setActivePinia(createPinia())
   mockAllSuccess()
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('BigScreen 热门话题空态（#78 U-10）', () => {
@@ -101,6 +108,7 @@ describe('BigScreen 热门话题空态（#78 U-10）', () => {
       expect(wrapper.text()).not.toContain('暂无话题')
       // 旧话题仍在
       expect(wrapper.text()).toContain('话题A')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }

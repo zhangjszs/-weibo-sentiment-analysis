@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { nextTick } from 'vue'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
@@ -106,9 +106,16 @@ const harness = {
   },
 }
 
+let consoleErrorSpy
+
 beforeEach(() => {
   vi.clearAllMocks()
   setActivePinia(createPinia())
+  consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+})
+
+afterEach(() => {
+  consoleErrorSpy.mockRestore()
 })
 
 describe('BigScreen 视图加载/错误态（#62 U-1）', () => {
@@ -149,6 +156,7 @@ describe('BigScreen 视图加载/错误态（#62 U-1）', () => {
       expect(wrapper.find('.screen-loading').exists()).toBe(false)
       expect(wrapper.find('.screen-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('预警A')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -164,6 +172,7 @@ describe('BigScreen 视图加载/错误态（#62 U-1）', () => {
       expect(wrapper.find('.screen-error').exists()).toBe(false)
       expect(wrapper.text()).toContain('部分数据加载失败，已保留旧数据')
       expect(wrapper.text()).toContain('预警A')
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -184,6 +193,7 @@ describe('BigScreen 视图加载/错误态（#62 U-1）', () => {
 
       expect(wrapper.find('.panel-error').text()).toContain('热门话题加载失败')
       expect(wrapper.find('.panel-error .el-button').exists()).toBe(true)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
       vi.useRealTimers()
@@ -199,6 +209,7 @@ describe('useBigScreen 失败态（#62 U-1）', () => {
       await flushPromises()
       expect(wrapper.vm.loadError).toEqual({ message: '数据加载失败，请重试', partial: false })
       expect(wrapper.vm.loading).toBe(false)
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -220,6 +231,7 @@ describe('useBigScreen 失败态（#62 U-1）', () => {
       expect(wrapper.vm.loadError).toBe(null)
       expect(wrapper.vm.stats.articleCount).toBe(12)
       expect(wrapper.vm.hotTopics).toEqual([TOPIC])
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -240,6 +252,7 @@ describe('useBigScreen 失败态（#62 U-1）', () => {
 
       await wrapper.vm.refreshPanels()
       expect(wrapper.vm.panelErrors.topics).toBeTruthy()
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
@@ -270,6 +283,7 @@ describe('useBigScreen 失败态（#62 U-1）', () => {
 
       expect(wrapper.vm.panelErrors.topics).toBe(null)
       expect(wrapper.vm.hotTopics).toEqual([{ name: '话题B', percent: 60, heat: 200 }])
+      expect(consoleErrorSpy).toHaveBeenCalled()
     } finally {
       wrapper.unmount()
     }
