@@ -9,6 +9,7 @@ pytestmark = pytest.mark.unit
 
 import importlib
 import os
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 from config.settings import Config
@@ -57,6 +58,8 @@ def test_ensure_demo_admin_creates_user_sqlite(monkeypatch):
 
     row = session.query(User).filter_by(username="admin").one()
     assert row.create_time is not None
+    assert row.create_time.tzinfo is None
+    assert abs((datetime.now(UTC).replace(tzinfo=None) - row.create_time).total_seconds()) < 10
     assert verify_password("Admin123!", row.password)
     session.remove()
 
@@ -128,8 +131,12 @@ def test_schedule_startup_warmup_records_status(monkeypatch, alert_db):
     # #15：预热改用真实存在的用户签发 token（不再伪造 user_id=0），需先种用户
     from models.user import User
 
-    alert_db.add(User(username="admin", password="x"))
+    admin_user = User(username="admin", password="x")
+    alert_db.add(admin_user)
     alert_db.commit()
+    assert admin_user.create_time is not None
+    assert admin_user.create_time.tzinfo is None
+    assert abs((datetime.now(UTC).replace(tzinfo=None) - admin_user.create_time).total_seconds()) < 10
 
     monkeypatch.setattr(Config, "ENABLE_STARTUP_WARMUP", True)
     monkeypatch.setattr(Config, "STARTUP_WARMUP_DELAY", 0.0)

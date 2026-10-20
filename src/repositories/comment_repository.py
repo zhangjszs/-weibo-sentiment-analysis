@@ -365,9 +365,11 @@ class CommentRepository(BaseRepository):
 
     def get_recent_trend(self, days: int = 7) -> list[dict[str, Any]]:
         """最近 N 天评论数趋势"""
-        from datetime import datetime, timedelta
+        from datetime import timedelta
 
-        cutoff = datetime.utcnow() - timedelta(days=days)
+        from utils.datetime_utils import utcnow_naive
+
+        cutoff = utcnow_naive() - timedelta(days=days)
         rows = (
             self.session.query(Comment.created_at, func.count(Comment.comment_id).label("count"))
             .filter(Comment.created_at >= cutoff)

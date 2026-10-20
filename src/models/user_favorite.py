@@ -3,11 +3,10 @@
 用户收藏模型
 """
 
-from datetime import datetime
-
 from sqlalchemy import Column, DateTime, Integer, String, UniqueConstraint
 
 from database import Base
+from utils.datetime_utils import utcnow_naive
 
 
 class UserFavorite(Base):
@@ -17,7 +16,7 @@ class UserFavorite(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, default=0, nullable=False)
     article_id = Column(String(50), default="", nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow_naive)
 
     def __repr__(self):
         return f"<UserFavorite user={self.user_id} article={self.article_id}>"

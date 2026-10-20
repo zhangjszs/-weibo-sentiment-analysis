@@ -3,11 +3,10 @@
 审计日志模型
 """
 
-from datetime import datetime
-
 from sqlalchemy import Column, DateTime, Integer, String, Text
 
 from database import Base
+from utils.datetime_utils import utcnow_naive
 
 
 class AuditLog(Base):
@@ -19,7 +18,7 @@ class AuditLog(Base):
     action = Column(String(50), default="")
     detail = Column(Text)
     ip = Column(String(50), default="")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow_naive)
 
     def __repr__(self):
         return f"<AuditLog {self.id} {self.action}>"

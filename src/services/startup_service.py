@@ -14,6 +14,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from config.settings import Config
+from utils.datetime_utils import utcnow_naive
 from utils.jwt_handler import create_token
 from utils.password_hasher import hash_password
 from utils.query import querys
@@ -151,7 +152,7 @@ def ensure_demo_admin() -> dict[str, Any]:
                 User(
                     username=username,
                     password=hashed_password,
-                    create_time=datetime.utcnow(),
+                    create_time=utcnow_naive(),
                 )
             )
             db_session.commit()

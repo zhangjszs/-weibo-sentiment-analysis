@@ -3,11 +3,10 @@
 转发/传播记录模型
 """
 
-from datetime import datetime
-
 from sqlalchemy import BigInteger, Column, DateTime, Index, Integer, String, Text
 
 from database import Base
+from utils.datetime_utils import utcnow_naive
 
 
 class Repost(Base):
@@ -22,7 +21,7 @@ class Repost(Base):
     article_id = Column(String(64), nullable=False, index=True)
     user_id = Column(BigInteger, nullable=False)
     content = Column(Text)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow_naive)
     repost_count = Column(BigInteger, default=0)
     comment_count = Column(BigInteger, default=0)
     like_count = Column(BigInteger, default=0)

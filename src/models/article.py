@@ -1,8 +1,7 @@
-import datetime
-
 from sqlalchemy import Column, DateTime, Integer, String, Text
 
 from database import Base
+from utils.datetime_utils import utcnow_naive
 
 
 class Article(Base):
@@ -15,7 +14,7 @@ class Article(Base):
     region = Column(String(50))
     content = Column(Text)
     contentLen = Column(Integer)
-    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow_naive)
     type = Column(String(20))
     detailUrl = Column(String(255))
     authorAvatar = Column(String(500))
