@@ -8,15 +8,15 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#117 消除后端源码中 datetime.utcnow() 的 DeprecationWarning](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/117) | P3 | ready | 替换 `src/services/startup_service.py:154`、`src/repositories/comment_repository.py:370` 与 5 个模型列默认值（`user.py` / `article.py` / `audit_log.py` / `repost.py` / `user_favorite.py`）的 `datetime.utcnow()` 为等价 naive UTC（推荐共享 helper）；不改 schema、不改为 aware 存储、不升级依赖。验证：项目自有文件零 `utcnow() is deprecated`，fast gate 双模式计数 1494/69/196 与 1492/71/196 不变，警告数较 149 至少减 3，naive UTC 回归测试通过，ruff exit 0。 |
-| 2 | [#118 test_model_improvements.py 脚本直跑在用例失败时返回非零退出码](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/118) | P4 | ready | 修改 `tests/test_model_improvements.py` 的 `main()`：统计失败项，任一项失败 `sys.exit(1)`；新增失败路径测试（monkeypatch `test_*`，不得触发真实训练）。不改生产代码与训练参数。验证：失败路径 exit 1、成功路径 exit 0，fast gate 计数 +1（native 1495/69/196，fallback 1493/71/196），ruff exit 0。 |
-| 3 | [#119 收敛前端错误态测试的预期 console.error 噪声](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/119) | P4 | ready | 在 10 个受影响测试文件中 spy/mock `console.error` 并断言预期调用，测试后恢复；不改生产 `console.error` 行为与错误态断言。验证：`npm run test:run` 41 files / 190 tests 全绿，stderr `stderr \|` 块为 0，lint exit 0；仅改 `frontend/tests/`。 |
+| 1 | [#117 消除后端源码中 datetime.utcnow() 的 DeprecationWarning](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/117) | P3 | in-review | 替换 `src/services/startup_service.py:154`、`src/repositories/comment_repository.py:370` 与 5 个模型列默认值（`user.py` / `article.py` / `audit_log.py` / `repost.py` / `user_favorite.py`）的 `datetime.utcnow()` 为等价 naive UTC（推荐共享 helper）；不改 schema、不改为 aware 存储、不升级依赖。验证：项目自有文件零 `utcnow() is deprecated`，fast gate 双模式计数 1494/69/196 与 1492/71/196 不变，警告数较 149 至少减 3，naive UTC 回归测试通过，ruff exit 0。 |
+| 2 | [#118 test_model_improvements.py 脚本直跑在用例失败时返回非零退出码](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/118) | P4 | in-review | 修改 `tests/test_model_improvements.py` 的 `main()`：统计失败项，任一项失败 `sys.exit(1)`；新增失败路径测试（monkeypatch `test_*`，不得触发真实训练）。不改生产代码与训练参数。验证：失败路径 exit 1、成功路径 exit 0，fast gate 计数 +1（native 1495/69/196，fallback 1493/71/196），ruff exit 0。 |
+| 3 | [#119 收敛前端错误态测试的预期 console.error 噪声](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/119) | P4 | in-review | 在 10 个受影响测试文件中 spy/mock `console.error` 并断言预期调用，测试后恢复；不改生产 `console.error` 行为与错误态断言。验证：`npm run test:run` 41 files / 190 tests 全绿，stderr `stderr \|` 块为 0，lint exit 0；仅改 `frontend/tests/`。 |
 
 队列说明：P0=0、P1=0、P3=1、P4=2；共 3 项 ready，符合「2–5 个、宁缺毋滥」。三项均从实测告警/噪声中提炼、无互相依赖、过 4.2 门禁，无契约 1.10 红线。M6 由 D-023 默认 A 冻结，M7 由 D-019 A 冻结；本轮不设 milestone（D-021/D-025）。
 
 ## 等待验收（in-review）
 
-- 无。#114/#115/#116 已在本轮验收关闭并标 `done`。
+- #117, #118, #119 已在本会话交付转 in-review，等待 Planner 独立复跑验收。
 
 ## 阻塞 / 待决策（全部保留，不可领取实现）
 

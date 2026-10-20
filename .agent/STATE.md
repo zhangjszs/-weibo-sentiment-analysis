@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-20 执行轮。本席 executor；今日队列 3 项（#114, #115, #116）全部完成转 in-review，ready 队列清空。
-- 状态：in-review：#114, #115, #116；in-progress：无；ready：无。
-- 本轮起点 main `8be431c` → 现 main `d4bce28`（#114 merge `b225c32` + #115 merge `2a3b703` + #116 merge `d4bce28`；已推送）。
-- 后端 fast gate 本机基线（2026-10-20 实测，no-cov）：native（WEIBO_CORE_RUST=1）1494 passed / 69 skipped / 196 deselected / 149 warnings（35.56s，wall time 37.78s）；fallback（WEIBO_CORE_RUST=0）1492/71/196 / 149 warnings（35.43s，wall time 37.66s）；全绿；警告总数较此前（159）净减 10 个（消除全部 6 个 PytestReturnNotNoneWarning 及 Celery eager RuntimeWarning）。
-- 前端测试基线（2026-10-20 实测）：41 files / **190 tests** 全绿（5.82s），彻底消除 ElementPlusError [el-radio] 与 [el-checkbox] label act as value 废弃告警。
-- 跨天链：正常（2026-10-20）——STATE 已刷新、HANDOFF 于本轮末重写；DIARY 已写 2026-10-20 当日。
+- 任务：2026-10-20 执行轮（会话 2）。本席 executor；今日队列 3 项（#117, #118, #119）全部完成转 in-review，ready 队列清空。
+- 状态：in-review：#117, #118, #119；in-progress：无；ready：无。
+- 本轮起点 main `74e2f4c` → 现 main `ab430f7`（#117 `8f1cc63` + #118 `574aa34` + #119 `ab430f7`；已推送）。
+- 后端 fast gate 本机基线（#118 后实测，no-cov）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected / 95 warnings（46.84s）；fallback（WEIBO_CORE_RUST=0）1493/71/196 / 95 warnings（42.59s）；全绿；警告总数较此前（149）净减 54 条（消除全部 7 处自有 `datetime.utcnow()` 及 SQLAlchemy 对应告警）；用例数较前基线 +1。
+- 前端测试基线（#119 后实测）：41 files / **190 tests** 全绿（6.89s），stderr `stderr |` 块数彻底归零（32 → 0），彻底收敛 10 个测试文件的预期 `console.error` 噪声。
+- 跨天链：正常（2026-10-20）——STATE 已刷新、HANDOFF 于本轮末重写；DIARY 已追加 2026-10-20 当日会话 2 记录。
 
 ## 阻塞项
 - #84（历史）：曾 blocked，已由 Planner 在上轮关闭，不再是阻塞项；勿重开。
@@ -27,9 +27,12 @@
   缺空态：BigScreen 热门话题(#78) / comment 热门评论(#80)。
 - **响应式**：`Layout/index.vue:53-55` 与 `MobileNav.vue:40-42` 各一份硬编码 <768。R-1（#72）以 Layout 传 prop 实现单源。
 - **测试盲区**：持续消化中，新增 `login-journey.test.js` (8)、`alert-center-states.test.js` (5)、`task-list-loading.test.js` (3)。
-- **编译器警告**：`home/index.vue:61` `const filters = reactive(...)` 配 `v-model`（模板 `:4`），vitest 持续输出 `v-model cannot update a const reactive binding filters`（归 U-11 #80）。
+- **编译器警告**：`home/index.vue:61` 的 `v-model cannot update a const reactive binding filters` 告警经实测已消除（vitest 运行 stderr 匹配数为 0，见 #80 与 2026-10-20 验收记录）。
 
 ## 已完成
+- **#119 完成转 in-review（2026-10-20）**：在 10 个测试文件中 spy/mock `console.error` 并断言预期错误记录；前端 41 files / 190 tests 全绿，stderr `stderr |` 块数从 32 降为 0，lint 与 build exit 0；提交 `ab430f7` @ main（已推送）；报告 comment 6289797541。
+- **#118 完成转 in-review（2026-10-20）**：`tests/test_model_improvements.py` 的 `main()` 增加失败计数与 `sys.exit(1)`；新增 `test_main_exit_code_on_failure` 测试失败退出码（monkeypatch 隔离真实训练）；直跑成功退出码 0；fast gate native 1495/69/196、fallback 1493/71/196 全绿（用例数 +1）；提交 `574aa34` @ main（已推送）；报告 comment 6289685135。
+- **#117 完成转 in-review（2026-10-20）**：替换项目中 7 处 `datetime.utcnow()`（5 个模型默认值 + startup_service + comment_repository）为共享 `utils.datetime_utils:utcnow_naive()`；补齐 SQLite 下 naive UTC 回归测试；fast gate native 1494/69/196（95 warnings）、fallback 1492/71/196（92 warnings）双模式全绿，警告数净减 54+ 条；提交 `8f1cc63` @ main（已推送）；报告 comment 6289606009。
 - **#116 完成转 in-review（2026-10-20）**：Element Plus 单选与复选组件 label act as value 弃用警告收敛（`report.vue`、`Header.vue`、`PredictInput.vue`、`spider.vue` 统一使用 `value`）；前端 41 files / 190 tests 全绿，stderr 消除相关警告，lint 与 build exit 0；提交 `4a32dbe` → merge `d4bce28` @ main（已推送）；报告 comment 6272114114。
 - **#115 完成转 in-review（2026-10-20）**：`tests/conftest.py` 的 app fixture 补全 Celery eager 存储配置（`task_store_eager_result=True` 与环境变量覆盖）；消除任务状态查询测试中的 Celery `RuntimeWarning`；fast gate native 1494/69/196、fallback 1492/71/196 全绿；提交 `9b952cf` → merge `2a3b703` @ main（已推送）；报告 comment 6272071417。
 - **#114 完成转 in-review（2026-10-20）**：`tests/test_model_improvements.py` 移除 6 处测试函数末尾 `return <obj>`，消除 `PytestReturnNotNoneWarning`；移除吞异常 `try...except: return False` 假绿反模式并补齐有效断言；支持脚本直跑与 pytest 双通道；fast gate native 1494/69/196、fallback 1492/71/196 全绿；提交 `89a53ce` → merge `b225c32` @ main（已推送）；报告 comment 6272014524。
