@@ -188,15 +188,36 @@ def test_data_augmentation():
         assert len(aug) > 0
 
 
+def test_main_exit_code_on_failure(monkeypatch):
+    """测试 main() 在任一用例失败时调用 sys.exit(1)"""
+    mod = sys.modules[__name__]
+    monkeypatch.setattr(mod, "test_model_training", lambda: None)
+    monkeypatch.setattr(mod, "test_model_versions", lambda: None)
+    monkeypatch.setattr(mod, "test_model_monitoring", lambda: None)
+    monkeypatch.setattr(mod, "test_sentiment_analysis", lambda: None)
+    monkeypatch.setattr(mod, "test_social_media_features", lambda: None)
+
+    def failing_data_augmentation():
+        raise RuntimeError("模拟数据增强测试失败")
+
+    monkeypatch.setattr(mod, "test_data_augmentation", failing_data_augmentation)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main()
+
+    assert exc_info.value.code == 1
+
 def main():
     """主测试函数"""
     print("开始测试模型改进效果...")
+    failures = 0
 
     # 测试模型训练
     try:
         test_model_training()
         print("✅ 模型训练测试通过")
     except Exception as e:
+        failures += 1
         print(f"❌ 模型训练测试失败: {e}")
 
     # 测试模型版本管理
@@ -204,6 +225,7 @@ def main():
         test_model_versions()
         print("✅ 模型版本管理测试通过")
     except Exception as e:
+        failures += 1
         print(f"❌ 模型版本管理测试失败: {e}")
 
     # 测试模型监控
@@ -211,6 +233,7 @@ def main():
         test_model_monitoring()
         print("✅ 模型监控测试通过")
     except Exception as e:
+        failures += 1
         print(f"❌ 模型监控测试失败: {e}")
 
     # 测试情感分析服务
@@ -218,6 +241,7 @@ def main():
         test_sentiment_analysis()
         print("✅ 情感分析服务测试通过")
     except Exception as e:
+        failures += 1
         print(f"❌ 情感分析服务测试失败: {e}")
 
     # 测试社交媒体特征提取
@@ -225,6 +249,7 @@ def main():
         test_social_media_features()
         print("✅ 社交媒体特征提取测试通过")
     except Exception as e:
+        failures += 1
         print(f"❌ 社交媒体特征提取测试失败: {e}")
 
     # 测试数据增强
@@ -232,10 +257,14 @@ def main():
         test_data_augmentation()
         print("✅ 数据增强测试通过")
     except Exception as e:
+        failures += 1
         print(f"❌ 数据增强测试失败: {e}")
 
-    print("\n测试完成！")
+    if failures > 0:
+        print(f"\n测试完成！共有 {failures} 项测试失败。")
+        sys.exit(1)
 
+    print("\n测试完成！全部测试通过。")
 
 if __name__ == "__main__":
     main()
