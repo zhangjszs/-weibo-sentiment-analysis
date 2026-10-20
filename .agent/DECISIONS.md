@@ -182,6 +182,12 @@
 - Planner 决定：统一改为等价 naive UTC（推荐共享 helper：`datetime.now(timezone.utc).replace(tzinfo=None)`），**不改 schema、不改为 aware datetime 持久化、不改 API 返回格式、不升级依赖**；新增回归测试断言落库值 `tzinfo is None` 且接近当前 UTC。
 - 影响范围：#117 的实现边界；第三方 `circuitbreaker`/`seaborn`/SQLAlchemy 自身告警不在范围。
 
+### D-027 / 2026-10-20 / 今日队列：代码、测试与文档卫生批次 #120/#121/#122（不设 milestone）
+
+- 依据：#117–#119 验收关闭后，从实际构建日志（Dart Sass 3.0 `@import` 弃用告警）、fast gate 稀疏类抽样 `UndefinedMetricWarning`、活文档 `TEST_PERF.md` §7.1 滞后事实中提炼 3 项通过 4.2 门禁的任务。
+- 决定：编排 **#120（P4）**、**#121（P4）**、**#122（P4）**，均不设 milestone（延续 D-021/D-025），不计入 M6/M7 成功信号分母；队列 3 项符合 4.4 容量约束，且无契约 1.10 红线。
+- 影响范围：本轮不启动 M7、不改 M6 阈值、不改 CI 拓扑、不改业务行为；#120 消除 Sass 弃用告警，#121 消除 sklearn metric 告警，#122 补齐文档状态账。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
