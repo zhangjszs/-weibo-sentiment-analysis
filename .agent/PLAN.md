@@ -2,22 +2,23 @@
 
 > 规划 Agent 维护，每次会话滚动更新。执行 Agent 只读不写本文件。
 > 方向类决策记录在 DECISIONS.md，本文件引用其编号（D-xx）。
-> 更新于 2026-10-20，Planning 轮（验收会话 2 交付 #117/#118/#119；编排 #120/#121/#122；D-027 落盘）；内容提交在 main，代码 HEAD `ab430f7`（与远端同步）。
+> 更新于 2026-10-21，Planning 轮（无新增 in-review；结转 #120/#121/#122；更正 #121 规格）；内容提交在 main，代码 HEAD `afee0c4`（与远端同步）。
 
 ## 当前方向
 
-**M6 在 D-023 默认转正 A 下正式冻结，M7 继续受 D-019 A 冻结；主线转为可验证的代码、测试与文档卫生，不触碰任何红线。** 2026-10-20 验收确认会话 2 交付的 #117/#118/#119 全部通过：fast gate native 1495/69/196/95 warnings（告警总数自 149 净降 54 条）、fallback 1493/71/196/92 warnings、frontend 190 tests 零 `stderr |` 块噪声、ruff 与前端 build 全绿；#113–#119 连续七项卫生与测试加固任务均无生产行为回归。
+**M6 在 D-023 默认转正 A 下正式冻结，M7 继续受 D-019 A 冻结；主线维持可验证的代码、测试与文档卫生，不触碰任何红线。** 2026-10-20 会话 2 交付的 #117/#118/#119 已在上轮验收关闭（三个 Issue 均为 CLOSED/done）；此后 Executor 未再运行，ready 队列中的 #120/#121/#122 未被领取，本轮原样结转并发起执行。
 
 事实不变：M6 成员 10/10 CLOSED，但成功信号仅 1/3（覆盖率达成；串行 <30s、完整 CI <240s 未达），#112 已证明是结构性差距。D-023 于 2026-10-20 连续 3 天无用户答复，按 6.3 默认转正为 **A：M6 保持 open、不改阈值、不追加高成本或红线投入**；B（授权 L4 CI 解耦等）与 C（接受现状关闭 M6）均需用户明确答复。M7 扩展继续受 D-019 A 冻结。
 
-今日队列选择 3 项从实际构建告警、抽样测试告警与文档滞后事实中提炼的卫生任务：#120（前端仅存 1 处 Sass `@import` 弃用告警）、#121（模型评估稀疏类抽样 `UndefinedMetricWarning` 显式指定 `zero_division=0`）、#122（活文档 `docs/TEST_PERF.md` §7.1 补齐 #113–#119 交付状态）。均过 4.2 门禁，P4，不设 milestone（延续 D-021/D-025/D-027）。
+今日队列沿用上轮 3 项：#120（前端仅存 1 处 Sass `@import` 弃用告警）、#121（模型评估稀疏类抽样 `UndefinedMetricWarning` 显式指定 `zero_division=0`）、#122（活文档 `docs/TEST_PERF.md` §7.1 补齐 #113–#119 交付状态）。均 P4，不设 milestone（延续 D-021/D-025/D-027）。本轮已按实测更正 #121 的测试入口与验收口径（不绑定不可复现的固定告警计数，见 D-028）。
 
-## 今日目标（2026-10-20）
+## 今日目标（2026-10-21）
 
 - #120：将 `frontend/src/styles/index.scss:8` 的 `@import` 迁移至 `@use './animations.scss' as *;`，消除 Dart Sass 3.0 弃用警告。
-- #121：在 `trainModel.py` 与 `hyperparameter_optimizer.py` 中显式指定 `zero_division=0`，消除 3 条 `UndefinedMetricWarning`。
-- #122：在 `docs/TEST_PERF.md` §7.1 补齐 #113–#119 的已完成状态与真实摘要，使活文档与 GitHub Issue 完全同步。
+- #121：在 `trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 显式指定 `zero_division=0`，消除 `UndefinedMetricWarning`。
+- #122：在 `docs/TEST_PERF.md` §7.1 补齐 #113–#119 的已完成状态与真实摘要，使活文档与 GitHub Issue 同步。
 - 不改生产业务行为、不改 schema、不改依赖版本；不触碰 #98/#109/#96/#100/#101/#102/#59。
+- 收尾按契约写当日 DIARY、刷新 STATE/HANDOFF，并在 Issue comment 提交执行报告转 in-review（绝不自行 close）。
 
 ## 当前 Milestone：M6 测试性能优化（成员进度：10 / 10 CLOSED；成功信号：1 / 3 达成；2026-10-20 由 D-023 A 冻结，未收敛）
 
@@ -29,22 +30,22 @@
 
 | 成功信号 | 最新已观察事实 | 验收状态 |
 |---|---|---|
-| 本地串行无覆盖率稳定 <30s | Planner 2026-10-20 本机复跑 native **38.76s**（1495/69/196，95 warnings）；fallback **37.55s**；#112 记录 40.62s；collection 固定 ~10–11s | **未达成**：结构性差距，非局部微调可闭合（见 #112 与 TEST_PERF §6.2） |
+| 本地串行无覆盖率稳定 <30s | Planner 2026-10-21 本机复跑 native **39.45s**（1495/69/196，92 warnings）；10-20 为 38.76s / 37.55s；#112 记录 40.62s；collection 固定 ~10–11s | **未达成**：结构性差距，非局部微调可闭合（见 #112 与 TEST_PERF §6.2） |
 | 完整 CI 关键路径 <240s | 近期 5 run created→最后 job 完成 247s–329s；瓶颈 = integration 串行依赖 backend-fast + install 解包方差 | **未达成**：解耦属红线；D-023 已定 A，不投入 |
-| branch ≥68.49% | 2026-10-19 复跑基线 **68.5259%**（JSON 9268/13077）；CI 68.62%–68.63%；10-20 无生产语义改动，未重跑 | **达成**，余量薄（+0.036pp） |
+| branch ≥68.49% | 2026-10-19 复跑基线 **68.5259%**（JSON 9268/13077）；CI 68.62%–68.63%；10-20/10-21 无生产语义改动，未重跑 | **达成**，余量薄（+0.036pp） |
 
 ### 执行队列（给 Executor 的建议顺序，3 项）
 
-1. **#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）**（P4，ready）——替换 `frontend/src/styles/index.scss:8` 的 `@import` 为 `@use './animations.scss' as *;`；`npm run build` 不再输出 `DEPRECATION WARNING [import]`。
-2. **#121 模型训练与评估中的 classification_report 显式指定 zero_division=0**（P4，ready）——在 `trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 调用 `classification_report` 时传入 `zero_division=0`；消除 3 条 `UndefinedMetricWarning`；fast gate 告警再减 3（95 → 92）。
-3. **#122 刷新 TEST_PERF.md §7.1 议题总表并补齐 #113–#119 交付状态**（P4，ready）——追加 #113 至 #119 的真实 done 记录与准确摘要，标注更新日期为 2026-10-20。
+1. **#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）**（P4，ready）——替换 `frontend/src/styles/index.scss:8` 的 `@import` 为现代模块化 `@use './animations.scss' as *;`；`npm run build` 不再输出 `DEPRECATION WARNING [import]`。
+2. **#121 模型训练与评估中的 classification_report 显式指定 zero_division=0**（P4，ready）——在 `trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 调用时传入 `zero_division=0`；以 grep 核对 + 定向测试 `tests/test_model_improvements.py`、`tests/test_model_pipeline.py` 为准，不绑定固定告警数。
+3. **#122 刷新 TEST_PERF.md §7.1 议题总表并补齐 #113–#119 交付状态**（P4，ready）——追加 #113 至 #119 的真实 done 记录与准确摘要，标注刷新日期为 2026-10-21。
 
-**队列 3 项的理由**：M6 收口与 M7 扩展均处于用户决策门与冻结状态；本轮从 Vite 构建告警、fast gate 抽样告警与活文档事实同步中提炼，均为小步、高可测、零风险任务，通过 4.2 门禁，符合 [2, 5] 容量。
+**队列 3 项的理由**：与上轮一致；Executor 上轮未领取，故原样结转，不新增任务以免制造伪工作。三项均为小步、高可测、零风险任务，通过 4.2 门禁，符合 [2, 5] 容量。
 
 ### 完成信号（Success signal）
 
 - #120 交付后：`npm run build` exit 0 且零 `DEPRECATION WARNING [import]`，lint 与 vitest 全绿。
-- #121 交付后：`tests/test_model_improvements.py` 零 `UndefinedMetricWarning`，fast gate 告警降至 92（减少 3 条）。
+- #121 交付后：两处 `classification_report` 均显式传 `zero_division=0`；定向测试 exit 0 且不再出现 `UndefinedMetricWarning`（该告警受随机划分影响，未触发时以代码核对为准）；fast gate 双模式 exit 0，不新增其他告警类别。
 - #122 交付后：`docs/TEST_PERF.md` §7.1 完整包含 #113–#119，与 GitHub Issue 实际状态完全对齐。
 - fast gate 双模式与 CI 保持全绿；D-023 A 不被改写，M6 阈值不动。
 
@@ -85,5 +86,5 @@
 
 ## 给 Executor 的指令（不超过 2 句）
 
-- 依次领取 #120、#121、#122：替换 Sass @import、给 classification_report 显式传递 zero_division=0、刷新 TEST_PERF 议题状态表，不改动任何生产业务语义与依赖版本。
+- 依次领取 #120、#121、#122：替换 Sass @import、给 classification_report 显式传递 zero_division=0（按更正后的验收口径）、刷新 TEST_PERF 议题状态表，不改动任何生产业务语义与依赖版本。
 - 收尾按 D-022 在当日 `DIARY` 追加会话记录并更新 STATE/HANDOFF/ENV，在 Issue comment 提交执行报告转 in-review，绝不自行 close。
