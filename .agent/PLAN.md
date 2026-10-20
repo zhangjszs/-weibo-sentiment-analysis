@@ -2,7 +2,7 @@
 
 > 规划 Agent 维护，每次会话滚动更新。执行 Agent 只读不写本文件。
 > 方向类决策记录在 DECISIONS.md，本文件引用其编号（D-xx）。
-> 更新于 2026-10-21，Planning 轮（无新增 in-review；结转 #120/#121/#122；更正 #121 规格）；内容提交在 main，代码 HEAD `afee0c4`（与远端同步）。
+> 更新于 2026-10-21，Planning 轮（无新增 in-review；结转 #120/#121/#122；更正 #121 规格）+ 同日 07:23（+0800）复核轮（前提全部成立、队列不变，钉死 #122 范围口径、补齐 #120 迁移安全性证据，见 D-029）；内容提交在 main，代码 HEAD 仍为 `afee0c4`（规划提交仅动 `.agent/`，CI 39463001921 绿）。
 
 ## 当前方向
 
@@ -36,7 +36,7 @@
 
 ### 执行队列（给 Executor 的建议顺序，3 项）
 
-1. **#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）**（P4，ready）——替换 `frontend/src/styles/index.scss:8` 的 `@import` 为现代模块化 `@use './animations.scss' as *;`；`npm run build` 不再输出 `DEPRECATION WARNING [import]`。
+1. **#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）**（P4，ready）——替换 `frontend/src/styles/index.scss:8` 的 `@import` 为现代模块化 `@use './animations.scss' as *;`；`npm run build` 不再输出 `DEPRECATION WARNING [import]`。复核已确认 `animations.scss`（478 行）零 SCSS 变量/混入/`@use`，`as *` 不切断作用域；新 `@use` 仍位于首条样式规则之前，位置合法。
 2. **#121 模型训练与评估中的 classification_report 显式指定 zero_division=0**（P4，ready）——在 `trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 调用时传入 `zero_division=0`；以 grep 核对 + 定向测试 `tests/test_model_improvements.py`、`tests/test_model_pipeline.py` 为准，不绑定固定告警数。
 3. **#122 刷新 TEST_PERF.md §7.1 议题总表并补齐 #113–#119 交付状态**（P4，ready）——追加 #113 至 #119 的真实 done 记录与准确摘要，标注刷新日期为 2026-10-21。
 
@@ -69,6 +69,7 @@
 ## 下一阶段
 
 - #120/#121/#122 验收后，若用户仍无方向输入：下一轮继续从 fast gate / vitest / CI 的实测证据中提炼小批量卫生任务；若找不到通过 4.2 门禁的任务，**宁可保持空队列并等待用户，不制造伪任务**。
+- 已识别的下一批候选（尚未立项，须先补规格再过 4.2 门禁）：**前端 vitest 覆盖率度量**（`docs/TEST_PERF.md` §7.4 遗留项）——当前前端 41 files / 190 tests 完全没有覆盖率数据，测试回归不可见。属测试策略范畴可由 Planner 自行定，但会新增 CI 步骤，立项前必须确认不改变 CI 拓扑、不设维持不住的阈值。
 - 若用户授权 D-023 B/C 或给出 D-019 B/C：先补可执行规格并逐项过 4.2 门禁，红线事项单独确认后再排。
 - 若用户给出产品需求（#59）：按 D-012 路径重新评估，不沿用未经确认的候选清单。
 
