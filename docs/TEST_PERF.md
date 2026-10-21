@@ -309,11 +309,11 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
   - **路径 A2**：将成功信号修订为「本地 `-n auto` 并行稳定 `<30s`」（技术上已达成，实测 ~25s），更贴合 2026 年多核开发习惯。
 - **关于 CI <240s**：只要 `integration` 串行依赖 `backend-fast`，在现有 379 个依赖解包开销下几乎不可能稳定 <240s。建议 D-023 授权 **L4**（解除 integration 依赖），一步达成 ~170s 且零依赖风险。
 
-## 7. 议题状态与待确认建议（2026-10-19 刷新）
+## 7. 议题状态与待确认建议（2026-10-21 刷新）
 
-> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-19 刷新）。
+> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-21 刷新）。
 
-### 7.1 议题状态总表
+### 7.1 议题状态总表（2026-10-21 刷新）
 
 | Issue | 优先级 | 状态 | 摘要 |
 |---|---|---|---|
@@ -331,6 +331,13 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#110](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/110) | P3 | done | `scripts/` lint 门禁缺口 + 8 项机械修复（已于 2026-10-18 验收关闭；不设 milestone） |
 | [#112](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/112) | P2 | done | M6 残余差距只读分析（本地 gate 耗时分解 + CI 关键路径实测 + 5 项候选杠杆，见 §6.2；已于 2026-10-18 验收关闭；为 D-023 准备依据） |
 | [#111](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/111) | P4 | done | 同步旧 ruff 命令至各活文档/脚本，刷新 TEST_PERF 议题状态表并更正 #108 关键路径口径（已于 2026-10-18 验收关闭） |
+| [#113](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/113) | P4 | done | 消除 test_send_invalid_email 的真实出站依赖（SMTP_SSL patch），刷新 TEST_PERF 议题状态表（已于 2026-10-19 验收关闭） |
+| [#114](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/114) | P3 | done | 消除 test_model_improvements.py 的 PytestReturnNotNoneWarning 告警与假绿吞异常反模式（已于 2026-10-20 验收关闭） |
+| [#115](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/115) | P4 | done | conftest 补全 Celery task_store_eager_result 配置以消除 eager 任务查询告警（已于 2026-10-20 验收关闭） |
+| [#116](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/116) | P3 | done | 收敛前端单选与复选组件的 Element Plus 3.0 label act as value 弃用警告（已于 2026-10-20 验收关闭） |
+| [#117](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/117) | P3 | done | 消除后端源码中全部 7 处 datetime.utcnow() 弃用告警，提供共享 utcnow_naive helper（已于 2026-10-20 验收关闭） |
+| [#118](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/118) | P4 | done | test_model_improvements.py 脚本直跑在用例失败时返回非零退出码 sys.exit(1)（已于 2026-10-20 验收关闭） |
+| [#119](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/119) | P4 | done | 收敛前端错误态测试的预期 console.error 噪声，vitest stderr 块数归零（已于 2026-10-20 验收关闭） |
 
 > **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
