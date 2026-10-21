@@ -425,7 +425,9 @@ class HyperparameterOptimizer:
             self.save_best_model(best_estimator, best_name)
 
             y_pred = best_estimator.predict(X_test)
-            report = classification_report(y_test, y_pred, output_dict=True)
+            report = classification_report(
+                y_test, y_pred, output_dict=True, zero_division=0
+            )
 
             results["summary"] = {
                 "best_model": best_name,

@@ -246,7 +246,7 @@ def train_best_model(df: pd.DataFrame, model_name: str = "NaiveBayes"):
     y_pred = pipe.predict(X_test)
 
     print("\n🎯 Classification Report")
-    print(classification_report(y_test, y_pred, digits=4))
+    print(classification_report(y_test, y_pred, digits=4, zero_division=0))
 
     # 混淆矩阵
     cm = confusion_matrix(y_test, y_pred, labels=np.unique(y_test))
