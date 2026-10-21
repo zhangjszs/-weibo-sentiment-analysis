@@ -5,7 +5,7 @@
 // fonts.googleapis.com / fonts.gstatic.com），且离线时会卡住渲染（#20）。
 
 // Animations and Interactions
-@import './animations.scss';
+@use './animations.scss' as *;
 
 // Global Reset & Base Styles
 * {
