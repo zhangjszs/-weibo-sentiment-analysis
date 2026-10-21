@@ -10,15 +10,15 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/120) | P4 | ready | 替换 `frontend/src/styles/index.scss:8` 的 `@import './animations.scss';` 为现代模块化 `@use './animations.scss' as *;`；不升级依赖、不改样式/动画规则。验证：`npm run build` exit 0 且零 `DEPRECATION WARNING [import]`，`npm run lint` exit 0，vitest 41/190 全绿；仅改 1 个 SCSS 文件。 |
-| 2 | [#121 模型训练与评估中的 classification_report 显式指定 zero_division=0](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/121) | P4 | ready | 在 `src/model/trainModel.py:249` 与 `src/model/hyperparameter_optimizer.py:428` 调用 `classification_report` 时显式传入 `zero_division=0`；不改抽样与模型超参数。验证：grep 确认两处均传参；`pytest tests/test_model_improvements.py tests/test_model_pipeline.py` exit 0 且不再出现 UndefinedMetricWarning（该告警受随机划分影响，未触发时以代码核对为准）；fast gate 双模式 exit 0、不新增其他告警类别；ruff exit 0；仅改两个源文件。**注意：不要运行不存在的 `tests/test_hyperparameter_optimizer.py`。** |
-| 3 | [#122 刷新 TEST_PERF.md §7.1 议题总表并补齐 #113–#119 交付状态](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/122) | P4 | ready | 在 `docs/TEST_PERF.md` §7.1 追加 #113 至 #119 的 done 记录与真实摘要（SMTP mock / model return 清理 / celery eager / el-radio label / utcnow / exit code / console noise），小节标注改为 `（2026-10-21 刷新）`；不改 §1–§6 历史数据、不改 M6 信号。验证：§7.1 表格完整覆盖 **Issue 原文范围 #88–#95、#106–#108、#110–#119** 且状态与 GitHub 一致（**不是**补全全部 80+ 个历史 Issue），ruff exit 0；仅改 `docs/TEST_PERF.md`。 |
+| 1 | [#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/120) | P4 | in-review | 替换 `frontend/src/styles/index.scss:8` 的 `@import './animations.scss';` 为现代模块化 `@use './animations.scss' as *;`；不升级依赖、不改样式/动画规则。验证：`npm run build` exit 0 且零 `DEPRECATION WARNING [import]`，`npm run lint` exit 0，vitest 41/190 全绿；仅改 1 个 SCSS 文件。 |
+| 2 | [#121 模型训练与评估中的 classification_report 显式指定 zero_division=0](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/121) | P4 | in-review | 在 `src/model/trainModel.py:249` 与 `src/model/hyperparameter_optimizer.py:428` 调用 `classification_report` 时显式传入 `zero_division=0`；不改抽样与模型超参数。验证：grep 确认两处均传参；`pytest tests/test_model_improvements.py tests/test_model_pipeline.py` exit 0 且不再出现 UndefinedMetricWarning（该告警受随机划分影响，未触发时以代码核对为准）；fast gate 双模式 exit 0、不新增其他告警类别；ruff exit 0；仅改两个源文件。**注意：不要运行不存在的 `tests/test_hyperparameter_optimizer.py`。** |
+| 3 | [#122 刷新 TEST_PERF.md §7.1 议题总表并补齐 #113–#119 交付状态](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/122) | P4 | in-review | 在 `docs/TEST_PERF.md` §7.1 追加 #113 至 #119 的 done 记录与真实摘要（SMTP mock / model return 清理 / celery eager / el-radio label / utcnow / exit code / console noise），小节标注改为 `（2026-10-21 刷新）`；不改 §1–§6 历史数据、不改 M6 信号。验证：§7.1 表格完整覆盖 **Issue 原文范围 #88–#95、#106–#108、#110–#119** 且状态与 GitHub 一致（**不是**补全全部 80+ 个历史 Issue），ruff exit 0；仅改 `docs/TEST_PERF.md`。 |
 
 队列说明：P0=0、P1=0、P3=0、P4=3；共 3 项 ready，符合「2–5 个、宁缺毋滥」。三项均从构建告警、测试告警与文档滞后实测事实中提炼、无互相依赖、过 4.2 门禁，无契约 1.10 红线。M6 由 D-023 默认 A 冻结，M7 由 D-019 A 冻结；本轮不设 milestone（延续 D-021/D-025/D-027）。**结转上限**：这三项已被结转 2 次（10-20 编排、10-21 未领取）；若 2026-10-22 仍未被领取，下一轮不再无条件结转，改为按 4.1 重新评估保留/拆分/关闭，并追查 Executor 未运行的原因。
 
 ## 等待验收（in-review）
 
-- 无。上轮 #117/#118/#119 已于 2026-10-20 验收关闭；本轮开始前无新增交付。
+- #120、#121、#122 已完成并由 Executor 提交执行报告，等待 Planner 独立复跑验收。
 
 ## 阻塞 / 待决策（全部保留，不可领取实现）
 
