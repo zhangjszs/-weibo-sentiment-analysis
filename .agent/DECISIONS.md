@@ -205,6 +205,14 @@
 - 理由：Executor 未运行时重复规划等于制造伪工作（沿用 D-028）；但已发现的规格简写漂移若不钉死，会让 Executor 在错误范围上开工。
 - 影响范围：仅 `.agent/` 与任务口径；不改方向、不改 M6/M7 状态、不触碰契约 1.10 红线、不新增或关闭任何 Issue。
 
+### D-030 / 2026-10-22 / 验收 #120–#122 全部通过，并立项今日唯一卫生任务 #123（不设 milestone）
+
+- 验收（独立复跑，不只信报告）：#120（`git show d7e0c59` 仅改 index.scss 1 文件；本机 `npm run build` exit 0 且 `DEPRECATION WARNING [import]` 计数=0）· #121（`git show 6a37d95` 两源文件均传 `zero_division=0`；定向测试 22 passed、`UndefinedMetricWarning` 计数=0；native fast gate 1495/69/196/92 warnings exit 0；ruff exit 0）· #122（`git show 0f2221c` 仅改 docs/TEST_PERF.md；§7.1 标「（2026-10-21 刷新）」且精确覆盖 #88–#95、#106–#108、#110–#119 共 21 项）。三项均一次性通过 → done/CLOSED，无 reopen、无报告失实。
+- 立项：**#123（P3，ready，type:test，无 milestone）**——为前端 vitest 建立**仅本地**覆盖率可见性（`docs/TEST_PERF.md` §7.4/#93 遗留项）：装 `@vitest/coverage-v8@3.2.7` devDep、`vitest.config.js` 配 `test.coverage`、`package.json` 加 `test:coverage` 脚本。
+- 选型理由与红线边界：属测试策略（契约 6.1 Planner 权限）；`@vitest/coverage-v8` 是 vitest 官方生态 devDependency、纯测试工具、可回滚，非重大依赖。**“设 `coverage.thresholds` 阈值门禁”与“将覆盖率纳入 CI”两部分明确排除在本任务外**（属主要 CI/CD 流程变化 + 可能引入维持不住的阈值，需用户授权，另立）。基线未知，先建可见性。
+- 队列容量：宁缺毋滥。本轮从实测仅找到 #123 一项同时满足本地可验证 + 不触红线 + 逐条可判定；其余候选（`test_db.py` 的 `assert True` 属 integration-only、integration 补用例需外部 MySQL/Redis、CJK 字体 glyph 告警属 D-027 非目标）均不入 ready。
+- 影响范围：关闭 3 个 in-review Issue + 新建 1 个 ready Issue；不启动 M7、不改 M6 阈值/CI 拓扑/schema/业务行为；无 pending 新增。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。

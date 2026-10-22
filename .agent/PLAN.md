@@ -2,22 +2,23 @@
 
 > 规划 Agent 维护，每次会话滚动更新。执行 Agent 只读不写本文件。
 > 方向类决策记录在 DECISIONS.md，本文件引用其编号（D-xx）。
-> 更新于 2026-10-21，Planning 轮（无新增 in-review；结转 #120/#121/#122；更正 #121 规格）+ 同日 07:23（+0800）复核轮（前提全部成立、队列不变，钉死 #122 范围口径、补齐 #120 迁移安全性证据，见 D-029）；内容提交在 main，代码 HEAD 仍为 `afee0c4`（规划提交仅动 `.agent/`，CI 39463001921 绿）。
+> 更新于 2026-10-22，Planning 轮：验收并关闭 #120/#121/#122（独立复跑全部通过 → done），新建今日队列唯一 ready 任务 #123（前端 vitest 覆盖率本地可见性，见 D-030）。
 
 ## 当前方向
 
-**M6 在 D-023 默认转正 A 下正式冻结，M7 继续受 D-019 A 冻结；主线维持可验证的代码、测试与文档卫生，不触碰任何红线。** 2026-10-20 会话 2 交付的 #117/#118/#119 已在上轮验收关闭（三个 Issue 均为 CLOSED/done）；此后 Executor 未再运行，ready 队列中的 #120/#121/#122 未被领取，本轮原样结转并发起执行。
+**M6 依 D-023 默认 A 冻结、M7 依 D-019 A 冻结；主线维持可验证的代码、测试与文档卫生，不触碰任何红线。** 2026-10-21 执行轮交付的 #120/#121/#122 已在本轮独立复跑验收全部通过并关闭（三个 Issue 均 CLOSED/done，无 reopen、无报告失实）；ready 队列随之清空。
+
+本轮从实测事实中只提炼出 **1 项** 通过 4.2 门禁、本地可验证、且不触碰契约 1.10 红线的卫生任务作为今日队列：**#123 为前端 vitest 建立本地覆盖率可见性**（`docs/TEST_PERF.md` §7.4 自 #93 起的遗留项——前端 190 测试目前零覆盖率数据，测试回归不可见）。#123 属测试策略（契约 6.1 Planner 权限），引入的 `@vitest/coverage-v8` 为 vitest 官方生态 devDependency、纯测试工具、可回滚；**「设阈值门禁 / 加 CI 步骤」两部分被明确排除**（属主要 CI/CD 流程变化 + 需用户授权，另立）。P3，不设 milestone（延续 D-021/D-025/D-027）。其余候选（`test_db.py` 的 `assert True`、integration 补用例、CJK 字体 glyph 告警）经排查不满足本地 ready 门禁或属既定非目标，见 TASKS.md「已排查但不入 ready」。
 
 事实不变：M6 成员 10/10 CLOSED，但成功信号仅 1/3（覆盖率达成；串行 <30s、完整 CI <240s 未达），#112 已证明是结构性差距。D-023 于 2026-10-20 连续 3 天无用户答复，按 6.3 默认转正为 **A：M6 保持 open、不改阈值、不追加高成本或红线投入**；B（授权 L4 CI 解耦等）与 C（接受现状关闭 M6）均需用户明确答复。M7 扩展继续受 D-019 A 冻结。
 
-今日队列沿用上轮 3 项：#120（前端仅存 1 处 Sass `@import` 弃用告警）、#121（模型评估稀疏类抽样 `UndefinedMetricWarning` 显式指定 `zero_division=0`）、#122（活文档 `docs/TEST_PERF.md` §7.1 补齐 #113–#119 交付状态）。均 P4，不设 milestone（延续 D-021/D-025/D-027）。本轮已按实测更正 #121 的测试入口与验收口径（不绑定不可复现的固定告警计数，见 D-028）。
+今日队列为上轮 #120/#121/#122 验收关闭后的新一批：仅 #123 一项（前端 vitest 覆盖率本地可见性，P3，无 milestone）。队列保持宁缺毋滥：本轮未找到第二项能同时满足「本地可验证 + 不触碰红线 + 逐条可判定」的卫生任务，不堆 P1/P2 填充、不制造伪工作。
 
-## 今日目标（2026-10-21）
+## 今日目标（2026-10-22）
 
-- #120：将 `frontend/src/styles/index.scss:8` 的 `@import` 迁移至 `@use './animations.scss' as *;`，消除 Dart Sass 3.0 弃用警告。
-- #121：在 `trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 显式指定 `zero_division=0`，消除 `UndefinedMetricWarning`。
-- #122：在 `docs/TEST_PERF.md` §7.1 补齐 #113–#119 的已完成状态与真实摘要，使活文档与 GitHub Issue 同步。
-- 不改生产业务行为、不改 schema、不改依赖版本；不触碰 #98/#109/#96/#100/#101/#102/#59。
+- 验收并关闭 #120/#121/#122（已完成：独立复跑全部通过，标 done + CLOSED，验收 comment 见 TASKS.md 验收账）。
+- #123：为前端 vitest 增加**仅本地可见性**的覆盖率度量——装 `@vitest/coverage-v8@3.2.7`（devDep，匹配已装 vitest）、`vitest.config.js` 配 `test.coverage`（v8 / all / include src/**）、`package.json` 增 `test:coverage` 脚本；**不设阈值、不动 CI、不改被测源码/用例**。
+- 不改生产业务行为、不改 schema、不改运行时依赖版本、不改 CI 拓扑；不触碰 #98/#109/#96/#100/#101/#102/#59。
 - 收尾按契约写当日 DIARY、刷新 STATE/HANDOFF，并在 Issue comment 提交执行报告转 in-review（绝不自行 close）。
 
 ## 当前 Milestone：M6 测试性能优化（成员进度：10 / 10 CLOSED；成功信号：1 / 3 达成；2026-10-20 由 D-023 A 冻结，未收敛）
@@ -34,20 +35,16 @@
 | 完整 CI 关键路径 <240s | 近期 5 run created→最后 job 完成 247s–329s；瓶颈 = integration 串行依赖 backend-fast + install 解包方差 | **未达成**：解耦属红线；D-023 已定 A，不投入 |
 | branch ≥68.49% | 2026-10-19 复跑基线 **68.5259%**（JSON 9268/13077）；CI 68.62%–68.63%；10-20/10-21 无生产语义改动，未重跑 | **达成**，余量薄（+0.036pp） |
 
-### 执行队列（给 Executor 的建议顺序，3 项）
+### 执行队列（给 Executor 的建议顺序，1 项 ready）
 
-1. **#120 消除前端 Sass @import 废弃警告（Dart Sass 3.0 兼容）**（P4，ready）——替换 `frontend/src/styles/index.scss:8` 的 `@import` 为现代模块化 `@use './animations.scss' as *;`；`npm run build` 不再输出 `DEPRECATION WARNING [import]`。复核已确认 `animations.scss`（478 行）零 SCSS 变量/混入/`@use`，`as *` 不切断作用域；新 `@use` 仍位于首条样式规则之前，位置合法。
-2. **#121 模型训练与评估中的 classification_report 显式指定 zero_division=0**（P4，ready）——在 `trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 调用时传入 `zero_division=0`；以 grep 核对 + 定向测试 `tests/test_model_improvements.py`、`tests/test_model_pipeline.py` 为准，不绑定固定告警数。
-3. **#122 刷新 TEST_PERF.md §7.1 议题总表并补齐 #113–#119 交付状态**（P4，ready）——追加 #113 至 #119 的真实 done 记录与准确摘要，标注刷新日期为 2026-10-21。
+1. **#123 为前端 vitest 建立本地覆盖率可见性（reporter-only，无阈值门禁、不动 CI）**（P3，ready）——装 `@vitest/coverage-v8@3.2.7`（devDep）、`vitest.config.js` 配 `test.coverage`（v8/all/include src/**/reporter text+lcov）、`package.json` 增 `test:coverage`；**不写 `coverage.thresholds`、不改 `ci.yml`、不改被测源码或用例**。
 
-**队列 3 项的理由**：与上轮一致；Executor 上轮未领取，故原样结转，不新增任务以免制造伪工作。三项均为小步、高可测、零风险任务，通过 4.2 门禁，符合 [2, 5] 容量。
+**队列 1 项的理由**：#120–#122 关闭后 ready 清空；本轮实测仅 #123 满足 4.2 门禁且不触红线。宁可 1 项真实任务，不用伪任务凑满 [2,5]。
 
 ### 完成信号（Success signal）
 
-- #120 交付后：`npm run build` exit 0 且零 `DEPRECATION WARNING [import]`，lint 与 vitest 全绿。
-- #121 交付后：两处 `classification_report` 均显式传 `zero_division=0`；定向测试 exit 0 且不再出现 `UndefinedMetricWarning`（该告警受随机划分影响，未触发时以代码核对为准）；fast gate 双模式 exit 0，不新增其他告警类别。
-- #122 交付后：`docs/TEST_PERF.md` §7.1 完整包含 #113–#119，与 GitHub Issue 实际状态完全对齐。
-- fast gate 双模式与 CI 保持全绿；D-023 A 不被改写，M6 阈值不动。
+- #123 交付后：`cd frontend && npm ci && npm run test:coverage` exit 0 并打印逐文件覆盖率表；生成 `coverage/`（含 lcov）且不入 git；现有 `test:run` 41/190、`lint`、`build` 结果不变；`ci.yml` 零改动、无 `coverage.thresholds`。
+- fast gate 与 CI 保持全绿；D-023 A 不被改写，M6 阈值不动。
 
 ### 明确非目标（Non-goals）
 
@@ -68,8 +65,10 @@
 
 ## 下一阶段
 
-- #120/#121/#122 验收后，若用户仍无方向输入：下一轮继续从 fast gate / vitest / CI 的实测证据中提炼小批量卫生任务；若找不到通过 4.2 门禁的任务，**宁可保持空队列并等待用户，不制造伪任务**。
-- 已识别的下一批候选（尚未立项，须先补规格再过 4.2 门禁）：**前端 vitest 覆盖率度量**（`docs/TEST_PERF.md` §7.4 遗留项）——当前前端 41 files / 190 tests 完全没有覆盖率数据，测试回归不可见。属测试策略范畴可由 Planner 自行定，但会新增 CI 步骤，立项前必须确认不改变 CI 拓扑、不设维持不住的阈值。
+- #123 验收后若用户仍无方向输入：下一轮继续从 fast gate / vitest / 覆盖率数据（#123 产出后将首次可见）中提炼小批量卫生任务；若找不到通过 4.2 门禁的任务，**宁可保持空队列并等待用户，不制造伪任务**。
+- 已识别但暂未达 ready 门的候选（须先补规格再过 4.2）：
+  - `tests/test_db.py` 的 `assert True` 与 integration 层补用例（需外部 MySQL/Redis，归集成批次）；
+  - 待 #123 产出基线后，若用户同意将覆盖率纳入 CI（属红线，需单独授权）或设定可维持的阈值，另立任务。
 - 若用户授权 D-023 B/C 或给出 D-019 B/C：先补可执行规格并逐项过 4.2 门禁，红线事项单独确认后再排。
 - 若用户给出产品需求（#59）：按 D-012 路径重新评估，不沿用未经确认的候选清单。
 
@@ -87,5 +86,5 @@
 
 ## 给 Executor 的指令（不超过 2 句）
 
-- 依次领取 #120、#121、#122：替换 Sass @import、给 classification_report 显式传递 zero_division=0（按更正后的验收口径）、刷新 TEST_PERF 议题状态表，不改动任何生产业务语义与依赖版本。
-- 收尾按 D-022 在当日 `DIARY` 追加会话记录并更新 STATE/HANDOFF/ENV，在 Issue comment 提交执行报告转 in-review，绝不自行 close。
+- 领取 #123：为前端 vitest 建立仅本地的覆盖率可见性（装匹配版 coverage-v8 devDep + 配 `test.coverage` + 加 `test:coverage` 脚本）；**不设 `coverage.thresholds`、不改 `ci.yml`、不改被测源码与用例**。
+- 收尾按 D-022 在 `.agent/DIARY/2026-10-22.md` 追加会话记录并更新 STATE/HANDOFF/ENV，在 Issue comment 提交执行报告转 in-review，绝不自行 close。
