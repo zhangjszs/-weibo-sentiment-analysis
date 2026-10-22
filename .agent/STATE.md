@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-21 执行轮（会话 1）。本席 executor；今日队列 3 项（#120, #121, #122）全部完成转 in-review，ready 队列清空。
-- 状态：in-review：#120, #121, #122；in-progress：无；ready：无。
-- 本轮起点 main `b0edb65` → 现 main `0f2221c`（#120 `d7e0c59` + #121 `6a37d95` + #122 `0f2221c`；已推送）。
-- 后端 fast gate 本机基线（#121 后实测，no-cov）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected / 92 warnings（36.66s）；fallback（WEIBO_CORE_RUST=0）1493/71/196 / 92 warnings（34.05s）；全绿；消除全部 UndefinedMetricWarning。
-- 前端构建与测试基线（#120 后实测）：vite build exit 0（8.19s）且零 `DEPRECATION WARNING [import]` 弃用告警；vitest 41 files / 190 tests 全绿（5.55s）；eslint exit 0。
-- 跨天链：正常（2026-10-21）——STATE 已刷新、HANDOFF 于本轮末重写；DIARY 已写入 2026-10-21 当日记录。
+- 任务：2026-10-22 执行轮（会话 1）。本席 executor；今日队列 1 项（#123）完成转 in-review，ready 队列清空。
+- 状态：in-review：#123；in-progress：无；ready：无。
+- 本轮起点 main `b45a40a` → 现 main `c77fbcb`（#123 `6812039` + merge `c77fbcb`；已推送，临时分支已删）。
+- 前端基线（#123 后实测）：`npm ci` exit 0；`test:coverage` exit 0（41 files / 190 tests，逐文件表输出；总覆盖率 Stmts 80.55 / Branch 72.66 / Funcs 30.95 / Lines 80.55）；`test:run` 41/190 全绿；`lint`/`build` exit 0；coverage/ 产物被 frontend/.gitignore:13 忽略。
+- 后端 fast gate 本机基线（2026-10-21 #121 后实测，本轮未改后端）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected / 92 warnings（36.66s）；fallback（WEIBO_CORE_RUST=0）1493/71/196 / 92 warnings（34.05s）；全绿。
+- 跨天链：正常（2026-10-22）——上一棒（2026-10-21）STATE/HANDOFF/DIARY 齐备；本轮 STATE 已刷新、HANDOFF 重写、DIARY 已写入 2026-10-22。
 
 ## 阻塞项
 - #109（2026-10-17 仍 blocked）：本机无 Docker、无已知已授权 Docker 主机；console smoke 不替代真实 profile/UI 验收。
@@ -16,6 +16,7 @@
 - #96 / #100 / #101 / #102 / #59（needs-info）：受 D-019 A 冻结或待产品需求确认。
 
 ## 关键事实（已实测验证）
+- **前端覆盖率可见性建成（#123 实测）**：`@vitest/coverage-v8@3.2.7`（devDep，与 vitest 同版）+ `vitest.config.js` `test.coverage`（v8/all/src 下 js+vue/text+lcov，无门禁）+ `test:coverage` 脚本；锁文件零包版本变动（脚本逐包比对），仅新增依赖树与 glob 去重上提。
 - **Sass 模块化兼容（#120 实测）**：`frontend/src/styles/index.scss:8` 已由 `@import` 迁移为 `@use './animations.scss' as *;`，Vite 构建彻底消除 Dart Sass 3.0 弃用警告。
 - **模型评估无告警（#121 实测）**：`trainModel.py` 与 `hyperparameter_optimizer.py` 中 `classification_report` 调用已显式传入 `zero_division=0`，稀有类别不再触发 `UndefinedMetricWarning`。
 - **文档透明度（#122 实测）**：`docs/TEST_PERF.md` §7.1 已刷新至 2026-10-21，完整补齐 #113–#119 真实交付记录与状态（21 项全部覆盖且状态为 done）。
@@ -27,6 +28,7 @@
 - **#19 失败态语义落地状态**：`useTable.js` 已删；语义已落地在 #62、#65、#66、#67（失败保留旧数据 + 显式错误态/重试）。
 
 ## 已完成
+- **#123 完成转 in-review（2026-10-22）**：前端 vitest 本地覆盖率可见性（reporter-only）；`npm ci`/`test:coverage`/`test:run`/`lint`/`build` 均 exit 0，ci.yml 零改动、无 thresholds 门禁；提交 `6812039` + merge `c77fbcb` @ main（已推送）；报告 comment 6340462567。
 - **#122 完成转 in-review（2026-10-21）**：`docs/TEST_PERF.md` §7 与 §7.1 更新标注为 `（2026-10-21 刷新）`，追加 #113–#119 真实交付记录；脚本核验 21 项任务完整覆盖且均为 done；ruff exit 0；提交 `0f2221c` @ main（已推送）；报告 comment 6315186815。
 - **#121 完成转 in-review（2026-10-21）**：`trainModel.py:249` 与 `hyperparameter_optimizer.py:428` 显式传入 `zero_division=0`；消除 `UndefinedMetricWarning`；定向模型测试 22 passed 0 failed；fast gate native 1495/69/196/92 warnings、fallback 1493/71/196/92 warnings 双模式全绿；提交 `6a37d95` @ main（已推送）；报告 comment 6315126611。
 - **#120 完成转 in-review（2026-10-21）**：`frontend/src/styles/index.scss:8` 替换 `@import` 为 `@use './animations.scss' as *;`；消除 Vite 构建时 `DEPRECATION WARNING [import]` 弃用告警；前端 41 files / 190 tests 全绿，lint exit 0，build 8.19s exit 0；提交 `d7e0c59` @ main（已推送）；报告 comment 6315068551。

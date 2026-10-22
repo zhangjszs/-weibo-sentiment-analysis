@@ -8,7 +8,7 @@
 
 | 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
 |---|---|---|---|---|
-| 1 | [#123 为前端 vitest 建立本地覆盖率可见性（reporter-only，无阈值门禁、不动 CI）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/123) | P3 | ready | 装 `@vitest/coverage-v8@3.2.7`（devDep，匹配已装 vitest 3.2.7）+ `frontend/vitest.config.js` 新增 `test.coverage`（provider v8 / all true / include src/**/*.{js,vue} / reporter text+lcov）+ `package.json` 新增 `test:coverage` 脚本 + 确认 `.gitignore` 忽略 `coverage/`。**明确不做**：不设 `coverage.thresholds` 门禁、不动 `ci.yml`、不改被测源码与用例。验证：`npm ci && npm run test:coverage` exit 0 打印逐文件覆盖率表；`test:run` 仍 41/190 全绿、`lint`/`build` exit 0；`git diff` 确认 ci.yml 零改动。 |
+| 1 | [#123 为前端 vitest 建立本地覆盖率可见性（reporter-only，无阈值门禁、不动 CI）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/123) | P3 | in-review（2026-10-22 执行轮完成，commit `6812039` + merge `c77fbcb` @ main；报告 comment 6340462567） | 装 `@vitest/coverage-v8@3.2.7`（devDep，匹配已装 vitest 3.2.7）+ `frontend/vitest.config.js` 新增 `test.coverage`（provider v8 / all true / include src/**/*.{js,vue} / reporter text+lcov）+ `package.json` 新增 `test:coverage` 脚本 + 确认 `.gitignore` 忽略 `coverage/`。**明确不做**：不设 `coverage.thresholds` 门禁、不动 `ci.yml`、不改被测源码与用例。验证：`npm ci && npm run test:coverage` exit 0 打印逐文件覆盖率表；`test:run` 仍 41/190 全绿、`lint`/`build` exit 0；`git diff` 确认 ci.yml 零改动。 |
 
 队列说明：P0=0、P1=0、P2=0、P3=1、P4=0；共 1 项 ready。本轮从「实测事实」中只提炼出这 1 项能通过 4.2 门禁且本地可验证、不触碰契约 1.10 红线的卫生任务——**宁可队列薄，不制造伪工作**（见 PLAN「下一阶段」与 D-030）。#123 属测试策略（契约 6.1 Planner 权限）；引入的 `@vitest/coverage-v8` 为 vitest 官方生态 devDependency、纯测试工具、可回滚，**非重大依赖**；「加 CI 步骤 / 设阈值」两部分已明确排除，属需用户授权的红线，另立。
 
