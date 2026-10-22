@@ -27,5 +27,13 @@ export default defineConfig({
     // Frontend unit tests must not depend on the backend.
     // Mock any API calls in tests using vi.mock or msw.
     setupFiles: ['vitest.setup.js'],
+    // #123：本地覆盖率可见性（reporter-only，不设门禁）——基线未知，
+    // 先建立逐文件度量；覆盖率阈值与 CI 纳入属后续单独决策。
+    coverage: {
+      provider: 'v8',
+      all: true,
+      include: ['src/**/*.{js,vue}'],
+      reporter: ['text', 'lcov'],
+    },
   },
 })
