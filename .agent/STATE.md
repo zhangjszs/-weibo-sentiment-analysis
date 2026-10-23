@@ -3,13 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-23 执行轮（会话 2）。本席 executor；今日队列 3 项（#127/#128/#129）全部完成转 in-review，ready 队列清空。
+- 任务：2026-10-24 执行轮（会话 1）。本席 executor；2026-10-24 规划轮未运行，今日队列 #127/#128/#129 已被 2026-10-23 会话 2 当晚完成转 in-review；ready 为 0、无 in-progress 可恢复，本轮仅现场核对 + CI 复查后安静收尾，零代码改动。
 - 状态：in-review：#127/#128/#129；in-progress：无；ready：无。
-- 本轮起点 main `4674d77` → 代码 HEAD `4d00f9c`（#127 `ffe4c5b`、#128 `4cb2519`、#129 `4d00f9c`，均已推送；三个临时分支本地+远端已删除）。
-- CI（契约 4.1c）：`ffe4c5b` / `4cb2519` 五项 check 全 success；`4d00f9c` integration 被 `concurrency.cancel-in-progress` 取消（非失败），由 HEAD `.agent` 提交 `be068ad` 的 run 39978638943 覆盖验证（五项全 success）。
-- 前端基线（本轮实测）：`npm run test:run` 45 files / 271 tests 全绿（stderr 块 0）；`test:coverage` exit 0，All files Stmts 83.22 / Branch 75.83 / Funcs 35.55 / Lines 83.22；`src/stores/user.js` Lines 97/99（97.97%）/ Branches 31/38（81.57%）/ Funcs 7/7（100%）；`src/utils/chinaMap.js` Lines 26/26（100%）/ Branches 6/6 / Funcs 1/1；`src/App.vue` 0/14 行（根组件壳豁免）；`lint` exit 0。
+- 代码 HEAD 停在 `4d00f9c`（#129 交付，未变）；其后仅 `.agent` 提交：`be068ad`、`d54cf7f`、本轮一个。`d54cf7f` 触发的 CI run 已于本轮复查：五项 check 全 completed/success（遗留复查项关闭）。
+- 前端基线（2026-10-23 会话 2 实测）：`npm run test:run` 45 files / 271 tests 全绿（stderr 块 0）；`test:coverage` exit 0，All files Stmts 83.22 / Branch 75.83 / Funcs 35.55 / Lines 83.22；`src/stores/user.js` Lines 97/99（97.97%）/ Branches 31/38（81.57%）/ Funcs 7/7（100%）；`src/utils/chinaMap.js` Lines 26/26（100%）/ Branches 6/6 / Funcs 1/1；`src/App.vue` 0/14 行（根组件壳豁免）；`lint` exit 0。
 - 后端 fast gate 本机基线（2026-10-21 #121 后实测，本轮未改后端）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected / 92 warnings（36.66s）；fallback（WEIBO_CORE_RUST=0）1493/71/196 / 92 warnings（34.05s）；全绿。
-- 跨天链：正常（2026-10-23）——会话 1 完成 #124/#125/#126；Planner 验收并立项 #127/#128/#129；会话 2（本席）完成三件套；STATE 已刷新、HANDOFF 已重写、DIARY 已追加 2026-10-23。
+- 跨天链：2026-10-24 会话 1 因队列空待机收尾——等待 Planner 运行规划轮验收 #127/#128/#129 并补充新队列；STATE 已刷新、HANDOFF 已重写、DIARY 已写 2026-10-24。
 
 ## 阻塞项
 - #109（2026-10-17 仍 blocked）：本机无 Docker、无已知已授权 Docker 主机；console smoke 不替代真实 profile/UI 验收。
