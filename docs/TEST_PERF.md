@@ -342,6 +342,9 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#121](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/121) | P4 | done | 模型评估 `classification_report` 显式 `zero_division=0`，消除 UndefinedMetricWarning（6a37d95；已于 2026-10-22 验收关闭） |
 | [#122](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/122) | P4 | done | 刷新 TEST_PERF §7.1 议题总表并补齐 #113–#119 状态（0f2221c；已于 2026-10-22 验收关闭） |
 | [#123](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/123) | P3 | done | 前端 vitest 本地覆盖率可见性（reporter-only，无阈值门禁、不动 CI；基线见 §7.5；6812039；已于 2026-10-23 验收关闭） |
+| [#124](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/124) | P3 | done | 补齐 `src/utils/index.js` 未覆盖函数单元测试（37 用例；utils/index.js Stmts 98.23% / Branch 97.08% / Funcs 100%；d58fa71；已于 2026-10-23 验收关闭） |
+| [#125](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/125) | P3 | done | 补齐 `src/api/request.js` 拦截器错误分支测试（25 用例；request.js Stmts 94.15% / Branch 95.74%；2ab34b3；已于 2026-10-23 验收关闭） |
+| [#126](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/126) | P4 | done (partial) | 刷新 TEST_PERF §7.1/§7.4 并记录前端覆盖率基线（c0d7e22；已于 2026-10-23 验收关闭；0% 清单漏 `src/App.vue`，缺口由 #129 承接） |
 
 > **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
@@ -383,8 +386,10 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | Funcs | 30.95% |
 | Lines | 80.55% |
 
-0% 模块清单（实测）：`src/api/` 下 alert / content / favorites / platform / predict / propagation / report / user 共 8 个声明式包装模块；`src/main.js` 为应用入口，可豁免。
+0% 模块清单（实测）：`src/api/` 下 alert / content / favorites / platform / predict / propagation / report / user 共 8 个声明式包装模块；`src/main.js` 为应用入口、`src/App.vue`（0/14 行）为根组件壳，二者同列豁免（不为壳层补 mock 测试）。
 
-**2026-10-23 执行轮更新**：#124（`utils/index.js` 补测）与 #125（`request.js` 错误分支补测）已合入 main 并转 in-review；当前实测 **43 files / 252 tests**，总覆盖率 **Stmts 82.48% · Branch 75.30% · Funcs 34.22% · Lines 82.48%**。上表 0% 模块清单不变。
+**2026-10-23 执行轮更新**：#124（`utils/index.js` 补测）与 #125（`request.js` 错误分支补测）已验收关闭；当时实测 **43 files / 252 tests**，总覆盖率 **Stmts 82.48% · Branch 75.30% · Funcs 34.22% · Lines 82.48%**。
+
+**2026-10-23 执行会话 2 更新**：#127（`stores/user.js` 会话恢复/登出分支）与 #128（`utils/chinaMap.js` 单例/重试语义）已合入 main、待验收；当前实测 **45 files / 271 tests**，总覆盖率 **Stmts 83.22% · Branch 75.83% · Funcs 35.55% · Lines 83.22%**（`stores/user.js` Lines 97.97% / Branches 81.57% / Funcs 100%；`utils/chinaMap.js` 100% / 100% / 100%）。0% 模块清单不变。
 
 **授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
