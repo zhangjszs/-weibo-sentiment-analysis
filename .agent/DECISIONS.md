@@ -213,6 +213,15 @@
 - 队列容量：宁缺毋滥。本轮从实测仅找到 #123 一项同时满足本地可验证 + 不触红线 + 逐条可判定；其余候选（`test_db.py` 的 `assert True` 属 integration-only、integration 补用例需外部 MySQL/Redis、CJK 字体 glyph 告警属 D-027 非目标）均不入 ready。
 - 影响范围：关闭 3 个 in-review Issue + 新建 1 个 ready Issue；不启动 M7、不改 M6 阈值/CI 拓扑/schema/业务行为；无 pending 新增。
 
+### D-031 / 2026-10-23 / 验收 #123，并据覆盖率基线编排测试补强批次 #124/#125/#126（不设 milestone）
+
+- 验收（独立复跑）：#123 `npm ci` / `test:coverage` / `test:run` / `lint` / `build` 全 exit 0；41 files / 190 tests；`All files 80.55 | 72.66 | 30.95 | 80.55`；`npm ls` 版本匹配；`ci.yml` 零改动、无 thresholds；两个 main CI run success。锁文件独立比对 +24/−8、版本变动 0。**报告更正**：执行报告「零 registry 翻转」不准确，实际 18 个包 `resolved` 从 npmmirror 归一化为 npmjs（不影响验收，已在 Issue comment 注明）。
+- 立项：**#124（P3）** 补齐 `src/utils/index.js` 14 个未测公开函数的单测（Stmts/Funcs/Lines ≥90%）；**#125（P3）** 补齐 `src/api/request.js` 错误分支与 401 登出测试（Stmts/Lines ≥90%、Branch ≥85%）；**#126（P4）** 刷新 `docs/TEST_PERF.md` §7.1/§7.4 并落盘覆盖率基线。
+- 选题依据：覆盖率基线 `src/utils/index.js` 30.53% Stmts / 26.31% Funcs、`src/api/request.js` 72.51% Stmts / 37.5% Funcs；§7.1 停在 #119、§7.4 仍称覆盖率“未配置”。均为真实行为缺口或已证实文档漂移。
+- 排除项（不立项）：8 个声明式 API 包装模块（0%）用 mock 断言等于复述源码，属 PLAN 非目标；`main.js` 入口豁免；`stores/user.js`、`chinaMap.js` 留待后续按覆盖率数据评估。
+- 红线边界：**不设 `coverage.thresholds`、不把覆盖率纳入 CI**（主要 CI/CD 流程变化，需用户单独授权）；批次只新增测试文件或只改文档，不改生产源码/依赖/CI。
+- 影响范围：关闭 #123；新建 3 个 ready Issue；无 pending 新增；不启动 M7、不改 M6 阈值。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
