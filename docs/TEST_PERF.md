@@ -309,11 +309,11 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
   - **路径 A2**：将成功信号修订为「本地 `-n auto` 并行稳定 `<30s`」（技术上已达成，实测 ~25s），更贴合 2026 年多核开发习惯。
 - **关于 CI <240s**：只要 `integration` 串行依赖 `backend-fast`，在现有 379 个依赖解包开销下几乎不可能稳定 <240s。建议 D-023 授权 **L4**（解除 integration 依赖），一步达成 ~170s 且零依赖风险。
 
-## 7. 议题状态与待确认建议（2026-10-21 刷新）
+## 7. 议题状态与待确认建议（2026-10-23 刷新）
 
-> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选」。状态按 GitHub 真实 state 抄录（2026-10-21 刷新）。
+> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选 + 前端覆盖率基线」。状态按 GitHub 真实 state 抄录（2026-10-23 刷新）。
 
-### 7.1 议题状态总表（2026-10-21 刷新）
+### 7.1 议题状态总表（2026-10-23 刷新）
 
 | Issue | 优先级 | 状态 | 摘要 |
 |---|---|---|---|
@@ -338,6 +338,10 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#117](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/117) | P3 | done | 消除后端源码中全部 7 处 datetime.utcnow() 弃用告警，提供共享 utcnow_naive helper（已于 2026-10-20 验收关闭） |
 | [#118](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/118) | P4 | done | test_model_improvements.py 脚本直跑在用例失败时返回非零退出码 sys.exit(1)（已于 2026-10-20 验收关闭） |
 | [#119](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/119) | P4 | done | 收敛前端错误态测试的预期 console.error 噪声，vitest stderr 块数归零（已于 2026-10-20 验收关闭） |
+| [#120](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/120) | P4 | done | 前端 Sass `@import` 迁移为 `@use`，消除 Dart Sass 3.0 废弃警告（d7e0c59；已于 2026-10-22 验收关闭） |
+| [#121](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/121) | P4 | done | 模型评估 `classification_report` 显式 `zero_division=0`，消除 UndefinedMetricWarning（6a37d95；已于 2026-10-22 验收关闭） |
+| [#122](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/122) | P4 | done | 刷新 TEST_PERF §7.1 议题总表并补齐 #113–#119 状态（0f2221c；已于 2026-10-22 验收关闭） |
+| [#123](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/123) | P3 | done | 前端 vitest 本地覆盖率可见性（reporter-only，无阈值门禁、不动 CI；基线见 §7.5；6812039；已于 2026-10-23 验收关闭） |
 
 > **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
@@ -362,6 +366,25 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 
 ### 7.4 仍待确认的低风险候选
 
-- 前端 vitest 覆盖率配置（#93 遗留项；未配置，纳入下次前端议题时评估）；
+- 前端 vitest 覆盖率配置**已交付**（#123，2026-10-23 验收关闭）：`test:coverage` + v8 provider（reporter-only），基线见 §7.5；覆盖率阈值与 CI 纳入仍未获授权；
 - integration 层补用例（196 用例偏薄，低覆盖集中在 `views/user`、`views/api/user_routes`；补 integration 优先于加 unit）；
 - 测试规范固化：>1s 用例 PR 需说明理由；mock 样板 >20 行必须提共享 fixture（§3 R3 教训）。
+
+### 7.5 前端覆盖率基线（2026-10-23，#123）
+
+命令：`cd frontend && npm run test:coverage`（v8 provider，reporter-only；**未设 thresholds 门禁、未纳入 CI**）。
+
+**#123 验收时基线**（41 files / 190 tests）：
+
+| 指标 | 覆盖率 |
+|---|---|
+| Stmts | 80.55% |
+| Branch | 72.66% |
+| Funcs | 30.95% |
+| Lines | 80.55% |
+
+0% 模块清单（实测）：`src/api/` 下 alert / content / favorites / platform / predict / propagation / report / user 共 8 个声明式包装模块；`src/main.js` 为应用入口，可豁免。
+
+**2026-10-23 执行轮更新**：#124（`utils/index.js` 补测）与 #125（`request.js` 错误分支补测）已合入 main 并转 in-review；当前实测 **43 files / 252 tests**，总覆盖率 **Stmts 82.48% · Branch 75.30% · Funcs 34.22% · Lines 82.48%**。上表 0% 模块清单不变。
+
+**授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
