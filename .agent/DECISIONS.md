@@ -222,6 +222,19 @@
 - 红线边界：**不设 `coverage.thresholds`、不把覆盖率纳入 CI**（主要 CI/CD 流程变化，需用户单独授权）；批次只新增测试文件或只改文档，不改生产源码/依赖/CI。
 - 影响范围：关闭 #123；新建 3 个 ready Issue；无 pending 新增；不启动 M7、不改 M6 阈值。
 
+### D-032 / 2026-10-23（第二轮）/ 验收 #124–#126，编排测试补强第二批 #127/#128/#129（不设 milestone）
+
+- 背景：2026-10-23 09:31 的规划轮编排 #124/#125/#126，当日 21:35–21:47 执行轮交付并转 in-review。本轮为同日接续的验收/规划轮，队列面向下一执行轮。
+- 验收（独立复跑，不只信报告）：
+  - **#124 通过**：单文件 37 passed；全量 43 files / 252 tests；`src/utils/index.js` lines 222/226（98.23%）、branches 100/103（97.09%）、funcs 20/20（100%）；`lint`/`build` exit 0；stderr 0；提交 `d58fa71` 仅新增测试文件；CI 5/5 success。报告 Branch 97.08 与 lcov 97.087% 为舍入差异，不影响门槛。
+  - **#125 通过**：单文件 25 passed；全量 43/252、stderr 0；`src/api/request.js` lines 161/171（94.15%）、branches 45/47（95.74%）、funcs 3/8（37.5%，http 薄封装按 Issue 排除）；`lint`/`build` exit 0；提交 `2ab34b3` 仅新增测试文件；CI 5/5 success。
+  - **#126 部分通过**：§7.1 四行、§7.4 更正、§7.5 双段数值、日期均准确；唯一差距是 §7.5 的 0% 模块清单漏列 `src/App.vue`（实测 0/14 行，根组件壳）。按契约「剩余量另立」处理：关闭 #126，缺口并入 #129 承接，不 reopen。
+- 立项：**#127（P3）** `src/stores/user.js` 登录态与 initAuth 分支测试（Lines ≥90 / Branches ≥80 / Funcs ≥85）；**#128（P3）** `src/utils/chinaMap.js` 单例与失败重试语义测试（Lines ≥90 / Funcs 100）；**#129（P4）** TEST_PERF §7.1 补 #124–#126、§7.5 去 in-review 并补 App.vue。
+- 选题依据：验收后实测 `stores/user.js` 48/99 行、7/10 分支、3/7 函数（会话恢复路径无直接用例）；`chinaMap.js` 9/26 行、0/1 函数（单例/重试无任何用例）；文档账在验收后滞后。
+- 排除项（不立项）：8 个声明式 API 包装模块（mock 复述源码）；`main.js` / `App.vue` 入口/根壳不补测；`stores/app.js` / `tabs.js` 留待后续按覆盖率数据评估；integration-only 的 `test_db.py` 假断言需外部 MySQL。
+- 红线边界：**不设 `coverage.thresholds`、不把覆盖率纳入 CI**（主要 CI/CD 流程变化，需用户单独授权）；批次只新增测试文件或只改文档，不改生产源码/依赖/CI/README。
+- 影响范围：关闭 #124/#125/#126；新建 3 个 ready Issue；无 pending 新增；不启动 M7、不改 M6 阈值、不动 #98/#109/#96/#100/#101/#102/#59。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
