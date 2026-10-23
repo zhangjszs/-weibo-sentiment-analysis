@@ -5,7 +5,8 @@
 ## 当前活跃
 - 任务：2026-10-23 执行轮（会话 2）。本席 executor；今日队列 3 项（#127/#128/#129）全部完成转 in-review，ready 队列清空。
 - 状态：in-review：#127/#128/#129；in-progress：无；ready：无。
-- 本轮起点 main `4674d77` → 现 main `4d00f9c`（#127 `ffe4c5b`、#128 `4cb2519`、#129 `4d00f9c`，均已推送；三个临时分支本地+远端已删除）。
+- 本轮起点 main `4674d77` → 代码 HEAD `4d00f9c`（#127 `ffe4c5b`、#128 `4cb2519`、#129 `4d00f9c`，均已推送；三个临时分支本地+远端已删除）。
+- CI（契约 4.1c）：`ffe4c5b` / `4cb2519` 五项 check 全 success；`4d00f9c` integration 被 `concurrency.cancel-in-progress` 取消（非失败），由 HEAD `.agent` 提交 `be068ad` 的 run 39978638943 覆盖验证（五项全 success）。
 - 前端基线（本轮实测）：`npm run test:run` 45 files / 271 tests 全绿（stderr 块 0）；`test:coverage` exit 0，All files Stmts 83.22 / Branch 75.83 / Funcs 35.55 / Lines 83.22；`src/stores/user.js` Lines 97/99（97.97%）/ Branches 31/38（81.57%）/ Funcs 7/7（100%）；`src/utils/chinaMap.js` Lines 26/26（100%）/ Branches 6/6 / Funcs 1/1；`src/App.vue` 0/14 行（根组件壳豁免）；`lint` exit 0。
 - 后端 fast gate 本机基线（2026-10-21 #121 后实测，本轮未改后端）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected / 92 warnings（36.66s）；fallback（WEIBO_CORE_RUST=0）1493/71/196 / 92 warnings（34.05s）；全绿。
 - 跨天链：正常（2026-10-23）——会话 1 完成 #124/#125/#126；Planner 验收并立项 #127/#128/#129；会话 2（本席）完成三件套；STATE 已刷新、HANDOFF 已重写、DIARY 已追加 2026-10-23。

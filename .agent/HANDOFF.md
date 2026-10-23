@@ -21,7 +21,7 @@ Agent `executor-20261023-session2`，UTC 2026-10-23 执行会话 2。
 
 - #127：user store 补测 · `ffe4c5b` @ main（已推送）· 验证：单文件 13 passed；全量 44 files/265 tests；coverage exit 0（user.js Lines 97.97 / Branches 81.57 / Funcs 100）；lint/prettier exit 0；提交仅 1 个新文件 · 报告 comment 6368149791
 - #128：chinaMap 补测 · `4cb2519` @ main（已推送）· 验证：单文件 6 passed；全量 45 files/271 tests、stderr 块 0；coverage exit 0（chinaMap.js Lines/Branches/Funcs 全 100%）；lint/prettier exit 0；提交仅 1 个新文件 · 报告 comment 6368275972
-- #129：TEST_PERF 刷新 · `4d00f9c` @ main（已推送）· 验证：diff 仅 `docs/TEST_PERF.md`（+7/−2）；`grep "转 in-review"` 无匹配；0% 清单含 App.vue；§7.5 新段数值与当次 coverage 输出逐项一致 · 报告 comment 6368410830（更正 6368412699：证据首行命令笔误，实为 `git show --stat 4d00f9c`）
+- #129：TEST_PERF 刷新 · `4d00f9c` @ main（已推送）· 验证：diff 仅 `docs/TEST_PERF.md`（+7/−2）；`grep "转 in-review"` 无匹配；0% 清单含 App.vue；§7.5 新段数值与当次 coverage 输出逐项一致 · 报告 comment 6368410830（更正 6368412699：证据首行命令笔误，实为 `git show --stat 4d00f9c`；CI 补记 6368603386）
 
 ## 未完成 / 进行中（下一棒最优先看这里）
 
@@ -39,7 +39,7 @@ Agent `executor-20261023-session2`，UTC 2026-10-23 执行会话 2。
 - 文档：#129 diff 仅 `docs/TEST_PERF.md`；§7.5 双段（43/252 历史 + 45/271 会话 2）均来自实测输出。
 - 后端未触碰，fast gate 沿用 2026-10-21 基线（native 1495/69/196、fallback 1493/71/196 全绿）。
 - 未跑：integration/external（外部 MySQL/Redis/Weibo 依赖，与本轮前端测试/文档任务无关）；`npm run build`（无源改动，测试文件不进构建）。
-- CI：`ffe4c5b`、`4cb2519` 五个 check（backend-fast / frontend-fast / integration / rust-core / security-scan）均 completed/success；`4d00f9c` 收尾时 frontend-fast/rust-core 已 success，backend-fast 与 security-scan 仍 in_progress——下一棒第一步先复查。
+- CI：`ffe4c5b`、`4cb2519` 五个 check（backend-fast / frontend-fast / integration / rust-core / security-scan）均 completed/success。`4d00f9c` 的 integration 为 **completed/cancelled**（非失败）——`ci.yml` 的 `concurrency.cancel-in-progress: true` 在推送 `.agent` 收尾提交时取消了排队中的 run；HEAD `be068ad`（树内容仅差 `.agent/`）五项 check 全 success，run 39978638943。契约 4.1c 已关闭。
 
 ## 风险与注意事项
 
@@ -50,7 +50,7 @@ Agent `executor-20261023-session2`，UTC 2026-10-23 执行会话 2。
 
 ## 给下一棒的第一步建议
 
-- 复查 main CI：`gh api repos/zhangjszs/-weibo-sentiment-analysis/commits/4d00f9c/check-runs`，确认 backend-fast / security-scan 转 success。
+- 本会话收尾的 `.agent` 提交（含 CI 补记）自身触发的 run 未复查：`gh api repos/zhangjszs/-weibo-sentiment-analysis/commits/<HEAD>/check-runs` 确认即可；代码侧 CI 已全部核实（见上）。
 - Planner 验收：`gh issue list --label in-review`，对 #127/#128/#129 逐项独立复跑：
   - `cd frontend && npm run test:run && npm run test:coverage && npm run lint`
   - #127 核对 user.js Lines ≥90 / Branches ≥80 / Funcs ≥85 与六条显式断言；#128 核对 chinaMap.js Lines ≥90 / Funcs 100 与六场景断言；#129 核对 §7.1 三行与提交号、§7.5 无 in-review、0% 清单含 App.vue、双段数值。
