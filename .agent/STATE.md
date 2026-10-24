@@ -3,12 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 任务：2026-10-24 执行轮（会话 1）。本席 executor；2026-10-24 规划轮未运行，今日队列 #127/#128/#129 已被 2026-10-23 会话 2 当晚完成转 in-review；ready 为 0、无 in-progress 可恢复，本轮仅现场核对 + CI 复查后安静收尾，零代码改动。
-- 状态：in-review：#127/#128/#129；in-progress：无；ready：无。
-- 代码 HEAD 停在 `4d00f9c`（#129 交付，未变）；其后仅 `.agent` 提交：`be068ad`、`d54cf7f`、本轮 `57b3cac`（及一个 CI 补记提交）。`d54cf7f` 与 `57b3cac` 触发的 CI run 均已实测复查：五项 check 全 completed/success，无遗留待复查项。
-- 前端基线（2026-10-23 会话 2 实测）：`npm run test:run` 45 files / 271 tests 全绿（stderr 块 0）；`test:coverage` exit 0，All files Stmts 83.22 / Branch 75.83 / Funcs 35.55 / Lines 83.22；`src/stores/user.js` Lines 97/99（97.97%）/ Branches 31/38（81.57%）/ Funcs 7/7（100%）；`src/utils/chinaMap.js` Lines 26/26（100%）/ Branches 6/6 / Funcs 1/1；`src/App.vue` 0/14 行（根组件壳豁免）；`lint` exit 0。
+- 任务：2026-10-24 执行轮（会话 2）。本席 executor；接手时 2026-10-24 规划轮已运行（`6943184`），#127/#128/#129 已验收关闭，#130/#131/#132 为 ready。串行完成 #130 → #131 → #132，全部转 in-review；无 in-progress、无 ready。
+- 状态：in-review：#130/#131/#132；in-progress：无（#98 为冻结的父任务）；ready：无。
+- 代码 HEAD：`06b194e`（#132 交付）；此前 `9a86951`（#131）、`73bec15`（#130）。其后将有本轮 `.agent` 收尾提交。`9a86951` 的 CI run 为 cancelled（ci.yml `concurrency.cancel-in-progress` 被紧随其后的推送取消，非失败）；`06b194e` 的 CI 结果见日报补记。
+- 前端基线（2026-10-24 会话 2 实测，HEAD 9a86951）：`npm run test:run` 47 files / 321 tests 全绿；`test:coverage` exit 0，All files Stmts 83.79 / Branch 77.35 / Funcs 37.55 / Lines 83.79；`stores/app.js` 全 100%；`stores/tabs.js` 97.67 / 95.83 / 100 / 97.67；`stores/user.js` 97.97 / 81.57 / 100；`utils/chinaMap.js` 全 100%；`lint` exit 0。0% 模块：8 个 api 包装 + main.js + App.vue（豁免）。
 - 后端 fast gate 本机基线（2026-10-21 #121 后实测，本轮未改后端）：native（WEIBO_CORE_RUST=1）1495 passed / 69 skipped / 196 deselected / 92 warnings（36.66s）；fallback（WEIBO_CORE_RUST=0）1493/71/196 / 92 warnings（34.05s）；全绿。
-- 跨天链：2026-10-24 会话 1 因队列空待机收尾——等待 Planner 运行规划轮验收 #127/#128/#129 并补充新队列；STATE 已刷新、HANDOFF 已重写、DIARY 已写 2026-10-24。
+- 跨天链：今日队列清空，等待 Planner 验收 #130/#131/#132。**前端按既定口径已无真实可测对象（枯竭预警），后续选题需用户方向输入。**
 
 ## 阻塞项
 - #109（2026-10-17 仍 blocked）：本机无 Docker、无已知已授权 Docker 主机；console smoke 不替代真实 profile/UI 验收。
@@ -25,6 +25,9 @@
 - **拦截器兜底（勿重复弹窗）**：`api/request.js:82-166` 对每个失败请求已弹 ElMessage（业务码/HTTP 码/网络错误三类）。
 
 ## 已完成
+- **#132 完成转 in-review（2026-10-24 会话 2）**：`docs/TEST_PERF.md` §7.1 补 #127/#128/#129 三行、§7.5 状态措辞更新并追加 47/321 新段、四处日期刷新；`grep "待验收"` = 0；提交 `06b194e` @ main（已推送）；报告 comment 6384021932。
+- **#131 完成转 in-review（2026-10-24 会话 2）**：新增 `tests/tabs-store.test.js`（41 用例，471 行）；tabs.js Lines 97.67 / Branch 95.83 / Funcs 100，未覆盖 40-41、190-191（getItem/removeItem 抛错 catch，不 mock 不可构造）；变异抽查 3 例失败证明断言有效；提交 `9a86951` @ main（已推送）；报告 comment 6384001211。
+- **#130 完成转 in-review（2026-10-24 会话 2）**：新增 `tests/app-store.test.js`（9 用例，142 行）；app.js 四项全 100%；提交 `73bec15` @ main（已推送）；报告 comment 6383985323。
 - **#129 完成转 in-review（2026-10-23 会话 2）**：`docs/TEST_PERF.md` §7.1 补 #124–#126 三行、§7.5 补 App.vue 豁免与会话 2 实测；提交 `4d00f9c` @ main（已推送）；报告 comment 6368410830 + 更正 6368412699。
 - **#128 完成转 in-review（2026-10-23 会话 2）**：新增 `tests/china-map.test.js`（6 用例）；test:run 45/271 全绿；chinaMap.js 三项 100%；lint/prettier exit 0；提交 `4cb2519` @ main（已推送）；报告 comment 6368275972。
 - **#127 完成转 in-review（2026-10-23 会话 2）**：新增 `tests/user-store.test.js`（13 用例）；test:run 44/265 全绿；user.js Lines 97.97 / Branches 81.57 / Funcs 100；lint/prettier exit 0；提交 `ffe4c5b` @ main（已推送）；报告 comment 6368149791。
