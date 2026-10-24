@@ -1,68 +1,75 @@
 # TASKS — GitHub Issue 本地镜像
 
-> 更新于 2026-10-24 规划轮，Planning 轮 **整体重写**（Issue 为权威来源，每轮重新拉取真实状态）。本轮验收：#127/#128/#129 全部通过关闭（证据见「本轮验收账」与各 Issue comment）；新建 #130/#131/#132。gh 可用、账号 zhangjszs、scope repo+workflow，未降级、未重复创建。
-> 生命周期标签：`ready` / `in-progress` / `in-review` / `blocked` / `needs-info` / `done`；优先级 `priority:P0`–`P4`。
-> Executor：先改 Issue 标签/comment，再同步本行；只改执行状态与报告，不改任务范围。完整规格/非目标/checklist 见对应 Issue。
+> 2026-10-24 同日接续规划；本文件从真实 Issues **整体重写**，Issue 为权威，gh 可用、未降级。上轮 D-033 队列在执行会话 2 完成，本轮响应会话 2/3 日报验收 #130/#131/#132，随后编排 #133/#134；不是虚构下一天，也不重复计算 pending 天数。
+> 生命周期：`ready / in-progress / in-review / blocked / needs-info / done`，同一 Issue 最多一个；优先级 `priority:P0`–`P4`。Executor 先修改 Issue 标签/comment，再同步对应状态行；范围与完整 checklist 以 Issue 为准。
 
-## 今日队列（2026-10-24 执行轮 · 建议顺序；3 项，#132 依赖前两项）
+## 今日队列（给下一执行会话，2 项）
 
-| 顺序 | Issue / 目标 | P | 状态 | 可直接执行的边界与完成证据 |
+| 顺序 | Issue / 目标 | P | 状态 | 范围与完成证据 |
 |---|---|---|---|---|
-| 1 | [#130 补齐 frontend/src/stores/app.js 主题切换与侧栏行为测试](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/130) | P3 | in-review（73bec15，已推送） | 新增 `tests/app-store.test.js`（真实 pinia + 真实 localStorage/DOM）：无存储初始化、dark 恢复初始化、toggleTheme 双向（localStorage/className/dark class）、setTheme、toggleSidebar。**明确不做**：不改 app.js/组件/既有测试；不 mock document/localStorage；不测组件消费方；不动 CI/依赖、不设阈值。验收：单文件 exit 0 且 ≥5 用例；`test:run` 全绿且 ≥272；app.js Lines ≥90%、Funcs 100%（4/4）、Branches ≥75%；`lint` exit 0；diff 仅新测试文件；五组场景显式断言。 |
-| 2 | [#131 补齐 frontend/src/stores/tabs.js 多标签工作区状态机测试](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/131) | P3 | in-review（9a86951，已推送） | 新增 `tests/tabs-store.test.js`（router 用 `{push: vi.fn()}` stub）：存储恢复/损坏回退、addTab 三路径（no-op/已存在激活/新增含 query 序列化）、closeTab（Home 拒绝/未知 no-op/关激活取邻 tab + push）、closeOtherTabs、closeAllTabs、setActiveTab、reorderTabs（0 号保护）、updateTabPath、resetTabs（#20 两键移除）、持久化往返。**明确不做**：不改 tabs.js/组件/既有测试；不用真实 vue-router；不测组件层；getItem 抛错 catch 不可自然构造则如实列为未覆盖。验收：单文件 exit 0 且 ≥10 用例；`test:run` 全绿且 ≥ 上一步基线；tabs.js Lines ≥90%、Funcs ≥90%、Branches ≥75%；`lint` exit 0；diff 仅新测试文件；11 组场景显式断言。 |
-| 3 | [#132 刷新 docs/TEST_PERF.md §7.1/§7.5（#127–#129 验收关闭与 #130/#131 新基线）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/132) | P4 | in-review（06b194e，已推送） | **依赖 #130/#131 之后执行。** §7.1 补 #127（ffe4c5b）/#128（4cb2519）/#129（4d00f9c）三行（已验收关闭）；§7.5 「待验收」→「已验收关闭」；新增本执行轮实测段（沿用 #129 裁定的双段并存口径，历史段不改）；日期刷新执行当日。**明确不做**：不改 README/代码/测试/CI/依赖；不重写历史段；不设阈值。验收：diff 仅该文档；三行提交号经 git 核对；`grep "待验收"` 无匹配；新段数值与当次 coverage 输出逐项一致。 |
+| 1 | [#133 启用本地 TypeScript 类型检查并迁移 app store 首个生产切片](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/133) | P2 | ready | D-009 已授权，D-018/D-019 保留；#58/#130 已关闭。新增 typescript@5.9.3、@typescript-eslint/parser@8.46.2 开发依赖、最小 strict/noEmit tsconfig 与本地 typecheck；只迁移 app.js→app.ts，不留兼容 .js。setTheme 仍接收 string，不改变任意存储字符串语义。lint 仅为 TS 加 parser、覆盖率 include 纳入 TS；更新 TS 策略实际范围与过期建议。验收：npm ci/typecheck/lint/build 成功，listFiles 含真实 app.ts；临时类型负例非零、移除后成功；既有 app 9 用例、全量≥47/321；app.ts Lines≥90/Funcs100/Branches≥75；真实 store smoke 有存储/DOM/sidebar 证据。 |
+| 2 | [#134 收尾 TEST_PERF 验收状态并明确覆盖率快照时点](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134) | P4 | ready | 硬依赖仅已关闭的#130/#131/#132，与#133无硬依赖；建议后执行以记录最新切片，#133阻塞仍可独立收尾。只改docs/TEST_PERF.md：§7.1补三行（73bec15/9a86951/06b194e，已验收关闭），§7.5附验收结果与执行时同次实测段，实际路径为app.js或已交付的app.ts；保留历史路径/数字/时点，不预支TS完成。验收：diff仅该文档、历史基线不变、当次coverage非空且exit0，新段逐项对应该次日志，§7.2–§7.4不变。不为文档自身关闭再造同内容任务。 |
 
-队列说明：P0=0、P1=0、P2=0、P3=2、P4=1；共 3 项 ready。选题依据 = 验收 #127/#128 后实测覆盖率仅剩两组真实行为缺口：`stores/app.js` 71.79% 行 / 25% 函数（toggleTheme/setTheme/toggleSidebar 未测，未覆盖行 16-19/22-23/29）、`stores/tabs.js` 70.93% 行 / 45.45% 函数（addTab→updateTabPath 整块 57-162 未测），以及验收后的既定文档账滞后。三项均属测试/文档卫生（契约 6.1 Planner 权限），本地可验证、可回滚，不触碰契约 1.10 红线（D-033）。
+P0=0、P1=0、P2=1、P3=0、P4=1。两项无 milestone，不计入 M6/M7 分母。
 
-已排查但**本轮不入 ready** 的候选：
-- 8 个前端 API 包装模块（alert/content/favorites/platform/predict/propagation/report/user，行覆盖 0%）：声明式薄封装，mock 断言调用参数等于复述源码，属非目标；跨端路由契约校验需另立规格。
-- `src/main.js` 与 `src/App.vue`（0%）：应用入口/根组件壳，豁免。
-- `tests/test_db.py:95` 的 `assert True`：integration-only，本机无 MySQL，待有 MySQL 的集成批次。
-- CJK 字体 `Glyph ... missing` 告警：环境/字体依赖，D-027 非目标。
-- **枯竭预警**：#130/#131/#132 交付后，前端按既定口径已无真实可测对象剩余；后续选题需用户方向输入（见 PLAN「下一阶段」）。
+### ready 门禁与执行边界
+
+- #133 的目标/文件边界/非目标/命令/类型负例/真实模块 smoke 均已在 Issue 钉死；生产切片不是空配置。所需产品授权已存在，不重新询问。
+- #134的全部硬依赖#130–#132已验收关闭，可独立执行；建议#133之后采样但不是ready前提，按实际代码提交记录JS或TS路径，不预支未交付事实。
+- 不改 `.github/`、后端、schema、认证/权限、组件视觉；不升级既有直接依赖版本、不加 Vue 重复 @types/vue-tsc、不引入新服务或费用。
+- TS 仅本地 typecheck；不纳入 CI、不设 coverage.thresholds。不为薄 API 包装写 mock 复述用例，不以跳过用例/放宽 JS 或 Vue lint 凑绿。
+- 分支：`agent/issue-133-app-store-ts` → `agent/issue-134-test-perf-closeout`，每任务独立验证/提交/合并。ENV 没有字面 `WORKFLOW=trunk`，因此**默认每任务分支**；main 未设保护不是 trunk 授权，不重写既有历史。
 
 ## 等待验收（in-review）
 
-- 无。#127/#128/#129 已于 2026-10-24 规划轮全部验收通过关闭（见下「本轮验收账」）。
+无；#130/#131/#132 已在本轮通过并关闭。Executor 的 STATE/HANDOFF 仍记其 in-review，是上一会话快照，下一棒应自行刷新，Planner 不越权代改。
 
-## 阻塞 / 待决策（全部保留，不可领取实现）
+## 本轮验收账
 
-| Issue | P | 状态 | 阻塞事实 / 下一步 |
+| Issue | 结论 | 独立证据 |
+|---|---|---|
+| [#130](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/130#issuecomment-6385968029) | 通过，done/CLOSED | 定向运行 app9+tabs41 全通过；全量47/321、lint0；app LH/LF39/39、FNH/FNF4/4、BRH/BRF10/10；五组场景与清理逐条核对；73bec15仅新增142行测试。 |
+| [#131](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/131#issuecomment-6385969485) | 通过，done/CLOSED | 41用例、11组行为与独立顺序/路由/存储断言齐全；tabs LH/LF168/172（97.67%）、FNH/FNF11/11（100%）、BRH/BRF68/71（95.77%）超过门槛；9a86951仅新增471行测试；catch40–41/190–191如实未覆盖，不强制mock。 |
+| [#132](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/132#issuecomment-6385970757) | 通过，done/CLOSED | 06b194e仅TEST_PERF +10/−5；三行提交号由git show核对，历史数字不动；新段与执行期原日志/tmp/cov131.txt一致；本轮复跑与原日志的两项Branch差异已明示，不倒改历史。 |
+
+- Standards / Spec 两轴只读审查均无阻断项。定向测试、全量测试、coverage、lint 是本轮独立运行，不仅引用执行报告。
+- `06b194e`（含三项交付）GitHub check：backend-fast / frontend-fast / integration / rust-core / security-scan 全 completed/success。
+- 分支测量差异：执行时 All Branch77.35、tabs Branch95.83；本轮分别77.33、95.77。原日志支持执行期数值，根因**未定位**，不能归为已证明的舍入；验收门槛不受影响。#134 只绑定同一次输出。
+- 执行期变异实验未重做：只读验收不修改生产文件，其证据仍属于 Executor 的运行，不伪装成本轮验证。
+
+## 存量未完成任务治理（全部不可领取实现）
+
+| Issue | P | 状态 | 复核结论 / 下一步 |
 |---|---|---|---|
-| [#98 Rust 第一切片](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | P2 | in-progress（M7） | 2026-10-16 首次验收失实后 reopen；原生产迁移、既有用例双 backend、真实 Criterion 标准仍留本 Issue。D-019 默认 A 生效后继续冻结；保持现场不重置，下一棒不得领取。状态超 24h 属有意冻结，不作「疑似中断」处理。 |
-| [#109 OTLP metrics 接收与 Jaeger 展示](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | P2 | blocked（M7） | 本机无 Docker、无已知已授权 Docker 主机；console smoke 不替代真实 profile/UI 验收。解除环境阻塞后再验证，禁止自行新增 metrics 服务/长期成本。 |
-| [#96 M7 候选 Epic](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | P2 | needs-info | D-019 于 2026-10-18 默认转正 A = 暂停 M7 扩展。B/C 未批准；Epic 不计入分母，保持冻结。 |
-| [#102 ABI/CI 矩阵](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) | P2 | needs-info（M7） | 待 D-019 B/C 授权，且 #98 未 done；不得以 abi3 标记代替 3.11/3.12 双实现执行。 |
-| [#100 Qdrant 语义搜索候选](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/100) | P3 | needs-info（M7） | 新服务/模型与资源边界未授权；不得默认下载模型、启动 Qdrant 或返回假成功。 |
-| [#101 SSE 摘要候选](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/101) | P3 | needs-info（M7） | 产品入口、LLM 成本与数据范围未定；不得变更认证模型或发出付费请求。 |
-| [#59 产品功能需求收集](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/59) | P2 | needs-info | D-012 默认 A 有效；#100/#101 是候选而非用户已确认需求，本轮不重复追问输入方式。 |
+| [#98](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) Rust第一切片 | P2 | in-progress | D-019 A 有意冻结；原真实迁移/双模式/实际Criterion标准未交付。不是崩溃现场，不重置、不关闭、不启动。 |
+| [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) OTLP/Jaeger | P2 | blocked | 本轮 command -v docker 仍exit1；无已知已授权Docker主机。需先有实际可用且授权的运行环境，再验证metrics接收/真实trace/UI；不得以console替代、不得擅增服务。 |
+| [#96](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) M7 Epic | P2 | needs-info | D-019 A 继续有效；B/C无新答复，保持冻结；Epic不计分母。 |
+| [#102](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) ABI/CI矩阵 | P2 | needs-info | 依赖#98未完成，且CI矩阵扩展未授权；不把abi3标记当双版本实际执行。 |
+| [#100](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/100) Qdrant | P3 | needs-info | 新服务/模型/资源边界未授权；不自动下载或启动。 |
+| [#101](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/101) SSE摘要 | P3 | needs-info | 产品入口、LLM费用与数据范围未定；不得发付费请求或改认证。 |
+| [#59](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/59) 产品需求 | P2 | needs-info | 无具体新需求；#60既有工程债调研不等于产品规格。已在Issue回应TS既有授权可推进，不重复询问D-012输入方式。 |
 
-## 本轮验收账（2026-10-24 规划轮）
+治理检查：无重复待办、无open auto-discovered、无缺优先级项；P0/P1均为0。#100/#101仅处于尚未结束的M7，不满足“连续两个Milestone未动”的关闭条件。存量冻结项未被强行改ready，#98现场未被重置。无open PR。
 
-- **#127（P3，user.js 登录态补测）：通过 → done/CLOSED。** 独立复跑：全量 45 files / 271 tests 全绿；lcov 核对 user.js LH/LF 97/99（97.97%）、BRH/BRF 31/38（81.57%）、FNH/FNF 7/7（100%）；`lint` exit 0；`git show --stat ffe4c5b` 仅新增 236 行测试文件；关键断言抽查一致（未认证零调用 :90-91、编码跳转 :179、%2Fhome 回退 :190）；CI 5/5 success。验收 comment 6383749022。
-- **#128（P3，chinaMap 单例/重试补测）：通过 → done/CLOSED。** 独立复跑：全量 45/271 全绿、stderr 0；lcov 核对 chinaMap.js 全 100%（26/26、6/6、1/1）；六场景断言抽查一致（registerMap 一次 :57-58、promise 身份 :70、HTTP 503 :96）；`lint` exit 0；`git show --stat 4cb2519` 仅新增 127 行测试文件；CI 5/5 success。验收 comment 6383749667。
-- **#129（P4，TEST_PERF 刷新）：通过 → done/CLOSED（含歧义裁定）。** 独立核对：`git show --stat 4d00f9c` 仅 `docs/TEST_PERF.md`（+7/−2）；§7.1 三行提交号经 git 核对；`grep "转 in-review"` = 0；0% 清单含 App.vue；本机复跑 coverage All files 83.22/75.83/35.55/83.22 与 §7.5 新段逐项一致。CI：`4d00f9c` 的 integration 为 completed/cancelled（ci.yml `concurrency.cancel-in-progress` 被收尾提交取消，非失败，其余 4 项 success），树内容仅差 `.agent/` 的 `be068ad` 五项 check 全 success，以其为准接受。**歧义裁定**：43/252「保持不变」与「与当次一致」字面冲突，双段并存+时点标注裁定为正确处理并作为既定口径。验收 comment 6383752553。
+## 回应 Executor 信号与决策
 
-## Milestone 实际计数（按 GitHub issue state，不凭报告/API 计数器）
+1. **队列空**：本轮完成验收并补两项真正可执行任务，不重复启动整轮调研、不用文档循环凑数量。
+2. **“测试枯竭需用户方向”**：更正为“已排入前三批的行为目标已补齐”，不能由覆盖率或该批清空推出全仓无可测行为；更不能忽略D-009已批准的TS方向。D-034记录证据与恢复的单切片边界。
+3. **_persist 无catch**：本轮只读确认tabs.js:52–54无catch；这是潜在存储故障风险，不是已复现缺陷。不凭风格不一致增加容错/事务/重试任务，后续有真实错误和预期恢复契约再定级；回应已留#131验收comment。
+4. **文档账滞后**：#134一次性收尾并记录测量时点，历史与当前分离；不因下一次文档自身关闭无限派生同内容任务。
+5. **分支纪律**：#130领取comment声称WORKFLOW=trunk，但ENV不含该设置。代码验收与流程偏差分开记录；本轮与下一轮恢复默认分支，不rewind/force push。
+6. **pending**：无；D-019/D-023默认A已转正，无新用户答复且无同一问题重问。D-009授权足够执行本切片，不需要用户再批准。
 
-- **M6 测试性能优化：10 / 10 CLOSED，未收敛；2026-10-20 依 D-023 默认 A 冻结**。milestone state=open、open_issues=0、closed_issues=10。成功信号 1/3：覆盖率达成（≥68.49%），串行 <30s 与完整 CI <240s 均未达（#112 证明为结构性差距）。B/C 需用户明确授权。
-- **M7 候选与既有交付纠偏：6 / 11 CLOSED**。milestone state=open、open_issues=5、closed_issues=6。成员 11（#97/#98/#99/#100/#101/#102/#103/#104/#105/#108/#109，#96 为 Epic 不计分母）。done：#97/#99/#103/#104/#105/#108；OPEN：#98（in-progress 冻结）、#109（blocked）、#100/#101/#102（needs-info）。
-- **#110–#132 不设 milestone**（仓库、测试与前端度量卫生，不计入任何成功信号分母，D-021/D-025/D-027/D-030/D-031/D-032/D-033）。
+## Milestone 实际计数
 
-## 本轮已运行验证（Planner，只读；代码 HEAD 停在 Executor 交付 `4d00f9c`，规划提交仅动 `.agent/`）
+- M6：10/10 CLOSED，milestone仍OPEN（0 open成员）；成功信号1/3，串行<30s与完整CI<240s仍未达。D-023 A冻结，不降标、不冒称收敛。
+- M7：6/11 CLOSED，5 OPEN；done #97/#99/#103/#104/#105/#108，未完成#98/#100/#101/#102/#109。D-019 A冻结，#96 Epic不计分母。
+- #110–#134均未设milestone；本轮#133是D-009既有方向的有界恢复，不擅立新的Milestone或污染M6/M7分母。
 
-- `git fetch --all --prune` + `git pull --rebase` → Already up to date；工作区干净。
-- `gh issue list --state open` → 验收前 10 open：#127/#128/#129（in-review）、#98（in-progress）、#109（blocked）、#96/#100/#101/#102/#59（needs-info）；处理后三项关闭，#130/#131/#132 新建为 ready。
-- 前端独立复跑：`npm run test:run` → 45 files / 271 tests 全绿；`npm run test:coverage` → exit 0，All files 83.22/75.83/35.55/83.22；lcov 逐项核对 user.js（97/99、31/38、7/7）与 chinaMap.js（26/26、6/6、1/1）；`npm run lint` exit 0。
-- 文档核对：`git show 4d00f9c -- docs/TEST_PERF.md`；`grep -c "转 in-review"` = 0；`grep App.vue` 命中 §7.1 与 §7.5。
-- 断言抽查：`grep` 两个新测试文件的关键显式断言（详见验收账）；`git diff --stat 4d00f9c..HEAD -- . ':(exclude).agent'` → 空（交付后仅 `.agent/` 提交）。
-- CI：`ffe4c5b`、`4cb2519`、`be068ad` 五项 check 全 completed/success；`4d00f9c` 4/5（integration cancelled，见验收账）。
-- 未跑（本轮无需）：后端 fast gate（本轮仅前端/文档改动，沿用 2026-10-21 基线 native 1495/69/196、fallback 1493/71/196）、integration/external（外部依赖）、`npm run build`（无源改动，CI frontend-fast 已覆盖）。
+## 本轮验证与握手
 
-## 给 Executor 的握手要求
-
-- 接手先按真实 Git/Issue 核对 STATE/HANDOFF/ENV，并在 `.agent/DIARY/<当日>.md` 追加当日记录（严格 append-only，已写入的行不得修改）。
-- 本轮领取顺序建议 #130 → #131 → #132；每项完成后按契约 1.7 在 Issue comment 提交执行报告并转 in-review，**绝不自行 close**。容量不足时按顺序完成，未领取项保持 ready 并写明原因。
-- 严格按各 Issue「明确不包含」执行：只新增测试文件/只改 `docs/TEST_PERF.md`；不改生产源码、不改现有测试、不设覆盖率阈值、不动 `ci.yml` 与依赖。
-- #98/#109/#96/#100/#101/#102/#59 保持冻结/阻塞/needs-info，不启动 M7 扩展、不改 M6 阈值、不做 CI 拓扑改造。
-- `.agent/` 变更与代码/文档变更严格分属不同 commit（`chore(agent): ...`）。
+- 起点main@3cd52b5；fetch/pull exit0（Already up to date），无未提交工作；#130–#132之后的提交只涉及.agent快照。
+- 前端命令（ENV所列Node22 PATH）：`npx vitest run tests/app-store.test.js tests/tabs-store.test.js`、`npm run test:run`、`npm run test:coverage`、`npm run lint` 全exit0；定向50通过，全量47/321；All83.79/77.33/37.55/83.79。
+- TS只是下一执行任务，本轮**没有**安装依赖、迁移代码、编写测试/验证脚本。npm view元数据证明所选TS5.9.3/parser8.46.2与Node22/ESLint9兼容，不代表新typecheck已跑通。
+- 未跑后端fast gate/integration/external/build：本轮只读前端验收，无生产代码改动，交付提交CI五项已实际查询成功。不把历史后端数字冒充本轮实跑。
+- 下一棒只按 #133→#134 领取，串行最多一个in-progress；每项真实验证后交付固定字段报告并转in-review，不自行close；刷新自己拥有的STATE/HANDOFF并追加实际执行日DIARY，.agent独立提交。

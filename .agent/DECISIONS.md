@@ -249,6 +249,24 @@
 - 红线边界不变：不设 `coverage.thresholds`、不把覆盖率纳入 CI、不启动 M7、不改 M6 阈值、不动 #98/#109/#96/#100/#101/#102/#59。
 - 影响范围：关闭 #127/#128/#129；新建 3 个 ready Issue；无 pending 新增；代码 HEAD 停在 `4d00f9c`（#129 交付）。
 
+### D-034 / 2026-10-24（同日接续）/ 验收 #130–#132，并恢复 D-009 已批准的首个 TS 实迁移切片
+
+- 轮次说明：D-033已是本日规划；用户在执行会话2/3后再次明确启动Planner，本轮作为同日接续验收/排队，不把一次会话冒充一天，不递增pending等待天数。
+- 验收（本轮独立运行、非仅引用报告）：
+  - #130通过：定向app9+tabs41用例全部通过；全量47 files/321 tests、lint exit0；app.js LH/LF39/39、FNH/FNF4/4、BRH/BRF10/10，均100%；五组场景逐条核对；73bec15仅新增142行测试。
+  - #131通过：41用例、11组场景齐全；tabs.js LH/LF168/172（97.67%）、FNH/FNF11/11（100%）、BRH/BRF68/71（95.77%），超过90/90/75门槛；9a86951仅新增471行测试，catch40–41/190–191依约未mock。未重做执行期变异实验，不将其算成本轮验证。
+  - #132通过：06b194e仅改TEST_PERF（+10/−5）；三提交号/三关闭状态/四处日期/历史数值与新增段核对无误；原日志/tmp/cov131.txt支持原47/321、83.79/77.35/37.55/83.79及tabs95.83，不能因为下一次输出不同就篡改历史或认定报告失实。
+  - Standards/Spec两轴审查均0阻断；交付提交06b194e的backend-fast/frontend-fast/integration/rust-core/security-scan均completed/success。三项已留逐条验收comment并done/CLOSED。
+- 测量口径：本轮All83.79/77.33/37.55/83.79、tabs Branch95.77，和执行期77.35/95.83略有差异；原因**未定位**，不声称是已证明的舍入/稳定性问题。后续文档只绑定同一次日志、记录测量时点，历史段保留，不能要求每次V8分支小数恒定。
+- **更正D-033的方向推断**：“本批之后只能等用户新方向”遗漏了D-009/D-018/D-019明确保留的前端TS授权。#58关闭的是策略调研，package.json无TS/typecheck、无tsconfig/src下TS文件，真实迁移尚未开始；“已列出的三批行为目标补齐”不等于“全仓无真实可测对象”。无需重新问用户相同授权，也无需再做一轮同内容调研。
+- 决定：立项 **#133（P2，ready，type:refactor）**，只交付本地类型检查与app.js→app.ts一个真实生产切片。严格noEmit/实际app.ts纳入/类型负例非零、既有9用例与全量47/321、运行时store smoke、lint/build均列为验收条件。保留setTheme(string)与任意存储字符串现状，不暗改主题域或容错。
+- 工具选择（可回滚实现细节，不是新产品方向）：dev依赖固定typescript@5.9.3与@typescript-eslint/parser@8.46.2，npm view已核对Node22/ESLint9/TS<6兼容；Vue/Pinia自带类型，不加重复@types或vue-tsc。仅TS文件启用parser、JS/Vue规则不放宽；coverage.include纳入TS，不设thresholds。tsc只本地，不改CI流程、矩阵、pre-commit或既有直接依赖大版本。元数据兼容不代表本轮已安装/运行新typecheck。
+- 文档收尾：立项 **#134（P4，ready，type:docs）**，只硬依赖已关闭的#130–#132，可独立执行；建议#133之后测量，不以未来任务完成充当ready门禁前提。只改TEST_PERF，补三行已验收状态/验收事实/执行时同次快照，按实际提交记录app.js或app.ts，不预支TS完成，不改历史路径/数字/§7.2–§7.4；不预写#133已验收，不因文档自身关闭无限派生同内容任务。
+- 回应Executor风险信号：tabs.js:52–54的_persist确无catch，但未复现且未定义失败后恢复契约；不凭与resetTabs风格不同就排容错/重试/事务任务。已在#131验收comment回应，保留待真实故障证据，而非新增auto-discovered或虚构P1。
+- 流程更正：#130领取comment把“main未设保护”当成WORKFLOW=trunk，但ENV没有此设置。代码验收通过不抹掉流程偏差；本轮及后续按契约默认每任务分支，不擅改Executor的ENV，不重写已推送历史。
+- 治理：其余7件逐项复核，#98有意冻结现场不重置，#109本轮docker命令仍不可用，#96/#100/#101/#102/#59保留原状态/优先级；无重复/缺优先级/open auto-discovered/open PR；P3候选尚未跨过两个完成Milestone，不按“饥饿”误关。M6实际10/10成员关闭但仅1/3成功信号，M7实际6/11关闭；冻结约束不变。
+- 影响范围：新建#133/#134，两项不设milestone；关闭#130/#131/#132，不污染M6/M7分母。只更新Planner的PLAN/TASKS/DECISIONS和Issues，不改代码、Executor STATE/HANDOFF/ENV/DIARY。无pending新增、无需要用户再次拍板的问题；D-019/D-023 A继续有效。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
