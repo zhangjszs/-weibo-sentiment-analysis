@@ -309,11 +309,11 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
   - **路径 A2**：将成功信号修订为「本地 `-n auto` 并行稳定 `<30s`」（技术上已达成，实测 ~25s），更贴合 2026 年多核开发习惯。
 - **关于 CI <240s**：只要 `integration` 串行依赖 `backend-fast`，在现有 379 个依赖解包开销下几乎不可能稳定 <240s。建议 D-023 授权 **L4**（解除 integration 依赖），一步达成 ~170s 且零依赖风险。
 
-## 7. 议题状态与待确认建议（2026-10-23 刷新）
+## 7. 议题状态与待确认建议（2026-10-24 刷新）
 
-> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选 + 前端覆盖率基线」。状态按 GitHub 真实 state 抄录（2026-10-23 刷新）。
+> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选 + 前端覆盖率基线」。状态按 GitHub 真实 state 抄录（2026-10-24 刷新）。
 
-### 7.1 议题状态总表（2026-10-23 刷新）
+### 7.1 议题状态总表（2026-10-24 刷新）
 
 | Issue | 优先级 | 状态 | 摘要 |
 |---|---|---|---|
@@ -345,6 +345,9 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#124](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/124) | P3 | done | 补齐 `src/utils/index.js` 未覆盖函数单元测试（37 用例；utils/index.js Stmts 98.23% / Branch 97.08% / Funcs 100%；d58fa71；已于 2026-10-23 验收关闭） |
 | [#125](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/125) | P3 | done | 补齐 `src/api/request.js` 拦截器错误分支测试（25 用例；request.js Stmts 94.15% / Branch 95.74%；2ab34b3；已于 2026-10-23 验收关闭） |
 | [#126](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/126) | P4 | done (partial) | 刷新 TEST_PERF §7.1/§7.4 并记录前端覆盖率基线（c0d7e22；已于 2026-10-23 验收关闭；0% 清单漏 `src/App.vue`，缺口由 #129 承接） |
+| [#127](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/127) | P3 | done | 补齐 `src/stores/user.js` 会话恢复/登出分支测试（13 用例；user.js Lines 97.97% / Branch 81.57% / Funcs 100%；ffe4c5b；已于 2026-10-24 验收关闭） |
+| [#128](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/128) | P3 | done | 补齐 `src/utils/chinaMap.js` 单例注册与失败重试语义测试（6 用例；chinaMap.js Lines / Branch / Funcs 均 100%；4cb2519；已于 2026-10-24 验收关闭） |
+| [#129](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/129) | P4 | done | 刷新 TEST_PERF §7.1/§7.5（补 #124–#126 三行、App.vue 0% 口径与会话 2 实测，双段并存口径；4d00f9c；已于 2026-10-24 验收关闭） |
 
 > **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
@@ -373,7 +376,7 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 - integration 层补用例（196 用例偏薄，低覆盖集中在 `views/user`、`views/api/user_routes`；补 integration 优先于加 unit）；
 - 测试规范固化：>1s 用例 PR 需说明理由；mock 样板 >20 行必须提共享 fixture（§3 R3 教训）。
 
-### 7.5 前端覆盖率基线（2026-10-23，#123）
+### 7.5 前端覆盖率基线（2026-10-24 刷新，#123 起）
 
 命令：`cd frontend && npm run test:coverage`（v8 provider，reporter-only；**未设 thresholds 门禁、未纳入 CI**）。
 
@@ -390,6 +393,8 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 
 **2026-10-23 执行轮更新**：#124（`utils/index.js` 补测）与 #125（`request.js` 错误分支补测）已验收关闭；当时实测 **43 files / 252 tests**，总覆盖率 **Stmts 82.48% · Branch 75.30% · Funcs 34.22% · Lines 82.48%**。
 
-**2026-10-23 执行会话 2 更新**：#127（`stores/user.js` 会话恢复/登出分支）与 #128（`utils/chinaMap.js` 单例/重试语义）已合入 main、待验收；当前实测 **45 files / 271 tests**，总覆盖率 **Stmts 83.22% · Branch 75.83% · Funcs 35.55% · Lines 83.22%**（`stores/user.js` Lines 97.97% / Branches 81.57% / Funcs 100%；`utils/chinaMap.js` 100% / 100% / 100%）。0% 模块清单不变。
+**2026-10-23 执行会话 2 更新**：#127（`stores/user.js` 会话恢复/登出分支）与 #128（`utils/chinaMap.js` 单例/重试语义）已合入 main，并于 2026-10-24 规划轮验收通过、已验收关闭；当时实测 **45 files / 271 tests**，总覆盖率 **Stmts 83.22% · Branch 75.83% · Funcs 35.55% · Lines 83.22%**（`stores/user.js` Lines 97.97% / Branches 81.57% / Funcs 100%；`utils/chinaMap.js` 100% / 100% / 100%）。0% 模块清单不变。
+
+**2026-10-24 执行会话 2 更新**：#130（`stores/app.js` 主题切换/侧栏测试，73bec15）与 #131（`stores/tabs.js` 多标签状态机测试，9a86951）已合入 main，处于 in-review（尚未经 Planner 验收）；当前实测 **47 files / 321 tests**，总覆盖率 **Stmts 83.79% · Branch 77.35% · Funcs 37.55% · Lines 83.79%**（`stores/app.js` Stmts/Branch/Funcs/Lines 均 100%，此前 71.79% 行 / 25% 函数；`stores/tabs.js` Stmts 97.67% / Branch 95.83% / Funcs 100% / Lines 97.67%，未覆盖行 40-41、190-191 为 `localStorage` getItem/removeItem 抛错 catch，jsdom 真实对象下无自然构造方式，按 #131 约定不 mock）。0% 模块清单不变（8 个 `src/api/` 包装模块 + `main.js` + `App.vue`）。以上 45/271 与 43/252 等历史段保留原值与时点标注，与本段并存，不互相覆盖。
 
 **授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
