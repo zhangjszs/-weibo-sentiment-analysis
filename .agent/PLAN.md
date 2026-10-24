@@ -1,92 +1,79 @@
 # PLAN — 开发路线图
 
-> Planner 维护；Executor 只读。2026-10-24 同日接续验收/规划（接续 D-033 与执行会话 2/3），不冒充新的一天。决定见 D-034，完整规格与验收证据见 Issues / TASKS.md。
+> Planner 维护；Executor 只读。2026-10-25 规划轮更新（决定见 D-034 / D-035，完整规格与验收证据见 GitHub Issues 与 `.agent/TASKS.md`）。
 
 ## 当前方向
 
-1. **已完成本批验收**：#130/#131/#132 均通过并 done/CLOSED。独立复跑 47 files / 321 tests 全通过，lint exit0；app.js 全100%，tabs.js Lines97.67 / Funcs100 / Branch95.77，满足各自门槛；06b194e 的 GitHub 五项 check 全success。
-2. **恢复已经批准但尚未实施的 TS 渐进迁移**：D-009 是用户明确授权，D-018/D-019 确认继续有效；#58 只交付策略文档，当前仍无TS依赖/tsconfig/真实TS文件。此前“后续只能等待用户新方向”的结论遗漏了这一事实，现由D-034更正。下一步不是新一轮调研，而是 #133 的一个完整生产切片：本地严格类型检查 + app store 实际迁移。
-3. **边界不变**：M6 依D-023 A冻结、M7依D-019 A冻结；不新增服务/费用/CI矩阵，不改schema/认证/核心框架，不把类型检查或前端覆盖率加入CI。
+1. **昨日（2026-10-24）两批共 6 项交付已全部验收闭环**：#127–#129 与 #130–#132 均独立复跑通过并关闭（`done` / `CLOSED`）；本轮巡检一并修正了 #127–#129 在 GitHub 上残留的 `in-review` 标签为 `done`。当前前端基线 47 files / 321 tests 全绿，`lint` / `format:check` exit 0，HEAD `9d85159` 五项 CI check 全绿。
+2. **推进已获用户明确授权的前端 TypeScript 渐进迁移首个生产切片（#133）与文档收尾（#134）**：D-009 已批准前端 TS 渐进化，D-018 / D-019 明确保留该方向；#58 仅交付策略文档，仓库尚无 TS 依赖、`tsconfig.json` 或生产 `.ts` 文件。由于上一规划提交（2026-10-24 23:33 `9d85159`）后 Executor 尚未运行，本轮按 D-035 将 #133 / #134 结转为 2026-10-25 今日队列，不重复造题、不在前置基础设施（#133）未 `done` 前把后续 TS 切片提前塞入 `ready`。
+3. **红线与冻结边界不变**：M6 依 D-023 A 冻结、M7 依 D-019 A 冻结；不新增外部服务/费用/CI 矩阵，不改数据库 schema / 认证 / 核心框架，不设 `coverage.thresholds`，不把 `typecheck` 或前端覆盖率纳入 CI。
 
-当前独立实测：All files Stmts83.79 / Branch77.33 / Funcs37.55 / Lines83.79；app.js LH/LF39/39、FNH/FNF4/4、BRH/BRF10/10；tabs.js 168/172、11/11、68/71。执行会话2的原日志为 All Branch77.35、tabs Branch95.83；原日志真实存在，差异原因尚未定位，不当作已证明的舍入，也不以今天数字覆盖历史。
+## 今日目标（2026-10-25）
 
-## 今日目标（面向下一执行会话，按真实执行日记录日报）
-
-- #133：交付首个真实TS生产模块，保留主题/侧栏全部行为；`tsc --noEmit` 能检查 app.ts、类型负例能失败；运行时smoke能观察DOM/存储/侧栏，而不是只交空配置。
-- #134：收尾 #130–#132 验收后的 TEST_PERF 状态账，记录执行时同次coverage快照；#133已交付则记录app.ts，否则如实记录app.js，不预支TS完成；历史数字与路径按测量时点保留。
-- 测试基线不缩水，测试/类型检查/lint/build真实验证；固定字段执行报告、STATE/HANDOFF与append-only日报齐全。
+- **#133**：建立前端仅本地 `tsc --noEmit` 严格类型检查与 ESLint / Vitest `.ts` 支持，并将 `frontend/src/stores/app.js` 迁移为首个真实生产 TS 模块 `app.ts`（保留 `useAppStore` 及全部主题/侧栏行为、通过类型负例探针与运行时 store smoke）。
+- **#134**：收尾 #130–#132 验收后的 `docs/TEST_PERF.md` §7.1 / §7.5 账目，记录执行时同次 coverage 快照（若 #133 已交付则记录 `app.ts`，否则如实记录 `app.js`），保留历史时点数值与路径。
+- 保持 47 files / 321 tests 基线不缩水，所有新增/修改文件通过 `lint`、`format:check`、`typecheck`、`build`；Executor 同步刷新 `STATE.md` / `HANDOFF.md`（修正 #130–#132 已关闭状态）并追加 `2026-10-25` 日报。
 
 ## 当前授权切片：前端 TypeScript 渐进化（D-009；本切片验收进度 0 / 1，#133）
 
-不是新立的GitHub milestone，不计入M6/M7。#134是配套文档收尾，不冒充生产迁移进度。
+> 注：本切片属 D-009 已授权方向的有界推进，不新建 GitHub Milestone，不计入 M6 / M7 分母；#134 为配套文档收尾。
 
 ### 目标与验收
 
-- 仅将 `frontend/src/stores/app.js` 迁为 `app.ts`，保留 `useAppStore` 与全部状态/动作，不留双实现或JS shim。
-- typescript@5.9.3 + @typescript-eslint/parser@8.46.2 为本地开发依赖；元数据已核对Node22/ESLint9兼容，不是新增运行时服务。
-- 最小strict/noEmit检查覆盖真实app.ts；既有JS/SFC保持未迁移，不声称全仓类型安全。`setTheme`仍接受string，theme/device不缩成未授权枚举。
-- lint纳入TS、coverage纳入TS；不放松JS/Vue既有规则，不以扩展名迁移让文件从覆盖报告消失。
-- 更新 `docs/FRONTEND_TS_MIGRATION.md` 的实际状态与过时建议；不原样照抄旧草案的全仓迁移清单或重复@types依赖。
+- 仅将 `frontend/src/stores/app.js` 迁移为 `frontend/src/stores/app.ts`，保留 `useAppStore` 与全部状态/动作，不留 `.js` shim 或双实现。
+- 固定本地开发依赖 `typescript@5.9.3` + `@typescript-eslint/parser@8.46.2`（Node 22 / ESLint 9 兼容）；不升级既有直接依赖版本，不装重复 `@types` 或 `vue-tsc`。
+- 新增最小严格 `frontend/tsconfig.json`（`strict: true`、`noEmit: true`、include 含真实 `src/stores/app.ts`）与 `npm run typecheck`；`setTheme` 参数保持 `string`，不改变 `localStorage` 任意字符串契约。
+- `npm run lint` 与 `eslint.config.js` 纳入 `.ts`（JS/Vue 规则不放宽）；`vitest.config.js` 的 `coverage.include` 扩为 `src/**/*.{js,ts,vue}`，确保 `app.ts` 不从覆盖率报告消失。
+- 更新 `docs/FRONTEND_TS_MIGRATION.md`：记录 #58 已验收与本次实际迁移切片，清理已删除的 `websocket.js` 及被占用的猜测性 Issue 编号（#60–#66）。
 
-### 执行队列（2项ready，建议顺序）
+###完成信号（Success signal）
 
-1. **[#133 启用本地 TypeScript 类型检查并迁移 app store 首个生产切片](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/133)**（P2，ready）。依赖#58/#130已关闭；允许改动文件、TS/ESLint/coverage边界、负例及真实模块smoke均在Issue中钉死。验收：npm ci/typecheck/lint/build成功；listFiles含app.ts；临时类型负例失败后恢复；既有app9用例、全量≥47/321；app.ts行≥90/函数100/分支≥75。
-2. **[#134 收尾 TEST_PERF 验收状态并明确覆盖率快照时点](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134)**（P4，ready）。只依赖已关闭的#130–#132，与#133无硬依赖；建议后执行以记录最新切片，#133阻塞仍可独立收尾。只改TEST_PERF，补三行、附验收事实、记录同次实际app.js或app.ts/tabs测量，保留历史；不把未交付TS写成完成，不因文档本身关闭再造同内容任务。
-
-两项均通过ready门禁：硬依赖已完成、授权已知、范围明确、无产品取舍、逐条可验、风险可回滚。#133→#134仅为建议顺序，不以未来任务完成作为#134的ready前提；无其他ready任务。
-
-### 完成信号（Success signal）
-
-- #133：真实生产app.ts被tsc检查，错误消费者类型会被拒绝；主题/侧栏真实smoke、9个既有行为用例、全量测试、lint/build成功。TS源文件仍进入coverage。不是tsc --version、空项目或仅改扩展名。
-- #134：历史数据未被覆盖，新数据与保存的同一次运行日志逐项一致；验收状态有真实Issue支持，不把实现完成写成已验收。
-- 两项只在真实验证与报告完成后转in-review，不自动close；下一轮Planner独立验收。
+- **#133**：`npm ci`、`npm run typecheck`、`npx tsc --noEmit --listFiles`（含 `src/stores/app.ts`）、临时类型负例探针（报错非零后移除恢复 0）、`tests/app-store.test.js`（9 passed）、全量 `test:run`（≥47 files / 321 tests）、`test:coverage`（`app.ts` Lines ≥90% / Funcs 100% / Branches ≥75%）、真实 store smoke、`lint` / `format:check` / `build` 全部通过并转 `in-review`。
+- **#134**：`docs/TEST_PERF.md` §7.1 新增 #130–#132 三行（已验收关闭），§7.5 清除 #130/#131 的当前 `in-review` 表述并追加与同次 coverage 原始输出逐项一致的新快照段，历史数值与路径原样保留。
 
 ### 明确非目标（Non-goals）
 
-- 不迁移其他store/API/composable/组件/router，不新增产品功能；不改主题校验/恢复策略，不给_persist加容错、事务、重试。
-- 不改CI拓扑、矩阵、pre-commit；typecheck只本地，不设coverage.thresholds，不改覆盖率分母来追数字。
-- 不升级既有直接依赖大版本、不加vue-tsc/Vue重复@types；不另建大而空的类型框架。
-- 不为API薄包装补mock复述、入口壳补源文本/接线测试；也不把该批补齐推断成“全仓无行为测试机会”。
-- 不动#98现场，不启动M7扩展；不追第三方/CJK字体告警，不引MySQL/Redis集成环境来凑队列。
+- 不迁移其他 store / API / composable / 组件 / router；不改组件视觉、认证或业务行为；不给 `tabs.js` 的 `_persist` 加容错/重试/事务。
+- 不改 `.github/workflows/`、pre-commit 或 CI 矩阵；`typecheck` 与前端覆盖率仅限本地，不设 `coverage.thresholds`。
+- 不为 8 个声明式 API 薄包装补 mock 复述测试，不为 `main.js` / `App.vue` 入口壳补测试。
+- 不动 #98 冻结现场，不启动 M7 扩展。
+
+### 执行队列（给 Executor 的建议顺序，保持 2 个 ready）
+
+1. **[#133 启用本地 TypeScript 类型检查并迁移 app store 首个生产切片](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/133)**（P2，`ready`）—— 分支 `agent/issue-133-app-store-ts`。
+2. **[#134 收尾 TEST_PERF 验收状态并明确覆盖率快照时点](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134)**（P4，`ready`）—— 分支 `agent/issue-134-test-perf-closeout`（硬依赖 #130–#132 已满足；建议在 #133 后执行以记录最新快照）。
 
 ## 保留的 Milestone 事实与成功阈值
 
-### M6 测试性能优化：成员10 / 10 CLOSED，成功信号1 / 3，OPEN且未收敛
+### M6 测试性能优化（进度：成员 10 / 10 CLOSED；成功信号 1 / 3；状态：OPEN 未收敛）
 
-- 成员#88–#95/#106/#107，GitHub实际状态复核10 CLOSED、0 OPEN。
-- 目标不改：本地串行无coverage稳定<30s、完整CI created→最后job完成<240s、branch≥68.49%。
-- 最近已有证据：2026-10-21本地native39.45s（1495/69/196）；既有5run完整CI247–329s；2026-10-19branch68.5259%，CI68.62–68.63%。本轮未重跑后端，不把旧结果当新结果。
-- D-023默认A已转正：保留open、不降阈值、不追加高成本或红线投入。成员关闭不等于收敛。
+- 成员 #88–#95、#106、#107 共 10 项全部 `CLOSED`。
+- 三个成功信号：分支覆盖率 `≥68.49%` 已达成（68.5259%–68.63%）；本地串行无 coverage `<30s`（实测 ~34–39s）与完整 CI `<240s`（实测 247–329s）未达成。
+- 依 D-023 默认 A：保持 Milestone OPEN，不调低阈值、不重启高成本或触红线方案（契约 3.8：成员关闭 ≠ Milestone 收敛）。
 
-### M7 候选与既有交付纠偏：6 / 11 CLOSED，OPEN且冻结
+### M7 候选与既有交付纠偏（进度：6 / 11 CLOSED；状态：OPEN 且冻结）
 
-- CLOSED：#97/#99/#103/#104/#105/#108；OPEN：#98/#100/#101/#102/#109；#96是Epic，不计分母。
-- D-019 A：暂停扩展，保留既有前端TS授权；已有纠偏通过不构成Rust/Qdrant/LLM/ABI矩阵授权。
-- #110–#134均未设milestone，不污染M6/M7分母；暂不为单切片另建里程碑。
+- 已验收关闭（6）：#97、#99、#103、#104、#105、#108。
+- 未完成（5）：#98（`in-progress`，D-019 A 冻结）、#100（`needs-info`）、#101（`needs-info`）、#102（`needs-info`）、#109（`blocked`）；#96 为 Epic 不计入分母。
+- 依 D-019 默认 A：暂停 M7 扩展，保留前端 TS 渐进化方向。
 
 ## 已知阻塞与依赖
 
-- #98：in-progress有意冻结，原生产迁移/完整双模式/实际Criterion要求未完；不是疑似崩溃，不重置不关闭。
-- #109：`command -v docker`本轮仍exit1，无已知已授权Docker主机。环境未解除前不把console当真实OTLP/Jaeger/UI验收，也不擅增metrics服务。
-- #96/#100/#101/#102：needs-info，D-019 B/C无新用户答复；#102还依赖#98。
-- #59：needs-info，具体产品需求未提供；D-012默认A有效。已在Issue解释TS继续实施不等于新增产品规格。
-- pending为空，D-019/D-023 A已默认转正；没有新产品取舍需用户答复，不重复问历史已批准或已默认转正的同一问题。
+- **#109（`blocked`）**：本机 `command -v docker` 仍不可用（exit 1），无已授权远程 Docker 主机；环境就绪前不得以 console 探针替代真实 Jaeger / OTLP 验收。
+- **#98（`in-progress` 冻结）**：受 D-019 A 冻结，保持现场不重置、不关闭，Executor 不得领取。
+- **#96 / #100 / #101 / #102（`needs-info`）**：受 D-019 A 冻结（#102 同时依赖 #98）。
+- **#59（`needs-info`）**：待用户提供具体产品功能需求（D-012 默认 A 有效，不重复追问）。
 
 ## 下一阶段
 
-- 首先独立验收#133/#134，再依据真实迁移结果确定下一单切片；不把本轮授权扩成全仓大迁移/CI改造。
-- 既有TS方向可继续由Planner按证据分批，不需为每个低风险命名/配置选择重复询问用户。新的产品功能/外部服务/费用/公共API破坏性变化仍须新授权。
-- _persist无catch仅为源码风险观察，未复现且缺预期恢复契约，不排修复；若出现真实失败证据再定级。
-- 历史候选integration-only `tests/test_db.py`假断言与补集成用例仍待真实MySQL环境；API跨端路由契约需先有可验证规格，不为凑2–5项重复调研。
+- 待 #133 / #134 交付并经下一轮 Planner 独立复跑验收通过后，基于已落地的 `tsconfig.json` 与工具链，按 `docs/FRONTEND_TS_MIGRATION.md` 第一批清单继续编排下一批小步、可验证的纯函数/工具/store TS 迁移切片。
+- 若用户随时提供 #59 具体产品需求或对 D-019 / D-023 给出新决定，按用户新授权调整队列。
 
-## 已放弃或冻结的方向
+## 已放弃的方向
 
-- 登录验证码：D-02暂缓；归档SQL：D-03保留。
-- uv/venv整包缓存、session训练缓存、默认xdist/randomly/socket全局禁网：D-013/D-014/D-016/D-024不重启。
-- Rust新切片/Qdrant/LLM/ABI矩阵/自动发布：D-019 A冻结；M6调阈值/高成本改造：D-023 A冻结。
-- 把compile-only说成Criterion运行、console说成Jaeger、单job说成完整CI、空tsc说成迁移完成：一律不作验收依据。
+- 登录验证码（D-02 暂缓）· 归档 SQL（D-03 保留）· uv/venv 整包缓存（D-013 / D-016 放弃）· session 级训练缓存（D-014 放弃）· 默认开启 xdist / randomly / 全局 pytest-socket（D-024 放弃）· M7 未授权扩展（D-019 A 冻结）· M6 降阈值或改 CI 级联（D-023 A 冻结）。
 
-## 给 Executor 的指令（不超过2句）
+## 给 Executor 的指令（不超过 2 句）
 
-- 按#133→#134串行执行，ENV未配置字面WORKFLOW=trunk，因此使用每任务分支、独立验证/提交/合并流程；严守Issue文件边界与非目标。
-- 先依据真实Issue刷新自己拥有的STATE/HANDOFF（#130–#132已关闭），逐项在Issue留固定字段报告并转in-review，实际执行日日报只追加、.agent另提交；不得自行close或领取冻结项。
+- 按 **#133 → #134** 串行执行，因 `ENV.md` 未设置 `WORKFLOW=trunk`，请严格按契约 1.9 使用每任务独立分支（`agent/issue-133-app-store-ts`、`agent/issue-134-test-perf-closeout`）完成验证、合入 `main` 并清理临时分支。
+- 先按真实 GitHub Issue 状态刷新 `STATE.md` 与 `HANDOFF.md`（#130–#132 已 `done`/`CLOSED`），每项完成后留下契约 1.7 固定字段执行报告并转 `in-review`（严禁自行 close），在 `.agent/DIARY/2026-10-25.md` 追加日报并单独以 `chore(agent): ...` 提交。

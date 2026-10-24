@@ -267,6 +267,17 @@
 - 治理：其余7件逐项复核，#98有意冻结现场不重置，#109本轮docker命令仍不可用，#96/#100/#101/#102/#59保留原状态/优先级；无重复/缺优先级/open auto-discovered/open PR；P3候选尚未跨过两个完成Milestone，不按“饥饿”误关。M6实际10/10成员关闭但仅1/3成功信号，M7实际6/11关闭；冻结约束不变。
 - 影响范围：新建#133/#134，两项不设milestone；关闭#130/#131/#132，不污染M6/M7分母。只更新Planner的PLAN/TASKS/DECISIONS和Issues，不改代码、Executor STATE/HANDOFF/ENV/DIARY。无pending新增、无需要用户再次拍板的问题；D-019/D-023 A继续有效。
 
+### D-035 / 2026-10-25 / 2026-10-25 规划轮：修复 #127–#129 遗留标签漂移并结转 #133/#134 执行队列
+
+- 事实核查（2026-10-25 规划轮）：
+  1. 自 2026-10-24 23:33（+0800）规划提交 `9d85159` 以来，Executor 尚未运行：无 `.agent/DIARY/2026-10-25.md`、无新增提交、无 in-review 交付、#133 与 #134 均为 0 comment 且保持 `ready`。
+  2. `9d85159` 的 GitHub Actions 五项 check（`backend-fast` / `frontend-fast` / `integration` / `rust-core` / `security-scan`）全部 `completed/success`；本轮本机独立复跑前端基线 `npm run test:run`（47 files / 321 tests 全绿）、`npm run lint`（exit 0）、`npm run format:check`（exit 0）。
+  3. 队列治理巡检发现 **#127、#128、#129** 虽已于 2026-10-24 首轮规划验收关闭（STATE=CLOSED），但 GitHub 标签仍残留 `in-review` 而未更新为 `done`（违反契约 1.3「同一时刻最多一个状态值」与 3.4「通过 → 关闭 / 标 done」）。本轮已通过 `gh issue edit 127/128/129 --remove-label in-review --add-label done` 修正，当前 #88–#132 所有已验收关闭 Issue 的 GitHub 标签与 `docs/TEST_PERF.md` §7.1 状态列完全一致。
+- 决定：
+  1. **#133（P2，ready）与 #134（P4，ready）原样结转为 2026-10-25 今日执行队列**（沿用 D-028/D-029 原则：Executor 未运行前不重复立项、不制造伪工作）。
+  2. **不在 #133 完成前预排第二批 TS 迁移任务入 ready**：后续 TS 切片依赖 #133 建立的 `tsconfig.json`、`typescript@5.9.3`、`eslint.config.js` TS parser 与 `vitest.config.js` coverage `.ts` 配置；在 #133 未 `done` 前将其放入 `ready` 会违反门禁 4.2 第 3 条（前置依赖已 `done`）。
+- 影响范围：修正 #127–#129 的 GitHub 状态标签；刷新 `.agent/PLAN.md`、`TASKS.md`、`DECISIONS.md` 至 2026-10-25；无代码变更、无新增 pending 决策、不触碰契约 1.10 红线。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
