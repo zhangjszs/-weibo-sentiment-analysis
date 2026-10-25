@@ -292,6 +292,23 @@
 - 边界恪守：不代改 Executor 的 `STATE.md`/`HANDOFF.md`（仍留「#130/#131/#132 in-review」旧快照，由今日 Executor 启动时按真实 Issue 刷新，契约 1.1）；无代码变更、不触碰契约 1.10 红线。
 - 影响范围：仅 `.agent/` 文档（PLAN/TASKS/DECISIONS）；Issue 状态无需变动。
 
+### D-037 / 2026-10-26 / 验收 #133–#134 全部通过，编排 TS 第二批切片 #135/#136 与批次文档收尾 #137
+
+- 轮次说明：2026-10-26 首次规划轮（非同日复跑）。昨日日报 `.agent/DIARY/2026-10-25.md` 存在且完整（会话 1 交付段 + 同日第二次「继续」检查追加段），验收输入无缺失。
+- 验收（独立复跑，不只信报告）：
+  - **#133 通过**：`git show --stat 8b3709c` = 7 文件，全在 Issue 允许边界内。本轮亲自复跑：`npm run typecheck` exit 0；`npx tsc --noEmit --listFiles` 在 `frontend/src` 下**仅**列 `stores/app.ts`，`app.js` 不存在；在**仓库外**临时探针 `/tmp/tsprobe-planner/probe.ts` 独立复做类型负例 → `TS2345`（number→string）+ `TS2322`（string→boolean）、exit 2，与报告错误号一致；`vitest run tests/app-store.test.js` 9 passed；`test:run` 47 files / 321 tests；`test:coverage` `app.ts 100|100|100|100`、`All 83.88|77.33|37.72|83.88`；`lint`/`format:check`/`build` exit 0；`npx eslint --print-config src/stores/app.ts` 实测 parser = `typescript-eslint/parser@8.46.2` 且 `no-restricted-syntax` 仍生效（仅 `no-undef`/`no-unused-vars` 对 `.ts` 交由 tsc）；`git show --numstat -- frontend/package-lock.json` = 418 插入 / **0 删除**（无 #123 那类 registry 翻转）；`gh api check-runs` 五项 `completed/success`。歧义裁定：caret + lockfile 锁定、不加 `baseUrl`/`paths`、smoke 用 `configFile:false` 均接受。
+  - **未复跑项如实记录**：`npm ci`（需网络且清空 `node_modules`；本机 `npm ls` 与锁一致，取 Executor 同锁 exit 0 为证据）；#133 的 12/12 真实 store smoke（Issue 要求探针不入库，故无仓库内可复跑证据；由 9 个真实行为用例 + coverage 不衰减 + `git show` 仅一处签名差异支撑，不构成失实）。
+  - **#134 通过**：`git show --stat d385af4` 仅 `docs/TEST_PERF.md`（10+/5−），4 个 hunk 均不落入 §7.2–§7.4；§7.1 三行的提交号由 `git show -s 73bec15 9a86951 06b194e` 支持、关闭措辞由 `gh issue view 130/131/132`（均 `CLOSED` + `done`）支持；§7.5 新快照段与 Executor 留存日志 `/tmp/cov134.log` **及本轮 Planner 独立复跑**三方逐项一致（含 `tabs.js` 未覆盖行 40-41、190-191）；历史数值 41/190、43/252、45/271、47/321 与 `app.js` 路径、`83.79/77.35/37.55` 全部原样保留。
+  - **流程口径新增（非缺陷）**：#134 报告用窄 grep（`处于 in-review|尚未经 Planner 验收|待验收` → NONE），而宽 grep `in-review` 本轮实测仍命中 1 行（§7.5 对 #133 当时真实状态的记述）。结论不受影响，但自本批起文档类任务须在报告中列出**宽口径**命中行及其归属——已写入 #137 验收标准；#133 的过期当前态由 #137 就地改为时点表述，不 reopen #134、不另立同内容文档任务。
+- 决定：立项 **#135（P2，`ready`，type:refactor）** 迁移 `utils/echarts.js` + `utils/chinaMap.js`（§2 第一批余项；迁移前本机实测各 100/100/100/100，行为由 #128 的 6 用例锁定）；**#136（P2，`ready`，type:refactor）** 迁移 `stores/tabs.js`（193 行，41 用例，Lines 97.67 / Funcs 100 / Branch 95.77）；**#137（P4，`ready`，type:docs）** 批次文档收尾（硬依赖 #135/#136 先执行）。三项均不设 milestone，容量 P0=0/P1=0/P2=2/P3=0/P4=1。
+- **排期裁定**：#136 依 `docs/FRONTEND_TS_MIGRATION.md` §2 属第三批，但该批理由是「需先有 api 层类型作为输入」，而 `tabs.js` 完全不触碰 api（仅 `localStorage` + 路由对象）；故依 D-009 渐进原则单独提前，**不据此放宽其余 store**，也不改动策略文档的批次结论。
+- **类型契约前置（属 6.1「实现细节 / 内部 API 设计」，由 Planner 定死以免 Executor 临场发明）**：`chinaMap.ts` 用 `type MapInput = Parameters<typeof echarts.registerMap>[1]` 派生（已核 `node_modules/echarts/types/dist/core.d.ts:1` 确导出 `registerMap`，无需新增 `@types`）；`tabs.ts` 用 `TabItem` 接口 + `addTab` 最小结构类型（字段全可选以匹配既有 `if (!route?.name || !route?.path) return` 守卫）+ `router?: { push: (to: string) => unknown }`，不引入 vue-router 类型；`JSON.parse` 允许 `as TabItem[]` 断言，但**禁止**借通过类型之名新增校验/回退/容错（`_persist` 依 D-034 仍等真实故障证据）。
+- **显式 `.js` specifier 实测清单**（本轮 grep 全仓 `from '…\.js'` / `import('…\.js')`）：本批必须同步修正的仅 `tests/china-map.test.js:34`（`@/utils/chinaMap.js`）与 `tests/tabbar-icons.test.js:5`（`../src/stores/tabs.js`）；其余命中指向本批不触碰的 `router/index.js`、`api/request.js`、`composables/*`、`plugins/elementPlus.js` 等。
+- 红线边界：不改 CI / pre-commit / 依赖大版本，不把 `typecheck` 或前端覆盖率纳入 CI，不设 `coverage.thresholds`，不改 schema / 认证 / 公共 API / 业务行为；M6（D-023 A）与 M7（D-019 A）冻结不变，#98 现场不重置。
+- 治理：10 open = 3 `ready`（#135/#136/#137）+ 1 `in-progress`（#98 有意冻结，超 24h 仍不标「疑似中断」）+ 1 `blocked`（#109，本轮 `command -v docker` 仍 exit 1）+ 5 `needs-info`（#96/#100/#101/#102/#59）；无 open PR、无 open `auto-discovered`、无缺优先级、无满足「连续两个 Milestone 未动」的饥饿项、`.agent/LOCK` 不存在。`TASKS.md` 已按 1.6 从真实 Issue 整体重写，无冲突、未降级。
+- pending：**无新增**（今日用户消息仅为流程启动，未给出新决定；D-023 已默认转正，D-012/D-019 默认 A 继续有效，不重复提问）。
+- 影响范围：关闭 #133/#134；新建 #135/#136/#137；更新 `.agent/PLAN.md`、`TASKS.md`、`DECISIONS.md`。不改代码、不代写 Executor 的 `STATE.md`/`HANDOFF.md`/`ENV.md`/`DIARY/`。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
