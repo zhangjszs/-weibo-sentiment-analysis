@@ -1,7 +1,17 @@
 # 前端 TypeScript 迁移策略
 
-> 产出 Issue：#58 · 日期：2026-10-09 · 作者：executor-20261009-r1
-> 状态：策略文档（待 Planner 验收）
+> 产出 Issue：#58（已验收关闭）· 初稿：2026-10-09 · 作者：executor-20261009-r1
+> 状态：策略基线 + 实际迁移进度记录。§2–§8 保留 #58 的 2026-10-09 历史策略快照（未随后续开发刷新处已就地标注，含作废的旧 Issue 编号建议）；#133（2026-10-25）在其之上交付**首个真实生产 TS 迁移切片**——远未完成全仓迁移，亦不承诺全仓类型安全。
+
+## 0. 实际迁移进度（#133 · 2026-10-25）
+
+首个真实生产模块迁移已由 #133 交付，**仅覆盖一个模块**：
+
+- **已迁移**：`src/stores/app.js` → `src/stores/app.ts`。`useAppStore` 名称、setup-store 结构、全部状态/动作与运行时语义不变；`setTheme` 参数显式标注 `string`，`theme`/`device` 仍为 `string`、`sidebarCollapsed` 为 `boolean`——未缩窄主题枚举、未新增存储值校验/回退（沿用 `localStorage` 任意字符串现状契约）。无 `.js` shim / re-export / 双实现。
+- **本地类型检查**：新增最小 `frontend/tsconfig.json`（`strict` + `noEmit` + `allowJs`/`checkJs:false`，`include` 仅 `src/stores/app.ts`）与 `npm run typecheck`（`tsc --noEmit`）。**仅本地运行，不纳入 CI/pre-commit**；不把全仓未迁移 JS/SFC 拉进类型门禁，**不承诺全仓类型安全**。
+- **devDependency**：固定 `typescript@5.9.3` + `@typescript-eslint/parser@8.46.2`（Vue 3 / Pinia 自带类型，未装重复 `@types/*` 或 `vue-tsc`）；既有直接依赖版本未变。
+- **工具链接**：`eslint.config.js` 仅对 `.ts` 换用 `@typescript-eslint/parser`（JS/Vue 规则不放宽；`.ts` 的 `no-undef`/`no-unused-vars` 交由 tsc 严格检查）；`vitest.config.js` 的 `coverage.include` 扩为 `src/**/*.{js,ts,vue}`；`package.json` 的 `lint` src glob 纳入 `.ts`。
+- **尚未迁移**：其余 3 个 store、api/（14）、utils/、composables/、router/、plugins/、`main.js` 与 45 个 `.vue` 组件/视图仍为 JS/SFC，**不在本轮类型门禁内**。§2 六批次顺序仍是后续参考。
 
 ## 1. 现状摘要
 
@@ -18,6 +28,8 @@
 
 **结论**：前端完全无 TypeScript 基础，需从基础设施搭建开始，分层渐进迁移。
 
+> 注：本表为 2026-10-09 历史快照。#133（2026-10-25）已引入 `typescript` devDep 与本地 `typecheck`，并迁移首个 `.ts`（`stores/app.ts`），见 §0；其余统计待全仓迁移后再刷新。
+
 ## 2. 迁移顺序建议
 
 按「风险由低到高、依赖由底向上」原则分六批推进：
@@ -26,8 +38,8 @@
 > （`composables/useResponsive.js`、`composables/useTable.js`、
 > `composables/index.js`、`api/analysis.js`、`components/Common/DataTable.vue`、
 > `components/charts/SentimentPie.vue`，共 1,027 行）已删除，第四/六批
-> 工作量相应下调。`utils/websocket.js` **不在**删除范围（归 T-4 决策），
-> 第二批清单维持原样。
+> 工作量相应下调。`utils/websocket.js` 其时归 T-4 决策；后续经 D-011/#82
+> 已作为死管道**删除**，故已从下方第二批清单移除。
 
 ### 第一批：基础设施 + 低风险纯函数（本批目标）
 
@@ -44,7 +56,7 @@
 
 - `api/alert.js`、`api/auth.js`、`api/favorites.js`、`api/predict.js`、`api/report.js`、`api/spider.js`、`api/stats.js`、`api/user.js`
 - `api/request.js`（axios 封装，需定义拦截器类型）
-- `utils/index.js`、`utils/authSession.js`、`utils/websocket.js`
+- `utils/index.js`、`utils/authSession.js`
 
 **选择理由**：api 层是数据边界，类型化后可为上游提供契约；utils 中 request.js 是基础设施，优先类型化。
 
@@ -109,6 +121,8 @@
 - `noEmit: true`——Vite 负责构建，tsconfig 仅用于类型检查
 - `allowImportingTsExtensions: true`——允许 `.ts` 扩展名导入
 - paths 别名 `@/*` 与 vite.config.js 保持一致
+
+> 注（#133 as-built）：实际落地的 `tsconfig.json` 是上述方案的**更小子集**——`include` 仅 `src/stores/app.ts`，未加 `tsconfig.node.json`/`references`/`allowImportingTsExtensions`/全仓 `*.vue` include（渐进门禁，避免把未迁移 JS/SFC 拉入类型检查）。本 §3 保留为全量迁移期的目标形态参考。
 
 ## 4. 类型定义策略
 
@@ -191,12 +205,14 @@ export interface UserState {
 - [x] 文档中明确建议的第一批迁移文件清单（10 个）
 - [x] 文档已提交到仓库 docs/ 目录
 
-## 8. 后续 Issue 建议
+## 8. 后续阶段建议（无编号）
 
-1. **#60（建议）**：前端 TS 基础设施搭建（tsconfig + 依赖安装 + vite 配置确认）
-2. **#61（建议）**：第一批文件迁移（10 个文件，按本文清单执行）
-3. **#62（建议）**：第二批 api/utils 迁移
-4. **#63（建议）**：stores 迁移
-5. **#64（建议）**：composables 迁移
-6. **#65（建议）**：router + 入口迁移
-7. **#66（建议）**：Vue SFC 迁移（按页面拆分）
+> #58 初稿曾把以下阶段映射为建议 Issue `#60–#66`；这些编号**实际已被其他任务占用**，不能冒充 TS 子任务，故作废编号、仅保留阶段名。TS 渐进化依已授权方向（D-009/D-018/D-019）由 Planner 逐批立项，不预设 Issue 号。
+
+1. **基础设施**：✅ 已由 #133 交付——本地 `tsconfig.json` + `npm run typecheck` + eslint/vitest 的 `.ts` 支持。
+2. **首批纯函数 / store**：`stores/app.ts` ✅（#133）；其余 store 与 api/、utils/ 中可类型化的纯函数按覆盖率与依赖顺序小步推进。
+3. **api/ + utils/ 剩余**：数据边界类型化，为上游提供契约。
+4. **stores/ 剩余**：状态结构复杂，宜在 api 类型就绪后。
+5. **composables/**：逻辑密集、与组件解耦程度较高。
+6. **router/ + 入口**：`router/index.js`、`main.js`、`App.vue`。
+7. **components/ + views/（最高风险）**：45 个 `.vue` 逐个迁移，建议按页面拆分。

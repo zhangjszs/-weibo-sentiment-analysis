@@ -12,7 +12,7 @@ export const useAppStore = defineStore('app', () => {
     document.documentElement.className = theme.value
   }
 
-  function setTheme(themeName) {
+  function setTheme(themeName: string) {
     theme.value = themeName
     localStorage.setItem('weibo_theme', themeName)
     document.documentElement.className = themeName

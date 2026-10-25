@@ -1,6 +1,7 @@
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
+import tsParser from '@typescript-eslint/parser'
 
 // ESLint 9 flat config（替代 .eslintrc.cjs）
 export default [
@@ -40,6 +41,23 @@ export default [
           message: 'Use /api/* instead of deprecated /getAllData/* (see ADR 0002).',
         },
       ],
+    },
+  },
+  {
+    // #133：仅对 `.ts` 换用 @typescript-eslint/parser；JS/Vue 规则不因此放宽。
+    files: ['**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.browser, ...globals.node },
+    },
+    rules: {
+      // TypeScript 的 no-undef / no-unused-vars 交由 tsc 严格检查（strict +
+      // noUnusedLocals/noUnusedParameters）负责，避免 eslint 对类型语法误报；
+      // 该覆盖仅作用于本 block 匹配的 .ts 文件，不影响 JS/Vue。
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
     },
   },
   { ignores: ['dist/**', 'node_modules/**'] },

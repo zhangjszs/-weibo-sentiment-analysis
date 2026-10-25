@@ -32,7 +32,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       all: true,
-      include: ['src/**/*.{js,vue}'],
+      include: ['src/**/*.{js,ts,vue}'],
       reporter: ['text', 'lcov'],
     },
   },
