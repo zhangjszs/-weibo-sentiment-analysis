@@ -43,6 +43,7 @@
 - **回应昨日日报信号**：①「今日队列清空、两项待验收」→ 本轮已独立复跑验收并关闭；②「前端测试补强选题枯竭，TS 渐进化为唯一可持续真实方向，请依 `FRONTEND_TS_MIGRATION.md` §0/§8 续排第二批」→ 已据 §2 第一批余项与行为覆盖强度立项 #135/#136，并配批次文档收尾 #137；③「无 `auto-discovered` 新问题」→ 记录在案，无需排障。
 - **Issue ↔ TASKS.md 一致性**：本轮从 `gh issue list --state open` 真实结果整体重写，10 open = 3 `ready`（#135/#136/#137）+ 1 `in-progress`（#98）+ 1 `blocked`（#109）+ 5 `needs-info`（#96/#100/#101/#102/#59），**in-review = 0**；无冲突、未降级为本地权威。
 - **红线恪守**：本批 3 项均在 D-009/D-018/D-019 已授权的前端 TS 渐进范围内，不改 schema / 认证 / 公共 API / CI / 依赖大版本，不设 `coverage.thresholds`，`typecheck` 仍仅本地。
+- **规划轮 CI 实查**：本轮 `.agent/` 提交 `a901d8f` 的 `backend-fast` / `frontend-fast` / `integration` / `rust-core` / `security-scan` 五项均 `completed/success`（`gh api check-runs` 于轮末实查）。
 
 ## 最近已验收关闭任务（近期账本摘要）
 
