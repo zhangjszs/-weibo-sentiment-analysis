@@ -278,6 +278,20 @@
   2. **不在 #133 完成前预排第二批 TS 迁移任务入 ready**：后续 TS 切片依赖 #133 建立的 `tsconfig.json`、`typescript@5.9.3`、`eslint.config.js` TS parser 与 `vitest.config.js` coverage `.ts` 配置；在 #133 未 `done` 前将其放入 `ready` 会违反门禁 4.2 第 3 条（前置依赖已 `done`）。
 - 影响范围：修正 #127–#129 的 GitHub 状态标签；刷新 `.agent/PLAN.md`、`TASKS.md`、`DECISIONS.md` 至 2026-10-25；无代码变更、无新增 pending 决策、不触碰契约 1.10 红线。
 
+### D-036 / 2026-10-25（同日规划复跑）/ 无新验收、今日队列原样结转（不制造伪工作）
+
+- 轮次说明：用户于 2026-10-25 再次启动 Planner；本轮为继 `a3385aa`（2026-10-25 00:41，D-035）之后的同日第二次规划复跑，不冒充新一天、不递增 pending 等待天数。
+- 事实核查（本轮独立执行，不只信上一轮文本）：
+  1. `git fetch --all --prune` + `git pull --rebase` → Already up to date，工作区干净，HEAD `a3385aa`；无 `.agent/DIARY/2026-10-25.md`——自上一轮规划起 Executor 未运行。
+  2. 真实 GitHub Issue（`gh` 可用、未降级，Issue 为权威）：9 open = ready 2（#133 P2 / #134 P4，均 0 comment 未领取）+ in-progress 1（#98，D-019 A 有意冻结）+ blocked 1（#109）+ needs-info 5（#96/#100/#101/#102/#59）；**in-review=0**，本轮无新交付可验收。
+  3. 关闭态复核：`gh issue view 127/128/129/130/131/132` 六项均 `CLOSED` + `done`，无 `in-review` 标签残留（D-034 关闭 #130–#132、D-035 补正 #127–#129 均已落地）。
+  4. ready 质量回落复核（4.1）：#133 前置条件仍成立——`frontend/src/stores/app.js` 存在（1075 B）、`app.ts` 与 `frontend/tsconfig.json` 均不存在、`frontend/package.json` 无 `typescript`/`@typescript-eslint`/`typecheck` 脚本（迁移确未开始）；#134 目标 `docs/TEST_PERF.md` 存在、硬依赖 #130–#132 已 `done`。
+  5. #109：本机 `command -v docker` 仍 exit 1，无已授权远程 Docker 主机，保持 `blocked`。
+- 决定：延续 D-028/D-029/D-035「Executor 未运行时不重复编排、不制造伪工作」——**#133（P2）→ #134（P4）原样结转为 2026-10-25 今日队列**，顺序、分支、边界与验收标准均不变；不新增/关闭任何 Issue、不在 #133 `done` 前预排第二批 TS 切片入 `ready`。
+- 落盘：仅将 `TASKS.md` 的规划轮引用由 `9d85159` 更正为 `a3385aa`、`PLAN.md` 当前方向改为同日复跑措辞（不谎称本轮复跑了前端基线），并追加本决策；未新增 pending、无需用户拍板事项（D-019/D-023 默认 A 继续有效）。
+- 边界恪守：不代改 Executor 的 `STATE.md`/`HANDOFF.md`（仍留「#130/#131/#132 in-review」旧快照，由今日 Executor 启动时按真实 Issue 刷新，契约 1.1）；无代码变更、不触碰契约 1.10 红线。
+- 影响范围：仅 `.agent/` 文档（PLAN/TASKS/DECISIONS）；Issue 状态无需变动。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。

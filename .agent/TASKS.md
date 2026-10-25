@@ -1,6 +1,6 @@
 # TASKS — GitHub Issue 本地镜像
 
-> 2026-10-25 规划轮从真实 GitHub Issues **整体重写**（契约 1.6：GitHub Issue 可用且为唯一权威来源，`gh` CLI 正常、未降级）。
+> 2026-10-25（同日规划复跑，继 `a3385aa`/D-035 之后）从真实 GitHub Issues **整体重写**（契约 1.6：GitHub Issue 可用且为唯一权威来源，`gh` CLI 正常、未降级）。
 > 状态值（同一时刻最多一个）：`ready` · `in-progress` · `in-review` · `blocked` · `needs-info` · `done`；优先级：`priority:P0`–`P4`。Executor 变更任务状态时必须先改 GitHub Issue（标签 + comment），再同步本文件对应行。
 
 ## 今日队列（2026-10-25，共 2 项 ready，建议按序串行执行）
@@ -14,16 +14,16 @@
 
 ## 等待验收（in-review）
 
-- 当前无 `in-review` 任务。
-  - 昨日（2026-10-24）交付的 #127–#129 与 #130–#132 共 6 项均已于 2026-10-24 验收通过并关闭（`CLOSED` + `done` 标签）。
-  - 自上一规划提交 `9d85159`（2026-10-24 23:33 +0800）以来 Executor 尚未运行，故本轮无新 `in-review` 产出；`STATE.md` / `HANDOFF.md` 中残留的「#130/#131/#132 仍 in-review」系上一执行会话快照，由今日 Executor 启动时按实际 Issue 状态刷新（Planner 严守契约 1.1 不代写）。
+- 当前无 `in-review` 任务（本轮 `gh issue list --state open --label in-review` 实测 length=0）。
+  - 昨日（2026-10-24）交付的 #127–#129 与 #130–#132 共 6 项均已验收通过并关闭；本轮 `gh issue view 127/128/129/130/131/132` 独立复核六项均 `CLOSED` + `done` 标签、无 `in-review` 残留。
+  - 自上一规划提交 `a3385aa`（2026-10-25 00:41 +0800，D-035）以来 Executor 尚未运行：无 `.agent/DIARY/2026-10-25.md`、无新提交、#133/#134 均 0 comment 未领取，故本轮无新 `in-review` 产出可验收。`STATE.md` / `HANDOFF.md` 中残留的「#130/#131/#132 仍 in-review」系上一执行会话快照，由今日 Executor 启动时按实际 Issue 状态刷新（Planner 严守契约 1.1 不代写）。
 
 ## 未完成任务全表（Open Issues 治理账本，共 9 项）
 
 | Issue | 标题 | 优先级 | 状态 | Milestone | 4.1 治理复核结论与下一步 |
 |---|---|---|---|---|---|
-| [#133](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/133) | 启用本地 TypeScript 类型检查并迁移 app store 首个生产切片 | P2 | `ready` | — | 今日队列第 1 项；2026-10-24 创建后 Executor 尚未运行，按 D-035 原样结转。 |
-| [#134](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134) | 收尾 TEST_PERF 验收状态并明确覆盖率快照时点 | P4 | `ready` | — | 今日队列第 2 项；硬依赖 #130–#132 已满足，按 D-035 原样结转。 |
+| [#133](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/133) | 启用本地 TypeScript 类型检查并迁移 app store 首个生产切片 | P2 | `ready` | — | 今日队列第 1 项；本轮独立复核前置条件仍成立（`frontend/src/stores/app.js` 存在、无 `app.ts`/`tsconfig.json`/`typescript`/`typecheck`），按 D-035/D-036 原样结转、0 comment 未领取。 |
+| [#134](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134) | 收尾 TEST_PERF 验收状态并明确覆盖率快照时点 | P4 | `ready` | — | 今日队列第 2 项；硬依赖 #130–#132 已满足，`docs/TEST_PERF.md` 存在，按 D-035/D-036 原样结转、0 comment 未领取。 |
 | [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | M7 | 本轮复核本机 `command -v docker` 仍不可用（exit 1），无已授权远程 Docker 主机；保持 `blocked`。 |
 | [#98](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | [M7-1][P2] Rust 第一切片迁移：deduplicator + normalize（criterion before/after） | P2 | `in-progress` | M7 | 受 D-019 默认 A 有意冻结（非中断崩溃现场）；按契约 9 保持 `in-progress` 不重置、不关闭，Executor 不得领取。 |
 | [#96](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | [M7] Rust-Accelerated Core + Observable AI（炫技重构主轴） | P2 | `needs-info` | — | M7 候选 Epic，受 D-019 默认 A 冻结；不计入 M7 子任务分母。 |
@@ -32,13 +32,12 @@
 | [#100](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/100) | [M7-3][P3] Qdrant 语义搜索端点（AI layer 切片1） | P3 | `needs-info` | M7 | 缺外部向量服务/模型资源授权，受 D-019 A 冻结；未跨两个已完成 Milestone，不按饥饿关闭。 |
 | [#59](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/59) | [P2] 产品功能迭代：需求收集与规划 | P2 | `needs-info` | — | 待用户提供具体产品功能需求；D-012 默认 A 有效，不重复提问。 |
 
-## 本轮队列治理与标签修正记录（2026-10-25）
+## 本轮队列治理与复核记录（2026-10-25 同日规划复跑，继 D-035）
 
-- **修正 #127 / #128 / #129 遗留状态标签漂移**：三项虽已于 2026-10-24 首轮规划验收关闭（`CLOSED`），但 GitHub 标签仍残留 `in-review`。本轮已执行 `gh issue edit 127/128/129 --remove-label in-review --add-label done`，使 #88–#132 全部已验收关闭任务的 GitHub 状态标签统一为 `done`。
-- **4.1 逐项检查**：无重复未完成任务 · 无 ready 质量回落 · 无方向冲突未决项 · 无 open `auto-discovered` · 无缺失优先级任务 · 无满足「连续两个 Milestone 未动」的 P3/P4 饥饿项 · 无 open PR。
-- **回应昨日日报信号**：
-  1. 执行会话 2/3 日报请求验收 #130–#132 并补充新队列：已于 `9d85159` 完成独立复跑验收关闭并排入 #133 / #134，本轮核实 `9d85159` 五项 CI 全绿并结转至今日执行轮。
-  2. 执行会话 2 观察 `stores/tabs.js` 的 `_persist()` 无 `try/catch`：已于 #131 验收结论与 D-034 定级为未复现源码观察（缺失败恢复契约），不单独立项修改生产行为。
+- **验收**：本轮 in-review=0，无新交付可验收；#127–#132 六项经 `gh issue view` 独立复核均 `CLOSED`/`done`（上一轮 D-034 关闭 #130–#132、D-035 补正 #127–#129 标签，本轮核实无漂移）。
+- **4.1 逐项检查**：无重复未完成任务 · ready 队列无质量回落（已独立复核 #133/#134 前置条件仍成立）· 无方向冲突未决项 · 无 open `auto-discovered` · 无缺失优先级任务 · 无满足「连续两个 Milestone 未动」的 P3/P4 饥饿项 · 无 open PR。`in-progress` 仅 #98（D-019 A 有意冻结，非「疑似中断」，按契约 9 不重置）。
+- **同步仓库**：`git fetch --all --prune` + `git pull --rebase` → Already up to date，工作区干净，HEAD `a3385aa`。
+- **结转决策**：自 `a3385aa`（2026-10-25 00:41）规划轮起 Executor 未运行（无 10-25 日报、#133/#134 均 0 comment）；延续 D-028/D-029/D-035「Executor 未运行时不重复编排、不制造伪工作」，#133 → #134 原样结转，不新增/关闭 Issue、不预排依赖 #133 的第二批 TS 切片。见 D-036。
 
 ## 最近已验收关闭任务（近期账本摘要）
 
