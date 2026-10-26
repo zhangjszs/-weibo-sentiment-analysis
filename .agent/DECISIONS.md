@@ -309,6 +309,30 @@
 - pending：**无新增**（今日用户消息仅为流程启动，未给出新决定；D-023 已默认转正，D-012/D-019 默认 A 继续有效，不重复提问）。
 - 影响范围：关闭 #133/#134；新建 #135/#136/#137；更新 `.agent/PLAN.md`、`TASKS.md`、`DECISIONS.md`。不改代码、不代写 Executor 的 `STATE.md`/`HANDOFF.md`/`ENV.md`/`DIARY/`。
 
+### D-038 / 2026-10-26（同日第二轮规划轮）/ Executor 未运行、无新验收，队列原样结转并**预先实证三份 Issue 的类型契约与覆盖率基线**
+
+- 轮次说明：用户于 2026-10-26 21:29 再次启动 Planner；本轮为继 `a901d8f`（2026-10-26 00:19，D-037）之后的**同一日第二次规划轮**，依 D-036 原则**不冒充新一天、不递增 pending 等待天数、不制造伪工作**。
+- 事实核查（本轮独立执行，不只信上一轮文本）：
+  1. `git fetch --all --prune` + `git pull --rebase` → Already up to date，工作区干净，分支 `main`，HEAD `06f4fa3`（首轮规划提交）。
+  2. **Executor 自首轮起未运行**：无 `.agent/DIARY/2026-10-26.md`；`git log` 最新**代码**提交仍为 `d385af4`（2026-10-25 #134），此后仅两笔 `chore(agent)` 规划提交；#135/#136/#137 三项**均 0 comment**（未被领取）。
+  3. 真实 GitHub Issue（`gh` 可用、未降级，Issue 为权威）：10 open = 3 `ready`（#135/#136/#137）+ 1 `in-progress`（#98，D-019 A 有意冻结）+ 1 `blocked`（#109）+ 5 `needs-info`（#96/#100/#101/#102/#59）；**in-review = 0** → **本轮无新交付可验收**。
+  4. 关闭态复核：`gh issue view 133/134` 仍为 `CLOSED` + `done`（D-037 首轮已独立复跑验收通过），**不重开**。
+  5. ready 前置条件本轮全部实测复核：`.agent/PLAN.md`/`.agent/TASKS.md` 与仓库一致；`find frontend/src -name "*.ts"` 仅 `stores/app.ts`；`utils/echarts.js` 33 行、`utils/chinaMap.js` 28 行、`stores/tabs.js` 193 行仍为 JS；`frontend/tsconfig.json` 的 `include` 仍仅 `["src/stores/app.ts"]`、`compilerOptions` 未动；`tests/china-map.test.js:34` 与 `tests/tabbar-icons.test.js:5` 两处显式 `.js` specifier 仍在原位；`command -v docker` 仍 exit 1（#109 保持 `blocked`）；无 open PR、无 open `auto-discovered`、`.agent/LOCK` 不存在。
+  6. 覆盖率基线本轮**独立复测**（`/tmp/cov_planner_1026.log`，未入库，exit 0）：`47 files / 321 tests` 全绿；`All files 83.79 | 77.33 | 37.55 | 83.79`；`stores/app.ts 100|100|100|100`；`stores/tabs.js 97.67 | 95.77 | 100 | 97.67`（未覆盖 40-41、190-191）；`utils/chinaMap.js 100|100|100|100`；`utils/echarts.js 100|100|100|100`。
+  7. 规划轮 CI 实查：`gh api check-runs` 实查 `a901d8f` 与 `06f4fa3` 的 `backend-fast`/`frontend-fast`/`integration`/`rust-core`/`security-scan` 五项**均 `completed/success`**。
+- **本轮的实际增量（非伪工作）——把 D-037 定的类型契约从「设计」升级为「已实证可行」**：在**仓库外**探针目录 `/tmp/probe-planner-1026/`（未入库、`node_modules` 软链仓库现有依赖）用**仓库同一份 `frontend/tsconfig.json` 的 `compilerOptions`** + 同版本 `typescript@5.9.3`，对按 #135/#136 正文钉死的契约**逐字构造**的 `utils/echarts.ts` + `utils/chinaMap.ts` + `stores/tabs.ts` 执行 `tsc --noEmit` → **exit 0**。配套结论：
+  - `echarts/core` 的类型经 `node_modules/echarts/core.d.ts` → `node_modules/echarts/types/dist/core.d.ts` → `types/dist/shared.d.ts` **正常解析**（`tsc --listFiles` 实查），确认**无需新增 `@types`**（与 D-037 的核验一致，不靠核验文件内容而是靠真实解析路径）。
+  - #136 的关键收窄点**实证可行**：`if (!route?.name || !route?.path) return` 之后 `route.name` 在 `strict` 下正确收窄为 `string`，`activeTab.value = route.name` 与 `title: route.meta?.title || route.name` **无需 `any`、无需非空断言** → Executor 不必临场发明收窄写法。
+  - 探针 `--listFiles` 中 `.js`/`.vue` 生产文件计数 = **0**，坐实 #135/#136 的「`--listFiles` 不含任何 `.js`/`.vue`」验收口径可达。
+  - 类型负例探针**实测错误号**（写入 Issue 以便报告对齐）：`ensureChinaMap('china')` → **TS2554**；`store.addTab(123)` → **TS2559**（因 `addTab` 字段全可选，属结构性不兼容而非普通赋值错）；`store.updateTabPath('Home', 42)` → **TS2345**。三份 Issue 的负例判定标准统一为「**非零 + 给出错误号**」，**不要求特定错误号**（避免 Executor 因错误号与预想不同而误判失实）。
+- **覆盖率判定口径钉死（防止假回归）**：本轮 `All files 83.79|77.33|37.55|83.79` 与首轮记录的 `83.88|77.33|37.72|83.88` **不同**，属 D-034 已记录的 V8 跨运行抖动（带 83.79–83.90 / 77.32–77.35）。裁定：**#135/#136/#137 的覆盖率验收一律以「被迁移文件自身四项」为唯一锚点**，**不做 `All files` 汇总值的跨运行比对**，且不得据抖动判定「回归」或「历史数字被篡改」。该口径已同步写入三份 Issue 正文。
+- 决定：
+  1. **#135（P2）→ #136（P2）→ #137（P4）原样结转为 2026-10-26 今日队列**，顺序、分支、边界、验收标准均不变；**不新增/关闭/重排任何 Issue**（Executor 未运行时不制造伪工作，同 D-028/D-029/D-035/D-036）。
+  2. **对 #135/#136/#137 追加「Planner 补充核对（· D-038）」小节**，写入上述实证结论、负例错误号与覆盖率锚点口径（Planner 拥有 Issue 编辑权，契约 1.4）；**不改动任何原有验收标准、不放宽任何边界**。
+  3. **不预先编排第三批 TS 切片**：`plugins/elementPlus.js`（第一批余项）虽仍可迁移，但 `utils/index.js`/`utils/authSession.js`（第二批）与 api/ 层（类型化需先定响应契约）口径未定；在 #135/#136 未验收前入 `ready` 会违反门禁 4.2 第 3 条。
+- 影响范围：更新 #135/#136/#137 正文（仅追加小节）；更新 `.agent/PLAN.md`、`TASKS.md`、`DECISIONS.md`。**不改代码、不改 `docs/`、不代写 Executor 的 `STATE.md`/`HANDOFF.md`/`ENV.md`/`DIARY/`**；未触碰契约 1.10 红线。
+- pending：**无新增**（今日用户消息为流程启动，未给出新决定；D-023 已默认转正，D-012/D-019 默认 A 继续有效，不重复提问）。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
 - 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。

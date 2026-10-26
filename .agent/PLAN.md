@@ -1,13 +1,15 @@
 # PLAN — 开发路线图
 
-> Planner 维护；Executor 只读。2026-10-26 规划轮更新（完整规格与验收证据见 GitHub Issues 与 `.agent/TASKS.md`；决定见 D-034 / D-035 / D-036 / D-037）。
-> 本轮为**新一天首次规划轮**：昨日（2026-10-25 执行会话 1）交付的 #133、#134 已独立复跑验收**全部通过**并关闭为 `done`；据 `docs/FRONTEND_TS_MIGRATION.md` §2 第一批余项与行为覆盖强度编排 TS 第二批切片 #135 / #136 + 批次文档收尾 #137。
+> Planner 维护；Executor 只读。2026-10-26 **同日第二轮**规划轮更新（完整规格与验收证据见 GitHub Issues 与 `.agent/TASKS.md`；决定见 D-034 / D-035 / D-036 / D-037 / **D-038**）。
+> 本轮为**同一日的第二次规划轮**（首轮 `a901d8f` 于 00:19 完成 #133/#134 独立复跑验收并编排本批队列）。首轮后 **Executor 未运行**（无 `DIARY/2026-10-26.md`、无新代码提交、#135/#136/#137 均 0 comment），故 **in-review = 0、无新增验收、无新增队列任务**；本轮的价值在于**在 Executor 开工前，用仓库外探针把三份 Issue 的类型契约与覆盖率基线实证为「确实可行」**，消除执行期才发现契约不可行的风险。
 
 ## 当前方向
 
-1. **前端 TS 渐进化的首个生产切片已真实落地并通过验收**：#133（`8b3709c`）交付 `frontend/tsconfig.json`（strict+noEmit，`include` 仅 `src/stores/app.ts`）+ `npm run typecheck`（仅本地）+ eslint `.ts` parser + vitest coverage 纳入 `.ts`，`app.js` → `app.ts` 无 shim。本轮独立复跑证据：`typecheck` exit 0、`--listFiles` 仅列 `app.ts`、47 files / 321 tests 全绿、`app.ts` 四项覆盖率 100、`lint`/`format:check`/`build` exit 0、仓库外类型负例探针复现 `TS2345` + `TS2322`（exit 2）、`package-lock.json` 418 插入 / 0 删除、`8b3709c` 五项 CI `completed/success`。
+1. **前端 TS 渐进化的首个生产切片已真实落地并通过验收**：#133（`8b3709c`）交付 `frontend/tsconfig.json`（strict+noEmit，`include` 仅 `src/stores/app.ts`）+ `npm run typecheck`（仅本地）+ eslint `.ts` parser + vitest coverage 纳入 `.ts`，`app.js` → `app.ts` 无 shim。首轮独立复跑证据：`typecheck` exit 0、`--listFiles` 仅列 `app.ts`、47 files / 321 tests 全绿、`app.ts` 四项覆盖率 100、`lint`/`format:check`/`build` exit 0、仓库外类型负例探针复现 `TS2345` + `TS2322`（exit 2）、`package-lock.json` 418 插入 / 0 删除、`8b3709c` 五项 CI `completed/success`。
 2. **方向从「建门禁」转为「把既有行为覆盖最强的模块逐个纳入门禁」**：TS 渐进化（D-009/D-018/D-019 已授权）是当前唯一可持续的真实选题——前端测试卫生补强已枯竭（余下仅 8 个声明式 API 薄包装属 mock 复述、`main.js`/`App.vue` 属壳层豁免），M6/M7 仍冻结。第二批选 `utils/echarts.js` + `utils/chinaMap.js`（第一批余项，迁移前覆盖率各 100/100/100/100，6 用例真实锁定）与 `stores/tabs.js`（193 行、41 用例锁定状态机、Lines 97.67 / Funcs 100 / Branch 95.77），两者都能用既有测试做行为回归，不需要发明新验收口径。
-3. **边界不变**：`typecheck` 与前端覆盖率**仅限本地**，不纳入 CI / pre-commit，不设 `coverage.thresholds`；不新增依赖大版本、不改 schema / 认证 / 公共 API / 业务行为；M6 依 D-023 A 冻结、M7 依 D-019 A 冻结，#98 冻结现场不重置。
+3. **本轮新增的确定性（降低执行期风险）**：在仓库外探针 `/tmp/probe-planner-1026/`（未入库）用仓库同一份 `tsconfig.json` 的 `compilerOptions` + 同版本 `typescript@5.9.3` 实证——#135/#136 正文钉死的类型契约**逐字构造后 `tsc --noEmit` exit 0**；#136 的关键收窄点（`!route?.name` 之后 `route.name` 收窄为 `string`）**无需 `any`、无需非空断言**；`echarts/core` 类型经 `node_modules/echarts/core.d.ts` → `types/dist/core.d.ts` 正常解析（**无需新增 `@types`**）；负例探针实测错误号 `TS2554` / `TS2559` / `TS2345`；`--listFiles` 中 `.js`/`.vue` 生产文件计数 = 0。三份 Issue 正文已追加「Planner 补充核对（· D-038）」小节承接这些结论。
+4. **边界不变**：`typecheck` 与前端覆盖率**仅限本地**，不纳入 CI / pre-commit，不设 `coverage.thresholds`；不新增依赖大版本、不改 schema / 认证 / 公共 API / 业务行为；M6 依 D-023 A 冻结、M7 依 D-019 A 冻结，#98 冻结现场不重置。
+5. **覆盖率判定口径（本轮钉死）**：V8 跨运行抖动（D-034，带 `All files` 83.79–83.90 / 77.32–77.35）**不是回归**。#135/#136/#137 的覆盖率验收**一律以「被迁移文件自身四项」为唯一锚点**，不做 `All files` 汇总值的跨运行比对。
 
 ## 今日目标（2026-10-26）
 
@@ -15,6 +17,7 @@
 - **#136**：`src/stores/tabs.js` 迁移为 `tabs.ts` 并入门禁；`TabItem` / `addTab` 最小结构类型 / `router?: { push: ... }` 按 Issue 钉死的契约标注，运行时语义（home 不可关、邻接激活、no-op 守卫、query 拼接、`resetTabs` 清理）逐字不变；41 用例全过、coverage 含 `stores/tabs.ts`。
 - **#137**：批次文档收尾——`docs/TEST_PERF.md` §7.1 补 #133/#134 与 #135/#136 四行（状态按执行时点真实 Issue，不预支 `done`），§7.5 把 #133 的过期当前态就地改为时点表述并追加与当次 coverage 日志逐项一致的新快照段。
 - Executor 每步完成后按契约 1.7 留固定字段执行报告并转 `in-review`（严禁自行 close），刷新 `STATE.md` / `HANDOFF.md`，在 `.agent/DIARY/2026-10-26.md` 追加日报。
+- **本轮（第二次规划轮）新增的 Executor 输入**：三份 Issue 正文均已追加「Planner 补充核对（· D-038）」小节，含**已实证可编译的类型契约**、**负例探针的实测错误号**、**覆盖率判定口径（以被迁移文件自身四项为锚点，不比对 `All files` 跨运行值）**。Executor 照做即可，不必再自行发明类型写法或担心 V8 抖动被误判。
 
 ## 当前授权切片：前端 TypeScript 渐进化（D-009；切片验收进度 1 / 3 —— #133 `done`，#135 / #136 待交付验收；#137 为配套文档收尾，不计分母）
 
@@ -43,8 +46,8 @@
 
 ### 执行队列（给 Executor 的建议顺序，保持 3 个 ready）
 
-1. **[#135 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135)**（P2，`ready`）—— 分支 `agent/issue-135-utils-ts`。
-2. **[#136 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136)**（P2，`ready`）—— 分支 `agent/issue-136-tabs-store-ts`（与 #135 无相互依赖，但同改 `tsconfig.json` 的 `include`，须在其后并入以免回退他人条目）。
+1. **[#135 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135)**（P2，`ready`）—— 分支 `agent/issue-135-utils-ts`。**类型契约已由 Planner 预验证可编译（exit 0）。**
+2. **[#136 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136)**（P2，`ready`）—— 分支 `agent/issue-136-tabs-store-ts`（与 #135 无相互依赖，但同改 `tsconfig.json` 的 `include`，须在其后并入以免回退他人条目）。**类型契约已由 Planner 预验证可编译（exit 0），`route.name` 收窄无需 `any`。**
 3. **[#137 收尾 TS 第二批次验收账并追加执行时点覆盖率快照](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/137)**（P4，`ready`）—— 分支 `agent/issue-137-ts-batch2-docs`（硬依赖 #135 / #136 先执行）。
 
 ## 保留的 Milestone 事实与成功阈值
@@ -81,4 +84,4 @@
 ## 给 Executor 的指令（不超过 2 句）
 
 - 按 **#135 → #136 → #137** 串行执行，`ENV.md` 未设 `WORKFLOW=trunk`，严格用每任务独立分支（`agent/issue-135-utils-ts`、`agent/issue-136-tabs-store-ts`、`agent/issue-137-ts-batch2-docs`）完成验证 → `git pull --rebase` → 合入 `main` → push → 删临时分支。
-- 遇到「必须改运行时语义才能过类型检查」或模块解析异常时**立即转 `needs-info` / `blocked` 并写明冲突点**，不要私改语义、不要用 mock/断言链绕开；收尾时按真实 Issue 状态刷新 `STATE.md` / `HANDOFF.md` 并追加 `.agent/DIARY/2026-10-26.md`（`.agent/` 单独 `chore(agent)` 提交）。
+- 遇到「必须改运行时语义才能过类型检查」或模块解析异常时**立即转 `needs-info` / `blocked` 并写明冲突点**，不要私改语义、不要用 mock/断言链绕开；三份 Issue 末尾的「Planner 补充核对（· D-038）」已给出可编译的类型写法、负例探针的实测错误号与覆盖率锚点口径，照做即可；收尾时按真实 Issue 状态刷新 `STATE.md` / `HANDOFF.md` 并追加 `.agent/DIARY/2026-10-26.md`（`.agent/` 单独 `chore(agent)` 提交）。
