@@ -4,14 +4,15 @@
 > 状态值（同一时刻最多一个）：`ready` · `in-progress` · `in-review` · `blocked` · `needs-info` · `done`；优先级：`priority:P0`–`P4`。Executor 变更状态时必须先改 Issue（标签 + comment），再同步本文件对应行。
 > 本轮现场：`git fetch --all --prune` + `git pull --rebase` → Already up to date，工作区干净，分支 `main`，HEAD `06f4fa3`。
 > 轮次定性：本日为 2026-10-26 的**第二次**规划轮（首轮 `a901d8f` 于 00:19 完成 #133/#134 验收并编排本批队列）。依 D-036 原则——同日复跑**不冒充新一天、不递增 pending 等待天数、不制造伪工作**。
+> **执行轮补充（2026-10-26，Executor 会话 1）**：上述 3 项已全部执行完成并转 `in-review`（#135 `1be01af` · #136 `ce3ab0d` · #137 `f80f53b`，均已 push `origin/main`，CI 五项 success）。本文件的状态列与「未完成任务全表」已同步为真实 Issue 标签；**执行事实与新增 auto-discovered #138 见文末「Executor 执行轮记录（2026-10-26，会话 1）」**（Planner 的规划结论与治理记录未被改写）。
 
 ## 今日队列（2026-10-26，共 3 项 ready，按序串行执行；本轮原样结转，未新增/删除/重排）
 
 | 顺序 | Issue | 标题 | 优先级 | 状态 | 分支与核心验收要点 |
 |---|---|---|---|---|---|
-| 1 | [#135](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135) | 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁 | P2 | `ready` | 分支 `agent/issue-135-utils-ts`。依赖 #133/#58 已 `done`。`src/utils/{echarts,chinaMap}.js` → `.ts`（运行时语义逐字不变：`use([...])` 清单、`ready ??=` 单例、失败后 `ready = null`、`!res.ok` 抛错文案）；`tsconfig.json` 的 `include` 增至 3 项且**不改 compilerOptions**；`tests/china-map.test.js:34` 显式 `@/utils/chinaMap.js` 去扩展名（仅此一行）。验收：`find src -name "*.ts"` 恰 3 项、无 `.js` 残留；`typecheck` exit 0 且 `--listFiles` 不含任何 `.js`/`.vue`；类型负例非零→移除后 0；`china-map.test.js` 6 passed、全量 ≥47 files / 321 tests；`test:coverage` 含两个 `.ts` 且四项与迁移前等值（各 100）；`lint`/`format:check`/`build` exit 0；`git show --stat` 仅 4 类文件，`package.json`/`package-lock.json`/`vitest.config.js`/`.github/` 零改动。**本轮 Planner 已预先验证类型契约可编译（见下方「本轮 Planner 预验证」）。** |
-| 2 | [#136](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136) | 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变 | P2 | `ready` | 分支 `agent/issue-136-tabs-store-ts`。依赖 #133 已 `done`；与 #135 无相互依赖但同改 `tsconfig.json` 的 `include`，故在其后并入。`tabs.js`(193 行) → `tabs.ts`：`TabItem`/`HOME_TAB: TabItem`/`ref<TabItem[]>`/`ref<string>`；`addTab` 用最小结构类型（字段全可选）、`router?: { push: (to: string) => unknown }`，**不引入 vue-router 类型**；禁为 `parsed` 新增校验/回退，禁给 `_persist` 加容错（D-034）；`tests/tabbar-icons.test.js:5` 显式 `.js` 去扩展名。验收：`tabs.js` 不存在、`tabs.ts` 入门禁；`typecheck` 0 + 负例非零；`tabs-store.test.js` 41 passed、`tabbar-icons` 全过、全量 ≥47/321；coverage 含 `stores/tabs.ts` 且 Lines≥97/Funcs 100/Branch≥95、未覆盖仍 40-41、190-191；`lint`/`format:check`/`build` 0；`git show --stat` 仅 4 类文件；报告逐条列出每处类型断言及其不改行为的理由。**本轮 Planner 已预先验证类型契约可编译（见下方「本轮 Planner 预验证」）。** |
-| 3 | [#137](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/137) | 收尾 TS 第二批次验收账并追加执行时点覆盖率快照 | P4 | `ready` | 分支 `agent/issue-137-ts-batch2-docs`。**硬依赖 #135/#136 先执行**；只改 `docs/TEST_PERF.md`。§7.1 追加 #133/#134（已于 2026-10-26 关闭）与 #135/#136 四行，状态按执行时点真实 Issue 抄录、不得预支 `done`；§7.5 把 #133 的过期当前态「`in-review` 待 Planner 验收」就地改为带时点表述并保留全部历史数值与路径；追加与当次保存的 `npm run test:coverage` 日志逐项一致的新快照段；§7.2–§7.4 零改动；报告须写明宽口径 `grep -n "in-review"` 每条命中的归属（本轮新增口径，源自 #134 验收评论）。 |
+| 1 | [#135](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135) | 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁 | P2 | `in-review` | 分支 `agent/issue-135-utils-ts`。依赖 #133/#58 已 `done`。`src/utils/{echarts,chinaMap}.js` → `.ts`（运行时语义逐字不变：`use([...])` 清单、`ready ??=` 单例、失败后 `ready = null`、`!res.ok` 抛错文案）；`tsconfig.json` 的 `include` 增至 3 项且**不改 compilerOptions**；`tests/china-map.test.js:34` 显式 `@/utils/chinaMap.js` 去扩展名（仅此一行）。验收：`find src -name "*.ts"` 恰 3 项、无 `.js` 残留；`typecheck` exit 0 且 `--listFiles` 不含任何 `.js`/`.vue`；类型负例非零→移除后 0；`china-map.test.js` 6 passed、全量 ≥47 files / 321 tests；`test:coverage` 含两个 `.ts` 且四项与迁移前等值（各 100）；`lint`/`format:check`/`build` exit 0；`git show --stat` 仅 4 类文件，`package.json`/`package-lock.json`/`vitest.config.js`/`.github/` 零改动。**本轮 Planner 已预先验证类型契约可编译（见下方「本轮 Planner 预验证」）。** |
+| 2 | [#136](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136) | 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变 | P2 | `in-review` | 分支 `agent/issue-136-tabs-store-ts`。依赖 #133 已 `done`；与 #135 无相互依赖但同改 `tsconfig.json` 的 `include`，故在其后并入。`tabs.js`(193 行) → `tabs.ts`：`TabItem`/`HOME_TAB: TabItem`/`ref<TabItem[]>`/`ref<string>`；`addTab` 用最小结构类型（字段全可选）、`router?: { push: (to: string) => unknown }`，**不引入 vue-router 类型**；禁为 `parsed` 新增校验/回退，禁给 `_persist` 加容错（D-034）；`tests/tabbar-icons.test.js:5` 显式 `.js` 去扩展名。验收：`tabs.js` 不存在、`tabs.ts` 入门禁；`typecheck` 0 + 负例非零；`tabs-store.test.js` 41 passed、`tabbar-icons` 全过、全量 ≥47/321；coverage 含 `stores/tabs.ts` 且 Lines≥97/Funcs 100/Branch≥95、未覆盖仍 40-41、190-191；`lint`/`format:check`/`build` 0；`git show --stat` 仅 4 类文件；报告逐条列出每处类型断言及其不改行为的理由。**本轮 Planner 已预先验证类型契约可编译（见下方「本轮 Planner 预验证」）。** |
+| 3 | [#137](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/137) | 收尾 TS 第二批次验收账并追加执行时点覆盖率快照 | P4 | `in-review` | 分支 `agent/issue-137-ts-batch2-docs`。**硬依赖 #135/#136 先执行**；只改 `docs/TEST_PERF.md`。§7.1 追加 #133/#134（已于 2026-10-26 关闭）与 #135/#136 四行，状态按执行时点真实 Issue 抄录、不得预支 `done`；§7.5 把 #133 的过期当前态「`in-review` 待 Planner 验收」就地改为带时点表述并保留全部历史数值与路径；追加与当次保存的 `npm run test:coverage` 日志逐项一致的新快照段；§7.2–§7.4 零改动；报告须写明宽口径 `grep -n "in-review"` 每条命中的归属（本轮新增口径，源自 #134 验收评论）。 |
 
 - **容量与门禁核对**：P0=0、P1=0、P2=2、P3=0、P4=1（队列 3 项，符合 4.3；逐项通过 4.2 七条门禁，含第 7 条「资深工程师不凭空发明决策即可开工」——类型契约、断言许可、必须同步的显式 `.js` specifier 行号均已在 Issue 内钉死，且**本轮已由 Planner 在仓库外探针中实证可编译**）。三项均不设 milestone、不触契约 1.10 红线、不把 `typecheck`/覆盖率纳入 CI。
 
@@ -28,17 +29,21 @@
 
 ## 等待验收（in-review）
 
-- **无**。昨日（2026-10-25 执行会话 1）交付的 #133、#134 已于 **2026-10-26 首轮规划轮独立复跑验收通过**并关闭为 `done` / CLOSED（验收 comment：#133 `6400004202`、#134 `6400010818`；关键提交 `8b3709c`、`d385af4` @ `main`，均已推送，临时分支已删）。
-- **本轮无新增可验收项**：2026-10-26 首轮规划后**Executor 至今未运行**——无 `.agent/DIARY/2026-10-26.md`、无 2026-10-25 之后的代码提交（`git log` 最新代码提交仍为 `d385af4`）、#135/#136/#137 三项**均 0 comment**（未被领取）、`in-review` 计数为 0。故本轮无验收动作，也**不重开 #133/#134**（首轮已独立复跑通过）。
+- **#135**（`1be01af` @ `main`，已推送）：迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁。8 条验收标准逐条满足；报告 comment 6420547196。
+- **#136**（`ce3ab0d` @ `main`，已推送）：迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变。9 条验收标准逐条满足；报告 comment 6421124277。
+- **#137**（`f80f53b` @ `main`，已推送）：收尾 TS 第二批次验收账并追加执行时点覆盖率快照。6 条验收标准逐条满足；报告 comment 6421379234。
+- **#138**（`auto-discovered`，新建）：`src/api/auth.js` 与 `src/views/auth/Login.vue` 的覆盖率在**同一 HEAD 下连续两次运行**即不同（已实测），导致 `All files` 汇总值抖动；疑似测试隔离。**仅打 `auto-discovered` 标签，未定优先级、未定 milestone、未进路线图**，待 Planner 定级。
+- 2026-10-25 交付的 #133、#134 已于 **2026-10-26 首轮规划轮独立复跑验收通过**并关闭为 `done` / CLOSED（验收 comment：#133 `6400004202`、#134 `6400010818`；关键提交 `8b3709c`、`d385af4` @ `main`，均已推送，临时分支已删）。
 - 首轮独立复跑证据摘要（供追溯）：`npm run typecheck` exit 0 · `npx tsc --noEmit --listFiles` 在 `frontend/src` 下仅列 `stores/app.ts` · 仓库外探针（`/tmp/tsprobe-planner/probe.ts`）→ `TS2345` + `TS2322`、exit 2 · `vitest run tests/app-store.test.js` 9 passed · `npm run test:run` 47 files / 321 tests 全绿 · `npm run test:coverage` exit 0，`app.ts 100|100|100|100` · `lint`/`format:check`/`build` exit 0 · `git show --numstat 8b3709c -- frontend/package-lock.json` = 418 插入 / **0 删除** · `gh api check-runs` 实查 `8b3709c` 与 `d385af4` 五项均 `completed/success`（**本轮亦复验 `a901d8f` 与 `06f4fa3` 五项均 `completed/success`**）。
 
-## 未完成任务全表（Open Issues 治理账本，共 10 项）
+## 未完成任务全表（Open Issues 治理账本，共 11 项）
 
 | Issue | 标题 | 优先级 | 状态 | Milestone | 4.1 治理复核结论与下一步 |
 |---|---|---|---|---|---|
-| [#135](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135) | 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁 | P2 | `ready` | — | 今日队列第 1 项。本轮复核前置仍全部成立：`find frontend/src -name "*.ts"` 仅 `stores/app.ts`；`utils/echarts.js` 33 行、`utils/chinaMap.js` 28 行仍为 JS；`tsconfig.json` 的 `include` 仍仅 `["src/stores/app.ts"]`；覆盖率两者迁移前均 100/100/100/100（本轮独立复测）；`tests/china-map.test.js:34` 显式 `@/utils/chinaMap.js` 仍在原位。**类型契约已由 Planner 预验证可编译（exit 0），无 ready 质量回落。** |
-| [#136](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136) | 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变 | P2 | `ready` | — | 今日队列第 2 项。本轮复核前置仍全部成立：`stores/tabs.js` 193 行、41 用例锁定状态机、`97.67 / 95.77 / 100 / 97.67`（未覆盖 40-41、190-191）；唯一显式 `.js` 引用 `tests/tabbar-icons.test.js:5` 仍在原位；消费者仍全为未入门禁的 JS/SFC。**类型契约已由 Planner 预验证可编译（exit 0），关键收窄点已确认无需 `any`。** |
-| [#137](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/137) | 收尾 TS 第二批次验收账并追加执行时点覆盖率快照 | P4 | `ready` | — | 今日队列第 3 项。真实文档漂移本轮实测仍在：§7.1 停在 #132、§7.5 仍写 #133「当前 `in-review` 待 Planner 验收」（现已关闭）。硬依赖 #135/#136 先执行；沿用 D-034「绑定单一日志 + 记录时点」口径，不为自身派生同内容任务。 |
+| [#135](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135) | 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁 | P2 | `in-review` | — | **2026-10-26 执行轮已交付**（`1be01af` @ main，已推送）。类型门禁扩至 3 项；`echarts.ts` 纯重命名（内容 0 变更）、`chinaMap.ts` 运行时逐字不变（diff 证明仅类型标注不同）；负例 TS2554；china-map 6 passed；47/321 全绿；两个 `.ts` 覆盖率各 100；CI 五项 success。待 Planner 验收。 |
+| [#136](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136) | 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变 | P2 | `in-review` | — | **2026-10-26 执行轮已交付**（`ce3ab0d` @ main，已推送）。类型门禁扩至 4 项；类型断言仅 1 处（`as TabItem[]`）、`any`/`@ts-ignore`/非空断言均 0；负例 TS2559+TS2345；tabs 41 + tabbar 3 passed；47/321 全绿；`tabs.ts` 98.56/95.77/100/98.56（未覆盖 53、208）；转译逐行 diff 可执行语句差异 = 0；CI 五项 success。待 Planner 验收。 |
+| [#137](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/137) | 收尾 TS 第二批次验收账并追加执行时点覆盖率快照 | P4 | `in-review` | — | **2026-10-26 执行轮已交付**（`f80f53b` @ main，已推送）。仅改 `docs/TEST_PERF.md`（13+/5−）；§7.1 补四行、§7.5 清 #133 过期当前态 + 追加执行时点快照段；§7.2–§7.4 与 HEAD 逐行 diff 证明 byte-identical；CI 五项 success。待 Planner 验收。 |
+| [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | [auto-discovered] src/api/auth.js 与 src/views/auth/Login.vue 覆盖率在同 HEAD 下跨运行波动 | — | `auto-discovered` | — | **2026-10-26 执行轮新建**。同一 HEAD 连续两次 `npm run test:coverage` 即得不同数值（`auth.js` 38.46→17.94、`Login.vue` 100\|75\|50\|100→97.87\|76.92\|75\|97.87），`All files` 随之漂移；`stores/tabs.ts` 两次完全相同。疑似测试隔离。**仅打 `auto-discovered` 标签，未定优先级/里程碑、未进路线图**，待 Planner 定级。 |
 | [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | M7 | 本轮 `command -v docker` 仍 exit 1（实测），无已授权远程 Docker 主机；保持 `blocked`，不得以 console 探针替代真实 Jaeger / OTLP 验收。 |
 | [#98](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | [M7-1][P2] Rust 第一切片迁移：deduplicator + normalize（criterion before/after） | P2 | `in-progress` | M7 | 受 D-019 默认 A **有意冻结**（非中断崩溃现场）；虽超 24h 无日报活动，仍沿用既往裁定不标「疑似中断」、不重置、不关闭，Executor 不得领取。 |
 | [#96](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | [M7] Rust-Accelerated Core + Observable AI（炫技重构主轴） | P2 | `needs-info` | — | M7 候选 Epic，受 D-019 A 冻结；不计入 M7 子任务分母。本轮无新的可查证答案。 |
@@ -72,3 +77,23 @@
 | [#129](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/129) | P4 | `done` / CLOSED | `4d00f9c`：刷新 §7.1（#124–#126）与 §7.5（`App.vue` 0% 豁免 + 45/271 段）；2026-10-24 验收通过，2026-10-25 补正 `done` 标签。 |
 | [#128](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/128) | P3 | `done` / CLOSED | `4cb2519`：新增 `tests/china-map.test.js`（6 用例），`chinaMap.js` 全 100%；2026-10-24 验收通过，2026-10-25 补正 `done` 标签。 |
 | [#127](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/127) | P3 | `done` / CLOSED | `ffe4c5b`：新增 `tests/user-store.test.js`（13 用例），`user.js` 97.97% / 81.57% / 100%；2026-10-24 验收通过，2026-10-25 补正 `done` 标签。 |
+
+## Executor 执行轮记录（2026-10-26，会话 1）
+
+> 本节由 Executor 追加记录执行事实，**不改写 Planner 的规划结论与治理记录**（契约 1.1：Executor 只改状态，不代写对方结论）。
+
+- **领取与执行顺序**：#135 → #136 → #137，串行，一时刻仅一项 `in-progress`。三项均按「Issue 标签 + comment 领取 → 分支实现 → 全门禁验证 → 执行报告 → 转 `in-review`」流程走完，**Executor 未 close 任何 Issue**。
+- **关键提交（均已 push `origin/main`，临时分支已删）**：
+  - #135 → `1be01af`（`agent/issue-135-utils-ts`）
+  - #136 → `ce3ab0d`（`agent/issue-136-tabs-store-ts`）
+  - #137 → `f80f53b`（`agent/issue-137-ts-batch2-docs`）
+- **CI 实查**：`1be01af`、`ce3ab0d`、`f80f53b` 三个提交的 backend-fast / frontend-fast / integration / rust-core / security-scan **五项均 `completed/success`**（`gh api check-runs` 实查）。
+- **类型门禁现状**：`frontend/tsconfig.json` 的 `include` = `["src/stores/app.ts", "src/utils/echarts.ts", "src/utils/chinaMap.ts", "src/stores/tabs.ts"]`（**4 项**，compilerOptions 零改动）；`npx tsc --noEmit --listFiles` 实查 `frontend/src` 下**恰好 4 个 `.ts`、0 个 `.js`/`.vue`**。`npm run typecheck` 仍**仅本地**，不入 CI/pre-commit。
+- **运行时语义零改动（双重自证）**：#135 `chinaMap.ts` 经 `diff` 证明与迁移前逐行相同、`echarts.ts` 为纯重命名（内容 0 变更）；#136 `tabs.ts` 经 **`tsc --outDir` 转译 + 仓库 prettier 规范化后与迁移前 `tabs.js` 逐行 diff → 可执行语句差异 = 0**。
+- **类型断言审计（#136）**：断言总数 **1**（`as TabItem[]`）；`any` / `@ts-ignore` / `eslint-disable` / **非空断言 `!.`** / `as unknown as` 均 **0**。
+- **覆盖率口径（重要）**：`tabs.ts` 的 Lines/Stmts 97.67 → 98.56 **不是真实提升**，而是行记账口径变化——lcov 原始 DA 显示 JS 版 4 行 0 命中（40/41/190/191）、TS 版 2 行 0 命中（53/208），**相邻可执行语句命中数逐个相同**（62/32/9/9），未覆盖代码区域完全相同（两处 `localStorage` 抛错 catch，按 #131 约定不 mock）。
+- **跨运行覆盖率抖动（→ #138）**：同 HEAD 连续两次 `npm run test:coverage`，`src/api/auth.js` 与 `src/views/auth/Login.vue` 数值不同 → `All files` 漂移。既有 D-034 抖动带**只覆盖语句/分支、未覆盖函数项**。**验收请以「被迁移文件自身四项」为唯一锚点**，勿以 `All files` 汇总值做跨运行比对。
+- **新增 auto-discovered**：[#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138)（仅打 `auto-discovered` 标签，**未定优先级、未定 milestone、未进路线图**）。
+- **未领取项**（保持原状）：#98（M7 D-019 A 冻结）、#109（blocked，无 Docker）、#96/#100/#101/#102/#59（needs-info）。
+- **未触红线**：无 schema / 认证 / 公共 API / CI / 依赖大版本变更；未设 `coverage.thresholds`、未把覆盖率纳入 CI。
+- **执行报告**：#135 comment 6420547196 · #136 comment 6421124277 · #137 comment 6421379234。
