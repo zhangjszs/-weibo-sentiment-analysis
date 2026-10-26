@@ -1,17 +1,18 @@
 # 前端 TypeScript 迁移策略
 
 > 产出 Issue：#58（已验收关闭）· 初稿：2026-10-09 · 作者：executor-20261009-r1
-> 状态：策略基线 + 实际迁移进度记录。§2–§8 保留 #58 的 2026-10-09 历史策略快照（未随后续开发刷新处已就地标注，含作废的旧 Issue 编号建议）；#133（2026-10-25）在其之上交付**首个真实生产 TS 迁移切片**——远未完成全仓迁移，亦不承诺全仓类型安全。
+> 状态：策略基线 + 实际迁移进度记录。§2–§8 保留 #58 的 2026-10-09 历史策略快照（未随后续开发刷新处已就地标注，含作废的旧 Issue 编号建议）；#133（2026-10-25）在其之上交付**首个真实生产 TS 迁移切片**——远未完成全仓迁移，亦不承诺全仓类型安全；#135（2026-10-26）交付**第一批剩余图表工具**（`utils/echarts.ts` + `utils/chinaMap.ts`）。
 
-## 0. 实际迁移进度（#133 · 2026-10-25）
+## 0. 实际迁移进度（#133 · 2026-10-25 · #135 · 2026-10-26）
 
-首个真实生产模块迁移已由 #133 交付，**仅覆盖一个模块**：
+真实生产模块迁移已由 #133 与 #135 交付，**仅覆盖三个模块**：
 
-- **已迁移**：`src/stores/app.js` → `src/stores/app.ts`。`useAppStore` 名称、setup-store 结构、全部状态/动作与运行时语义不变；`setTheme` 参数显式标注 `string`，`theme`/`device` 仍为 `string`、`sidebarCollapsed` 为 `boolean`——未缩窄主题枚举、未新增存储值校验/回退（沿用 `localStorage` 任意字符串现状契约）。无 `.js` shim / re-export / 双实现。
-- **本地类型检查**：新增最小 `frontend/tsconfig.json`（`strict` + `noEmit` + `allowJs`/`checkJs:false`，`include` 仅 `src/stores/app.ts`）与 `npm run typecheck`（`tsc --noEmit`）。**仅本地运行，不纳入 CI/pre-commit**；不把全仓未迁移 JS/SFC 拉进类型门禁，**不承诺全仓类型安全**。
+- **已迁移（#133）**：`src/stores/app.js` → `src/stores/app.ts`。`useAppStore` 名称、setup-store 结构、全部状态/动作与运行时语义不变；`setTheme` 参数显式标注 `string`，`theme`/`device` 仍为 `string`、`sidebarCollapsed` 为 `boolean`——未缩窄主题枚举、未新增存储值校验/回退（沿用 `localStorage` 任意字符串现状契约）。无 `.js` shim / re-export / 双实现。
+- **已迁移（#135）**：`src/utils/echarts.js` → `src/utils/echarts.ts`、`src/utils/chinaMap.js` → `src/utils/chinaMap.ts`。运行时语义**逐字不变**：`echarts.use([...])` 注册清单、`ready ??=` 单例复用、`catch` 内 `ready = null` 允许重试、`!res.ok` 抛错文案 `地图资产加载失败：HTTP ${res.status}` 全部原样保留；无 `.js` shim / re-export / 双实现。类型侧：`echarts.ts` 保持 `import * as echarts from 'echarts/core'` + `export default echarts`（echarts 6.1.0 自带 `.d.ts`，**无需新增 `@types`**）；`chinaMap.ts` 的单例类型直接取自 echarts 自身签名 `type MapInput = Parameters<typeof echarts.registerMap>[1]`，**不自造 GeoJSON 结构**，`res.json()` 的 `any` 原样流入 `registerMap`（未新增任何断言链或调用形状改写）。接缝同步：`tests/china-map.test.js` 的动态 import 去掉 `.js` 扩展名（**仅此一行**，不改任何断言）。
+- **本地类型检查**：`frontend/tsconfig.json`（`strict` + `noEmit` + `allowJs`/`checkJs:false`）的 `include` 现为 `["src/stores/app.ts", "src/utils/echarts.ts", "src/utils/chinaMap.ts"]`，配 `npm run typecheck`（`tsc --noEmit`）。**仅本地运行，不纳入 CI/pre-commit**；不把全仓未迁移 JS/SFC 拉进类型门禁，**不承诺全仓类型安全**。
 - **devDependency**：固定 `typescript@5.9.3` + `@typescript-eslint/parser@8.46.2`（Vue 3 / Pinia 自带类型，未装重复 `@types/*` 或 `vue-tsc`）；既有直接依赖版本未变。
 - **工具链接**：`eslint.config.js` 仅对 `.ts` 换用 `@typescript-eslint/parser`（JS/Vue 规则不放宽；`.ts` 的 `no-undef`/`no-unused-vars` 交由 tsc 严格检查）；`vitest.config.js` 的 `coverage.include` 扩为 `src/**/*.{js,ts,vue}`；`package.json` 的 `lint` src glob 纳入 `.ts`。
-- **尚未迁移**：其余 3 个 store、api/（14）、utils/、composables/、router/、plugins/、`main.js` 与 45 个 `.vue` 组件/视图仍为 JS/SFC，**不在本轮类型门禁内**。§2 六批次顺序仍是后续参考。
+- **尚未迁移**：其余 3 个 store（`stores/user.js`、`stores/analysis.js`、`stores/tabs.js`）、api/（14）、`utils/index.js`、`utils/authSession.js`、`plugins/elementPlus.js`、composables/、router/、`main.js` 与 45 个 `.vue` 组件/视图仍为 JS/SFC，**不在当前类型门禁内**。§2 六批次顺序仍是后续参考。
 
 ## 1. 现状摘要
 
@@ -28,7 +29,7 @@
 
 **结论**：前端完全无 TypeScript 基础，需从基础设施搭建开始，分层渐进迁移。
 
-> 注：本表为 2026-10-09 历史快照。#133（2026-10-25）已引入 `typescript` devDep 与本地 `typecheck`，并迁移首个 `.ts`（`stores/app.ts`），见 §0；其余统计待全仓迁移后再刷新。
+> 注：本表为 2026-10-09 历史快照。#133（2026-10-25）已引入 `typescript` devDep 与本地 `typecheck`，并迁移首个 `.ts`（`stores/app.ts`）；#135（2026-10-26）再迁 `utils/echarts.ts` + `utils/chinaMap.ts`（当前共 3 个 `.ts`），见 §0；其余统计待全仓迁移后再刷新。
 
 ## 2. 迁移顺序建议
 
@@ -46,9 +47,9 @@
 - 新增 `tsconfig.json` + `tsconfig.node.json`
 - 安装 `typescript` + 必要 `@types/*`（vue、pinia、vue-router、axios、element-plus）
 - 迁移 `api/index.js`、`api/content.js`、`api/tasks.js`、`api/propagation.js`、`api/platform.js`
-- 迁移 `utils/echarts.js`、`utils/chinaMap.js`
+- 迁移 `utils/echarts.js` ✅（#135）、`utils/chinaMap.js` ✅（#135）
 - 迁移 `plugins/elementPlus.js`
-- 迁移 `stores/app.js`
+- 迁移 `stores/app.js` ✅（#133）
 
 **选择理由**：纯函数或配置式模块，输入输出明确，无组件耦合，类型化收益立竿见影。
 
@@ -193,10 +194,10 @@ export interface UserState {
 | 3 | `api/tasks.js` | 17 | 纯查询函数 |
 | 4 | `api/propagation.js` | 19 | 纯查询函数 |
 | 5 | `api/platform.js` | 39 | 纯查询函数 |
-| 6 | `utils/echarts.js` | 33 | 工具函数，无状态 |
-| 7 | `utils/chinaMap.js` | 28 | 工具函数，无状态 |
+| 6 | `utils/echarts.js` ✅（#135） | 33 | 工具函数，无状态 |
+| 7 | `utils/chinaMap.js` ✅（#135） | 28 | 工具函数，无状态 |
 | 8 | `plugins/elementPlus.js` | 87 | 配置式，无逻辑 |
-| 9 | `stores/app.js` | 45 | 简单 store，状态结构清晰 |
+| 9 | `stores/app.js` ✅（#133） | 45 | 简单 store，状态结构清晰 |
 | 10 | `api/user.js` | 24 | 已有 JSDoc 注释，类型化成本最低 |
 
 ## 7. 验收标准对照

@@ -1,6 +1,10 @@
 import echarts from './echarts'
 
-let ready = null
+// #135：registerMap 的第二参类型直接取自 echarts 自身签名，
+// 不自造 GeoJSON 结构（MapInput | GeoJSONSourceInput）。
+type MapInput = Parameters<typeof echarts.registerMap>[1]
+
+let ready: Promise<MapInput> | null = null
 
 // #40：1MB 的 china.json（minify 后 ~520KB）曾是 ip 路由 chunk 的绝对大头
 // （占 98.6%）。改为运行时按需拉取静态资产：vite 构建时经 new URL(…, import.meta.url)

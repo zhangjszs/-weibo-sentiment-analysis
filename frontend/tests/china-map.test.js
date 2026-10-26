@@ -31,7 +31,7 @@ const failedResponse = (status) => ({
 
 const loadChinaMap = async () => {
   vi.resetModules()
-  return import('@/utils/chinaMap.js')
+  return import('@/utils/chinaMap')
 }
 
 beforeEach(() => {
