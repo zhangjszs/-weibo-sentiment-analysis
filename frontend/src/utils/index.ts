@@ -1,4 +1,22 @@
-export function formatNumber(num, decimals = 2, options = {}) {
+/**
+ * #140：前端 utils 桶文件（`@/utils`）的类型化迁移。运行时语义逐字不变。
+ *
+ * 本文件是 `src/utils/` 的桶入口——`@/utils` 即解析到它。
+ */
+
+/** 日期类格式化函数接受的输入：Date 对象 / 可解析的字符串 / 毫秒时间戳。 */
+export type DateInput = Date | string | number
+
+/** D-2（#74）：`formatNumber` 的紧凑口径选项——调用方显式 opt-in，默认亿/万/k 口径不变。 */
+export interface FormatNumberOptions {
+  compact?: 'wk'
+}
+
+export function formatNumber(
+  num?: number | null,
+  decimals = 2,
+  options: FormatNumberOptions = {}
+): string {
   if (num === null || num === undefined) return '-'
 
   // D-2（#74）：compact 'wk' 复刻 platform.vue 旧本地口径（w/k 缩写），
@@ -26,16 +44,19 @@ export function formatNumber(num, decimals = 2, options = {}) {
   return num.toLocaleString()
 }
 
-export function formatPercent(value, decimals = 2) {
+export function formatPercent(value?: number | null, decimals = 2): string {
   if (value === null || value === undefined) return '-%'
   return (value * 100).toFixed(decimals) + '%'
 }
 
-export function formatDate(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
+export function formatDate(date?: DateInput | null, pattern = 'YYYY-MM-DD HH:mm:ss'): string {
   if (!date) return '-'
 
   const d = new Date(date)
-  const year = d.getFullYear()
+  // #140：原为 `d.getFullYear()`（number），TS 的 `String.replace` 的
+  // `replaceValue` 形参只接受 string。此处改用 `String(...)`——JS 运行时本来
+  // 就会对 replaceValue 做 ToString 转换，二者结果逐字相同。
+  const year = String(d.getFullYear())
   const month = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   const hour = String(d.getHours()).padStart(2, '0')
@@ -54,14 +75,18 @@ export function formatDate(date, pattern = 'YYYY-MM-DD HH:mm:ss') {
 // D-2（#74）：本地 locale 日期口径单源（以下三函数分别收敛
 // AnalysisSummary / useTasks+TaskProgress / platform formatTime 的旧本地实现，
 // 可见输出与收敛前逐字一致）。
-export function formatDateTime(value) {
+export function formatDateTime(value?: DateInput | null): string {
   if (!value) return '-'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '-'
   return date.toLocaleString()
 }
 
-export function formatLocalDate(value) {
+/**
+ * 注意：catch 分支返回**原始输入**（而非字符串）——这是迁移前的既有行为，
+ * 本切片逐字保留。因此返回类型如实为 `string | DateInput`。
+ */
+export function formatLocalDate(value?: DateInput | null): string | DateInput {
   if (!value) return '-'
   try {
     return new Date(value).toLocaleDateString('zh-CN')
@@ -70,7 +95,7 @@ export function formatLocalDate(value) {
   }
 }
 
-export function formatLocalMonthDay(value) {
+export function formatLocalMonthDay(value?: DateInput | null): string {
   if (!value) return ''
   return new Date(value).toLocaleDateString('zh-CN', {
     month: 'short',
@@ -81,19 +106,21 @@ export function formatLocalMonthDay(value) {
 }
 
 // D-2 后续（#86）：秒→ms/s 口径单源（收敛 useTasks/TaskProgress 旧本地实现）。
-export function formatDuration(seconds) {
+export function formatDuration(seconds?: number | string | null): string {
   if (seconds == null || Number.isNaN(Number(seconds))) return '-'
   const value = Number(seconds)
   if (value < 1) return `${Math.round(value * 1000)} ms`
   return `${value.toFixed(3)} s`
 }
 
-export function formatRelativeTime(date) {
+export function formatRelativeTime(date?: DateInput | null): string {
   if (!date) return '-'
 
   const now = new Date()
   const target = new Date(date)
-  const diff = now - target
+  // #140：原为 `now - target`，TS 不允许 Date 参与算术运算。JS 运行时走
+  // ToPrimitive(hint number) → valueOf()，与 `getTime()` 逐字等价。
+  const diff = now.getTime() - target.getTime()
 
   const seconds = Math.floor(diff / 1000)
   const minutes = Math.floor(seconds / 60)
@@ -116,7 +143,7 @@ export function formatRelativeTime(date) {
   return formatDate(date, 'YYYY-MM-DD')
 }
 
-export function formatFileSize(bytes) {
+export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B'
 
   const k = 1024
@@ -126,10 +153,13 @@ export function formatFileSize(bytes) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-export function debounce(fn, delay = 300) {
-  let timer = null
+export function debounce<TArgs extends unknown[], TThis>(
+  fn: (this: TThis, ...args: TArgs) => void,
+  delay = 300
+): (this: TThis, ...args: TArgs) => void {
+  let timer: ReturnType<typeof setTimeout> | null = null
 
-  return function (...args) {
+  return function (this: TThis, ...args: TArgs) {
     if (timer) {
       clearTimeout(timer)
     }
@@ -139,10 +169,13 @@ export function debounce(fn, delay = 300) {
   }
 }
 
-export function throttle(fn, delay = 300) {
+export function throttle<TArgs extends unknown[], TThis>(
+  fn: (this: TThis, ...args: TArgs) => void,
+  delay = 300
+): (this: TThis, ...args: TArgs) => void {
   let lastTime = 0
 
-  return function (...args) {
+  return function (this: TThis, ...args: TArgs) {
     const now = Date.now()
     if (now - lastTime >= delay) {
       fn.apply(this, args)
@@ -151,7 +184,7 @@ export function throttle(fn, delay = 300) {
   }
 }
 
-export function copyToClipboard(text) {
+export function copyToClipboard(text: string): Promise<void | boolean> {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     return navigator.clipboard.writeText(text)
   }
@@ -173,37 +206,39 @@ export function copyToClipboard(text) {
   }
 }
 
-export function generateId() {
+export function generateId(): string {
   return Date.now() + '-' + Math.random().toString(36).substr(2, 9)
 }
 
-export function deepClone(obj) {
+export function deepClone<T>(obj: T): T {
   if (obj === null || typeof obj !== 'object') {
     return obj
   }
 
   if (obj instanceof Date) {
-    return new Date(obj.getTime())
+    return new Date(obj.getTime()) as unknown as T
   }
 
   if (obj instanceof Array) {
-    return obj.map((item) => deepClone(item))
+    return obj.map((item) => deepClone(item)) as unknown as T
   }
 
   if (obj instanceof Object) {
-    const clonedObj = {}
-    for (const key in obj) {
+    const clonedObj: Record<string, unknown> = {}
+    // #140：`obj as Record<string, unknown>` 是**编译期擦除**的断言，输出的
+    // JS 与迁移前逐字相同（仍是 `for (const key in obj)` 与 `obj[key]`）。
+    for (const key in obj as Record<string, unknown>) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        clonedObj[key] = deepClone(obj[key])
+        clonedObj[key] = deepClone((obj as Record<string, unknown>)[key])
       }
     }
-    return clonedObj
+    return clonedObj as unknown as T
   }
 
   return obj
 }
 
-export function downloadFile(url, filename) {
+export function downloadFile(url: string, filename: string): void {
   const link = document.createElement('a')
   link.href = url
   link.download = filename
@@ -212,7 +247,7 @@ export function downloadFile(url, filename) {
   document.body.removeChild(link)
 }
 
-export function downloadBlob(blob, filename) {
+export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -223,7 +258,7 @@ export function downloadBlob(blob, filename) {
   URL.revokeObjectURL(url)
 }
 
-export function isEmpty(value) {
+export function isEmpty(value: unknown): boolean {
   if (value === null || value === undefined) {
     return true
   }
@@ -239,13 +274,13 @@ export function isEmpty(value) {
   return false
 }
 
-export function getEnumLabel(enumObj, value) {
+export function getEnumLabel(enumObj: Record<string, unknown>, value: unknown): string {
   const found = Object.entries(enumObj).find(([, val]) => val === value)
   return found ? found[0] : String(value)
 }
 
-export function downloadCsv(filename, headers, rows) {
-  const escapeCell = (value) => {
+export function downloadCsv(filename: string, headers: string[], rows: unknown[][]): void {
+  const escapeCell = (value: unknown): string => {
     if (value === null || value === undefined) return ''
     const str = String(value)
     const escaped = str.replaceAll('"', '""')
@@ -253,7 +288,7 @@ export function downloadCsv(filename, headers, rows) {
     return escaped
   }
 
-  const lines = []
+  const lines: string[] = []
   lines.push(headers.map(escapeCell).join(','))
   for (const row of rows) {
     lines.push(row.map(escapeCell).join(','))

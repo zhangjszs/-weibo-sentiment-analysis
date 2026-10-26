@@ -1,20 +1,21 @@
 # 前端 TypeScript 迁移策略
 
 > 产出 Issue：#58（已验收关闭）· 初稿：2026-10-09 · 作者：executor-20261009-r1
-> 状态：策略基线 + 实际迁移进度记录。§2–§8 保留 #58 的 2026-10-09 历史策略快照（未随后续开发刷新处已就地标注，含作废的旧 Issue 编号建议）；#133（2026-10-25）在其之上交付**首个真实生产 TS 迁移切片**——远未完成全仓迁移，亦不承诺全仓类型安全；#135 / #136（2026-10-26）交付**第一批剩余图表工具**与**多标签工作区 store**；#139（2026-10-27）交付**会话缓存工具**（`utils/authSession.ts`）。
+> 状态：策略基线 + 实际迁移进度记录。§2–§8 保留 #58 的 2026-10-09 历史策略快照（未随后续开发刷新处已就地标注，含作废的旧 Issue 编号建议）；#133（2026-10-25）在其之上交付**首个真实生产 TS 迁移切片**——远未完成全仓迁移，亦不承诺全仓类型安全；#135 / #136（2026-10-26）交付**第一批剩余图表工具**与**多标签工作区 store**；#139 / #140（2026-10-27）交付**会话缓存工具**与 **utils 桶文件**（`utils/authSession.ts`、`utils/index.ts`）。
 
-## 0. 实际迁移进度（#133 · 2026-10-25 · #135 / #136 · 2026-10-26 · #139 · 2026-10-27）
+## 0. 实际迁移进度（#133 · 2026-10-25 · #135 / #136 · 2026-10-26 · #139 / #140 · 2026-10-27）
 
-真实生产模块迁移已由 #133、#135、#136 与 #139 交付，**仅覆盖五个模块**：
+真实生产模块迁移已由 #133、#135、#136、#139 与 #140 交付，**仅覆盖六个模块**：
 
 - **已迁移（#133）**：`src/stores/app.js` → `src/stores/app.ts`。`useAppStore` 名称、setup-store 结构、全部状态/动作与运行时语义不变；`setTheme` 参数显式标注 `string`，`theme`/`device` 仍为 `string`、`sidebarCollapsed` 为 `boolean`——未缩窄主题枚举、未新增存储值校验/回退（沿用 `localStorage` 任意字符串现状契约）。无 `.js` shim / re-export / 双实现。
 - **已迁移（#135）**：`src/utils/echarts.js` → `src/utils/echarts.ts`、`src/utils/chinaMap.js` → `src/utils/chinaMap.ts`。运行时语义**逐字不变**：`echarts.use([...])` 注册清单、`ready ??=` 单例复用、`catch` 内 `ready = null` 允许重试、`!res.ok` 抛错文案 `地图资产加载失败：HTTP ${res.status}` 全部原样保留；无 `.js` shim / re-export / 双实现。类型侧：`echarts.ts` 保持 `import * as echarts from 'echarts/core'` + `export default echarts`（echarts 6.1.0 自带 `.d.ts`，**无需新增 `@types`**）；`chinaMap.ts` 的单例类型直接取自 echarts 自身签名 `type MapInput = Parameters<typeof echarts.registerMap>[1]`，**不自造 GeoJSON 结构**，`res.json()` 的 `any` 原样流入 `registerMap`（未新增任何断言链或调用形状改写）。接缝同步：`tests/china-map.test.js` 的动态 import 去掉 `.js` 扩展名（**仅此一行**，不改任何断言）。
 - **已迁移（#136）**：`src/stores/tabs.js` → `src/stores/tabs.ts`（193 行）。`useTabsStore` 名称、setup-store 结构、state（`tabs`/`activeTab`/`cachedViews`）与全部动作（`addTab`/`closeTab`/`closeOtherTabs`/`closeAllTabs`/`setActiveTab`/`reorderTabs`/`updateTabPath`/`resetTabs`）**运行时语义逐字不变**（已用「tsc 转译后与原 `.js` 逐行 diff」自证：剥除空行与注释后**可执行语句差异为 0**）。类型侧：新增 `interface TabItem`（`name`/`title`/`path`/`icon: string | null`/`closable`）；`HOME_TAB: TabItem`；`tabs` 为 `ref<TabItem[]>`、`activeTab` 为 `ref<string>`；`addTab` 用**字段全可选**的最小结构类型（以匹配既有 `if (!route?.name || !route?.path) return` 守卫）、四个带导航的动作用 `router?: { push: (to: string) => unknown }` 最小结构类型——**均未引入 vue-router 类型依赖**。`JSON.parse` 结果以 `as TabItem[]` 断言恢复，**不新增任何字段校验 / 回退分支**，保持既有宽松恢复行为（#131 的 41 个用例锁定该语义）。接缝同步：`tests/tabbar-icons.test.js` 的 import 去掉 `.js` 扩展名（**仅此一行**）。本切片**未**给 `_persist` 新增 try/catch（D-034：无真实故障证据不加容错）。
 - **已迁移（#139）**：`src/utils/authSession.js` → `src/utils/authSession.ts`（98 行）。运行时语义**逐字不变**——`AUTH_TOKEN_KEY` / `USER_CACHE_KEY` 常量、`currentUserCache` 的 `{ user, fetchedAt }` 结构与 TTL 判定、`resolveStorage` 的三级回退（传入 storage → `window.localStorage` → `null`）、`getCachedUser` 的 `JSON.parse` + `typeof === 'object'` 守卫 + 解析失败时 `removeItem` 并返回 `{}`、`setCachedUser` 的「非空对象才写盘」判定、`clearSessionState` 的清 token + 清内存缓存 + 双 `removeItem` 全部原样保留；无 `.js` shim / re-export / 双实现。类型侧：用户对象用**宽松记录类型** `type SessionUser = Record<string, unknown>`——api 层尚未类型化，**不自造** `id`/`username`/`is_admin` 等字段结构，待 api 层给出契约后再收紧；`JSON.parse` 结果以 `as SessionUser` 断言恢复，**不新增任何字段校验 / 回退分支**，保持既有宽松恢复行为（32 个既有用例锁定）。接缝同步：`tests/auth-session.test.js` 的 import 去掉 `.js` 扩展名（**仅此一行**）。
-- **本地类型检查**：`frontend/tsconfig.json`（`strict` + `noEmit` + `allowJs`/`checkJs:false`）的 `include` 现为 `["src/stores/app.ts", "src/stores/tabs.ts", "src/utils/echarts.ts", "src/utils/chinaMap.ts", "src/utils/authSession.ts"]`，配 `npm run typecheck`（`tsc --noEmit`）。**仅本地运行，不纳入 CI/pre-commit**；不把全仓未迁移 JS/SFC 拉进类型门禁，**不承诺全仓类型安全**。
+- **已迁移（#140）**：`src/utils/index.js` → `src/utils/index.ts`（265 → 290 行，**19 个导出**）——`@/utils` 桶入口。运行时语义**逐字不变**：`formatNumber` 的 `compact: 'wk'` 分支、`formatDate` 的 `pattern.replace` 链、`deepClone` 的 `instanceof Date`/`instanceof Array`/`instanceof Object` 判定与 `hasOwnProperty` 守卫、`downloadCsv` 的 `replaceAll('"', '""')` 转义与 BOM、`copyToClipboard` 的 Clipboard API → textarea + `execCommand` 回退、`debounce`/`throttle` 的 `this` 透传全部原样保留；无 `.js` shim / re-export / 双实现。**桶解析**（`@/utils` → `index.ts`）经 `build` + 全量 47/321 实测证明正常。类型侧：`type DateInput = Date | string | number`、`interface FormatNumberOptions { compact?: 'wk' }`；`deepClone<T>(obj: T): T` 保持泛型（实现内 5 处**编译期擦除**的类型断言，逐条见 Issue #140 执行报告）；`debounce`/`throttle` 用泛型 + 显式 `this` 形参**保留 `this` 透传**的运行时语义。**两处 TS 严格性冲突按「语义等价改写」处理**（未改运行时行为）：`d.getFullYear()` → `String(d.getFullYear())`（JS 的 `String.replace` 本就对 replaceValue 做 ToString，二者逐字相同）、`now - target` → `now.getTime() - target.getTime()`（JS 的 `-` 对 Date 走 ToPrimitive(hint number) → `valueOf()`，二者逐字等价）。接缝同步：`tests/format-utils.test.js` 与 `tests/utils-index-core.test.js` 的 import 各去掉 `.js` 扩展名（**各 1 行**）。
+- **本地类型检查**：`frontend/tsconfig.json`（`strict` + `noEmit` + `allowJs`/`checkJs:false`）的 `include` 现为 `["src/stores/app.ts", "src/stores/tabs.ts", "src/utils/echarts.ts", "src/utils/chinaMap.ts", "src/utils/authSession.ts", "src/utils/index.ts"]`，配 `npm run typecheck`（`tsc --noEmit`）。**#140 起 `lib` 由 `ES2020` 提升为 `ES2021`**——`utils/index.ts` 的 `downloadCsv` 沿用既有实现中的 `String.prototype.replaceAll`（ES2021 运行时 API），`lib: ES2020` **不含**其类型声明（`tsc` 实测 TS2550）。**只提升 `lib`、不改 `target`**，故**仅影响类型声明、不影响 emit 与运行时**——运行时本就早已依赖 ES2021 的 `replaceAll`。**仅本地运行，不纳入 CI/pre-commit**；不把全仓未迁移 JS/SFC 拉进类型门禁，**不承诺全仓类型安全**。
 - **devDependency**：固定 `typescript@5.9.3` + `@typescript-eslint/parser@8.46.2`（Vue 3 / Pinia 自带类型，未装重复 `@types/*` 或 `vue-tsc`）；既有直接依赖版本未变。
 - **工具链接**：`eslint.config.js` 仅对 `.ts` 换用 `@typescript-eslint/parser`（JS/Vue 规则不放宽；`.ts` 的 `no-undef`/`no-unused-vars` 交由 tsc 严格检查）；`vitest.config.js` 的 `coverage.include` 扩为 `src/**/*.{js,ts,vue}`；`package.json` 的 `lint` src glob 纳入 `.ts`。
-- **尚未迁移**：其余 2 个 store（`stores/user.js`、`stores/analysis.js`）、api/（14）、`utils/index.js`、`plugins/elementPlus.js`、composables/、router/、`main.js` 与 45 个 `.vue` 组件/视图仍为 JS/SFC，**不在当前类型门禁内**。§2 六批次顺序仍是后续参考。
+- **尚未迁移**：其余 2 个 store（`stores/user.js`、`stores/analysis.js`）、api/（14）、`plugins/elementPlus.js`、composables/、router/、`main.js` 与 45 个 `.vue` 组件/视图仍为 JS/SFC，**不在当前类型门禁内**。§2 六批次顺序仍是后续参考。
 
 ## 1. 现状摘要
 
@@ -31,7 +32,7 @@
 
 **结论**：前端完全无 TypeScript 基础，需从基础设施搭建开始，分层渐进迁移。
 
-> 注：本表为 2026-10-09 历史快照。#133（2026-10-25）已引入 `typescript` devDep 与本地 `typecheck`，并迁移首个 `.ts`（`stores/app.ts`）；#135（2026-10-26）再迁 `utils/echarts.ts` + `utils/chinaMap.ts`；#136（2026-10-26）再迁 `stores/tabs.ts`；#139（2026-10-27）再迁 `utils/authSession.ts`（当前共 5 个 `.ts`），见 §0；其余统计待全仓迁移后再刷新。
+> 注：本表为 2026-10-09 历史快照。#133（2026-10-25）已引入 `typescript` devDep 与本地 `typecheck`，并迁移首个 `.ts`（`stores/app.ts`）；#135（2026-10-26）再迁 `utils/echarts.ts` + `utils/chinaMap.ts`；#136（2026-10-26）再迁 `stores/tabs.ts`；#139 / #140（2026-10-27）再迁 `utils/authSession.ts` 与 `utils/index.ts`（当前共 6 个 `.ts`），见 §0；其余统计待全仓迁移后再刷新。
 
 ## 2. 迁移顺序建议
 
@@ -59,7 +60,7 @@
 
 - `api/alert.js`、`api/auth.js`、`api/favorites.js`、`api/predict.js`、`api/report.js`、`api/spider.js`、`api/stats.js`、`api/user.js`
 - `api/request.js`（axios 封装，需定义拦截器类型）
-- `utils/index.js`、`utils/authSession.js` ✅（#139）
+- `utils/index.js` ✅（#140）、`utils/authSession.js` ✅（#139）
 
 **选择理由**：api 层是数据边界，类型化后可为上游提供契约；utils 中 request.js 是基础设施，优先类型化。
 
@@ -214,7 +215,7 @@ export interface UserState {
 
 1. **基础设施**：✅ 已由 #133 交付——本地 `tsconfig.json` + `npm run typecheck` + eslint/vitest 的 `.ts` 支持。
 2. **首批纯函数 / store**：`stores/app.ts` ✅（#133）、`utils/echarts.ts` + `utils/chinaMap.ts` ✅（#135）、`stores/tabs.ts` ✅（#136）；其余 store 与 api/、utils/ 中可类型化的纯函数按覆盖率与依赖顺序小步推进。
-3. **api/ + utils/ 剩余**：数据边界类型化，为上游提供契约（`utils/authSession.ts` ✅ #139）。
+3. **api/ + utils/ 剩余**：数据边界类型化，为上游提供契约（`utils/index.ts` ✅ #140、`utils/authSession.ts` ✅ #139）。
 4. **stores/ 剩余**：状态结构复杂，宜在 api 类型就绪后（`stores/tabs.ts` 已由 #136 提前完成——它不触碰 api，只读 `localStorage` + 接收路由对象）。
 5. **composables/**：逻辑密集、与组件解耦程度较高。
 6. **router/ + 入口**：`router/index.js`、`main.js`、`App.vue`。

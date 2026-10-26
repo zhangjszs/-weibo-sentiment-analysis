@@ -21,7 +21,7 @@ import {
   getEnumLabel,
   isEmpty,
   throttle,
-} from '../src/utils/index.js'
+} from '../src/utils/index'
 
 function stubObjectUrl() {
   const createObjectURL = vi.fn(() => 'blob:mock-url')

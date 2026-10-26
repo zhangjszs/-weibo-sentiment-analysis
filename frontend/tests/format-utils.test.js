@@ -18,7 +18,7 @@ import {
   formatLocalDate,
   formatLocalMonthDay,
   formatDuration,
-} from '../src/utils/index.js'
+} from '../src/utils/index'
 
 describe('formatNumber 默认口径（#74 D-2）', () => {
   it('亿/万/k 缩写与 decimals 透传', () => {
