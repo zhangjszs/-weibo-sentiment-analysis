@@ -1,7 +1,16 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
-const HOME_TAB = {
+// #136：多标签工作区页签的运行时结构（字段与迁移前 JS 版逐字一致）。
+export interface TabItem {
+  name: string
+  title: string
+  path: string
+  icon: string | null
+  closable: boolean
+}
+
+const HOME_TAB: TabItem = {
   name: 'Home',
   title: '首页',
   path: '/home',
@@ -12,11 +21,14 @@ const HOME_TAB = {
 const STORAGE_TABS_KEY = 'weibo_tabs'
 const STORAGE_ACTIVE_KEY = 'weibo_active_tab'
 
-function loadTabsFromStorage() {
+// #136：localStorage 中的页签快照按 TabItem[] 断言恢复。
+// 断言而非校验：保持迁移前的宽松恢复行为——不对持久化内容做字段校验、
+// 不过滤脏数据、不新增回退分支（#131 的 41 个用例锁定该宽松语义）。
+function loadTabsFromStorage(): TabItem[] {
   try {
     const saved = localStorage.getItem(STORAGE_TABS_KEY)
     if (saved) {
-      const parsed = JSON.parse(saved)
+      const parsed = JSON.parse(saved) as TabItem[]
       if (Array.isArray(parsed) && parsed.length > 0) {
         // Ensure home tab is always first
         const hasHome = parsed.some((t) => t.name === HOME_TAB.name)
@@ -30,7 +42,7 @@ function loadTabsFromStorage() {
   return [{ ...HOME_TAB }]
 }
 
-function loadActiveFromStorage(tabs) {
+function loadActiveFromStorage(tabs: TabItem[]): string {
   try {
     const saved = localStorage.getItem(STORAGE_ACTIVE_KEY)
     if (saved && tabs.some((t) => t.name === saved)) {
@@ -43,8 +55,8 @@ function loadActiveFromStorage(tabs) {
 }
 
 export const useTabsStore = defineStore('tabs', () => {
-  const tabs = ref(loadTabsFromStorage())
-  const activeTab = ref(loadActiveFromStorage(tabs.value))
+  const tabs = ref<TabItem[]>(loadTabsFromStorage())
+  const activeTab = ref<string>(loadActiveFromStorage(tabs.value))
 
   // Component names to keep alive
   const cachedViews = computed(() => tabs.value.map((t) => t.name))
@@ -56,9 +68,14 @@ export const useTabsStore = defineStore('tabs', () => {
 
   /**
    * Add a tab from a route meta. If it already exists, just activate it.
-   * @param {{ name: string, path: string, meta: { title: string, icon: string } }} route
+   * @param route 路由对象；字段全部可选（缺 name/path 即 no-op，与迁移前守卫一致）
    */
-  function addTab(route) {
+  function addTab(route: {
+    name?: string
+    path?: string
+    query?: Record<string, string>
+    meta?: { title?: string; icon?: string }
+  }) {
     if (!route?.name || !route?.path) return
 
     const existing = tabs.value.find((t) => t.name === route.name)
@@ -68,7 +85,7 @@ export const useTabsStore = defineStore('tabs', () => {
       return
     }
 
-    const newTab = {
+    const newTab: TabItem = {
       name: route.name,
       title: route.meta?.title || route.name,
       path:
@@ -87,7 +104,7 @@ export const useTabsStore = defineStore('tabs', () => {
   /**
    * Close/remove a tab by its name. Automatically activates adjacent tab.
    */
-  function closeTab(name, router) {
+  function closeTab(name: string, router?: { push: (to: string) => unknown }) {
     if (name === HOME_TAB.name) return // home is unclosable
 
     const idx = tabs.value.findIndex((t) => t.name === name)
@@ -107,7 +124,7 @@ export const useTabsStore = defineStore('tabs', () => {
   /**
    * Close all tabs except the given one (default: keep home)
    */
-  function closeOtherTabs(keepName, router) {
+  function closeOtherTabs(keepName: string, router?: { push: (to: string) => unknown }) {
     tabs.value = tabs.value.filter((t) => !t.closable || t.name === keepName)
     if (!tabs.value.find((t) => t.name === activeTab.value)) {
       const target = tabs.value.find((t) => t.name === keepName) || tabs.value[0]
@@ -120,7 +137,7 @@ export const useTabsStore = defineStore('tabs', () => {
   /**
    * Close all closable tabs, go back to home
    */
-  function closeAllTabs(router) {
+  function closeAllTabs(router?: { push: (to: string) => unknown }) {
     tabs.value = tabs.value.filter((t) => !t.closable)
     activeTab.value = HOME_TAB.name
     if (router) router.push(HOME_TAB.path)
@@ -130,7 +147,7 @@ export const useTabsStore = defineStore('tabs', () => {
   /**
    * Set active tab and navigate
    */
-  function setActiveTab(name, router) {
+  function setActiveTab(name: string, router?: { push: (to: string) => unknown }) {
     const tab = tabs.value.find((t) => t.name === name)
     if (!tab) return
     activeTab.value = name
@@ -141,7 +158,7 @@ export const useTabsStore = defineStore('tabs', () => {
   /**
    * Reorder tabs by drag (swap indices)
    */
-  function reorderTabs(fromIdx, toIdx) {
+  function reorderTabs(fromIdx: number, toIdx: number) {
     // Don't move home tab (index 0)
     if (fromIdx === 0 || toIdx === 0) return
     if (fromIdx === toIdx) return
@@ -153,7 +170,7 @@ export const useTabsStore = defineStore('tabs', () => {
   /**
    * Update route path on a tab (when query changes etc.)
    */
-  function updateTabPath(name, path) {
+  function updateTabPath(name: string, path: string) {
     const tab = tabs.value.find((t) => t.name === name)
     if (tab) {
       tab.path = path

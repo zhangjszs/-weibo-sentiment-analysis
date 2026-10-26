@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import TabBar from '../src/components/Layout/TabBar.vue'
-import { useTabsStore } from '../src/stores/tabs.js'
+import { useTabsStore } from '../src/stores/tabs'
 import { ICON_COMPONENTS } from '../src/plugins/elementPlus.js'
 import router from '../src/router/index.js'
 
