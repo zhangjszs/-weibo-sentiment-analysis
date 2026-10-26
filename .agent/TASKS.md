@@ -57,7 +57,7 @@
 - **本轮主动补强（非伪工作）**：在不改动仓库任何文件的前提下，用仓库外探针**预先实证三份 Issue 的类型契约与覆盖率基线**，并把结论、负例错误号与覆盖率判定口径写入三份 Issue 正文——把「Planner 定的设计」升级为「已验证可行」，消除 Executor 执行期才发现契约不可行的风险，同时防止 V8 抖动被误判为回归。
 - **Issue ↔ TASKS.md 一致性**：本轮从 `gh issue list --state open` 真实结果整体重写，无冲突、未降级为本地权威模式。
 - **红线恪守**：本批 3 项均在 D-009/D-018/D-019 已授权的前端 TS 渐进范围内，不改 schema / 认证 / 公共 API / CI / 依赖大版本，不设 `coverage.thresholds`，`typecheck` 仍仅本地；本轮亦未新增任何触红线事项。
-- **规划轮 CI 实查**：本轮 `gh api check-runs` 实查 `a901d8f` 与 `06f4fa3` 的 `backend-fast` / `frontend-fast` / `integration` / `rust-core` / `security-scan` 五项**均 `completed/success`**。
+- **规划轮 CI 实查**：本轮 `gh api check-runs` 实查 `a901d8f` 与 `06f4fa3` 的 `backend-fast` / `frontend-fast` / `integration` / `rust-core` / `security-scan` 五项**均 `completed/success`**；本轮规划提交 `f2cc1d9` 的五项亦经轮末实查**全部 `completed/success`**（`integration` 最慢，轮末已等到其收敛并确认 `success`）。
 - **pending**：无新增（今日用户消息为流程启动，未给出新决定；D-023 已默认转正，D-012/D-019 默认 A 继续有效，不重复提问）。
 
 ## 最近已验收关闭任务（近期账本摘要）
