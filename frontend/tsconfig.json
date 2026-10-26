@@ -12,5 +12,11 @@
     "allowJs": true,
     "checkJs": false
   },
-  "include": ["src/stores/app.ts", "src/utils/echarts.ts", "src/utils/chinaMap.ts", "src/stores/tabs.ts"]
+  "include": [
+    "src/stores/app.ts",
+    "src/stores/tabs.ts",
+    "src/utils/echarts.ts",
+    "src/utils/chinaMap.ts",
+    "src/utils/authSession.ts"
+  ]
 }

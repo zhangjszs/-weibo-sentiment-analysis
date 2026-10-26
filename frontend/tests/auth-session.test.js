@@ -14,7 +14,7 @@ import {
   setAuthToken,
   setCachedCurrentUser,
   setCachedUser,
-} from '../src/utils/authSession.js'
+} from '../src/utils/authSession'
 
 function createStorage(initial = {}) {
   const data = new Map(Object.entries(initial))
