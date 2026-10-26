@@ -309,11 +309,11 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
   - **路径 A2**：将成功信号修订为「本地 `-n auto` 并行稳定 `<30s`」（技术上已达成，实测 ~25s），更贴合 2026 年多核开发习惯。
 - **关于 CI <240s**：只要 `integration` 串行依赖 `backend-fast`，在现有 379 个依赖解包开销下几乎不可能稳定 <240s。建议 D-023 授权 **L4**（解除 integration 依赖），一步达成 ~170s 且零依赖风险。
 
-## 7. 议题状态与待确认建议（2026-10-25 刷新）
+## 7. 议题状态与待确认建议（2026-10-26 刷新）
 
-> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选 + 前端覆盖率基线」。状态按 GitHub 真实 state 抄录（2026-10-25 刷新）。
+> M6 主项已收口：本节改为「议题真实状态总表 + 已归档机制决策 + socket 审计结论 + 仍待确认的低风险候选 + 前端覆盖率基线」。状态按 GitHub 真实 state 抄录（2026-10-26 刷新）。
 
-### 7.1 议题状态总表（2026-10-25 刷新）
+### 7.1 议题状态总表（2026-10-26 刷新）
 
 | Issue | 优先级 | 状态 | 摘要 |
 |---|---|---|---|
@@ -351,6 +351,10 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#130](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/130) | P3 | done | 补齐 `src/stores/app.js` 主题切换与侧栏行为测试（9 用例；app.js Stmts/Branch/Funcs/Lines 均 100%；73bec15；已于 2026-10-24 验收关闭；模块已于 #133 迁移为 `app.ts`） |
 | [#131](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/131) | P3 | done | 补齐 `src/stores/tabs.js` 多标签工作区状态机测试（41 用例；tabs.js Lines 97.67% / Funcs 100% / Branch 95.77%–95.83%；9a86951；已于 2026-10-24 验收关闭） |
 | [#132](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/132) | P4 | done | 刷新 TEST_PERF §7.1/§7.5（补 #127–#129 三行与 47/321 新基线段；06b194e；已于 2026-10-24 验收关闭） |
+| [#133](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/133) | P2 | done | 启用本地 TypeScript 类型检查并迁移 app store 首个生产切片（`stores/app.js`→`stores/app.ts` + 最小严格 `frontend/tsconfig.json` + `npm run typecheck` 仅本地、不入 CI；8b3709c；已于 2026-10-26 规划轮独立复跑验收通过并关闭） |
+| [#134](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134) | P4 | done | 收尾 TEST_PERF 验收状态并明确覆盖率快照时点（§7.1 补 #130/#131/#132 三行、§7.5 清过期当前态 + 追加 2026-10-25 快照段；d385af4；已于 2026-10-26 规划轮独立复跑验收通过并关闭） |
+| [#135](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135) | P2 | in-review | 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁（`utils/echarts.ts` + `utils/chinaMap.ts`，`tsconfig.json` include 扩至 3 项、compilerOptions 零改动；1be01af；2026-10-26 交付并合入 main，待 Planner 验收） |
+| [#136](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136) | P2 | in-review | 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变（`stores/tabs.ts`，tsc 转译后与原 `.js` 逐行 diff 可执行语句差异 = 0；ce3ab0d；2026-10-26 交付并合入 main，待 Planner 验收） |
 
 > **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
@@ -379,7 +383,7 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 - integration 层补用例（196 用例偏薄，低覆盖集中在 `views/user`、`views/api/user_routes`；补 integration 优先于加 unit）；
 - 测试规范固化：>1s 用例 PR 需说明理由；mock 样板 >20 行必须提共享 fixture（§3 R3 教训）。
 
-### 7.5 前端覆盖率基线（2026-10-25 刷新，#123 起）
+### 7.5 前端覆盖率基线（2026-10-26 刷新，#123 起）
 
 命令：`cd frontend && npm run test:coverage`（v8 provider，reporter-only；**未设 thresholds 门禁、未纳入 CI**）。
 
@@ -400,6 +404,10 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 
 **2026-10-24 执行会话 2 更新**：#130（`stores/app.js` 主题切换/侧栏测试，73bec15）与 #131（`stores/tabs.js` 多标签状态机测试，9a86951）已合入 main，并已于 2026-10-24 规划轮验收关闭；当时实测 **47 files / 321 tests**，总覆盖率 **Stmts 83.79% · Branch 77.35% · Funcs 37.55% · Lines 83.79%**（`stores/app.js` Stmts/Branch/Funcs/Lines 均 100%，此前 71.79% 行 / 25% 函数；`stores/tabs.js` Stmts 97.67% / Branch 95.83% / Funcs 100% / Lines 97.67%，未覆盖行 40-41、190-191 为 `localStorage` getItem/removeItem 抛错 catch，jsdom 真实对象下无自然构造方式，按 #131 约定不 mock）。0% 模块清单不变（8 个 `src/api/` 包装模块 + `main.js` + `App.vue`）。以上 45/271 与 43/252 等历史段保留原值与时点标注，与本段并存，不互相覆盖。
 
-**2026-10-25 执行会话更新（#134；绑定当次 `npm run test:coverage` 日志）**：#130/#131/#132 现均 `done`/CLOSED（§7.1 已补三行）；#133（app store `app.js`→`app.ts` 迁移，8b3709c，当前 `in-review` 待 Planner 验收）已合入 main——主题 store 现为 TS 模块 `stores/app.ts`（`useAppStore` 与全部主题/侧栏行为不变），迁移后运行时行为经复测一致。本轮实测 **47 files / 321 tests**，总覆盖率 **Stmts 83.88% · Branch 77.33% · Funcs 37.72% · Lines 83.88%**（`stores/app.ts` Stmts/Branch/Funcs/Lines 均 100%，自迁移前 `app.js` 的 100% 无衰减；`stores/tabs.js` 97.67 / 95.77 / 100 / 97.67，未覆盖行 40-41、190-191；`stores/user.js` 97.97 / 81.57 / 100 / 97.97）。`All files` 语句/分支小数随 V8 运行在 83.79–83.90 / 77.32–77.35 间微抖动（D-034 已记录，非回归），本段数值即当次日志快照，与上文各历史段并存、不互相覆盖。0% 模块清单不变（8 个 `src/api/` 声明式包装 + `main.js` + `App.vue`）。
+**2026-10-25 执行会话更新（#134；绑定当次 `npm run test:coverage` 日志）**：#130/#131/#132 现均 `done`/CLOSED（§7.1 已补三行）；#133（app store `app.js`→`app.ts` 迁移，8b3709c，**已于 2026-10-26 规划轮验收关闭**）已合入 main——主题 store 现为 TS 模块 `stores/app.ts`（`useAppStore` 与全部主题/侧栏行为不变），迁移后运行时行为经复测一致。本轮实测 **47 files / 321 tests**，总覆盖率 **Stmts 83.88% · Branch 77.33% · Funcs 37.72% · Lines 83.88%**（`stores/app.ts` Stmts/Branch/Funcs/Lines 均 100%，自迁移前 `app.js` 的 100% 无衰减；`stores/tabs.js` 97.67 / 95.77 / 100 / 97.67，未覆盖行 40-41、190-191；`stores/user.js` 97.97 / 81.57 / 100 / 97.97）。`All files` 语句/分支小数随 V8 运行在 83.79–83.90 / 77.32–77.35 间微抖动（D-034 已记录，非回归），本段数值即当次日志快照，与上文各历史段并存、不互相覆盖。0% 模块清单不变（8 个 `src/api/` 声明式包装 + `main.js` + `App.vue`）。
+
+**2026-10-26 执行会话更新（#137；绑定当次 `npm run test:coverage` 日志，原始日志留存于 `/tmp/cov137.log`，不入库）**：#133/#134 现均 `done`/CLOSED（§7.1 已补两行）；#135（`utils/echarts.js`→`utils/echarts.ts` + `utils/chinaMap.js`→`utils/chinaMap.ts`，1be01af）与 #136（`stores/tabs.js`→`stores/tabs.ts`，ce3ab0d）已于 2026-10-26 执行完成并合入 main，当前均为 `in-review`（待 Planner 验收，**未预支 `done`**）。本轮实测于提交 **`ce3ab0d`**：**47 files / 321 tests**，总覆盖率 **Stmts 83.85% · Branch 77.32% · Funcs 37.44% · Lines 83.85%**（`stores/app.ts` 100 / 100 / 100 / 100；`stores/tabs.ts` 98.56 / 95.77 / 100 / 98.56，未覆盖行 **53、208**；`utils/echarts.ts` 100 / 100 / 100 / 100；`utils/chinaMap.ts` 100 / 100 / 100 / 100；`stores/user.js` 97.97 / 81.57 / 100 / 97.97，未覆盖行 39-40；`stores/analysis.js` 100 / 91.11 / 100 / 100，未覆盖行 38、48；`utils/index.js` 98.23 / 97.08 / 100 / 98.23，未覆盖行 69-70、203-204；`utils/authSession.js` 87.17 / 83.33 / 100 / 87.17）。`stores/tabs.ts` 的两处未覆盖（53、208）是 `loadActiveFromStorage` 与 `resetTabs` 中 `localStorage` 抛错的 catch 分支，与迁移前 `stores/tabs.js` 的 40-41、190-191 **为同一代码区域**（行号位移源于新增的 interface/注释/多行类型标注），按 #131 约定不 mock。0% 模块清单不变（8 个 `src/api/` 声明式包装：alert / content / favorites / platform / predict / propagation / report / user，加 `main.js` 与 `App.vue`，后二者为入口与根壳豁免）。
+
+同 HEAD（`ce3ab0d`）连续复跑一次得 `All files 83.75 | 77.33 | 37.55 | 83.75`，差异**全部**来自 `src/api/auth.js`（38.46 → 17.94）与 `src/views/auth/Login.vue`（100 | 75 | 50 | 100 → 97.87 | 76.92 | 75 | 97.87）两个与本批次无关的既有模块——已实测确认为**同一 HEAD 下连续两次运行的差异**（非 #135/#136 迁移引入；`stores/tabs.ts` 两次均为 98.56 / 95.77 / 100 / 98.56）。故 `All files` 汇总值除语句/分支小数抖动（83.79–83.90 / 77.32–77.35，D-034 已记录）外，**函数项亦存在同源抖动**，本段各模块明细值一律以本段绑定的单次日志为准。
 
 **授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
