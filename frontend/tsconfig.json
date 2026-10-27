@@ -18,6 +18,7 @@
     "src/utils/echarts.ts",
     "src/utils/chinaMap.ts",
     "src/utils/authSession.ts",
-    "src/utils/index.ts"
+    "src/utils/index.ts",
+    "src/plugins/elementPlus.ts"
   ]
 }

@@ -1,5 +1,6 @@
 // ElLoading 默认导出是带 install 的插件对象（注册 v-loading 指令 + $loading）。
 // 注意 2.14.2 没有 es/components/loading/plugin 子路径，深路径只有 …/loading/index。
+import type { App, Component } from 'vue'
 import ElLoading from 'element-plus/es/components/loading/index'
 
 // #39：element-plus 组件与图标不再全量注册。
@@ -46,7 +47,9 @@ import {
   View,
 } from '@element-plus/icons-vue'
 
-export const ICON_COMPONENTS = {
+// 类型取自第三方包自身：图标项是 @element-plus/icons-vue 的 DefineComponent，
+// 统一收敛为 vue 的 Component——不自造 { name: string } 之类的假结构。
+export const ICON_COMPONENTS: Record<string, Component> = {
   Bell,
   ChatDotRound,
   ChatLineRound,
@@ -78,7 +81,8 @@ export const ICON_COMPONENTS = {
   View,
 }
 
-export function installElementPlus(app) {
+// App 取自 vue 自带类型——不另造 { use(...): void; component(...): void } 最小结构。
+export function installElementPlus(app: App): void {
   app.use(ElLoading)
 
   for (const [name, component] of Object.entries(ICON_COMPONENTS)) {

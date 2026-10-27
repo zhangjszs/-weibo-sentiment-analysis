@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 
-import { ICON_COMPONENTS } from '../src/plugins/elementPlus.js'
+import { ICON_COMPONENTS } from '../src/plugins/elementPlus'
 import Help from '../src/views/system/Help.vue'
 import router from '../src/router/index.js'
 

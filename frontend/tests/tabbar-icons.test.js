@@ -3,7 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import TabBar from '../src/components/Layout/TabBar.vue'
 import { useTabsStore } from '../src/stores/tabs'
-import { ICON_COMPONENTS } from '../src/plugins/elementPlus.js'
+import { ICON_COMPONENTS } from '../src/plugins/elementPlus'
 import router from '../src/router/index.js'
 
 // #55：TabBar 页签图标契约（console 告警清理的防回归锚点）。
