@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
 import globals from 'globals'
 import tsParser from '@typescript-eslint/parser'
+import tsPlugin from '@typescript-eslint/eslint-plugin'
 
 // ESLint 9 flat config（替代 .eslintrc.cjs）
 export default [
@@ -45,7 +46,9 @@ export default [
   },
   {
     // #133：仅对 `.ts` 换用 @typescript-eslint/parser；JS/Vue 规则不因此放宽。
+    // #142：仅对 `.ts` 注册 @typescript-eslint 插件；JS/Vue 规则不因此放宽。
     files: ['**/*.ts'],
+    plugins: { '@typescript-eslint': tsPlugin },
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 2022,
@@ -58,6 +61,14 @@ export default [
       // 该覆盖仅作用于本 block 匹配的 .ts 文件，不影响 JS/Vue。
       'no-undef': 'off',
       'no-unused-vars': 'off',
+      // #142：基础 no-redeclare 按 JS 语义判定，**不识别 TS 的重载签名**——
+      // `function f<T>(x: T): T` + 实现签名在 TS 语义下合法，在 JS 语义下才是
+      // 重复声明，故基础规则会把合法重载误报为 "'f' is already defined"。
+      // 改用 @typescript-eslint 版（能正确识别重载签名）而非直接 off，
+      // 以保留 ESLint 层的重复声明检测（CI 的 frontend-fast 跑 lint，但
+      // **不跑 typecheck**——若直接 off，重复声明在 CI 中将无人拦截）。
+      'no-redeclare': 'off',
+      '@typescript-eslint/no-redeclare': 'error',
     },
   },
   { ignores: ['dist/**', 'node_modules/**'] },
