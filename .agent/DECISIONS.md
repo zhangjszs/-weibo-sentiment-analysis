@@ -333,6 +333,67 @@
 - 影响范围：更新 #135/#136/#137 正文（仅追加小节）；更新 `.agent/PLAN.md`、`TASKS.md`、`DECISIONS.md`。**不改代码、不改 `docs/`、不代写 Executor 的 `STATE.md`/`HANDOFF.md`/`ENV.md`/`DIARY/`**；未触碰契约 1.10 红线。
 - pending：**无新增**（今日用户消息为流程启动，未给出新决定；D-023 已默认转正，D-012/D-019 默认 A 继续有效，不重复提问）。
 
+### D-039 / 2026-10-27（第二个规划轮）/ 裁定 Executor 的两处越界代做：**关闭不追溯推翻，但角色边界归位**
+
+- 背景事实：2026-10-27 00:59 用户指示「可以的 开始吧」（直接回应 Executor 自己给出的「下一步建议：先独立复跑验收 #135/#136/#137 并关闭」）。Executor 据此**代做了两件本属 Planner 的事**：① **代做验收与关闭职责**（契约 1.4「Executor 从不 close Issue」）——关闭了 #135/#136/#137；② **代拟 #139/#140 两份 Issue 的规格**（Planner 未参与编排）。Executor 在两条 Issue 正文与日报中**均已显式标注**，未隐瞒。
+- 裁定一（**关闭不追溯推翻**）：本轮复核 #135/#136/#137 的关闭依据**成立**（验收评论 6422214957 / 6422223027 / 6422232092 齐备，提交 `1be01af`/`ce3ab0d`/`f80f53b` 的 CI 五项 success，事务边界未被突破）。**故不推翻其关闭动作、不 reopen**——推翻已成立的关闭只会制造无收益的返工，且会让 Issue 状态与实际交付脱节。
+- 裁定二（**角色边界归位，长期生效**）：**用户的一句话不构成对协作契约的长期修改**。自本决策起：**验收与关闭权归 Planner**；Executor 遇 `in-review` **只能留执行报告、不得 close**；Executor 发现队列为空时**不得自行续排并代拟规格**，应转 `needs-info` 或直接向用户报告「本日无可执行队列」。**若后续确需 Executor 代做编排，必须由用户在当轮明确、且仅限于当轮的指示**，不得被自我引用为长期授权。
+- 裁定三（**#139/#140 规格质量认可**）：本轮已逐条复核两份规格——目标、范围、排除项、依赖、验收标准、测试要求齐备，无产品级待决项，不触契约 1.10 红线，验收标准全部可判定。**无需 reopen**。**自本决策起，Planner 对 Executor 代拟的规格承担复核责任**（本轮已履行）；规格中的偏差（如 #140 的「差异 = 0」措辞）**由 Planner 修正，不记为 Executor 的失实**。
+- 影响范围：不改代码；#135–#137 的 Issue 状态维持 `done`/`CLOSED`；`PLAN.md`/`TASKS.md`/`DECISIONS.md` 已记录。**不触契约 1.10 红线**（角色边界属流程约定，非技术架构变更）。
+
+### D-040 / 2026-10-27（第二个规划轮）/ 修正「运行时等价性自证」的验收口径：**差异 = 0，或差异行全部为已申报且经实证的行为等价改写**
+
+- 问题：#140 的 Issue 规格要求「可执行语句差异 = 0」，但 TS 的类型系统**比 JS 的运行时更严格**，在 `formatDate`（`d.getFullYear()` → `String(d.getFullYear())`）与 `formatRelativeTime`（`now - target` → `now.getTime() - target.getTime()`）两处**字面不可达**。Executor 实测为 2 行差异并**主动申报**（未隐瞒），并在 Issue 中明确拒绝了「用类型谎言凑 0」的方案。
+- 事实核查（本轮独立执行，未复用 Executor 产物）：
+  1. **转译逐行 diff 独立复算**（`tsc --outDir` → 仓库同一份 `.prettierrc.json` 规范化 → 与迁移前 `index.js` 逐行 diff，剥除空行与注释）→ 差异**恰为申报的 2 行，无第三处遗漏**。
+  2. **运行时等价性用 Node 脚本独立实测**（含边界）：`year` 改写 —— 唯一消费点是 `pattern.replace('YYYY', year)`，`String.prototype.replace` 对 replaceValue 走 ToString，而 `ToString(number)` 与 `String(number)` 是同一算法（Number::toString）；边界覆盖 Invalid Date（NaN）、公元 1 年（1）、**负年份（-1）**，三者的 `replace` 输出**逐字相同**。`diff` 改写 —— `-` 对两对象走 ToPrimitive(hint number) → `Date.prototype.valueOf()`，与 `getTime()` 返回同一个毫秒值；边界覆盖 Invalid Date（**两侧同为 NaN**）、`class MyDate extends Date` 子类（仍相等）、下游 `Math.floor(diff / 1000)`（仍相等）。**注**：本轮首测用 `===` 比较 NaN 会误报为「不等」，已改用 `Object.is` 重测确认两侧同为 NaN——**此为比较方法的坑，不是语义差异**。
+- 决定：**修正后的验收口径**为——
+  > **可执行语句差异 = 0，或差异行全部为「已申报 + 经独立实证证明行为等价」的最小类型适配改写**；且改写必须逐条附等价性依据与边界实测，**不得引入类型谎言**（把 number 说成 string / 把 Date 说成 number 之类）。
+- **理由**：字面 0 的口径在有 TS 严格性冲突的模块上不可达；若为凑字面 0 而回退成类型谎言，**代价远大于收益**——类型谎言会成为维护陷阱且比一个可证明等价的改写危险得多。**实质目标是「运行时行为零改动」**，该目标已达成。
+- 影响范围：写入 #141 验收标准（已在正文中引用）；#140 据此判定**通过并关闭**。不改变任何代码、契约或 CI。
+
+### D-041 / 2026-10-27（第二个规划轮）/ `as unknown as T` × 3：**当前接受，但记为观察项**（不立独立治理任务）
+
+- 事实：#140 的 `src/utils/index.ts` 的 `deepClone<T>` 实现内有 **3 处 `as unknown as T`**（第 219、223、235 行）+ 2 处 `as Record<string, unknown>`（第 230、232 行）。Executor **逐条申报**了全部 5 处断言及其理由。Planner 本轮独立 grep 复核：`any` **0**、`@ts-ignore`/`@ts-expect-error` **0**、`eslint-disable` **0**、非空断言 `!.` **0**、`as unknown as` **3**（与报告声明一致）。
+- 决定：**当前接受**。理由——这 3 处全部**编译期擦除**、转译后输出的 JS 与迁移前**逐字相同**、且位于**泛型实现内部**（TS 无法静态证明 `T` 的具体形态，属不可避免的类型收窄），与 Issue 规格「实现内部为满足泛型所需的断言必须逐条在报告中列出」的授权一致。**不判为「类型逃逸」**。
+- **观察项（不立任务）**：若后续 api 层类型化或 SFC 入门禁时 `deepClone` 成为共享依赖，需**复核其泛型边界能否在不引入 `as unknown as` 的前提下表达**（例如用重载签名——但这依赖 D-042 的 lint 治理先落地）。**在 #141/#143 完成前不占用队列容量**；**不单独开 Issue**，避免制造低价值任务。
+
+### D-042 / 2026-10-27（第二个规划轮）/ 批次层面的治理项单独成项，**不夹带进单个切片**
+
+- 事实：#140 因不想动共享 lint 配置（`eslint.config.js` 不在其允许改动清单内），**绕开了 `.ts` 的 `no-redeclare` 误报**，改用单签名 + 断言。Planner 本轮**独立复现**该误报：在 `frontend/src/utils/` 放含 TS 重载签名的临时 `.ts` 文件 → `npx eslint` **exit 1**、`no-redeclare: 'deepClone' is already defined.`（探针已 `rm`，工作区干净）。根因：基础 ESLint 的 `no-redeclare` **不识别 TS 重载签名**；当前 `eslint.config.js` 对 `**/*.ts` 只关闭了 `no-undef`/`no-unused-vars`。
+- 决定：**单开 #142（P2，`ready`）统一治理**，**不夹带进 #141 等单个切片**。理由：这是**批次层面**的问题（影响所有 `.ts` 切片），夹带会使单切片的改动面超出其 Issue 声明范围，且下一切片一旦需要重载签名必然再次被拦。
+- **方案取舍（Planner 已查证，写入 #142 验收标准）**：
+  - **方案 A（首选）**：改用 `@typescript-eslint/eslint-plugin` 的 `no-redeclare`（该规则**能正确识别 TS 重载签名**）。**代价**——当前 `devDependencies` **只有 `@typescript-eslint/parser`、没有 `eslint-plugin`**，方案 A 需**新增一个 devDependency**（须钉 `8.46.2` 与现有 parser 同版本，并报告 lockfile 插入/删除行数）。
+  - **方案 B（备选，不新增依赖）**：在 `**/*.ts` block 内 off 基础 `no-redeclare` 并注释说明。**前提（必须实测证明）**——确认 `tsc` 在 `strict` 下确实会报重复声明错误（TS2300 / TS2393）。**若 tsc 不报，方案 B 不成立，必须改用方案 A**，不得留下「两个工具都不管」的空档。
+  - **共同约束**：改动**仅限 `.ts` block**，JS/Vue 侧规则不得放宽；`src/**` 与 `tests/**` 零改动；`npm run lint` 已在既有 CI 步骤中跑，故本项**必须自身跑通并实查 CI 五项**。
+- 影响范围：新建 #142；`PLAN.md`/`TASKS.md` 已记录。不改代码、不改 CI 矩阵。
+
+### D-043 / 2026-10-27（第二个规划轮）/ **TS 门禁纯净度**升为硬约束，并据此排除 `stores/user.js` / `stores/analysis.js`
+
+- 事实（本轮用**仓库外临时 tsconfig**（未入库、未改动仓库任何文件）实测确立）：当前 `frontend/tsconfig.json` 的 `include` 是**显式白名单**（6 个 `.ts`），现有 6 个模块**全部是零本地 `.js` 导入的纯模块**（只 import `vue`/`pinia`/`echarts`/第三方包）→ `npx tsc --noEmit --listFiles` 在 `frontend/src` 下 **`.js`/`.vue` 计数 = 0**。但一旦某个 `.ts` 引入未迁移的 `.js`，`allowJs` 会把该 `.js` **及其整个依赖链**拉进类型程序——实测 `stores/user.js` 的探针连带拉入 `src/router/index.js`、`src/api/request.js`、`src/api/index.js`、`src/api/auth.js` 共 **4 个 `.js`**（计数 0 → 4）。
+- 决定：
+  1. **门禁纯净度升为硬约束**：任何 TS 切片的 `--listFiles` 中 `frontend/src` 下的 **`.js`/`.vue` 生产文件计数必须恒为 0**；违反即**验收不通过**。已写入 #141 验收标准。
+  2. **排除 `stores/user.js` / `stores/analysis.js`**（`docs/FRONTEND_TS_MIGRATION.md` §2 第三批）：二者经 `@/api/*` + `@/router` 会把 4 个 `.js` 拉进门禁，**不可单独迁移**。**须先完成 api 层类型化并确立响应契约**（`api/request.js` + `api/index.js` + `api/auth.js`），届时单独立项。**这是 TS 渐进化下半程的主阻塞点**，已记入 `PLAN.md` 的「下一阶段」。
+  3. **`plugins/elementPlus.js` 可单独迁移**（→ #141）：它**零本地 `.js` 导入**（只依赖 `element-plus/es/components/loading/index` 与 `@element-plus/icons-vue` 两个自带 `.d.ts` 的第三方包），是当前唯一能在不污染门禁的前提下迁移的剩余模块。
+- 影响范围：新建 #141；`PLAN.md` 的「明确非目标」与「下一阶段」已记录。**不改变 TS 渐进化的授权范围**（D-009/D-018/D-019 不变），只是把「可执行顺序」按实测约束重排。
+
+### D-044 / 2026-10-27（第二个规划轮）/ **#138 定级 P3 并拆分**：根因记录与修复分离；D-034 抖动带须补记 Funcs
+
+- 事实（本轮独立复现并**单文件隔离定位**根因）：同 HEAD 连跑两次 `npm run test:coverage` → `auth.js` **17.94 ↔ 38.46**、`Login.vue` **97.87/76.92/75 ↔ 100/75/50**、`All files` **83.76 ↔ 83.86**（与 #138 描述一致）。定位结果：
+  | 运行方式 | `auth.js` | `Login.vue` |
+  |---|---|---|
+  | 只跑 `tests/login-journey.test.js` | **0 / 0 / 0 / 0**（未覆盖 1-45） | 97.87 / 76.92 / 75 / 97.87 |
+  | 只跑 `tests/router-guard.test.js` | **17.94 / 100 / 0 / 17.94** | 100 / 100 / 100 / 100 |
+- **机制**：`tests/login-journey.test.js:24` 与 `tests/user-store.test.js:20` 用 `vi.mock('@/api/auth', () => ({...}))` **工厂函数整体替换模块** → 被 mock 的模块体**永不执行**；而 `tests/router-guard.test.js` 只 mock axios，经 `@/router → @/api/request → @/api/index` **间接加载真实 `auth.js`** → `auth.js` 的覆盖集合取决于**文件调度顺序与 vitest worker 分组** → 两次全量运行结果漂移。**属测试隔离问题，生产代码无缺陷**（`test:run` 两次均 47 files / 321 tests 全绿）。
+- **既有口径的缺口（已确认）**：`docs/TEST_PERF.md` §7.5 的 D-034 抖动带**只覆盖语句/分支小数**（83.79–83.90 / 77.32–77.35），**未覆盖函数项（Funcs）**——本轮实测 `All files` 的 Funcs 在 **37.44 ↔ 37.55** 间漂移，**超出既有带**，故 D-034 **无法解释**本现象。
+- 决定：
+  1. **#138 定级 P3**（`auto-discovered` → `priority:P3` + `type:bug` + `area:frontend`），**保留为根因记录**（现象未消除故不关闭），根因与实测数据写入其评论。
+  2. **拆分 #143（P3，`ready`）承接实际修复**：只改测试侧（`src/**` 零改动）；验收标准是**同 HEAD 连跑两次 coverage 逐项完全相同**——**不得用「放宽抖动带」冒充修复**；无法真正稳定则转 `needs-info`。
+  3. **D-034 抖动带须补记 Funcs 范围**，且 §7.5 的新段须**追加**、**历史段数值逐字不改**（历史段是带时点标注的快照）。若修复后确实稳定，如实写「修复后稳定」并给出证据，**不得声称「抖动已消除」**而无证据。
+  4. **验收锚点口径再次钉死**：`All files` **不可作跨运行锚点**（本 Issue 证明它连同 HEAD 都可能不同）；一律以「被迁移文件自身四项」为唯一锚点，**并辅以 lcov 原始计数器（`FNF/FNH/BRF/BRH/LF/LH`）与未覆盖语句的逐行源文本对照**——本轮对 #139/#140 均用此法证明「记账效应 ≠ 覆盖率变化」。
+- 影响范围：新建 #143；#138 标签已更新并留评论；`PLAN.md`/`TASKS.md` 已记录。不改代码、不改 `docs/`（文档改动归 #143 执行）。
+
 ## 待用户确认（pending，低风险部分已按默认方案先行）
 
-- 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A）。用户如希望改为 B/C，可随时明确授权。
+- 当前无 pending 项（D-023 已于 2026-10-20 按 6.3 默认转正为 A；D-012 / D-019 默认 A 继续有效）。用户如希望改为 B/C，可随时明确授权。
+- **本轮（2026-10-27 第二个规划轮）无任何事项必须由用户拍板**：两处越界代做、#140 口径收窄、#138 定级与拆分、TS 第四批选型、no-redeclare 治理方式与方案取舍、门禁纯净度约束——**全部可由查证与既有授权（D-009/D-018/D-019）自行决定**，故按契约 6.1 不向用户提问。

@@ -1,54 +1,56 @@
 # PLAN — 开发路线图
 
-> Planner 维护；Executor 只读。2026-10-26 **同日第二轮**规划轮更新（完整规格与验收证据见 GitHub Issues 与 `.agent/TASKS.md`；决定见 D-034 / D-035 / D-036 / D-037 / **D-038**）。
-> 本轮为**同一日的第二次规划轮**（首轮 `a901d8f` 于 00:19 完成 #133/#134 独立复跑验收并编排本批队列）。首轮后 **Executor 未运行**（无 `DIARY/2026-10-26.md`、无新代码提交、#135/#136/#137 均 0 comment），故 **in-review = 0、无新增验收、无新增队列任务**；本轮的价值在于**在 Executor 开工前，用仓库外探针把三份 Issue 的类型契约与覆盖率基线实证为「确实可行」**，消除执行期才发现契约不可行的风险。
+> Planner 维护；Executor 只读。2026-10-27 **规划轮**更新（完整规格与验收证据见 GitHub Issues 与 `.agent/TASKS.md`；决定见 D-039 / D-040 / D-041 / D-042）。
+> 本轮性质：**2026-10-27 的第二个规划轮**。上一轮（2026-10-26 同日第二轮，`f2cc1d9` / D-038）编排的 #135/#136/#137 已由 Executor 在 2026-10-27 01:00 执行轮交付并关闭；Executor 随后**代做 Planner 职责**续排并交付了 #139/#140（Planner 未参与编排）。本轮的核心价值是：**独立复跑验收 #139/#140 并关闭**，**裁定两处越界代做**，以及**用实测探针消除第四批切片的可行性风险**（见「当前方向」第 3 条）。
 
 ## 当前方向
 
-1. **前端 TS 渐进化的首个生产切片已真实落地并通过验收**：#133（`8b3709c`）交付 `frontend/tsconfig.json`（strict+noEmit，`include` 仅 `src/stores/app.ts`）+ `npm run typecheck`（仅本地）+ eslint `.ts` parser + vitest coverage 纳入 `.ts`，`app.js` → `app.ts` 无 shim。首轮独立复跑证据：`typecheck` exit 0、`--listFiles` 仅列 `app.ts`、47 files / 321 tests 全绿、`app.ts` 四项覆盖率 100、`lint`/`format:check`/`build` exit 0、仓库外类型负例探针复现 `TS2345` + `TS2322`（exit 2）、`package-lock.json` 418 插入 / 0 删除、`8b3709c` 五项 CI `completed/success`。
-2. **方向从「建门禁」转为「把既有行为覆盖最强的模块逐个纳入门禁」**：TS 渐进化（D-009/D-018/D-019 已授权）是当前唯一可持续的真实选题——前端测试卫生补强已枯竭（余下仅 8 个声明式 API 薄包装属 mock 复述、`main.js`/`App.vue` 属壳层豁免），M6/M7 仍冻结。第二批选 `utils/echarts.js` + `utils/chinaMap.js`（第一批余项，迁移前覆盖率各 100/100/100/100，6 用例真实锁定）与 `stores/tabs.js`（193 行、41 用例锁定状态机、Lines 97.67 / Funcs 100 / Branch 95.77），两者都能用既有测试做行为回归，不需要发明新验收口径。
-3. **本轮新增的确定性（降低执行期风险）**：在仓库外探针 `/tmp/probe-planner-1026/`（未入库）用仓库同一份 `tsconfig.json` 的 `compilerOptions` + 同版本 `typescript@5.9.3` 实证——#135/#136 正文钉死的类型契约**逐字构造后 `tsc --noEmit` exit 0**；#136 的关键收窄点（`!route?.name` 之后 `route.name` 收窄为 `string`）**无需 `any`、无需非空断言**；`echarts/core` 类型经 `node_modules/echarts/core.d.ts` → `types/dist/core.d.ts` 正常解析（**无需新增 `@types`**）；负例探针实测错误号 `TS2554` / `TS2559` / `TS2345`；`--listFiles` 中 `.js`/`.vue` 生产文件计数 = 0。三份 Issue 正文已追加「Planner 补充核对（· D-038）」小节承接这些结论。
-4. **边界不变**：`typecheck` 与前端覆盖率**仅限本地**，不纳入 CI / pre-commit，不设 `coverage.thresholds`；不新增依赖大版本、不改 schema / 认证 / 公共 API / 业务行为；M6 依 D-023 A 冻结、M7 依 D-019 A 冻结，#98 冻结现场不重置。
-5. **覆盖率判定口径（本轮钉死）**：V8 跨运行抖动（D-034，带 `All files` 83.79–83.90 / 77.32–77.35）**不是回归**。#135/#136/#137 的覆盖率验收**一律以「被迁移文件自身四项」为唯一锚点**，不做 `All files` 汇总值的跨运行比对。
+1. **TS 渐进化第三批已验收关闭，类型门禁从 4 个模块扩到 6 个**——#139（`utils/authSession.ts`，`f0661bb`）与 #140（`utils/index.ts` + `lib` ES2021，`92cd03b`）经本轮**独立复跑验收通过并关闭**（验收评论 #139 `6440380674`、#140 `6440392290`）。本轮**未复用 Executor 任何产物**：新建 worktree 基线（`/tmp/base139`、`/tmp/base140`）、独立转译 diff、独立 lcov 计数器对照、独立运行时等价性实证、独立 CI 实查，全部复现了报告结论。**#140 的「运行时等价性 = 0 差异」口径收窄为 2 行语义等价改写，本轮已用 Node 脚本实测（含 NaN / 负年份 / Date 子类边界）判定为行为等价，按实质目标通过**（口径修正见 D-040）。
+2. **第四批 TS 切片的可行性边界已由实测锁定**——本轮用临时 tsconfig（未入库）证明了一个**决定性约束**：`tsconfig.json` 的 `include` 是显式白名单，现有 6 个 `.ts` **全部是零本地 `.js` 导入的纯模块**；一旦某个 `.ts` 引入未迁移的 `.js`，`allowJs` 会把该 `.js` **及其整个依赖链**拉进类型程序（实测 `stores/user.js` 会连带拉入 `router/index.js`、`api/request.js`、`api/index.js`、`api/auth.js` 共 4 个 `.js`，使「`--listFiles` 中 `.js`/`.vue` 计数 = 0」直接失效）。**故 `stores/user.js` / `stores/analysis.js` 不可单独迁移**，必须先完成 api 层类型化并确立响应契约；而 `plugins/elementPlus.js` **零本地 `.js` 导入**（只依赖两个自带 `.d.ts` 的第三方包），是当前唯一可单独迁移且不污染门禁的剩余模块（#141）。
+3. **批次层面的治理项单独成项，不夹带进切片**——#140 因不想动共享 lint 配置而绕开了 `.ts` 的 `no-redeclare` 误报；本轮**独立复现**该误报（TS 重载签名 → `no-redeclare: 'deepClone' is already defined.`，exit 1），立为 **#142** 统一治理，并已查证当前 `devDependencies` 只有 `@typescript-eslint/parser`、**没有 `eslint-plugin`**——故方案 A（引插件版规则）需新增 devDependency，方案 B（`.ts` block 内 off 基础规则）不新增依赖但**必须实测证明 tsc 会拦真正的重复声明**。两者均写入 #142 验收标准，由 Executor 判定。
+4. **#138 的根因已定位，拆分为记录与修复两项**——本轮独立复现了 `auth.js` 17.94↔38.46 / `Login.vue` 97.87↔100 的漂移，并用**单文件隔离实测定位到机制**：`vi.mock('@/api/auth', () => ({...}))` 工厂函数**整体替换模块**，被 mock 的模块体永不执行；而 `router-guard.test.js` 不 mock auth、经 `@/router → @/api/request → @/api/index` 间接加载真实 `auth.js` → **覆盖集合取决于文件调度顺序与 worker 分组**。这是**测试隔离问题，生产代码无缺陷**。同时确认**既有 D-034 抖动带未覆盖 Funcs 项**（实测 `All files` Funcs 37.44↔37.55 超出既有带）。#138 保留为根因记录，#143 承接实际修复。
+5. **边界不变**：`typecheck` 与前端覆盖率**仅限本地**，不纳入 CI / pre-commit，不设 `coverage.thresholds`；不新增依赖大版本、不改 schema / 认证 / 公共 API / 业务行为；M6 依 D-023 A 冻结、M7 依 D-019 A 冻结，#98 冻结现场不重置。
+6. **验收锚点口径（本轮再次钉死）**：`All files` **不可作跨运行锚点**——#138 的漂移已证明它连同 HEAD 都可能不同；**一律以「被迁移文件自身四项」为唯一锚点**，且需辅以 lcov 原始计数器（`FNF/FNH/BRF/BRH/LF/LH`）与未覆盖语句的**逐行源文本对照**——本轮对 #139/#140 均用此法证明「记账效应 ≠ 覆盖率变化」。
 
-## 今日目标（2026-10-26）
+## 今日目标（2026-10-27）
 
-- **#135**：`src/utils/echarts.js` 与 `src/utils/chinaMap.js` 干净迁移为 `.ts` 并进入 `tsconfig` 门禁（`include` 增至 3 项，compilerOptions 不动），同步去掉 `tests/china-map.test.js:34` 的显式 `.js` 扩展名；6 用例与全量 47/321 不缩水、coverage 含两个 `.ts` 且四项等值、`lint`/`build` 全绿。
-- **#136**：`src/stores/tabs.js` 迁移为 `tabs.ts` 并入门禁；`TabItem` / `addTab` 最小结构类型 / `router?: { push: ... }` 按 Issue 钉死的契约标注，运行时语义（home 不可关、邻接激活、no-op 守卫、query 拼接、`resetTabs` 清理）逐字不变；41 用例全过、coverage 含 `stores/tabs.ts`。
-- **#137**：批次文档收尾——`docs/TEST_PERF.md` §7.1 补 #133/#134 与 #135/#136 四行（状态按执行时点真实 Issue，不预支 `done`），§7.5 把 #133 的过期当前态就地改为时点表述并追加与当次 coverage 日志逐项一致的新快照段。
-- Executor 每步完成后按契约 1.7 留固定字段执行报告并转 `in-review`（严禁自行 close），刷新 `STATE.md` / `HANDOFF.md`，在 `.agent/DIARY/2026-10-26.md` 追加日报。
-- **本轮（第二次规划轮）新增的 Executor 输入**：三份 Issue 正文均已追加「Planner 补充核对（· D-038）」小节，含**已实证可编译的类型契约**、**负例探针的实测错误号**、**覆盖率判定口径（以被迁移文件自身四项为锚点，不比对 `All files` 跨运行值）**。Executor 照做即可，不必再自行发明类型写法或担心 V8 抖动被误判。
+- **验收 #139 / #140 并关闭**（本轮最高优先级）：独立复跑全部门禁 + 重建迁移前基线 + 重算转译等价性 + 重查 CI，逐条核对原验收标准；已完成 → **两项均 CLOSED / `done`**。
+- **裁定 Executor 的两处越界代做**：验收/关闭职责（#135–#137）与 #139/#140 规格编排；给出明确口径并写入 D-039，避免明日重复。
+- **编排今日队列（3 项，全部 `ready`）**：#142（lint 配置治理，面小风险低，先做）→ #141（TS 第四批切片）→ #143（#138 根因修复）。队列保持 3 项，符合 4.3 容量约束；逐项过 4.2 七条门禁。
+- **给 #138 定级**（P3 + `type:bug`），拆出 #143 承接修复：已完成。
 
-## 当前授权切片：前端 TypeScript 渐进化（D-009；切片验收进度 1 / 3 —— #133 `done`，#135 / #136 待交付验收；#137 为配套文档收尾，不计分母）
+## 当前授权切片：前端 TypeScript 渐进化（D-009；切片验收进度 4 / 5 —— #133 / #135 / #136 / #139 / #140 已 `done`；#141 为第四批待交付；#142 为批次治理不计分母）
 
 > 注：属 D-009 已授权方向的有界推进，不新建 GitHub Milestone，不计入 M6 / M7 分母。
 
 ### 目标与验收
 
-- 每个切片只迁移 Issue 钉死的模块，不留 `.js` shim / re-export / 双实现；不改运行时语义、不缩窄既有公共契约（如 `setTheme(string)`、`localStorage` 任意字符串、`icon: string | null`）。
+- 每个切片只迁移 Issue 钉死的模块，不留 `.js` shim / re-export / 双实现；不改运行时语义、不缩窄既有公共契约。
 - `frontend/tsconfig.json` 的 `include` 只按已迁移文件逐个增加；`compilerOptions` 保持 `strict` + `noEmit` + `allowJs`/`checkJs:false` + `noUnusedLocals`/`noUnusedParameters`，不新增 `baseUrl`/`paths`/`tsconfig.node.json`/`allowImportingTsExtensions`。
+- **门禁纯净度（新增硬约束，本轮实测确立）**：`npx tsc --noEmit --listFiles` 在 `frontend/src` 下的 **`.js`/`.vue` 生产文件计数必须恒为 0**——任何切片若引入对未迁移 `.js` 的导入，会连带把整个依赖链拉进门禁，**直接导致该切片验收不通过**。
 - 类型标注禁止 `any` / `@ts-ignore` / 文件级 suppress 用于掩盖自有代码错误；第三方/DOM 返回的 `any`（`Response.json()`、`JSON.parse`、axios 响应）允许沿用既有守卫并做**最小**断言，且断言须在报告中逐条列明理由。
 - 每切片随代码更新 `docs/FRONTEND_TS_MIGRATION.md` §0 的「已迁移 / 尚未迁移」清单（如实写明仍未迁移范围，不承诺全仓类型安全）。
-- 迁移必须同步修正指向被改文件的**显式 `.js` specifier**（本轮实测仅两处：`tests/china-map.test.js:34`、`tests/tabbar-icons.test.js:5`），不得用 mock 技巧绕过模块解析变化。
+- 迁移必须同步修正指向被改文件的**显式 `.js` specifier**，不得用 mock 技巧绕过模块解析变化。
 
 ### 完成信号（Success signal）
 
-- 出现以下事实即为本批次完成：`find frontend/src -name "*.ts"` 恰含 `stores/app.ts`、`stores/tabs.ts`、`utils/echarts.ts`、`utils/chinaMap.ts`；`npm run typecheck` exit 0 且 `--listFiles` 不含任何 `.js`/`.vue` 生产文件；前端全量 ≥47 files / 321 tests 全绿且 coverage 报告包含上述 4 个 `.ts` 且各项不低于迁移前实测；`docs/TEST_PERF.md` §7.1 与 §7.5 反映执行时点真实状态。
+- 出现以下事实即为**第四批完成**：`find frontend/src -name "*.ts"` 恰含 7 个 `.ts`（前 6 个 + `plugins/elementPlus.ts`）；`npm run typecheck` exit 0 且 `--listFiles` 不含任何 `.js`/`.vue` 生产文件；前端全量 ≥47 files / 321 tests 全绿；`docs/FRONTEND_TS_MIGRATION.md` §0 反映执行时点真实状态。
 - 单个切片「完成」的判据是：交付经 Planner **独立复跑**验收通过并 `done`（不是 Executor 自报，也不等于整个 TS 迁移收敛）。
 
 ### 明确非目标（Non-goals）
 
-- 不迁移 `plugins/elementPlus.js`、`utils/index.js`、`utils/authSession.js`、其余 store（`user.js`、`analysis.js`）、api/（14）、composables/、router/、`main.js` 与 45 个 `.vue`。
-- 不给 `_persist`（`tabs.js:52–54`）加 try/catch / 重试 / 事务（D-034：等真实故障证据）；不改 `ensureChinaMap()` 的失败恢复契约。
+- **不迁移 `stores/user.js` / `stores/analysis.js`**（本轮实测：会经 `@/api/*` + `@/router` 把 4 个 `.js` 拉进门禁，违反门禁纯净度）——**须先完成 api 层类型化并确立响应契约**，届时单独立项。
+- 不迁移 api/（14）、composables/、router/、`main.js` 与 45 个 `.vue`。
 - 不改 `.github/workflows/`、pre-commit、CI 矩阵；不把 `typecheck` 或前端覆盖率纳入 CI；不设 `coverage.thresholds`。
-- 不为薄包装模块补 mock 复述测试，不为入口/根壳补测试；不重查 V8 coverage 小数抖动根因。
+- 不为薄包装模块补 mock 复述测试，不为入口/根壳补测试；不重查 V8 coverage 小数抖动根因（#143 除外，它有明确的测试隔离根因）。
 - 不动 #98 冻结现场，不启动 M7 扩展，不降低 M6 阈值。
+- **不在单个切片内夹带共享 lint 配置的改动**（`no-redeclare` 治理归 #142 单独成项）。
 
 ### 执行队列（给 Executor 的建议顺序，保持 3 个 ready）
 
-1. **[#135 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135)**（P2，`ready`）—— 分支 `agent/issue-135-utils-ts`。**类型契约已由 Planner 预验证可编译（exit 0）。**
-2. **[#136 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136)**（P2，`ready`）—— 分支 `agent/issue-136-tabs-store-ts`（与 #135 无相互依赖，但同改 `tsconfig.json` 的 `include`，须在其后并入以免回退他人条目）。**类型契约已由 Planner 预验证可编译（exit 0），`route.name` 收窄无需 `any`。**
-3. **[#137 收尾 TS 第二批次验收账并追加执行时点覆盖率快照](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/137)**（P4，`ready`）—— 分支 `agent/issue-137-ts-batch2-docs`（硬依赖 #135 / #136 先执行）。
+1. **[#142 统一治理 .ts 文件的 no-redeclare 误报（TS 重载签名被基础 ESLint 规则误判）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/142)**（P2，`ready`）—— 分支 `agent/issue-142-ts-no-redeclare`。**只改 `frontend/eslint.config.js` 的 `**/*.ts` block + 可能的新增 devDependency + 文档**；`src/**` 与 `tests/**` 零改动。**必须实测证明「真正的重复声明仍被 tsc 拦」**（方案 B 的前提）——否则改用方案 A（引 `@typescript-eslint/eslint-plugin@8.46.2`，与现有 parser 同版本）。**先做**：改完 lint 配置后，#141 的 `lint` 结果即最终态，无需复跑。
+2. **[#141 迁移 plugins/elementPlus.js 为 TypeScript 并纳入本地类型门禁](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/141)**（P2，`ready`）—— 分支 `agent/issue-141-elementplus-ts`。`ICON_COMPONENTS` 的 35 个图标项**逐项不改**（增/删/改名/换序均禁止）；`installElementPlus(app: App)` 用 `vue` 自带 `App` 类型，**不自造结构**；`icon-registration.test.js:4` 与 `tabbar-icons.test.js:6` 各去 1 行扩展名。**门禁纯净度是本切片最关键的验收项**。
+3. **[#143 修复 auth 域测试隔离导致的覆盖率跨运行漂移（#138 根因治理）](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143)**（P3，`ready`）—— 分支 `agent/issue-143-auth-coverage-isolation`。**只改测试侧**（`src/**` 零改动）；验收标准是**同 HEAD 连跑两次 coverage 逐项完全相同**——**不得用「放宽抖动带」冒充修复**；无法稳定则转 `needs-info`。同步 §7.5 追加新段 + 补记 D-034 的 Funcs 范围（历史段数值逐字不改）。
 
 ## 保留的 Milestone 事实与成功阈值
 
@@ -70,18 +72,20 @@
 - **#98（`in-progress` 冻结）**：受 D-019 A 冻结，保持现场不重置、不关闭，Executor 不得领取；虽超 24h 无日报活动，仍按既往裁定不标「疑似中断」。
 - **#96 / #100 / #101 / #102（`needs-info`）**：受 D-019 A 冻结（#102 同时依赖 #98，且跨版本 CI 矩阵属契约 1.10 红线）。
 - **#59（`needs-info`）**：待用户提供具体产品功能需求（D-012 默认 A 有效，不重复追问）。
-- **#137 依赖链**：只有 #135 / #136 已交付（无论是否已验收）才可执行 #137；未交付项按 Issue 规定如实登记缺失，不预支状态。
+- **#141 依赖链**：#142 建议先行（改 `eslint.config.js` 的面小、风险低）；二者无硬依赖，但 #142 先做可让 #141 的 lint 结果一次到位。
+- **TS 第四批的隐性依赖**：`stores/user.js` / `stores/analysis.js` 的迁移**被门禁纯净度约束阻塞**，须先有 api 层类型化 + 响应契约（见「明确非目标」）。
 
 ## 下一阶段
 
-- #135 / #136 通过验收后，按 `docs/FRONTEND_TS_MIGRATION.md` §2 继续小步编排：第一批收尾（`plugins/elementPlus.js`）与第二批（`utils/index.js`、`utils/authSession.js`、api/ 层）中行为覆盖最强的模块优先；api/ 类型化需先定响应契约，届时若无明确判定口径则建 `needs-info` 而非硬排。
+- #141 通过验收后，`docs/FRONTEND_TS_MIGRATION.md` §2 第三批（`stores/analysis.js`、`stores/user.js`）**仍被门禁纯净度阻塞**——需先立**api 层类型化**任务（`api/request.js` + `api/index.js` + `api/auth.js` 的响应契约确立），这是 TS 渐进化下半程的**主阻塞点**，应作为下一批的主线立项。
+- 若 #143 修复了 auth 域覆盖漂移，需回头**收窄 D-034 抖动带的适用范围**（若抖动确已消除），并复核 `docs/TEST_PERF.md` §7.5 各历史段是否需要标注修正。
 - 若用户提供 #59 具体产品需求，或对 D-019（M7）/ D-023（M6）/ 「把 `typecheck` 纳入 CI」给出新授权，按用户新决定重排队列。
 
 ## 已放弃的方向
 
-- 登录验证码（D-02 暂缓）· 归档 SQL（D-03 保留）· uv/venv 整包缓存（D-013 / D-016 放弃）· session 级训练缓存（D-014 放弃）· 默认开启 xdist / randomly / 全局 pytest-socket（D-024 放弃）· M7 未授权扩展（D-019 A 冻结）· M6 降阈值或改 CI 级联（D-023 A 冻结）· 为 8 个声明式 API 薄包装补 mock 复述测试、为 `main.js`/`App.vue` 补壳层测试（D-031/D-032 非目标）· 凭风格差异给 `_persist` 排容错（D-034 等真实故障证据）。
+- 登录验证码（D-02 暂缓）· 归档 SQL（D-03 保留）· uv/venv 整包缓存（D-013 / D-016 放弃）· session 级训练缓存（D-014 放弃）· 默认开启 xdist / randomly / 全局 pytest-socket（D-024 放弃）· M7 未授权扩展（D-019 A 冻结）· M6 降阈值或改 CI 级联（D-023 A 冻结）· 为 8 个声明式 API 薄包装补 mock 复述测试、为 `main.js`/`App.vue` 补壳层测试（D-031/D-032 非目标）· 凭风格差异给 `_persist` 排容错（D-034 等真实故障证据）· **在单个 TS 切片内夹带共享 lint 配置改动**（D-042：批次治理单独成项）。
 
 ## 给 Executor 的指令（不超过 2 句）
 
-- 按 **#135 → #136 → #137** 串行执行，`ENV.md` 未设 `WORKFLOW=trunk`，严格用每任务独立分支（`agent/issue-135-utils-ts`、`agent/issue-136-tabs-store-ts`、`agent/issue-137-ts-batch2-docs`）完成验证 → `git pull --rebase` → 合入 `main` → push → 删临时分支。
-- 遇到「必须改运行时语义才能过类型检查」或模块解析异常时**立即转 `needs-info` / `blocked` 并写明冲突点**，不要私改语义、不要用 mock/断言链绕开；三份 Issue 末尾的「Planner 补充核对（· D-038）」已给出可编译的类型写法、负例探针的实测错误号与覆盖率锚点口径，照做即可；收尾时按真实 Issue 状态刷新 `STATE.md` / `HANDOFF.md` 并追加 `.agent/DIARY/2026-10-26.md`（`.agent/` 单独 `chore(agent)` 提交）。
+- 按 **#142 → #141 → #143** 串行执行，`ENV.md` 未设 `WORKFLOW=trunk`，严格用每任务独立分支（`agent/issue-142-ts-no-redeclare`、`agent/issue-141-elementplus-ts`、`agent/issue-143-auth-coverage-isolation`）完成验证 → `git pull --rebase` → 合入 `main` → push → 删临时分支。
+- 三份 Issue 的规格与验收标准已由 Planner **预先实测钉死**（#142 的误报已复现、#141 的门禁纯净度约束已用临时 tsconfig 实证、#143 的根因已用单文件隔离定位），照做即可，**不要自行发明契约**；遇「必须改运行时语义才能过类型检查」或「覆盖率无法真正稳定」时**立即转 `needs-info` / `blocked` 并写明冲突点**，不要私改语义、不要用放宽口径冒充修复；收尾时按真实 Issue 状态刷新 `STATE.md` / `HANDOFF.md` 并追加 `.agent/DIARY/2026-10-27.md`（`.agent/` 单独 `chore(agent)` 提交）。
