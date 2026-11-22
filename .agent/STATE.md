@@ -3,15 +3,13 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 更新时间：2026-11-22T14:10:29+08:00
-- 当前任务：#146 已交付 [PR #148](https://github.com/zhangjszs/-weibo-sentiment-analysis/pull/148)，`in-review` 待 Planner 验收；下一项 #147 未领取。
-- 分支：`agent/issue-146-transitive-lock-audit` 已推送，未合并；原用户 `main` 工作树及本地分支未动。
-- 未完成工作：#143 历史 auth 双文件漂移未复现；当前聚合分支漂移已定位至 `mergeProcessCovs` 顺序，解除条件见 HANDOFF / Issue。
-- 最近业务提交：`9deea56`（#146），前端六项门禁通过，47 文件 / 321 用例；配对生产审计 4 high + 1 moderate → 0。
-- PR #148 第一轮 `backend-fast` / `frontend-fast` / `integration` / `rust-core` / `security-scan` 全部通过；[CI 补证](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146#issuecomment-7075170330)。
-- #141/#142/#144/#145 已由 Planner 验收关闭；#143 保持 `blocked`。
-- 今日日报：`.agent/DIARY/2026-11-22.md` 已追加 #146 执行段。
-- 已知环境限制：原工作树已有未暂存改动，`git pull --rebase` 退出 128；隔离工作树同步成功。Node 26 干净配置须 `NODE_OPTIONS=--no-webstorage` 才由 jsdom 提供测试存储。
+- 更新时间 `2026-11-22T22:18:23+08:00`
+- 当前任务 #147（`in-review`）待 Planner 验收。GitHub 实查 `ready` 为 0，#146 仍 `in-review`。
+- 分支 `agent/issue-147-v8-coverage-merge-study`，提交 `d760896` 已推送。[PR #149](https://github.com/zhangjszs/-weibo-sentiment-analysis/pull/149) · [执行报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7080439676)
+- 未完成工作 #143 仍缺历史 auth 双文件漂移输入。覆盖工具修正需另行划定范围。
+- 最近验证 #147 三文件 54 例、前端全量 47 文件 321 例、后端快速门禁 1495 例通过，远端五项检查 `completed/success`。[CI](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/45031601114) / [Security Scan](https://github.com/zhangjszs/-weibo-sentiment-analysis/actions/runs/45031601090)
+- 今日日报已追加 #147 执行段，保留 #146 及此前历史。
+- 环境 Node 26 通过 `NODE_OPTIONS=--no-webstorage` 使用 jsdom Storage。默认沙箱中的 esbuild 安装进程触发 `EPERM`，在同一隔离副本授权复跑通过。
 
 ## 阻塞项
 - #143（blocked）：需要历史 `auth.js` / `Login.vue` 跳变的 V8 原始输入，或 Planner 独立划定工具链验证范围；不改测试凑指标。
@@ -32,6 +30,8 @@
 - **user store 会话恢复（#127）/ chinaMap 单例（#128）/ tabs 状态机（#131）**：既往实测记录，本会话未改动这些测试文件。
 
 ## 已完成（最近）
+- #147：`d760896` 已推送，仅 §7.5 新增验证记录。18 次回放、Vue 偏移负对照、CI 五项通过。[PR #149](https://github.com/zhangjszs/-weibo-sentiment-analysis/pull/149) · [执行报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7080439676)
+- #146：`9deea56` 已推送，锁更新及五项 CI 已记录，仍待 Planner 验收。[PR #148](https://github.com/zhangjszs/-weibo-sentiment-analysis/pull/148)
 - #145：`b0737dd` 已推送，盘点 §9，7 TS/0 JS/Vue、49 个链接及五项 CI 成功；报告 7074006035。
 - #143：`d423f3b` 已推送，取证台账，未修复；报告 7073909332、CI 补证 7073952654。
 - #144：`b6661ad` 已推送，三项目标告警消失，47/321、bundle 和 CI 通过；报告 7073836608。

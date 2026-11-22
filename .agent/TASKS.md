@@ -6,8 +6,8 @@
 
 | 顺序 | Issue | 优先级 | 状态 | 交付范围与验收入口 |
 |---|---|---|---|---|
-| 1 | [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146) | P1 | `ready` | 五个传递依赖的同范围锁更新；独立分支 `agent/issue-146-transitive-lock-audit`。仅依赖已 `done` 的 #144；逐项复核版本树、审计及现有前端门禁。 |
-| 2 | [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | P3 | `ready` | V8 合并确定性与正确性验证；独立分支 `agent/issue-147-v8-coverage-merge-study`。无未完成前置；同一批原始输入排列回放，核对 `addTab` 与 Vue 映射，仅追加 TEST_PERF §7.5。 |
+| 1 | [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146) | P1 | `in-review` | 五个传递依赖的同范围锁更新；独立分支 `agent/issue-146-transitive-lock-audit`。仅依赖已 `done` 的 #144；逐项复核版本树、审计及现有前端门禁。 |
+| 2 | [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | P3 | `in-review` | V8 合并确定性与正确性验证；独立分支 `agent/issue-147-v8-coverage-merge-study`。无未完成前置；同一批原始输入排列回放，核对 `addTab` 与 Vue 映射，仅追加 TEST_PERF §7.5。 |
 
 两项均有范围、非目标、可判定标准和可达输入；无产品选择、无红线、无相互前置。P0=0，P1=1。
 
@@ -25,8 +25,8 @@
 
 | Issue | 标题 | 优先级 | 状态 | Milestone | 治理结论 |
 |---|---|---|---|---|---|
-| [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146) | 更新现有范围内的五个前端传递依赖锁项 | P1 | `ready` | — | 五个已发布目标版本均在现有父约束内；不改清单、业务、CI 或 Node。 |
-| [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | 验证 V8 覆盖合并的确定性方案，保留用例和映射语义 | P3 | `ready` | — | 仅对照现有工具链的候选算法，不提交工具补丁。 |
+| [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146) | 更新现有范围内的五个前端传递依赖锁项 | P1 | `in-review` | — | 五个已发布目标版本均在现有父约束内；不改清单、业务、CI 或 Node。 |
+| [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | 验证 V8 覆盖合并的确定性方案，保留用例和映射语义 | P3 | `in-review` | — | 仅对照现有工具链的候选算法，不提交工具补丁。 |
 | [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143) | 稳定 auth 域覆盖率并验证漂移机制（#138） | P3 | `blocked` | — | 历史双漂移原始样本缺失；不改 mock 凑读数。 |
 | [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | auth.js 与 Login.vue 覆盖率在同 HEAD 下跨运行波动 | P3 | 无生命周期标签 | — | D-044 已定级；历史现象档案，不与 #143 重复领取，不属于 M6/M7。 |
 | [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | M7 | 未发现 Docker/Podman 命令或默认 Docker socket，无已授权远端；console 不替代验收。 |
