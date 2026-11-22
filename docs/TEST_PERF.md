@@ -427,4 +427,37 @@ D-034 原记录的 83.79–83.90 / 77.32–77.35 只描述历史语句/分支波
 - 此次可重现的聚合差异在 `stores/tabs.ts`：LCOV 的 BRF/BRH 从 71/68 变为 72/69，其他文件的 FNF/FNH/BRF/BRH/LF/LH 相同。固定 `router-guard`、`login-journey`、`tabs-store` 三套件的原始 V8 输入，只反转 `mergeProcessCovs` 的逐步合并顺序，`addTab` 的 `[2119,2196)` 计数范围就从被合入上一范围变为单独保留（计数 16）；这是合并顺序的证据，不是应用行为或用例通过数变化。
 - 不修改 mock、生产分支、调度或覆盖范围来改变报表。历史 auth 双文件漂移的根因仍未证实；目前相同的两次读数不是修复后验收。复跑命令、退出码及证据边界见 #143 执行报告。
 
+#### 2026-11-22 · #147 同一批 V8 数据的合并顺序对照
+
+基线 `1316e15f5d843b9fe7e915e5f8fb554f2df0b3ef`，Node 26.13.1、npm 11.20.0、Vitest 与 `@vitest/coverage-v8` 3.2.7、`@bcoe/v8-coverage` 1.0.2。`npm ci` 前后 `frontend/package-lock.json` SHA-256 均为 `bab52592904dfccd8d48c6f9a4c6acb1e6645479ff4b3d5eed0f165aa8c59474`。三个套件在默认调度及隔离下通过 54 个测试。下表是本轮正式回放的输入指纹，原始 JSON 含工作目录和 V8 脚本 ID，重新采集时可产生不同指纹。
+
+| 标识 | 套件（`frontend/tests/` 下） | project / transformMode | 脚本数 / 字节 | 原始 JSON SHA-256 |
+| --- | --- | --- | --- | --- |
+| L | `login-journey.test.js` | 默认 / web | 43 / 49,194 | `0099c282db4e683626b433b50f5037103101249c561ff3e18228a325154fac91` |
+| R | `router-guard.test.js` | 默认 / web | 54 / 50,084 | `ddac0f9cd40f0c2ca15caac15c1e9dbbb2b7442fa51a8b61f6f54e9b60ddf8d0` |
+| T | `tabs-store.test.js` | 默认 / web | 3 / 12,788 | `2b82e2676d31d4e43ca2673097556bc748feb73e301c490b8f5105b5b04c8bba` |
+
+| 三个原始输入的排列 | provider 逐步合并 | 按相对套件路径排序后逐步合并 | 每组一次性合并 |
+| --- | --- | --- | --- |
+| LRT | 71/68 · A | 71/68 · A | 72/69 · B |
+| LTR | 72/69 · B | 71/68 · A | 72/69 · B |
+| RLT | 71/68 · A | 71/68 · A | 72/69 · B |
+| RTL | 72/69 · B | 71/68 · A | 72/69 · B |
+| TLR | 72/69 · B | 71/68 · A | 72/69 · B |
+| TRL | 72/69 · B | 71/68 · A | 72/69 · B |
+
+数值为 `stores/tabs.ts` 的 LCOV `BRF/BRH`，复现 #143 的两档。三套件报告中，其他文件的 LCOV 记录相同，只有 `tabs.ts` 改变，`All files` Branch 随之由 164/210（78.09%）变为 165/211（78.19%）。这些比例基于三套件和 provider 的 `all: true`，全量基线仍见上文。
+
+- **`addTab` 的范围差异。** A 的外层 `[1957,2196)` 为 16。B 分为 `[1957,2044)` 和 `[2119,2196)` 两个各为 16 的范围。三种算法都保留其中的 `[2044,2119)=4`（第 82–86 行，已有标签页），以及 `[2119,2189)=12` 和 `[2189,2196)=11`（进入新标签页及 `meta?.title`）。在 provider 的映射里，A 的 16 覆盖 `79:38–90:34`。B 的两个 16 分别映到 `79:38–82:18` 和 `86:4–90:34`（行从 1 起，列从 0 起）。B 的外层范围 `[2119,2196)` 计数为 16，内层进入新建对象的计数仍为 12。
+- **独立核对计数。** 三个套件的函数入口计数分别为 3、3、13，LCOV `FNDA:19,addTab` 一致。按原始范围核对，19 次入口里有 3 次第 79 行守卫返回、4 次第 82–86 行激活既有标签页、12 次走到新建对象，`3 + 4 + 12 = 19`。`tabs-store` 中的三种无效输入、同名激活、新建以及有/空 query 的现有断言提供了独立的命中证据。第 93–95 行 query 拼接和不拼接的 V8 范围分别命中 4 和 8 次。`addTab` 在本样本没有单独报告的零计数范围。合并前后对 `tabs.ts` 的 27 个函数和 105 个最小区间逐段求和，18 次均零差异，因此多一条 LCOV 分支没有增加实际执行次数。
+- **`Login.vue` 的组、源映射和计数。** L/R 各有两个同 URL 的脚本记录，T 没有该组件记录。按原始记录各取一次，按函数根范围核对 22 个函数、45 个最小区间，18 次均零差异。三份输入属于同一个默认项目 / `web` 组。回放以 `(projectName, transformMode)` 分组并逐组交给 provider 转换，样本未覆盖两个真实 transform 组同时存在的情况。该组的 `startOffset` 恒为 209，映射回原 `Login.vue`，三种算法的 Istanbul 文件计数和 LCOV 记录逐项相同（`BRF/BRH=13/10`、`FNF/FNH=4/3`、`LF/LH=94/92`）。现有登录用例的 5 次有效提交对应 `FNDA:5,handleLogin`。源码第 102 行成功分支 3 次、第 106 行失败分支 2 次，第 90、94 行的提前返回和第 107 行的默认错误文案均为 0。负对照只将 Vue 的 `startOffset` 改为 0，源映射输入及原始区间不变，LCOV 变为 `8/6` 且丢失 `handleLogin`。偏移必须随每组的 URL 保留。
+
+**回放方法。** 在 `frontend/` 运行 `npm ci` 安装同一锁，Node 26 本轮使用 `NODE_OPTIONS=--no-webstorage` 让 jsdom 提供 Storage。外部探针用 `vitest/node` 的 `createVitest('test', { watch: false, coverage: { enabled: true, reportsDirectory } })` 创建同一配置，初始化 provider，在 `onAfterSuiteRun` 复制 `coverage` 并记录 `testFiles`、`projectName`、`transformMode`，然后调用原方法。用 `ctx.start()` 传入表中的三个文件，只运行一轮，将 `JSON.stringify(coverage)` 保存为组内原始输入。可在同一个 Vite 上下文按下列步骤回放，保留当次的 sourcemap 缓存。
+
+1. 枚举六种排列，按 `(projectName, transformMode)` 分组。替换 provider 的 `readCoverageFiles`，原序和排序版本分别把每组的原始输入副本按原序或相对路径顺序交给 `onFileRead`，每组结束调用 `onFinished(project, transformMode)`。使用副本是因为 `mergeProcessCovs` 会修改输入。
+2. 一次性版本对每组调用一次 `mergeProcessCovs`，按 URL 从原始输入回填 `startOffset`，同组同 URL 的偏移不一致即报错。该结果直接交给该组的原 `convertCoverage`，跳过组内累计合并，仍用 `generateCoverage({ allTestsRun: true })` 的组间映射与合并，以及 `generateReports` 的 `lcovonly` 输出。
+3. 在 `convertCoverage` 入口记录原始范围与合并后范围。对每个 `(组, URL, 函数根范围)`，收集每个输入区间的全部端点，取相邻端点间各原始输入最内层覆盖范围的计数之和，缺席作 0，与合并后相同区间比较。用 provider 的 `v8ToIstanbul` 对 `addTab` 单独取一次源位置，并用完整转换结果的 `BRDA`、`BRF/BRH`、`FNDA` 复核。同法重跑一次性合并，唯独令 `Login.vue` 偏移为 0，验证映射负对照。
+
+**建议。** 同一批样本内，两个候选均满足六次排列稳定、原始区间逐点计数和 Vue 映射一致。排序固定了 A 的区间表达，一次性合并稳定保留 B，现有证据无法确定哪种额外的 LCOV 记录应视为源代码分支。另用锁定的 `mergeProcessCovs` 做单函数合成反例，同根范围的函数级入口 2 与块级入口 3（子范围 1）在两个输入顺序下均只保留 3/1。此样本不含该类计数丢失，但稳定合并无法保证任意输入的入口次数相加。先保留现有工具链，若另立工具修正任务，应覆盖混合粒度、跨 transform 组和源分支归属。#143 的历史 auth 双漂移仍需自己的原始样本。
+
 **授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
