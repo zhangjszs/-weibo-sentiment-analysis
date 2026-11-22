@@ -3,21 +3,21 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 更新时间：2026-10-27T01:19+0800
-- 任务：2026-10-27 执行轮（会话 1）。本席 executor；接手时**无任何 ready 任务**（#135/#136/#137 停在 in-review、#138 为 auto-discovered、Planner 未为本日编排队列），用户于 00:59 指示「可以的 开始吧」→ 本轮**先代做 Planner 的验收职责（独立复跑验收并关闭 #135/#136/#137），再续排并执行 TS 第三批**。**#139/#140 的 Issue 规格由 Executor 代拟（Planner 未参与编排）——属用户指示下的越界代做，已在两份 Issue 正文、日报与 HANDOFF 中显式标注，待 Planner 复核定级。**
-- 状态：in-review：**#139、#140**（本会话交付，待 Planner 验收）；in-progress：无；ready：无（本日队列已清空）。#98 为冻结的 in-progress 父任务，不得领取。
-- 代码 HEAD：`92cd03b`（#140）；#139 交付 `f0661bb`；验收回填 `00872f6`。三提交均已 push `origin/main`；临时分支 `agent/issue-139-auth-session-ts`、`agent/issue-140-utils-index-ts` 已删。
-- CI（轮末逐提交实查 `gh api .../commits/<sha>/check-runs`）：**硬事实——本会话全部提交、全部 check 无任何 `failure`；结论只有 `completed/success` 与 `cancelled` 两类。** **`cancelled` 仅出现在「CI 运行期间被后续 push 触发的 `.github/workflows/ci.yml` `concurrency` + `cancel-in-progress: true` 整单中断」的提交上**（实例：`00872f6` 的 `integration`；`7c83264` 的 backend-fast / frontend-fast / integration / rust-core 四项，其 security-scan 仍 `success`）——**被取消的提交只改 `.agent/` 或 `docs/TEST_PERF.md`，其内容均由后代提交的完整绿 CI 覆盖**。**交付性提交 `1be01af`、`ce3ab0d`、`f80f53b`、`f0661bb`、`92cd03b` 五项全部 `completed/success`，无一被取消。** **教训（同一坑踩了两次）：① CI 结论必须逐提交读每个 check 的 `conclusion`，`cancelled` / `skipped` / `failure` 必须分开记；② 「推完一个提交应等其 CI 收敛再推下一个」是硬要求——本轮正因连推两个 `.agent/` 提交，把 `7c83264` 的五项整单取消。**
-- 前端基线（2026-10-27 本会话实测，HEAD `92cd03b`）：`npm ci` 0（lockfile 零改动，typescript 5.9.3 / @typescript-eslint/parser 8.46.2）；`npm run test:run` **47 files / 321 tests** 全绿；`npm run typecheck` 0 · `tsc --noEmit --listFiles` 在 `frontend/src` 下**恰好 6 个 `.ts`、0 个 `.js`/`.vue`**；`test:coverage` 0（当次原始日志不入库，具体路径见当日日报）：`All files 83.86/77.32/37.44/83.86` · `utils/index.ts` 98.26/97.08/100/98.26 · `utils/authSession.ts` 87.17/83.33/100/87.17 · `stores/tabs.ts` 98.56/95.77/100/98.56 · `stores/app.ts` 100/100/100/100 · `utils/echarts.ts` 与 `utils/chinaMap.ts` 各 100/100/100/100；`lint`/`format:check`/`build` exit 0（build 9.51s）。
-- 后端 fast gate：本会话未改后端/依赖/CI，未本地复跑；各提交的 backend-fast/integration 经 CI 实查绿。
-- 跨天链：2026-10-26 队列（#135/#136/#137）已**验收关闭**；本日队列（#139/#140）已清空转 in-review；**TS 渐进化第三批落地——本地类型门禁从 4 个模块扩到 6 个**。
+- 更新时间：2026-11-22T12:09:03+08:00
+- 当前任务：无；本轮队列无 `ready`。待 Planner 验收：#141、#142、#144、#145（`in-review`）；#143（`blocked`）。
+- 分支：业务交付已合入 `origin/main`；`.agent` 在独立收尾分支，原用户 `main` 工作树未动。
+- 未完成工作：#143 历史 auth 双文件漂移未复现；当前聚合分支漂移已定位至 `mergeProcessCovs` 顺序，解除条件见 HANDOFF / Issue。
+- 最近业务提交：`b0737dd`（#145 契约盘点）、`d423f3b`（#143 调查台账）、`b6661ad`（#144 锁更新），均已推送、各五项 CI 成功。#141/#142 既有补证及 CI 已在日报恢复。
+- 今日日报：已写 `.agent/DIARY/2026-11-22.md`。
+- 已知环境限制：原工作树已有未暂存改动，`git pull --rebase` 退出 128；隔离工作树同步成功。Node 26 干净配置须 `NODE_OPTIONS=--no-webstorage` 才由 jsdom 提供测试存储。
 
 ## 阻塞项
+- #143（blocked）：需要历史 `auth.js` / `Login.vue` 跳变的 V8 原始输入，或 Planner 独立划定工具链验证范围；不改测试凑指标。
 - #109（blocked）：本机无 Docker、无已授权远程 Docker 主机；console smoke 不替代真实 profile/UI 验收。
 - #98（M7 冻结）：D-019 默认 A 保持现场不重置，下一棒不得领取。
 - #96 / #100 / #101 / #102 / #59（needs-info）：受 D-019 A 冻结或待产品需求确认。
 
-## 关键事实（已实测验证）
+## 历史验证快照（2026-10-27）
 - **TS 类型门禁现状（#139 + #140 本会话实测）**：`frontend/tsconfig.json` 的 `include` = `["src/stores/app.ts","src/stores/tabs.ts","src/utils/echarts.ts","src/utils/chinaMap.ts","src/utils/authSession.ts","src/utils/index.ts"]`（**6 项**）；**`lib` 由 ES2020 提升至 ES2021**（`downloadCsv` 沿用既有实现中的 `String.prototype.replaceAll`，`lib: ES2020` 实测 TS2550），**`target` 仍为 ES2020**——故**只影响类型声明、不影响 emit 与运行时**。`npm run typecheck` 仍**仅本地**，不入 CI/pre-commit。
 - **运行时语义零改动（#135–#140 全批次，双重自证）**：`tsc --outDir` 转译回 JS + 用**仓库同一份 `.prettierrc.json`** 规范化后与迁移前 `.js` 逐行 diff，剥除空行与注释 → #135 `chinaMap.ts` **差异 0**、`echarts.ts` **纯重命名内容 0 差异**；#136 `tabs.ts` **可执行语句差异 0**；#139 `authSession.ts` **可执行语句差异 0**；#140 `index.ts` **可执行语句差异 2 行**（**恰为已申报的 2 处语义等价改写**：`String(d.getFullYear())`（JS 的 `String.replace` 本就对 replaceValue 做 ToString）、`now.getTime() - target.getTime()`（JS 的 `-` 对 Date 走 ToPrimitive(hint number) → `valueOf()`））。**该自证在本批次抓到了 3 处真实问题**（对象字面量被 prettier 展开、`const source = obj` 多出一行、`tsc --outDir` 绕过 tsconfig 致 lib 不一致）。
 - **类型断言审计（本批次）**：#135 断言 **0**（`MapInput` 由 echarts 签名派生，无需 `as`）；#136 断言 **1**（`as TabItem[]`）；#139 断言 **1**（`as SessionUser`）；#140 断言 **5**（全在 `deepClone`）。**全部批次 `any` / `@ts-ignore` / `eslint-disable` / 非空断言 `!.` / 类型谎言 均为 0 处。**
@@ -30,6 +30,10 @@
 - **user store 会话恢复（#127）/ chinaMap 单例（#128）/ tabs 状态机（#131）**：既往实测记录，本会话未改动这些测试文件。
 
 ## 已完成（最近）
+- #145：`b0737dd` 已推送，盘点 §9，7 TS/0 JS/Vue、49 个链接及五项 CI 成功；报告 7074006035。
+- #143：`d423f3b` 已推送，取证台账，未修复；报告 7073909332、CI 补证 7073952654。
+- #144：`b6661ad` 已推送，三项目标告警消失，47/321、bundle 和 CI 通过；报告 7073836608。
+- #141/#142：历史交付与本日恢复资料补入日报；报告 7067430942、7067407062；`in-review` 待验收。
 - **#140 交付转 in-review（2026-10-27 会话 1）**：`src/utils/{index.js => index.ts}`（19 个导出）+ `tsconfig` 的 `lib` ES2020→ES2021（target 不变）+ 2 个测试文件各 1 行 + 策略文档；5 files；typecheck 0/负例 TS2345×2+TS2339/56 用例/47·321/coverage 98.26·97.08·100·98.26/lint·format·build/桶解析实测正常；**2 处语义等价改写已主动申报**；CI 五项绿；提交 `92cd03b` @ main（已推送）；报告 comment 6422665489。
 - **#139 交付转 in-review（2026-10-27 会话 1）**：`src/utils/{authSession.js => authSession.ts}` + include 第 5 项 + `auth-session.test.js` 1 行 + 策略文档；4 files；typecheck 0/负例 TS2345×2+TS2531+TS2571/32 用例/47·321/coverage 87.17·83.33·100·87.17/转译 diff 0 差异；CI 五项绿；提交 `f0661bb` @ main（已推送）。
 - **#135/#136/#137 验收关闭（2026-10-27）**：独立复跑验收通过；验收 comment 6422214957 / 6422223027 / 6422232092；回填 `docs/TEST_PERF.md` §7.1 状态 `00872f6`。
@@ -44,4 +48,4 @@
 - **#113–#119 验收关闭（2026-10-19/20）**：见 git 历史。
 
 ## 交接
-- 本会话为 2026-10-27 唯一执行会话；详见 `.agent/HANDOFF.md`（整体重写）与 `.agent/DIARY/2026-10-27.md`。
+- 本轮结束以 `.agent/HANDOFF.md` 与 `.agent/DIARY/2026-11-22.md` 为准；历史 10-27 日报不改。
