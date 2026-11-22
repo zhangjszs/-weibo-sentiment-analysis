@@ -355,6 +355,8 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 | [#134](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/134) | P4 | done | 收尾 TEST_PERF 验收状态并明确覆盖率快照时点（§7.1 补 #130/#131/#132 三行、§7.5 清过期当前态 + 追加 2026-10-25 快照段；d385af4；已于 2026-10-26 规划轮独立复跑验收通过并关闭） |
 | [#135](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/135) | P2 | done | 迁移第一批剩余图表工具 echarts.js 与 chinaMap.js 为 TypeScript 并纳入本地类型门禁（`utils/echarts.ts` + `utils/chinaMap.ts`，`tsconfig.json` include 扩至 3 项、compilerOptions 零改动；1be01af；2026-10-26 交付并合入 main，**已于 2026-10-27 独立复跑验收通过并关闭**） |
 | [#136](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/136) | P2 | done | 迁移 stores/tabs.js 为 TypeScript 并保持多标签工作区状态机语义不变（`stores/tabs.ts`，tsc 转译后与原 `.js` 逐行 diff 可执行语句差异 = 0；ce3ab0d；2026-10-26 交付并合入 main，**已于 2026-10-27 独立复跑验收通过并关闭**） |
+| [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | P3 | 现象记录（open，无生命周期标签） | 保留 2026-10 的历史漂移；#143 承接修复。 |
+| [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143) | P3 | in-progress（执行取证时） | 已复现聚合分支读数受覆盖率合并顺序影响；尚未复现历史 auth 两文件漂移，不将测量一致视为修复。 |
 
 > **状态说明**：M6 成员 10/10 CLOSED（#88–#95、#106、#107），但因串行 gate <30s 与 CI <240s 仍有两个阈值未达成，M6 里程碑保持 OPEN（成员关闭 ≠ 里程碑收敛，见 D-017 / D-023）。
 
@@ -409,5 +411,20 @@ fast gate 68.49%（branch），门禁 60%；`src/views/user/user.py`（24%）、
 **2026-10-26 执行会话更新（#137；绑定当次 `npm run test:coverage` 日志，原始日志留存于 `/tmp/cov137.log`，不入库）**：#133/#134 现均 `done`/CLOSED（§7.1 已补两行）；#135（`utils/echarts.js`→`utils/echarts.ts` + `utils/chinaMap.js`→`utils/chinaMap.ts`，1be01af）与 #136（`stores/tabs.js`→`stores/tabs.ts`，ce3ab0d）已于 2026-10-26 执行完成并合入 main，**截至本段时点均为 `in-review`**（当时待 Planner 验收，**未预支 `done`**；**二者已于 2026-10-27 独立复跑验收通过并关闭**）。本轮实测于提交 **`ce3ab0d`**：**47 files / 321 tests**，总覆盖率 **Stmts 83.85% · Branch 77.32% · Funcs 37.44% · Lines 83.85%**（`stores/app.ts` 100 / 100 / 100 / 100；`stores/tabs.ts` 98.56 / 95.77 / 100 / 98.56，未覆盖行 **53、208**；`utils/echarts.ts` 100 / 100 / 100 / 100；`utils/chinaMap.ts` 100 / 100 / 100 / 100；`stores/user.js` 97.97 / 81.57 / 100 / 97.97，未覆盖行 39-40；`stores/analysis.js` 100 / 91.11 / 100 / 100，未覆盖行 38、48；`utils/index.js` 98.23 / 97.08 / 100 / 98.23，未覆盖行 69-70、203-204；`utils/authSession.js` 87.17 / 83.33 / 100 / 87.17）。`stores/tabs.ts` 的两处未覆盖（53、208）是 `loadActiveFromStorage` 与 `resetTabs` 中 `localStorage` 抛错的 catch 分支，与迁移前 `stores/tabs.js` 的 40-41、190-191 **为同一代码区域**（行号位移源于新增的 interface/注释/多行类型标注），按 #131 约定不 mock。0% 模块清单不变（8 个 `src/api/` 声明式包装：alert / content / favorites / platform / predict / propagation / report / user，加 `main.js` 与 `App.vue`，后二者为入口与根壳豁免）。
 
 同 HEAD（`ce3ab0d`）连续复跑一次得 `All files 83.75 | 77.33 | 37.55 | 83.75`，差异**全部**来自 `src/api/auth.js`（38.46 → 17.94）与 `src/views/auth/Login.vue`（100 | 75 | 50 | 100 → 97.87 | 76.92 | 75 | 97.87）两个与本批次无关的既有模块——已实测确认为**同一 HEAD 下连续两次运行的差异**（非 #135/#136 迁移引入；`stores/tabs.ts` 两次均为 98.56 / 95.77 / 100 / 98.56）。故 `All files` 汇总值除语句/分支小数抖动（83.79–83.90 / 77.32–77.35，D-034 已记录）外，**函数项亦存在同源抖动**，本段各模块明细值一律以本段绑定的单次日志为准。
+
+**2026-11-22 执行快照（#143，未修复）**：锁基线 `b6661ad`，Vitest / `@vitest/coverage-v8` 3.2.7，默认 `forks`、`isolate: true`；前两次使用 Node 26.13.1 加 `NODE_OPTIONS=--no-webstorage`（仅避免 Node 存储全局名覆盖 jsdom，不改调度）。两次 `npm run test:coverage` 均为 47 文件 / 321 用例，退出 0；比较项为 Stmts / Branch / Funcs / Lines（%）：
+
+| 覆盖对象 | 默认运行 1 | 默认运行 2 |
+|---|---|---|
+| `frontend/src/api/auth.js` | 17.94 / 100 / 0 / 17.94 | 17.94 / 100 / 0 / 17.94 |
+| `frontend/src/views/auth/Login.vue` | 97.87 / 76.92 / 75 / 97.87 | 97.87 / 76.92 / 75 / 97.87 |
+| `All files` | 83.73 / 77.33 / 37.55 / 83.73 | 83.73 / 77.33 / 37.55 / 83.73 |
+
+D-034 原记录的 83.79–83.90 / 77.32–77.35 只描述历史语句/分支波动；#138 在同一旧提交另观察到 Funcs **37.44–37.55**。本轮两次均为 37.55，不改历史数值，也不把历史观测扩成验收带。
+
+- 同锁 Node 22.23.2 两次结果与表相同；Node 22.23.5 两次默认运行的 `All files` Branch 为 **77.35 → 77.33**，Node 26 三个文件 shuffle seed（7 / 19 / 143）均为 77.35，两个 auth 文件四项保持不变。在旧提交 `ce3ab0d` 上用 Node 22.23.2 重建也得到 77.35 → 77.33，两个 auth 文件未漂移。历史重建不混作同锁对照。
+- 当前锁单跑 `login-journey`、`user-store`，`auth.js` 均为 0 / 0 / 0 / 0；单跑 `router-guard` 为 17.94 / 100 / 0 / 17.94。追踪每套件的 V8 记录确认真实模块与工厂 mock 的载入差异，没有观察到默认隔离跨套件污染。
+- 此次可重现的聚合差异在 `stores/tabs.ts`：LCOV 的 BRF/BRH 从 71/68 变为 72/69，其他文件的 FNF/FNH/BRF/BRH/LF/LH 相同。固定 `router-guard`、`login-journey`、`tabs-store` 三套件的原始 V8 输入，只反转 `mergeProcessCovs` 的逐步合并顺序，`addTab` 的 `[2119,2196)` 计数范围就从被合入上一范围变为单独保留（计数 16）；这是合并顺序的证据，不是应用行为或用例通过数变化。
+- 不修改 mock、生产分支、调度或覆盖范围来改变报表。历史 auth 双文件漂移的根因仍未证实；目前相同的两次读数不是修复后验收。复跑命令、退出码及证据边界见 #143 执行报告。
 
 **授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
