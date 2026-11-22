@@ -3,13 +3,14 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 更新时间：2026-11-22T13:05:20+08:00
-- 当前任务：无；本轮队列无 `ready`。待 Planner 验收：#141、#142、#144、#145（`in-review`）；#143（`blocked`）。
-- 分支：业务交付已合入 `origin/main`；续查通过隔离工作树完成，原用户 `main` 工作树未动。
+- 更新时间：2026-11-22T14:10:29+08:00
+- 当前任务：#146 已交付 [PR #148](https://github.com/zhangjszs/-weibo-sentiment-analysis/pull/148)，`in-review` 待 Planner 验收；下一项 #147 未领取。
+- 分支：`agent/issue-146-transitive-lock-audit` 已推送，未合并；原用户 `main` 工作树及本地分支未动。
 - 未完成工作：#143 历史 auth 双文件漂移未复现；当前聚合分支漂移已定位至 `mergeProcessCovs` 顺序，解除条件见 HANDOFF / Issue。
-- 最近业务提交：`b0737dd`（#145 契约盘点）、`d423f3b`（#143 调查台账）、`b6661ad`（#144 锁更新），均已推送、各五项 CI 成功。#141/#142 既有补证及 CI 已在日报恢复。
-- 前轮交接 `818860b` 已推送，查得 backend-fast / frontend-fast / integration / rust-core / security-scan 五项均 `completed/success`；续查未领取任务。
-- 今日日报：已写 `.agent/DIARY/2026-11-22.md`。
+- 最近业务提交：`9deea56`（#146），前端六项门禁通过，47 文件 / 321 用例；配对生产审计 4 high + 1 moderate → 0。
+- PR #148 第一轮 `backend-fast` / `frontend-fast` / `integration` / `rust-core` / `security-scan` 全部通过；[CI 补证](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146#issuecomment-7075170330)。
+- #141/#142/#144/#145 已由 Planner 验收关闭；#143 保持 `blocked`。
+- 今日日报：`.agent/DIARY/2026-11-22.md` 已追加 #146 执行段。
 - 已知环境限制：原工作树已有未暂存改动，`git pull --rebase` 退出 128；隔离工作树同步成功。Node 26 干净配置须 `NODE_OPTIONS=--no-webstorage` 才由 jsdom 提供测试存储。
 
 ## 阻塞项
