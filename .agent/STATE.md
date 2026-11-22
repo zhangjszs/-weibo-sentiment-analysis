@@ -3,11 +3,12 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 更新时间：2026-11-22T12:09:03+08:00
+- 更新时间：2026-11-22T13:05:20+08:00
 - 当前任务：无；本轮队列无 `ready`。待 Planner 验收：#141、#142、#144、#145（`in-review`）；#143（`blocked`）。
-- 分支：业务交付已合入 `origin/main`；`.agent` 在独立收尾分支，原用户 `main` 工作树未动。
+- 分支：业务交付已合入 `origin/main`；续查通过隔离工作树完成，原用户 `main` 工作树未动。
 - 未完成工作：#143 历史 auth 双文件漂移未复现；当前聚合分支漂移已定位至 `mergeProcessCovs` 顺序，解除条件见 HANDOFF / Issue。
 - 最近业务提交：`b0737dd`（#145 契约盘点）、`d423f3b`（#143 调查台账）、`b6661ad`（#144 锁更新），均已推送、各五项 CI 成功。#141/#142 既有补证及 CI 已在日报恢复。
+- 前轮交接 `818860b` 已推送，查得 backend-fast / frontend-fast / integration / rust-core / security-scan 五项均 `completed/success`；续查未领取任务。
 - 今日日报：已写 `.agent/DIARY/2026-11-22.md`。
 - 已知环境限制：原工作树已有未暂存改动，`git pull --rebase` 退出 128；隔离工作树同步成功。Node 26 干净配置须 `NODE_OPTIONS=--no-webstorage` 才由 jsdom 提供测试存储。
 
