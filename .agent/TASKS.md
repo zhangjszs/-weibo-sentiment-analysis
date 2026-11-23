@@ -6,10 +6,10 @@
 
 | 顺序 | Issue | 优先级 | 状态 | 依赖与验收入口 |
 |---|---|---|---|---|
-| 1 | [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150) 锁定公共请求混合 401 的缓存清理与跳转去重 | P3 | `ready` | #145 已 `done`。用真实 Axios 实例和会话缓存检验两种 401 到达顺序、首次清态、导航窗口和两种 reject 行为。分支 `agent/issue-150-mixed-401-contract`。 |
-| 2 | [#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151) 验证公共请求层的 TypeScript 类型契约与入口接线 | P2 | `ready` | #145 已 `done`。验证启动顺序、请求包络和候选 8 TS / 0 JS 或 Vue；只提交 §9 增补。分支 `agent/issue-151-request-types-and-bootstrap`。 |
+| 1 | [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150) 锁定公共请求混合 401 的缓存清理与跳转去重 | P3 | `in-review` | #145 已 `done`。用真实 Axios 实例和会话缓存检验两种 401 到达顺序、首次清态、导航窗口和两种 reject 行为。分支 `agent/issue-150-mixed-401-contract`。 已交付。 [报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150#issuecomment-7091772787) |
+| 2 | [#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151) 验证公共请求层的 TypeScript 类型契约与入口接线 | P2 | `in-review` | #145 已 `done`。验证启动顺序、请求包络和候选 8 TS / 0 JS 或 Vue；只提交 §9 增补。分支 `agent/issue-151-request-types-and-bootstrap`。 已交付。 [报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151#issuecomment-7091921052) |
 
-两项独立，均有可查基线、明确范围及逐条验收。项目开放任务 P0/P1 均为 0。#147 已处于执行中，补证沿原 Issue 继续。
+两项独立，均有可查基线、明确范围及逐条验收。项目开放任务 P0/P1 均为 0。#147 补证已交付，三项均为 `in-review`，当前无可领取项。
 
 ## 本轮验收
 
@@ -23,9 +23,9 @@
 
 | Issue | 标题 | 优先级 | 状态 | Milestone | 治理结论 |
 |---|---|---|---|---|---|
-| [#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151) | 验证公共请求层的 TypeScript 类型契约与入口接线 | P2 | `ready` | 前端请求层迁移准备 | 接线规格与隔离编译证明。只追加迁移说明 §9；候选门禁 8 TS / 0 JS 或 Vue。 |
-| [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150) | 锁定公共请求混合 401 的缓存清理与跳转去重 | P3 | `ready` | 前端请求层迁移准备 | 原 Axios 实例和真实会话缓存，覆盖两类 401 的到达顺序、清态、去重和拒绝身份。只改既有请求错误测试。 |
-| [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | 验证 V8 覆盖合并的确定性方案，保留用例和映射语义 | P3 | `in-progress` | — | 部分通过，已在原 Issue 退回补证。补两个回退分支的计数或不可独立计数依据，以及干净目录的回放启动验证。 |
+| [#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151) | 验证公共请求层的 TypeScript 类型契约与入口接线 | P2 | `in-review` | 前端请求层迁移准备 | 接线规格与隔离编译证明。只追加迁移说明 §9；候选门禁 8 TS / 0 JS 或 Vue。 已交付。 [报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151#issuecomment-7091921052) |
+| [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150) | 锁定公共请求混合 401 的缓存清理与跳转去重 | P3 | `in-review` | 前端请求层迁移准备 | 原 Axios 实例和真实会话缓存，覆盖两类 401 的到达顺序、清态、去重和拒绝身份。只改既有请求错误测试。 已交付。 [报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150#issuecomment-7091772787) |
+| [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | 验证 V8 覆盖合并的确定性方案，保留用例和映射语义 | P3 | `in-review` | — | 已补两个回退分支的原始计数、映射和干净快照复跑，待 Planner 复验。 [报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7091656500) |
 | [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143) | 稳定 auth 域覆盖率并验证漂移机制（#138） | P3 | `blocked` | — | 历史 auth 双漂移原始输入和顺序仍缺。保留当前标准，#147 不解除阻塞。 |
 | [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | [auto-discovered] src/api/auth.js 与 src/views/auth/Login.vue 覆盖率在同 HEAD 下跨运行波动 | P3 | 无生命周期标签 | — | D-044/D-048 定级与分工。标题保留历史来源，已无 `auto-discovered` 标签。保留现象与证据，修复由 #143 承接。 |
 | [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | M7 | 当前无 Docker/Podman 命令或默认 Docker socket，无已授权测试主机。待实际 OTLP / Jaeger 环境。 |
