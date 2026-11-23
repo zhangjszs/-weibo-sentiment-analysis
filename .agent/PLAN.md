@@ -1,57 +1,56 @@
 # PLAN — 开发路线图
 
-> 2026-11-23 · Planner 维护。GitHub Issue 是任务权威。原工作树 `main` 为 `c2f33f8`，有六个原有未暂存文件；默认权限下 fetch 因 `.git/FETCH_HEAD` 只读退出 255，pull --rebase 因未暂存改动退出 128。隔离副本已 fetch/prune 并 pull --rebase，规划基线为 `cdb255c`。
+> 2026-11-23 · 今日规划 PR 的同日续接。GitHub Issues 为任务权威。干净副本已 fetch/prune 并 pull --rebase。验收基线是远端 main `df989ea`，规划分支为 `codex/planning-2026-11-23`。原工作树 main `c2f33f8` 有六处既有改动，默认权限下 fetch 退出 255（Git 元数据只读），pull 因未暂存改动退出 128。
 
 ## 当前方向
 
-收尾前端依赖审计与覆盖率验证，随后把 D-009 已授权的渐进式 TypeScript 工作转到公共请求层。#145 已核对接口和依赖闭环。下一步验证导航装配与类型门禁，并用可重复的回归测试锁定混合 401 的现有行为。前端 TS 第四批仍为 6/6 已验收。
+依赖锁验收和覆盖率实验已收尾。请求层准备里程碑 2/2 完成，下一步按 D-009、D-043、D-050 迁移公共 Axios 实例。先用真实六个会话包装锁定现行调用契约，再迁移 transport，保持请求、启动、会话与导航语义。
 
 ## 今日目标（2026-11-23）
 
-- [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146#issuecomment-7091137981) 已通过并关闭。锁文件五项定向更新、五个目标告警消失、47 文件 / 321 用例和原 PR 五项 CI 均已复核。
-- [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7091139293) 部分通过，退回 `in-progress`。认可样本内的计数与映射证据；补两个回退分支计数和仓库外探针的干净目录复跑。[#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143#issuecomment-7091138663) 保留历史 auth 双漂移的独立阻塞。
-- 推进混合 401 回归基线及请求层编译与入口装配验证，各有独立验收。
+- 复核 11-22 晚间交付。[#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146#issuecomment-7091137981) 已通过并关闭。[#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7104222957) 的两个回退计数及新目录回放已补齐，本轮复验通过并关闭。两个候选合并算法的结论限于固定输入，覆盖工具维持现行实现。
+- [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150#issuecomment-7104225273)、[#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151#issuecomment-7104227740) 同日交付，均通过并关闭。[请求层迁移准备](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/3) 已关闭，2/2。生产类型门禁独立复跑为 7 TS / 0 JS 或 Vue。候选 8/0、类型负例及浏览器验证来自 Executor 的执行记录。
+- 开启 [前端公共请求层 TypeScript 迁移](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/4)，从即时可领取的两项开始。
 
-## 当前 Milestone · 前端请求层迁移准备（0 / 2）
+## 当前 Milestone · 前端公共请求层 TypeScript 迁移（0 / 2）
 
 ### 目标与验收
 
-- 公共请求的两种 401 交错仍共享一个导航窗口，首次跳转前清除内存 token、持久化键和 `/me` TTL 缓存。业务码保留新 Error 的消息，HTTP 路径保留拒绝对象身份。
-- D-043 候选门禁为 8 个生产 TS / 0 个 JS 或 Vue。入口在 `app.use(router)` 前装配实时路径读取和 `replace`，原有启动过程和响应包络有可核查的等价标准。
+- 六个会话 API 包装通过真实 Axios adapter 回归，核实路径、方法、JSON、Cookie 配置和完整包络，覆盖 register/logout 的省略 data 和会话检查的已登录/未登录两态。
+- 公共实例成为 `request.ts`，原七项加此文件进入 D-043，JS/Vue 计数为 0。入口在安装 router 前接线，保持混合 401、错误对象身份、加载计数和响应包络。装配遗漏可诊断，401 清态与拒绝语义仍可验证。
 
 ### 完成信号
 
-- #150 仅测试增补通过验收，两种到达顺序和导航窗口关闭后的重新跳转均覆盖。
-- #151 只在 §9 交付可复核的隔离编译结果、两个负例与入口契约。若发现候选无法满足验收，记录具名阻塞并保留 Milestone 开放。
+- [#156](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/156) 的 adapter 定向用例和全量门禁通过，Planner 验收关闭。
+- [#157](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/157) 的真实迁移合入主干并验收关闭。生产 `--listFiles` 为 8/0，原实现与候选的两条浏览器入口烟测一致，五项 CI 全绿。
 
 ### 明确非目标
 
-- 本阶段范围限测试与迁移规格。生产 transport、API 包装、router、store 和缓存类型迁移另行立项。
-- 保持既有 API、认证权限、数据结构、主要 CI、覆盖配置和阈值。覆盖率合并工具补丁暂缓，待具备跨 transform 组、混合粒度与源分支归属证据。
+- 范围截至公共实例与六接口行为基线。认证权限、HTTP API、用户资料缓存、auth 包装和 router/store/SFC 的类型迁移、后端和主要 CI 保持现状。
+- 覆盖工具变更继续等待真实跨 transform 组、混合粒度与 LCOV 源分支归属证据。历史 auth 双漂移有独立解除条件。
 
-### 执行队列（2 个 `ready`）
+### 执行队列（2 项 `ready`）
 
-1. [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150) 锁定公共请求混合 401 的缓存清理与跳转去重（P3）。
-2. [#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151) 验证公共请求层的 TypeScript 类型契约与入口接线（P2）。
+1. [#156](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/156) 锁定六个会话 API 包装的真实请求与响应契约（P3）。
+2. [#157](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/157) 迁移公共请求实例至 TypeScript 并在入口装配导航（P2）。
 
-建议先锁定回归行为，再整理迁移规格。两项均从已验收的 #145 出发，可独立领取。
+两项均从已验收基线出发。先跑独立回归便于前后对比，顺序无硬依赖。
 
 ## 已知阻塞与依赖
 
-- #147 已退回原执行现场。只补 Issue 中的两条差距。
-- #143 `blocked`，需要稳定触发 `auth.js` 和 `Login.vue` 历史双漂移的原始输入和顺序。#138 保留为历史现象记录。
-- #109 `blocked`，待可用容器环境或已授权测试主机，验收须跑真实 OTLP / Jaeger 链路。
-- #98 按 D-019 A 冻结执行现场。#96/#100/#101/#102 维持 `needs-info`，其中 #102 还依赖 #98。#59 按 D-012 A 等待具体产品需求。
-- M6 10/10 成员关闭，仍 OPEN。记录中的成功信号为 1/3，串行 <30s 与完整 CI <240s 仍无达标证据。M7 6/11 成员关闭，仍 OPEN 且冻结。
+- #143 `blocked`，需要稳定触发 `auth.js` 与 `Login.vue` 历史双漂移的原始输入和顺序。#138 保留现象档案。
+- #109 `blocked`，等待可用容器环境或已授权测试主机，验收须跑真实 OTLP / Jaeger 链路。
+- #98 按 D-019 A 冻结现场。#96、#100、#101、#102 维持 `needs-info`，其中 #102 还依赖 #98。#59 按 D-012 A 等待具体产品需求。
+- M6 成员 10/10 关闭，成功信号为 1/3，里程碑仍开放。串行 <30s 与完整 CI <240s 仍缺达标证据。M7 6/11 关闭，里程碑仍开放且冻结。此前已授权的前端 TS 第四批保持 6/6。
 
 ## 下一阶段
 
-请求层准备验收后，按候选证据确定仅迁移公共 transport 的生产切片，再按六个接口逐项定义 API 包络。历史覆盖率数据继续用逐文件和原始计数器作迁移锚点。
+公共请求层经过真实迁移验收后，再为 auth 包装和 API 桶定义逐接口类型切片，以 #145、#156 的行为证据为基线。保持 D-043 纯净门禁与既有缓存兼容。
 
 ## 已放弃的方向
 
-登录验证码暂缓（D-02）、保留归档 SQL（D-03）、跳过整包和训练缓存（D-013/D-014/D-016）、暂缓 M7 扩展（D-019 A）、维持 M6 阈值（D-023 A）、跳过薄包装和壳层复述测试（D-031/D-032）。批次工具治理独立处理（D-042），`deepClone` 断言只观察（D-041）。
+登录验证码暂缓（D-02），保留归档 SQL（D-03），维持 M7 冻结（D-019 A）及 M6 阈值（D-023 A）。D-013/D-014/D-016 的缓存决策、D-031/D-032 的测试边界及 D-041/D-042 的批次规则继续有效。
 
 ## 给 Executor 的指令
 
-从最新 main 的隔离副本领取 #150 → #151，并按 #147 验收评论补证。以实时 Issue 刷新执行快照，并按 [昨日日报所在分支](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/c9e9e8dc39eb9246606f7da3c47b59e3bb72a324/.agent/DIARY/2026-11-22.md) 延续追加历史。
+以实时 Issue 从最新主干的干净副本按 #156 → #157 领取。按 [11-22 日报](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/c9e9e8dc39eb9246606f7da3c47b59e3bb72a324/.agent/DIARY/2026-11-22.md) 与 [11-23 日报](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/4386751e82e975bf57d9f85cae77d940ce044fdf/.agent/DIARY/2026-11-23.md) 延续追加历史，并刷新 [执行交接](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/4386751e82e975bf57d9f85cae77d940ce044fdf/.agent/HANDOFF.md)。
