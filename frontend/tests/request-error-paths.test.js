@@ -22,6 +22,16 @@ vi.mock('@/router', () => ({
 
 import { ElMessage } from 'element-plus'
 import request from '@/api/request.js'
+import {
+  AUTH_TOKEN_KEY,
+  USER_CACHE_KEY,
+  clearSessionState,
+  getAuthToken,
+  getCachedCurrentUser,
+  setAuthToken,
+  setCachedCurrentUser,
+  setCachedUser,
+} from '@/utils/authSession'
 
 const okAdapter =
   (payload, httpStatus = 200) =>
@@ -173,6 +183,114 @@ describe('业务码 401 强制登出', () => {
     await settle(request.get('/api/a', { adapter: okAdapter({ code: 401, msg: 'a', data: null }) }))
 
     expect(replaceMock).toHaveBeenCalledWith('/login?redirect=%2Fhome')
+  })
+})
+
+describe('混合 401 强制登出', () => {
+  const deferred = () => {
+    let resolve
+    const promise = new Promise((done) => {
+      resolve = done
+    })
+    return { promise, resolve }
+  }
+
+  it.each([
+    ['业务码 401 先到', 'business', 'http'],
+    ['HTTP 401 先到', 'http', 'business'],
+  ])('%s时只在当前导航窗口跳转一次', async (_label, first, second) => {
+    const navigation = deferred()
+    const arrivals = { business: deferred(), http: deferred() }
+    const payload = { code: 401, msg: '业务会话已过期' }
+    const original = httpError(401, { msg: 'HTTP 会话已过期' })
+    const user = { id: 42, username: 'session-fixture' }
+    const ttl = 60_000
+    const snapshot = () => ({
+      token: getAuthToken(),
+      persistedUser: localStorage.getItem(USER_CACHE_KEY),
+      legacyToken: localStorage.getItem(AUTH_TOKEN_KEY),
+      currentUser: getCachedCurrentUser(ttl),
+    })
+    let sessionAtReplace
+
+    // Freeze the cache clock while leaving Promise and timer scheduling intact.
+    vi.useFakeTimers({ toFake: ['Date'] })
+    setAuthToken('memory-token')
+    setCachedUser(user)
+    localStorage.setItem(AUTH_TOKEN_KEY, 'legacy-token')
+    setCachedCurrentUser(user)
+    routeState.value = { fullPath: '/analysis?tab=1&name=x' }
+    replaceMock.mockImplementationOnce(() => {
+      sessionAtReplace = snapshot()
+      return navigation.promise
+    })
+
+    const requests = {
+      business: request.get('/api/business', {
+        adapter: async (config) => {
+          await arrivals.business.promise
+          return okAdapter(payload)(config)
+        },
+      }),
+      http: request.get('/api/http', {
+        adapter: async (config) => {
+          await arrivals.http.promise
+          return rejectAdapter(original)(config)
+        },
+      }),
+    }
+    const settled = Promise.allSettled([requests.business, requests.http])
+    const target = '/login?redirect=%2Fanalysis%3Ftab%3D1%26name%3Dx'
+
+    try {
+      expect(snapshot()).toEqual({
+        token: 'memory-token',
+        persistedUser: JSON.stringify(user),
+        legacyToken: 'legacy-token',
+        currentUser: user,
+      })
+
+      arrivals[first].resolve()
+      await settle(requests[first])
+      expect(replaceMock).toHaveBeenCalledExactlyOnceWith(target)
+      expect(sessionAtReplace).toEqual({
+        token: '',
+        persistedUser: null,
+        legacyToken: null,
+        currentUser: null,
+      })
+
+      arrivals[second].resolve()
+      const [business, http] = await settled
+      expect(business.status).toBe('rejected')
+      expect(business.reason).toBeInstanceOf(Error)
+      expect(business.reason.message).toBe(payload.msg)
+      expect(business.reason).not.toBe(original)
+      expect(http.status).toBe('rejected')
+      expect(http.reason).toBe(original)
+      expect(ElMessage.warning.mock.calls).toEqual([
+        ['登录已过期，请重新登录'],
+        ['登录已过期，请重新登录'],
+      ])
+      expect(replaceMock).toHaveBeenCalledExactlyOnceWith(target)
+
+      navigation.resolve()
+      await navigation.promise
+      await expect(request.get('/api/again', { adapter: okAdapter(payload) })).rejects.toThrow(
+        payload.msg
+      )
+      expect(replaceMock).toHaveBeenCalledTimes(2)
+      expect(replaceMock).toHaveBeenLastCalledWith(target)
+    } finally {
+      arrivals.business.resolve()
+      arrivals.http.resolve()
+      await settled
+      navigation.resolve()
+      await navigation.promise
+      clearSessionState()
+      replaceMock.mockReset()
+      vi.useRealTimers()
+    }
   })
 })
 
