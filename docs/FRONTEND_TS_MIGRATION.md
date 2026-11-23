@@ -260,3 +260,83 @@ export interface UserState {
 - **当前三文件没有满足 D-043 的单文件机械迁移**：只迁 `auth` 会拉桶、公共请求与 router；只迁桶会拉 `request` 与 router；只迁 `request` 也会拉 router。在仓库外临时 tsconfig（继承现有选项，仅为探明闭包补解析现有 Vite `@/` 别名，并将三个原 JS 文件分别设为入口）跑 `tsc --noEmit --listFiles`，生产 JS 集分别为 `{auth,index,request,router}`、`{index,request,router}`、`{request,router}`。此探针不等于编译迁移后的 TS；现行 [`frontend/tsconfig.json`](../frontend/tsconfig.json) 未配置 `@/`，迁移不能用无法解析的 import、`exclude`、shim 或 suppress 达到零计数。
 - **首个候选**：另立项只类型化公共 transport。生产改动下界是 `request.js → request.ts`（到 `authSession.ts` 用可解析的相对导入）与现有 [`frontend/src/main.js`](../frontend/src/main.js#L19-L38) 的组合点，由入口在安装 router 及挂载前提供读取当前路径与 `replace` 的导航能力；请求模块不再 import JS router。再更新 `frontend/tsconfig.json` 的单个 include 与必要的请求拦截器测试接线。保持调用方式、初始化时序、401 去重、拦截器拒绝身份、加载计数及默认实例不变，不新增无导航的静默回退。候选并非本轮实现；Planner 须先标定接线和生命周期，再另定 `index` + 六个 `auth` 包装的具体类型契约。不在首切片内迁 router/store/SFC、并入 `meClient` 或设计统一 DTO；不能用 §4.1 通用类型代替逐接口实证。
 - **门禁与 `SessionUser`**：干净基线 `cd frontend && npm exec -- tsc --noEmit --listFiles` → 0，`frontend/src` 下 7 个 TS、0 个 JS/Vue；未来只纳入 `request.ts` 时预期 8 / 0，并确认无未解析模块诊断。现有 [`SessionUser`](../frontend/src/utils/authSession.ts#L1-L18) 仍应保留宽类型：登录资料、`/me` 资料和 check/extend 的 JWT 会话字段不同；`getCachedUser` 还从持久化 JSON 宽松恢复并可能返回 `{}`。后续先在各 API 响应边界区分 payload，再由单独规格为缓存与 store 兼容旧值/空态并证明消费点，不能只靠断言把存量缓存收窄成 `/me` DTO。
+
+### 9.4 公共请求层候选的类型与入口验证（#151）
+
+在主干 `34927c667fe65c9ce0ff505aebd4fe06eea26803` 的独立快照中，将原拦截器转成候选 `request.ts`，并临时接线验证。此次交付是规格和验证记录。
+
+#### 模块求值、装配和请求发出顺序
+
+| 时点 | 源码职责与可发出的请求 |
+|---|---|
+| 入口依赖求值 | [`main.js` 的入口导入](../frontend/src/main.js#L19-L24) 加载 App 与 router。App 的静态依赖经 [user store](../frontend/src/stores/user.js#L1-L20)、auth 包装及桶加载公共请求。原 [`request.js`](../frontend/src/api/request.js#L32-L84) 在顶层创建实例、注册拦截器，导航读取留在 401 回调。router 顶层创建 router 与 `meClient`、注册守卫，页面组件为懒加载。这里没有发送公共请求，也没有执行守卫。 |
+| Pinia 安装之后、router 安装之前 | 在 [`main.js` 的组合点](../frontend/src/main.js#L24-L28) 同步配置一次导航能力。回调每次从 `router.currentRoute.value` 读取当前路径，`replace` 委托真实 router 并返回原 Promise。配置调用本身不读路径、不导航。 |
+| 安装 router | 锁内 Vue Router 的 `install(app)` 在浏览器首次安装时调用 `push(routerHistory.location)` 发起初始导航。[`beforeEach`](../frontend/src/router/index.js#L205-L247) 放行公开路由，受保护路由先读 TTL 缓存，未命中才通过 [独立 `meClient`](../frontend/src/router/index.js#L173-L199) 调 `/api/auth/me`。认证失败由守卫处理，公共实例的 401 回调不参与。 |
+| 挂载及组件生命周期 | [`main.js`](../frontend/src/main.js#L26-L38) 在安装 router 和 Element Plus 后调用 `mount`。[`App.vue`](../frontend/src/App.vue#L7-L20) 的 setup 创建 store，`onMounted` 才调用 [`initAuth`](../frontend/src/stores/user.js#L68-L102)。后者先用公共实例调用 `checkSession`，认证成功再尝试 `extendSession`，随后用公共实例调用 `getUserInfo`。登录、注册、登出和已挂载页面的请求也在入口装配之后。守卫的异步导航与挂载后的请求可以交错，无需等待 `router.isReady()` 再接线。 |
+
+生产入口在两条路径之前同步接线。接线表达式在临时 `main.js` 中置于 `app.use(router)` 之前。
+
+```js
+configureRequestNavigation({
+  getFullPath: () => router.currentRoute?.value?.fullPath,
+  replace: (target) => router.replace(target),
+})
+app.use(router)
+```
+
+候选以 `{ getFullPath: () => string | undefined; replace: (target: string) => Promise<unknown> }` 描述导航能力。模块求值阶段只保存拦截器，401 开始跳转时才读取回调。直接绕过生产入口的消费者须显式装配，测试已这样接线。若无装配便发生第一次 401，候选调用未设置的导航对象时会抛错，此时已有清态副作用且可能留下去重标记。后续实现须用入口和测试装配证明这条路径不可达，若出现新的无入口消费者，须另外处理装配契约。
+
+#### 公共类型和行为
+
+| 表面 | 候选契约 |
+|---|---|
+| 默认实例的调用式 | `request(config)` 为 API 包装当前调用式，也保留 Axios 的 `request(url, config?)` 重载。回到同一个 Axios 实例，返回 `Promise<ResponseEnvelope>`。 |
+| 默认实例的方法式 | 仓库已用 `get(url, config?)`、`delete(url, config?)`、`post(url, data?, config?)`、`put(url, data?, config?)`。候选同样建模 `request(config)`、`head/options` 和 `patch/postForm/putForm/patchForm/query` 的包络返回。保留 `defaults`、`interceptors`、`getUri` 和原始 `create` 行为，`create().get()` 仍为 Axios 响应。 |
+| `http` 五个薄封装 | `get(url, config?)`、`post(url, data, config?)`、`put(url, data, config?)`、`delete(url, config?)`、`request(config)`。相同公共 config，直接透传完整包络。首页使用 `http.get`。 |
+| Config | 基于 `AxiosRequestConfig<unknown, unknown>` 保留 `url/method/params/data/headers/timeout/adapter` 等标准选项。自定义 `loadingOptions?: LoadingOptions \| false` 从实际 `ElLoading.service` 取类型，`hideLoading?: boolean` 覆盖展示。只有拦截器内部的 `InternalAxiosRequestConfig` 扩展私有 `_loadingShown`，标记成功展示的请求并平衡三条收尾路径的计数。默认 30 秒、Cookie、JSON Content-Type、内存 Bearer 注入沿用。 |
+| 完整成功包络 | `{ code: number; msg?: string; timestamp?: string; request_id?: string; data?: unknown }`。时间与请求标识沿用 §9.1 的服务端出处，适配器最小包络仍兼容。保留可选 `data` 与未证实的 payload 形状。2xx 业务码与 fulfilled 的业务 409 透传整个对象，Axios 拒绝的 HTTP 409 走错误提示并保持原 error。 |
+| 两条错误分支 | fulfilled 的业务失败用 `msg \|\| '请求失败'` 构造新 `Error`。Axios rejected 按 HTTP 状态、无响应和配置错误分类提示，原样拒绝对象。候选在内部限定一次响应拦截器注册的类型边界，因为锁内 Axios 1.20.0 的声明要求 fulfilled 仍返回 AxiosResponse。对外只声明配置和包络，不借用该原始响应返回类型。 |
+
+| 401 验收表 | 触发、提示与拒绝 | 导航和会话 |
+|---|---|---|
+| 业务 401 | Axios fulfilled 后读 `code === 401`，一次登录过期提示，拒绝新 `Error`，保留 `msg` 与默认回退文案。 | 第一次导航前清内存 token、持久化用户、遗留存储 token 和 `/me` TTL 缓存。读当时的路径，缺失或空值回退 `/home`，按原式编码后执行 `replace`。 |
+| HTTP 401 | Axios rejected 后读 `response.status === 401`，一次同文案提示，拒绝的对象必须和 adapter error 严格相等。 | 与业务 401 共享窗口。同一窗口混合两次会各提示、只跳一次，等待同一个 router Promise 的 `finally` 释放窗口。完成后再次触发可以重新跳转。 |
+| router 的 `meClient` | 专用实例仍接收 Axios 原始响应，8 秒超时。HTTP/网络异常或业务码非 200 归为 null。 | 由守卫按现行规则清态/重定向，继续使用 60 秒缓存；公共实例的过期提示及导航去重不参与。 |
+
+#### 实测和后续文件边界
+
+Node 26.13.1、npm 11.20.0、TypeScript 5.9.3、Axios 1.20.0、Vitest 3.2.7。临时快照的 `npm ci --offline --no-audit` 退出 0，安装 423 个包，锁 SHA-256 前后均为 `28c721d730dd57aee98d23112de1eda8fe0b3dfe0ab9e1ced295b90716837c4d`。
+
+- 在原 `frontend/` 和临时候选 `frontend/` 分别运行 `npm exec -- tsc --noEmit --listFiles`，均退出 0。生产文件由 7 TS / 0 JS/Vue 变为 8 TS / 0 JS/Vue，集合差仅为 `src/api/request.ts`。保留原七个 include，候选唯一项目内 TS import 为 `../utils/authSession`，无未解析模块、新显式 `any`、抑制注释、JS shim。
+- 独立临时 tsconfig 在现有 include 后加调用探针。`npm exec -- tsc --noEmit -p tsconfig.probe-151.json` 的正例退出 0，验证调用式、方法式、`http.request` 与独立创建的原始 Axios 实例。追加两个负例后退出 2，实际诊断分别为 TS2322（`data` 可缺席）与 TS2739（包络无 `status`、`statusText`、`headers`、`config`）。日常门禁不纳入探针。
+- 用 `NODE_OPTIONS=--no-webstorage npm run test:run -- tests/request-error-paths.test.js tests/request-loading.test.js tests/router-guard.test.js tests/login-journey.test.js tests/response-envelope.test.js` 运行原实现和临时候选，两边均退出 0（5 文件 / 53 用例）。候选的三份直接请求测试使用显式导航回调，保留既有断言。候选全量测试 47 文件 / 323 用例、lint、typecheck、build、bundle 均退出 0。首次 format:check 仅报候选布局，运行 Prettier 后退出 0。
+- Chromium 本地冒烟 `bash ../run-smoke151.sh` → 0。两份产物分别由 Vite preview 提供，在 `/login?seed=1` 和 `/home?seed=1` 验证入口。API 固定返回 401，将公共 session check 延迟到初始导航落地后再放行。两份产物公开页均只有 session check，受保护页均另有守卫 me 请求。两者的公共提示和解码后的跳转目标一致，浏览器无页面异常。初始守卫与挂载可以交错的结论来自源码。
+
+```ts
+import type { AxiosResponse } from 'axios'
+import request, { http, type ResponseEnvelope } from './src/api/request'
+
+export async function positive() {
+  const result: ResponseEnvelope = await request({
+    url: '/api/auth/register',
+    method: 'post',
+    data: { username: 'fixture' },
+    loadingOptions: false,
+  })
+  const byUrl: ResponseEnvelope = await request('/api/session/check', { hideLoading: true })
+  const direct: ResponseEnvelope = await request.get('/api/auth/me')
+  const wrapped: ResponseEnvelope = await http.request({ url: '/api/auth/me' })
+  const raw: AxiosResponse<unknown> = await request.create().get<unknown>('/api/auth/me')
+  return [result.code, result.msg, result.timestamp, result.request_id, result.data,
+    byUrl.code, direct.code, wrapped.code, raw.status]
+}
+
+export async function negative() {
+  const result = await http.get('/api/auth/me')
+  const required: ResponseEnvelope & { data: unknown } = result
+  const raw: AxiosResponse<unknown> = result
+  return [required, raw]
+}
+```
+
+后续生产切片的文件边界为 `request.js` 改名为 `request.ts`、[`main.js`](../frontend/src/main.js)、[`tsconfig.json`](../frontend/tsconfig.json)，以及改用显式导航装配并更新 import 的 [request-error-paths](../frontend/tests/request-error-paths.test.js)、[request-loading](../frontend/tests/request-loading.test.js)、[response-envelope](../frontend/tests/response-envelope.test.js)。当前桶和首页均用省略后缀的路径。保持 auth/router/store/SFC、认证权限模型、包络来源、会话缓存、CI 和依赖在这次验证的范围之外。
