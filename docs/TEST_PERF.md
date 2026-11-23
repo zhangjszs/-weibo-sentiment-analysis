@@ -460,4 +460,160 @@ D-034 原记录的 83.79–83.90 / 77.32–77.35 只描述历史语句/分支波
 
 **建议。** 同一批样本内，两个候选均满足六次排列稳定、原始区间逐点计数和 Vue 映射一致。排序固定了 A 的区间表达，一次性合并稳定保留 B，现有证据无法确定哪种额外的 LCOV 记录应视为源代码分支。另用锁定的 `mergeProcessCovs` 做单函数合成反例，同根范围的函数级入口 2 与块级入口 3（子范围 1）在两个输入顺序下均只保留 3/1。此样本不含该类计数丢失，但稳定合并无法保证任意输入的入口次数相加。先保留现有工具链，若另立工具修正任务，应覆盖混合粒度、跨 transform 组和源分支归属。#143 的历史 auth 双漂移仍需自己的原始样本。
 
+#### 2026-11-23 · #147 复跑与回退分支计数
+
+以原实验提交 `1316e15f5d843b9fe7e915e5f8fb554f2df0b3ef` 新建临时工作树。Node 26.13.1、npm 11.20.0、Vitest 与 V8 provider 3.2.7。离线 `npm ci --offline --no-audit` 退出 0、安装 423 个包，锁 SHA-256 前后均为 `bab52592904dfccd8d48c6f9a4c6acb1e6645479ff4b3d5eed0f165aa8c59474`。下方探针从该临时树的 `frontend/` 运行，退出 0，实际执行 3 文件 / 54 用例与 18 次回放。原算法复现 A 71/68 与 B 72/69，排序逐步合并六次均为 A，一次性合并六次均为 B。
+
+| addTab 回退 | A、B 的原始 V8 半开范围 | 三套件命中 L / R / T | provider 源映射（行从 1 起，列从 0 起） | 完整 LCOV 的 BRDA（A；B） |
+| --- | --- | --- | --- | --- |
+| 第 90 行 `\|\| route.name` | `[2197,2210)` | 0 / 0 / 1 | `90:25–90:45`，1 次 | `90,26,0,1`；`90,27,0,1` |
+| 第 96 行 `\|\| null` | `[2373,2380)` | 0 / 0 / 1 | `96:24–96:37`，1 次 | `96,31,0,1`；`96,32,0,1` |
+
+在 provider 的 `convertCoverage` 映射过程中，使用同一份 Vite `web` 转译源码、sourcemap 和 `tabs.ts` 的 `startOffset=209`，将单个 `addTab` 的范围交给同一 `v8ToIstanbul`，再用完整报告的 LCOV 对照。V8 另记录前置的可选属性读取，第 90 行 `[2189,2196)=11`、第 96 行 `[2366,2372)=11`。A/B 多出的一条范围移位了 LCOV 的编号，两处回退的原始范围和命中数均一致。
+
+以下命令从任意已获取该提交的仓库根目录执行。将后面的 JavaScript 块保存为 `$study_dir/replay147.mjs`。从临时工作树的 `frontend/` 启动可以让 Vitest 使用该快照的配置。探针以这个目录的 `package.json` 建立模块解析基准，用它解析 `vitest/node` 和 `@vitest/coverage-v8`，再从 provider 入口解析它自己的 `@bcoe/v8-coverage`。
+
+```bash
+study_dir=$(mktemp -d)
+git worktree add --detach "$study_dir/baseline" 1316e15f5d843b9fe7e915e5f8fb554f2df0b3ef
+cd "$study_dir/baseline/frontend"
+node --version
+npm --version
+sha256sum package-lock.json
+npm ci --no-audit
+sha256sum package-lock.json
+NODE_OPTIONS=--no-webstorage node "$study_dir/replay147.mjs" "$study_dir/results"
+```
+
+Node 26 使用上述 Storage 开关。若缓存包含完整锁，`npm ci --offline --no-audit` 可复用缓存。输出目录包含采集的三份 JSON、原生 LCOV、各排列的映射数据和 LCOV。下列探针聚焦本次两项补证，原实验的 Vue 负对照和逐区间检查步骤见上一段。
+
+```js
+import assert from 'node:assert/strict'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
+
+const requireFrontend = createRequire(resolve('package.json'))
+const providerEntry = requireFrontend.resolve('@vitest/coverage-v8')
+const { mergeProcessCovs } = createRequire(providerEntry)('@bcoe/v8-coverage')
+const { createVitest } = await import(pathToFileURL(requireFrontend.resolve('vitest/node')).href)
+const out = resolve(process.argv[2])
+await mkdir(out, { recursive: true })
+const suites = ['login-journey', 'router-guard', 'tabs-store']
+const ctx = await createVitest('test', {
+  watch: false,
+  coverage: { enabled: true, reportsDirectory: resolve(out, 'native'), reporter: ['lcovonly'] },
+})
+try {
+  await ctx.initCoverageProvider()
+  const provider = ctx.coverageProvider
+  assert.equal(provider.version, '3.2.7')
+  const captured = new Map()
+  const afterSuite = provider.onAfterSuiteRun.bind(provider)
+  provider.onAfterSuiteRun = (event) => {
+    const index = suites.findIndex((name) =>
+      event.testFiles.some((file) => file.endsWith('/' + name + '.test.js')))
+    assert.ok(index >= 0 && event.coverage && !captured.has('LRT'[index]))
+    assert.equal(event.transformMode, 'web')
+    captured.set('LRT'[index], structuredClone(event))
+    return afterSuite(event)
+  }
+  const result = await ctx.start(suites)
+  assert.equal(process.exitCode ?? 0, 0)
+  assert.equal(result.testModules.length, 3)
+  assert.equal(captured.size, 3)
+  assert.equal(new Set([...captured.values()].map((event) => event.projectName)).size, 1)
+  const { projectName, transformMode } = captured.get('L')
+  const project = ctx.getProjectByName(projectName)
+  const convert = provider.convertCoverage.bind(provider)
+  const native = await readFile(resolve(out, 'native/lcov.info'), 'utf8')
+  const tabsRecord = (lcov) => lcov.split('end_of_record\n')
+    .find((record) => record.includes('src/stores/tabs.ts\n'))
+  const outcome = (lcov) =>
+    tabsRecord(lcov).match(/^BRF:(\d+)\nBRH:(\d+)$/m).slice(1).join('/')
+  assert.ok(['71/68', '72/69'].includes(outcome(native)))
+  const targets = [[2197, 2210, 90], [2373, 2380, 96]]
+  for (const [startOffset, endOffset] of targets) {
+    const counts = [...'LRT'].map((key) => {
+      const script = captured.get(key).coverage.result
+        .find(({ url }) => url.endsWith('/src/stores/tabs.ts'))
+      return script.functions.find(({ functionName }) => functionName === 'addTab')
+        .ranges.find((range) => range.startOffset === startOffset && range.endOffset === endOffset)
+        .count
+    })
+    assert.deepEqual(counts, [0, 0, 1])
+  }
+  for (const [key, { coverage }] of captured) {
+    await writeFile(resolve(out, key + '.json'), JSON.stringify(coverage))
+  }
+  for (const order of ['LRT', 'LTR', 'RLT', 'RTL', 'TLR', 'TRL']) {
+    for (const mode of ['incremental', 'sorted', 'batch']) {
+      const inputs = [...(mode === 'sorted' ? 'LRT' : order)]
+        .map((key) => structuredClone(captured.get(key).coverage))
+      let batch
+      if (mode === 'batch') {
+        const offsets = new Map()
+        for (const { result } of inputs) {
+          for (const { url, startOffset = 0 } of result) {
+            assert.equal(offsets.get(url) ?? startOffset, startOffset)
+            offsets.set(url, startOffset)
+          }
+        }
+        batch = mergeProcessCovs(inputs)
+        for (const script of batch.result) script.startOffset = offsets.get(script.url)
+      }
+      provider.readCoverageFiles = async ({ onFileRead, onFinished }) => {
+        if (!batch) inputs.forEach(onFileRead)
+        await onFinished(project, transformMode)
+      }
+      let addTab, mapped, tabsOffset
+      provider.convertCoverage = (merged, project, transformMode) =>
+        convert(batch ?? merged, project, transformMode)
+      const v8ToIstanbul = provider.v8ToIstanbul.bind(provider)
+      provider.v8ToIstanbul = async (url, offset, sources, functions) => {
+        if (url.endsWith('/src/stores/tabs.ts') && functions.some((fn) => fn.functionName === 'addTab')) {
+          addTab = structuredClone(functions.find((fn) => fn.functionName === 'addTab'))
+          tabsOffset = offset
+          const isolated = await v8ToIstanbul(url, offset, sources, [addTab])
+          mapped = isolated[Object.keys(isolated)[0]]
+        }
+        return v8ToIstanbul(url, offset, sources, functions)
+      }
+      try {
+        const report = await provider.generateCoverage({ allTestsRun: true })
+        provider.options.reportsDirectory = resolve(out, order + '-' + mode)
+        await provider.generateReports(report, true)
+        const lcov = await readFile(resolve(provider.options.reportsDirectory, 'lcov.info'), 'utf8')
+        const expected = mode === 'sorted' || (mode === 'incremental' && ['LRT', 'RLT'].includes(order))
+          ? '71/68' : '72/69'
+        assert.equal(outcome(lcov), expected)
+        assert.equal(addTab.ranges[0].count, 19)
+        assert.equal(Object.keys(mapped.branchMap).length, addTab.ranges.length)
+        const ranges = Object.values(mapped.branchMap).map(({ loc }, i) => ({
+          ...addTab.ranges[i], loc, mappedCount: mapped.b[i][0],
+        }))
+        for (const [startOffset, endOffset, line] of targets) {
+          const range = ranges.find((entry) => entry.startOffset === startOffset)
+          assert.equal(range.endOffset, endOffset)
+          assert.equal(range.loc.start.line, line)
+          assert.equal(range.loc.end.line, line)
+          assert.equal(range.count, 1)
+          assert.equal(range.mappedCount, 1)
+          assert.ok(tabsRecord(lcov).split('\n')
+            .some((record) => record.startsWith('BRDA:' + line + ',') && record.endsWith(',0,1')))
+        }
+        await writeFile(resolve(out, order + '-' + mode + '.json'),
+          JSON.stringify({ outcome: expected, startOffset: tabsOffset, ranges }, null, 2))
+        console.log(order, mode, expected)
+      } finally {
+        provider.v8ToIstanbul = v8ToIstanbul
+      }
+    }
+  }
+} finally {
+  await ctx.close()
+}
+```
+
 **授权边界**：未设 `coverage.thresholds`、未把覆盖率纳入 CI；两项均需用户明确授权。
