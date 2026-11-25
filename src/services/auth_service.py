@@ -81,7 +81,7 @@ class AuthService:
         if not strength["valid"]:
             return False, f"密码强度不足：{', '.join(strength['suggestions'])}"
 
-        if username in Config.ADMIN_USERS:
+        if username.casefold() in {name.casefold() for name in Config.ADMIN_USERS}:
             return False, "该用户名不可用"
 
         if self.user_repo.find_by_username(username):

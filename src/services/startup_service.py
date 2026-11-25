@@ -13,11 +13,13 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
+from sqlalchemy.exc import IntegrityError
+
 from config.settings import Config
+from services.admin_provisioning import validate_admin_credentials
 from utils.datetime_utils import utcnow_naive
 from utils.jwt_handler import create_token
-from utils.password_hasher import hash_password
-from utils.query import querys
+from utils.password_hasher import hash_password, verify_password
 
 logger = logging.getLogger(__name__)
 
@@ -100,94 +102,53 @@ def get_startup_status() -> dict[str, Any]:
 
 
 def ensure_demo_admin() -> dict[str, Any]:
-    """
-    在开发环境确保演示管理员账号可用。
-
-    行为：
-    - 将 DEMO_ADMIN_USERNAME 注入 ADMIN_USERS
-    - 用户不存在时自动创建
-    - 用户存在但为非 bcrypt 密码时（可配置）重置为 DEMO_ADMIN_PASSWORD
-    """
-    result: dict[str, Any] = {
-        "enabled": False,
-        "action": "skipped",
-        "username": "",
-    }
-
+    """Provision a local development account only after explicit opt-in."""
+    result: dict[str, Any] = {"enabled": False, "action": "skipped", "username": ""}
     if not Config.IS_DEVELOPMENT or not Config.AUTO_CREATE_DEMO_ADMIN:
         _set_admin_bootstrap_state(result)
         return result
 
+    from database import db_session
+    from models.user import User
+
     username = (Config.DEMO_ADMIN_USERNAME or "").strip()
     password = Config.DEMO_ADMIN_PASSWORD or ""
     result["username"] = username
-
-    if not username or not password:
-        result["action"] = "invalid_config"
+    try:
+        validate_admin_credentials(username, password)
+    except ValueError as exc:
+        result.update(action="invalid_config", error=str(exc))
         _set_admin_bootstrap_state(result)
         return result
 
-    if password in {"Admin123!", "admin", "password", "123456"}:
-        logger.warning(
-            "演示管理员账号使用了弱口令，请通过 DEMO_ADMIN_PASSWORD 配置强密码"
-        )
-
     try:
-        Config.ADMIN_USERS.add(username)
-        user_rows = querys(
-            "SELECT id, password FROM user WHERE username = %s LIMIT 1",
-            [username],
-            "select",
-        )
-        hashed_password = hash_password(password)
-
-        if not user_rows:
-            # 引导插入必须方言中立：NOW() 是 MySQL 函数，SQLite 下引导直接崩溃
-            # （#56）；create_time 显式落 naive UTC，与 User.create_time 列默认值
-            # 语义一致，MySQL / SQLite 等价
-            from database import db_session
-            from models.user import User
-
+        existing = db_session.query(User).filter_by(username=username).first()
+        if existing is None:
             db_session.add(
                 User(
                     username=username,
-                    password=hashed_password,
+                    password=hash_password(password),
                     create_time=utcnow_naive(),
                 )
             )
             db_session.commit()
             result["action"] = "created"
+        elif existing.username == username and verify_password(password, existing.password):
+            result["action"] = "exists"
+        else:
+            result["action"] = "account_conflict"
+
+        if result["action"] in {"created", "exists"}:
+            Config.ADMIN_USERS.add(username)
             result["enabled"] = True
-            _set_admin_bootstrap_state(result)
-            return result
-
-        result["action"] = "exists"
-        result["enabled"] = True
-
-        if Config.DEMO_ADMIN_RESET_PASSWORD:
-            user_id = user_rows[0].get("id")
-            if user_id:
-                querys(
-                    "UPDATE user SET password = %s WHERE id = %s",
-                    [hashed_password, user_id],
-                    "update",
-                )
-                result["action"] = "reset_password"
-
-        _set_admin_bootstrap_state(result)
-        return result
+    except IntegrityError:
+        db_session.rollback()
+        result["action"] = "account_conflict"
     except Exception as exc:
-        # ORM 插入失败时清掉 session 中的挂起对象，避免污染后续无关的 commit
-        try:
-            from database import db_session
-
-            db_session.rollback()
-        except Exception:
-            pass
-        result["action"] = "error"
-        result["error"] = str(exc)
-        _set_admin_bootstrap_state(result)
-        return result
+        db_session.rollback()
+        result.update(action="error", error=type(exc).__name__)
+    _set_admin_bootstrap_state(result)
+    return result
 
 
 def schedule_startup_warmup(app) -> bool:
@@ -234,7 +195,7 @@ def schedule_startup_warmup(app) -> bool:
                 logger.warning("启动预热跳过：用户 %s 不存在（未创建演示管理员？）", username)
                 _warmup_finish(0.0, "warmup skipped: user not found")
                 return
-            token = create_token(row.id, username, expires_hours=1)
+            token = create_token(row.id, row.username, expires_hours=1)
             headers = {"Authorization": f"Bearer {token}"}
 
             with app.test_client() as client:

@@ -24,6 +24,7 @@ import pytest
 pytestmark = pytest.mark.integration
 
 import logging
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -270,13 +271,48 @@ class TestSubscribe:
         err = next(r for r in received if r["name"] == "subscribe_error")
         assert "无效的房间类型" in err["args"][0]["message"]
 
-    def test_subscribe_user_room_type(self, connected_client, ws_service):
-        """RoomType.USER 也应可订阅"""
-        connected_client.emit("subscribe", {"type": "user", "target": "bob"})
-        received = connected_client.get_received()
-        assert any(r["name"] == "subscribed" for r in received)
-        conn = ws_service.connections[_sid_of(ws_service)]
-        assert "user:bob" in conn.rooms
+    def test_anonymous_client_cannot_subscribe_to_private_room(self, connected_client):
+        connected_client.emit("subscribe", {"type": "user", "target": "u1"})
+        assert [event["name"] for event in connected_client.get_received()] == ["subscribe_error"]
+        assert connected_client.emit("get_rooms", callback=True) == {"rooms": []}
+
+    def test_authenticated_client_cannot_join_another_users_room(self, authed_client):
+        authed_client.emit("subscribe", {"type": "user", "target": "u2"})
+        assert [event["name"] for event in authed_client.get_received()] == ["subscribe_error"]
+        assert authed_client.emit("get_rooms", callback=True) == {"rooms": ["user:u1"]}
+
+    def test_authenticated_client_can_subscribe_to_own_room(self, authed_client):
+        authed_client.emit("unsubscribe", {"type": "user", "target": "u1"})
+        authed_client.get_received()
+        authed_client.emit("subscribe", {"type": "user", "target": "u1"})
+        assert [event["name"] for event in authed_client.get_received()] == ["subscribed"]
+
+    def test_connection_cannot_change_its_authenticated_identity(self, authed_client, ws_service):
+        with patch(
+            "services.websocket_service.verify_token",
+            return_value={"user_id": "u2", "username": "bob"},
+        ):
+            authed_client.emit("authenticate", {"token": "another-valid-session"})
+
+        assert [event["name"] for event in authed_client.get_received()] == ["auth_error"]
+        assert authed_client.emit("get_rooms", callback=True) == {"rooms": ["user:u1"]}
+        assert "u2" not in ws_service.user_connections
+
+
+@pytest.mark.parametrize(
+    ("origin", "status"), [("http://localhost:3000", 200), ("https://other.invalid", 400)]
+)
+def test_polling_handshake_checks_configured_browser_origin(app, monkeypatch, origin, status):
+    from services import websocket_service as websocket_module
+
+    monkeypatch.setattr(websocket_module.Config, "ALLOWED_ORIGINS", ["http://localhost:3000"])
+    WebSocketService().init_app(app)
+
+    response = app.test_client().get(
+        "/socket.io/?EIO=4&transport=polling", headers={"Origin": origin}
+    )
+
+    assert response.status_code == status
 
 
 class TestUnsubscribe:
@@ -563,3 +599,24 @@ class TestUninitializedGuards:
         stats = svc.get_stats()
         assert stats["total_connections"] == 0
         assert stats["connections"] == []
+
+
+def test_notification_dispatch_delivers_only_to_owner(
+    app, authed_client, socketio, ws_service, monkeypatch
+):
+    from services import websocket_service as websocket_module
+    from services.notifications.channels import ChannelMixin
+
+    other = socketio.test_client(app)
+    other.get_received()
+    monkeypatch.setattr(websocket_module, "websocket_service", ws_service)
+    message = SimpleNamespace(
+        recipient=SimpleNamespace(user_id="u1"),
+        subject="Private notice",
+        content="Test notification",
+        level=SimpleNamespace(value="info"),
+    )
+
+    assert ChannelMixin()._send_websocket(message) == (True, "")
+    assert [event["name"] for event in authed_client.get_received()] == ["message"]
+    assert other.get_received() == []

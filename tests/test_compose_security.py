@@ -1,3 +1,6 @@
+import os
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -42,3 +45,71 @@ def test_web_worker_validates_configuration_before_starting_celery(services):
     shell, options, script = services["web-worker"]["command"]
     assert (shell, options) == ("sh", "-ec")
     assert script.index("Config.validate()") < script.index("exec celery")
+
+
+def test_compose_binding_and_database_credentials(services):
+    mysql = services["mysql"]
+    redis = services["redis"]
+    assert not mysql.get("ports")
+    assert not redis.get("ports")
+    assert services["web"]["ports"] == ["127.0.0.1:5000:5000"]
+
+    for key in ("MYSQL_ROOT_PASSWORD", "MYSQL_PASSWORD"):
+        assert mysql["environment"][key].startswith("${" + key + ":?")
+    assert mysql["environment"]["MYSQL_ROOT_HOST"] == "localhost"
+    for name in ("web", "web-worker", "spider-api", "spider-worker"):
+        env = services[name]["environment"]
+        assert env["DB_USER"] == mysql["environment"]["MYSQL_USER"]
+        assert env["DB_PASSWORD"] == mysql["environment"]["MYSQL_PASSWORD"]
+        assert "MYSQL_ROOT_PASSWORD" not in str(env)
+
+    for service in services.values():
+        env = service.get("environment", {})
+        if "REDIS_PASSWORD" in env:
+            assert env["REDIS_PASSWORD"] == redis["environment"]["REDIS_PASSWORD"]
+    assert redis["environment"]["REDIS_PASSWORD"].startswith("${REDIS_PASSWORD:?")
+    assert "--requirepass" in redis["command"][2]
+    assert "REDISCLI_AUTH" in redis["healthcheck"]["test"][1]
+
+
+def test_mysql_initialization_does_not_seed_accounts(services):
+    volumes = services["mysql"]["volumes"]
+    init_mount = next(item for item in volumes if "/docker-entrypoint-initdb.d/" in item)
+    source = init_mount.split(":", 1)[0]
+    sql = (COMPOSE_PATH.parent / source).read_text(encoding="utf-8").upper()
+    assert "CREATE TABLE `USER`" in sql
+    assert "INSERT INTO `USER`" not in sql
+    assert "DROP DATABASE" not in sql
+    assert services["web"]["environment"]["AUTO_CREATE_DEMO_ADMIN"] == "False"
+
+
+@pytest.mark.parametrize(
+    ("service", "env", "valid"),
+    [
+        ("mysql", {"MYSQL_ROOT_PASSWORD": "", "MYSQL_PASSWORD": "b" * 64}, False),
+        ("mysql", {"MYSQL_ROOT_PASSWORD": "root", "MYSQL_PASSWORD": "b" * 64}, False),
+        ("mysql", {"MYSQL_ROOT_PASSWORD": "a" * 64, "MYSQL_PASSWORD": "a" * 64}, False),
+        ("mysql", {"MYSQL_ROOT_PASSWORD": "a" * 64, "MYSQL_PASSWORD": "b" * 64}, True),
+        ("redis", {"REDIS_PASSWORD": ""}, False),
+        ("redis", {"REDIS_PASSWORD": "password"}, False),
+        ("redis", {"REDIS_PASSWORD": "c" * 64}, True),
+    ],
+)
+def test_database_and_redis_preflight(services, service, env, valid):
+    shell = shutil.which("sh")
+    if not shell:
+        pytest.skip("Compose Linux entrypoint requires a POSIX shell")
+    spec = services[service]
+    command = spec["entrypoint"] if service == "mysql" else spec["command"]
+    # Replace the container process with a no-op, exercising the actual preflight shell.
+    script = command[2].split("exec docker-entrypoint.sh", 1)[0].replace("$$", "$")
+    result = subprocess.run(
+        [shell, "-ec", script],
+        env={**os.environ, **env},
+        capture_output=True,
+        text=True,
+        timeout=5,
+    )
+    assert (result.returncode == 0) is valid
+    if not valid:
+        assert "PASSWORD" in result.stderr

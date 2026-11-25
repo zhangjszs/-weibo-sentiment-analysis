@@ -234,20 +234,24 @@ class ChannelMixin:
 
     def _send_websocket(self, message: NotificationMessage) -> tuple:
         try:
-            from services.websocket_service import websocket_service
+            from services.websocket_service import (
+                MessageType,
+                create_message,
+                websocket_service,
+            )
 
             if not websocket_service.socketio:
                 return False, "WebSocket服务未初始化"
-            websocket_service.send_to_user(
+            delivered = websocket_service.send_to_user(
                 str(message.recipient.user_id),
-                websocket_service.create_message(
-                    websocket_service.MessageType.NOTIFICATION,
+                create_message(
+                    MessageType.NOTIFICATION,
                     title=message.subject,
                     content=message.content,
                     level=message.level.value,
                 ),
             )
-            return True, ""
+            return (True, "") if delivered else (False, "WebSocket发送失败")
         except (ImportError, AttributeError) as e:
             return False, str(e)
 

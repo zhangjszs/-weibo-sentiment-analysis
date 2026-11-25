@@ -195,8 +195,9 @@ jobs:
           DB_NAME: weibo_test
         run: |
           # 冻结 SQL 建表（迁移链 baseline 为空，不建核心表），再跑迁移验证链健康
-          sed 's/`wb`/`weibo_test`/g' docs/database/init_database.sql | mysql -h 127.0.0.1 -u root -proot
+          mysql -h 127.0.0.1 -u root -proot weibo_test < docs/database/init_database.sql
           alembic upgrade head
+          test "$(mysql -h 127.0.0.1 -u root -proot weibo_test -Nse 'SELECT COUNT(*) FROM user')" = 0
 
       - name: Integration tests
         env:

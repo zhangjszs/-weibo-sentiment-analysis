@@ -324,6 +324,14 @@ class Config:
         if cls.SECRET_KEY and cls.SECRET_KEY == cls.JWT_SECRET_KEY:
             key_errors.append("JWT_SECRET_KEY must differ from SECRET_KEY")
 
+        if _parse_bool_env("COMPOSE_REQUIRE_SERVICE_TOKENS"):
+            for name in ("SPIDER_SERVICE_TOKEN", "NLP_SERVICE_TOKEN"):
+                token = getattr(cls, name)
+                if len(token) < 32 or any(ch not in "0123456789abcdefABCDEF" for ch in token):
+                    key_errors.append(f"{name} must be a random hex string of at least 32 characters")
+            if cls.SPIDER_SERVICE_TOKEN == cls.NLP_SERVICE_TOKEN:
+                key_errors.append("SPIDER_SERVICE_TOKEN and NLP_SERVICE_TOKEN must be different")
+
         if cls.FLASK_ENV in cls.PROTECTED_ENVS:
             if not cls.ALLOWED_ORIGINS:
                 errors.append("ALLOWED_ORIGINS must be set in production")

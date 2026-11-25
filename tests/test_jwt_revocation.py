@@ -61,6 +61,17 @@ def test_verify_rejects_token_without_aud_iss():
     assert verify_token(legacy) is None
 
 
+def test_previous_issuer_session_is_not_renewable(client, auth_cookie_setter):
+    normal_token = create_token(1, "tester")
+    claims = _decode_unverified(normal_token)
+    claims["iss"] = "weibo-sentiment-api"
+    previous = pyjwt.encode(claims, Config.JWT_SECRET_KEY, algorithm="HS256")
+
+    assert verify_token(previous) is None
+    auth_cookie_setter(client, previous)
+    assert client.post("/api/session/extend").status_code == 401
+
+
 def test_revoke_token_makes_verify_fail():
     token = create_token(1, "tester")
     assert verify_token(token) is not None

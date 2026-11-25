@@ -158,3 +158,30 @@ def test_production_requires_both_keys_explicitly(key):
 
     assert proc.returncode != 0
     assert f"{key} must be set" in proc.stderr
+
+
+@pytest.mark.parametrize(
+    ("spider", "nlp", "error"),
+    [
+        ("", "b" * 64, "SPIDER_SERVICE_TOKEN"),
+        ("a" * 64, "short", "NLP_SERVICE_TOKEN"),
+        ("a" * 64, "a" * 64, "must be different"),
+        ("a" * 64, "b" * 64, None),
+    ],
+)
+def test_compose_requires_distinct_strong_service_tokens(spider, nlp, error):
+    proc = _run_with_env(
+        {
+            "FLASK_ENV": "development",
+            "COMPOSE_REQUIRE_SERVICE_TOKENS": "True",
+            "SECRET_KEY": "s" * 64,
+            "JWT_SECRET_KEY": "j" * 64,
+            "SPIDER_SERVICE_TOKEN": spider,
+            "NLP_SERVICE_TOKEN": nlp,
+        },
+    )
+    if error is None:
+        assert proc.returncode == 0, proc.stderr
+    else:
+        assert proc.returncode != 0
+        assert error in proc.stderr

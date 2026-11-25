@@ -16,6 +16,7 @@ from typing import Any
 from flask import request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
+from config.settings import Config
 from utils.jwt_handler import verify_token
 
 logger = logging.getLogger(__name__)
@@ -95,7 +96,10 @@ class WebSocketService:
 
         self.socketio = SocketIO(
             app,
-            cors_allowed_origins="*",
+            cors_allowed_origins=[
+                origin for origin in Config.ALLOWED_ORIGINS if origin != "*"
+            ]
+            or None,
             async_mode="threading",
             logger=False,
             engineio_logger=False,
@@ -141,39 +145,36 @@ class WebSocketService:
         def handle_authenticate(data):
             """处理认证事件"""
             sid = request.sid
-            token = data.get("token", "") if data else ""
+            token = data.get("token") if isinstance(data, dict) else None
 
-            if not token:
+            if not isinstance(token, str) or not token:
                 emit("auth_error", {"message": "缺少认证令牌"})
                 return False
 
             user_info = verify_token(token)
-            if not user_info:
+            user_id = (user_info or {}).get("user_id", (user_info or {}).get("id"))
+            if not user_info or not user_id:
                 emit("auth_error", {"message": "认证令牌无效或已过期"})
                 return False
 
             with self._lock:
                 conn_info = self.connections.get(sid)
-                if conn_info:
-                    conn_info.user_id = user_info.get(
-                        "user_id", str(user_info.get("id"))
-                    )
-                    conn_info.username = user_info.get("username", "")
-                    conn_info.is_authenticated = True
+                if conn_info is None or conn_info.user_id not in {None, str(user_id)}:
+                    emit("auth_error", {"message": "切换账号需重新建立连接"})
+                    return False
 
-                    user_id = conn_info.user_id
-                    if user_id not in self.user_connections:
-                        self.user_connections[user_id] = set()
-                    self.user_connections[user_id].add(sid)
-
-                    user_room = self._get_room_name(RoomType.USER, user_id)
-                    join_room(user_room, sid=sid)
-                    conn_info.rooms.add(user_room)
+                conn_info.user_id = str(user_id)
+                conn_info.username = user_info.get("username", "")
+                conn_info.is_authenticated = True
+                self.user_connections.setdefault(conn_info.user_id, set()).add(sid)
+                user_room = self._get_room_name(RoomType.USER, conn_info.user_id)
+                join_room(user_room, sid=sid)
+                conn_info.rooms.add(user_room)
 
             emit(
                 "auth_success",
                 {
-                    "user_id": user_info.get("user_id"),
+                    "user_id": user_id,
                     "username": user_info.get("username"),
                 },
             )
@@ -198,12 +199,17 @@ class WebSocketService:
                 return False
 
             room_name = self._get_room_name(room_enum, target)
-            join_room(room_name, sid=sid)
-
             with self._lock:
                 conn_info = self.connections.get(sid)
-                if conn_info:
-                    conn_info.rooms.add(room_name)
+                if conn_info is None:
+                    return False
+                if room_enum is RoomType.USER and (
+                    not conn_info.is_authenticated or conn_info.user_id != str(target)
+                ):
+                    emit("subscribe_error", {"message": "只能订阅自己的用户房间"})
+                    return False
+                join_room(room_name, sid=sid)
+                conn_info.rooms.add(room_name)
 
             emit("subscribed", {"type": room_type, "target": target, "room": room_name})
             logger.debug(f"用户订阅: {room_type} - {target} (SID: {sid})")

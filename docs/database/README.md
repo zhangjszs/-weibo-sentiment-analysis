@@ -43,7 +43,7 @@
   alembic upgrade head          # 或 python -c "from database import Base, get_engine; Base.metadata.create_all(get_engine())"
   ```
 
-- 生产 / Docker：容器启动前执行 `alembic upgrade head`；`docker-compose.yml` 旧有的 `database/init_database.sql` 挂载已改为指向本归档路径，仅为历史兼容，**不应作为初始化依赖**。
+- Docker 的空卷使用 `init_database.sql` 创建兼容基础表。该 SQL 使用调用方指定的数据库且不写入账户。既有数据库按正常流程执行 `alembic upgrade head`，管理员通过运维终端创建。
 
 - 归档 SQL 的离线使用（可选）：
 

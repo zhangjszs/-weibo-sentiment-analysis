@@ -275,13 +275,14 @@ class TestLogin:
         patched_collaborators["create_token"].assert_called_once_with(1, "operator")
 
 
+@pytest.mark.parametrize("username", ["operator", "Operator", "OPERATOR"])
 def test_public_registration_cannot_claim_an_allowlisted_name(
-    mock_user_repo, patched_collaborators, patched_admin_users
+    mock_user_repo, patched_collaborators, patched_admin_users, username
 ):
     patched_admin_users.ADMIN_USERS = {"operator"}
     mock_user_repo.find_by_username.return_value = None
 
-    success, _ = AuthService().register("operator", "strong-password", "strong-password")
+    success, _ = AuthService().register(username, "strong-password", "strong-password")
 
     assert not success
     mock_user_repo.create.assert_not_called()

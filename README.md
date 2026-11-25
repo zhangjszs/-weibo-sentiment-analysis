@@ -228,10 +228,17 @@ Vite 开发服务器已把 `/api` 与 `/user` 代理到 `http://127.0.0.1:5000`�
 
 ### 5. 创建首个账号
 
-系统默认不自动创建任何账号。二选一：
+普通账号通过前端 `/register` 注册。首次创建管理员时，将计划使用的用户名写入 `ADMIN_USERS`，再由有数据库访问权限的运维人员执行下面对应的命令。终端会提示两次输入 15–32 字符的随机密码，密码不会进入命令参数或仓库。命令只创建新账号，遇到同名记录会退出。
 
-- 开发环境：在 `.env` 中设置 `AUTO_CREATE_DEMO_ADMIN=True` 并显式填写强随机的 `DEMO_ADMIN_PASSWORD`，重启后按 `DEMO_ADMIN_USERNAME` 和该密码登录
-- 常规方式：访问前端 `/register` 或调用公开接口 `/api/auth/register` 注册；需要管理员权限时，先确认账号由你控制，再把数据库中保存的用户名原样加入 `ADMIN_USERS` 并重启后端。公开注册拒绝已列入名单的用户名
+```bash
+# Compose，MySQL 健康后
+docker compose run --rm web python scripts/create_admin.py your_admin_username
+
+# 本地直跑，完成数据库初始化后
+python scripts/create_admin.py your_admin_username
+```
+
+本地直跑仍可显式启用 `AUTO_CREATE_DEMO_ADMIN=True` 并设置 `DEMO_ADMIN_PASSWORD`。Compose 通过上面的运维命令创建管理员。管理员名字区分授权时的大小写，公开注册会拒绝名单中的用户名及其大小写变体。
 
 ### 认证行为
 
@@ -267,13 +274,13 @@ Vite 开发服务器已把 `/api` 与 `/user` 代理到 `http://127.0.0.1:5000`�
 | `LOG_LEVEL` / `LOG_SANITIZE_ENABLED` | INFO / True | 日志级别与脱敏（过滤密码、Token、Cookie、邮箱） |
 | `AUTO_CREATE_DEMO_ADMIN` | False | 是否创建演示管理员 |
 
-本地直跑读 `DB_*`，Compose 读 `MYSQL_ROOT_PASSWORD` / `MYSQL_DATABASE` / `REDIS_PASSWORD` 并在内部映射为 `DB_*`，两套不要混填。
+本地直跑读 `DB_*`，Compose 读 `MYSQL_USER` / `MYSQL_PASSWORD` / `MYSQL_DATABASE` / `REDIS_PASSWORD` 并在内部映射为 `DB_*`，两套不要混填。
 
 ## 容器编排
 
-从 `.env.example` 创建 `.env` 后，分别为 `SECRET_KEY`、`JWT_SECRET_KEY`、`SPIDER_SERVICE_TOKEN`、`NLP_SERVICE_TOKEN` 生成并填写独立随机值。每项运行一次 `python -c "import secrets; print(secrets.token_hex(32))"`。
+从 `.env.example` 创建 `.env` 后，分别为 `SECRET_KEY`、`JWT_SECRET_KEY`、`SPIDER_SERVICE_TOKEN`、`NLP_SERVICE_TOKEN` 生成并填写独立随机值。Compose 还要求分别填入 `MYSQL_ROOT_PASSWORD`、`MYSQL_PASSWORD` 和 `REDIS_PASSWORD`。每项运行一次 `python -c "import secrets; print(secrets.token_hex(32))"`。
 
-已有部署升级时请轮换 JWT 签名密钥，使旧会话失效，并替换仍使用旧默认值或示例值的 Flask 密钥。用户需要重新登录。管理员名单应只填写已存在且可信的账号。使用独立辅助服务时，请在 `.env` 中将对应的 `*_SERVICE_ENABLED` 设为 `True`。
+已有部署升级时请轮换 JWT 签名密钥，使旧会话失效，并替换仍使用旧默认值或示例值的 Flask 密钥。用户需要重新登录。管理员名单应只填写已存在且可信的账号。Spider 可通过 `SPIDER_SERVICE_ENABLED` 启用。独立 NLP 默认为关闭，启用前须验收 NLP 到主后端的回调。已有 MySQL 卷的换密及应用账号切换步骤见 [部署指南](docs/DEPLOYMENT.md#已有-compose-数据卷升级)。
 
 ```bash
 docker compose up -d --build
@@ -281,9 +288,9 @@ docker compose up -d --build
 
 | 服务 | 端口 | 说明 |
 | --- | --- | --- |
-| `mysql` | 3306 | 业务库（utf8mb4） |
-| `redis` | 6379 | Celery broker / result backend |
-| `web` | 5000 | Flask 后端 |
+| `mysql` | 3306（容器网络） | 业务库（utf8mb4） |
+| `redis` | 6379（容器网络） | Celery broker / result backend |
+| `web` | 127.0.0.1:5000 | Flask 后端，容器前端通过服务名访问 |
 | `web-worker` | — | 主应用 Celery worker，消费 `sentiment` / `default` 队列 |
 | `frontend` | 3000 | Nginx 托管的构建产物 |
 | `spider-api` / `spider-worker` | 8090（容器网络） | 独立采集服务 |
@@ -296,6 +303,12 @@ docker compose up -d --build
 ```yaml
 # compose.local.yml（仅用于本地联调）
 services:
+  mysql:
+    ports:
+      - "127.0.0.1:3306:3306"
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
   spider-api:
     ports:
       - "127.0.0.1:8090:8090"
