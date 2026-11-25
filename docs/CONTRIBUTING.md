@@ -98,7 +98,9 @@ DB_PASSWORD=your_password
 DB_NAME=wb
 
 # 应用配置
-SECRET_KEY=your-secret-key-here
+# 本地单进程 Flask 可留空，进程会生成两把独立的临时密钥
+SECRET_KEY=
+JWT_SECRET_KEY=
 SESSION_TIMEOUT=3600
 ```
 

@@ -82,12 +82,20 @@ def _inject_redis_password(url: str, password: str) -> str:
         return url
 
 
-def _get_secret_key() -> str | None:
-    value = os.getenv("SECRET_KEY")
+_PROTECTED_ENVS = frozenset({"production", "staging"})
+_EXAMPLE_SIGNING_KEYS = frozenset(
+    {
+        "your-very-long-secret-key-here-at-least-32-characters",
+        "your-jwt-secret-key-here-at-least-32-characters",
+    }
+)
+
+
+def _get_signing_key(name: str, env: str) -> str | None:
+    value = os.getenv(name)
     if value:
         return value
-    env = os.getenv("FLASK_ENV", "development")
-    if env != "production":
+    if env not in _PROTECTED_ENVS:
         return os.urandom(32).hex()
     return None
 
@@ -110,7 +118,7 @@ def _parse_redis_url(url: str) -> dict[str, str | int]:
 class Config:
     # Flask Settings
     FLASK_ENV = os.getenv("FLASK_ENV", "development")
-    SECRET_KEY = _get_secret_key()
+    SECRET_KEY = _get_signing_key("SECRET_KEY", FLASK_ENV)
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
     IS_DEVELOPMENT = FLASK_ENV == "development"
 
@@ -118,9 +126,7 @@ class Config:
         ["http://localhost:3000", "http://127.0.0.1:3000"] if IS_DEVELOPMENT else []
     )
     ADMIN_USERS = set(_parse_csv_env("ADMIN_USERS"))
-    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY") or SECRET_KEY
-    # 是否显式配置了 JWT_SECRET_KEY（用于生产环境密钥隔离校验）
-    JWT_SECRET_KEY_EXPLICIT = bool(os.getenv("JWT_SECRET_KEY"))
+    JWT_SECRET_KEY = _get_signing_key("JWT_SECRET_KEY", FLASK_ENV)
     JWT_EXPIRATION_HOURS = _parse_int_env("JWT_EXPIRATION_HOURS", 24)
     AUTH_COOKIE_NAME = os.getenv("AUTH_COOKIE_NAME", "weibo_access_token")
 
@@ -272,7 +278,7 @@ class Config:
     STARTUP_WARMUP_DELAY = _parse_float_env("STARTUP_WARMUP_DELAY", 0.5)
 
     # 需要生产级保护的环境（development/testing 走开发默认，不阻断）
-    PROTECTED_ENVS = frozenset({"production", "staging"})
+    PROTECTED_ENVS = _PROTECTED_ENVS
 
     # 数值型配置：(env 名, 解析器)，validate() 汇总校验
     _NUMERIC_ENVS: tuple = (
@@ -306,23 +312,29 @@ class Config:
                 parser(str(raw).strip())
             except (TypeError, ValueError):
                 errors.append(f"{name} 不是有效数字: {raw!r}（已回退默认值）")
-        if cls.FLASK_ENV in cls.PROTECTED_ENVS:
-            if not cls.SECRET_KEY:
-                errors.append("SECRET_KEY must be set in production")
-            if not cls.JWT_SECRET_KEY_EXPLICIT or not cls.JWT_SECRET_KEY:
-                errors.append(
-                    "JWT_SECRET_KEY must be set in production (key isolation: "
-                    "it must differ from SECRET_KEY)"
+        key_errors = []
+        for name in ("SECRET_KEY", "JWT_SECRET_KEY"):
+            value = getattr(cls, name)
+            if not value:
+                key_errors.append(f"{name} must be set")
+            elif len(value.strip()) < 32 or value.strip() in _EXAMPLE_SIGNING_KEYS:
+                key_errors.append(
+                    f"{name} must be a random value of at least 32 characters"
                 )
-            elif cls.JWT_SECRET_KEY == cls.SECRET_KEY:
-                errors.append("JWT_SECRET_KEY must differ from SECRET_KEY in production")
+        if cls.SECRET_KEY and cls.SECRET_KEY == cls.JWT_SECRET_KEY:
+            key_errors.append("JWT_SECRET_KEY must differ from SECRET_KEY")
+
+        if cls.FLASK_ENV in cls.PROTECTED_ENVS:
             if not cls.ALLOWED_ORIGINS:
                 errors.append("ALLOWED_ORIGINS must be set in production")
             if not cls.ADMIN_USERS:
                 errors.append("ADMIN_USERS must be set in production")
+            errors.extend(key_errors)
             if errors:
                 raise RuntimeError("; ".join(errors))
-        elif errors:
+        else:
+            if key_errors:
+                raise RuntimeError("; ".join(key_errors))
             for message in errors:
                 logger.warning("配置数值无效: %s", message)
         if not cls.ADMIN_USERS and cls.FLASK_ENV not in cls.PROTECTED_ENVS:

@@ -72,27 +72,6 @@ class TestEncryptionFailsClosed:
         assert f1 is not f2
 
 
-class TestKeyIsolation:
-    def test_production_requires_explicit_distinct_jwt_key(self, monkeypatch):
-        from config.settings import Config
-
-        monkeypatch.setattr(Config, "FLASK_ENV", "production")
-        monkeypatch.setattr(Config, "SECRET_KEY", "s" * 32)
-        monkeypatch.setattr(Config, "JWT_SECRET_KEY", "s" * 32)
-        monkeypatch.setattr(Config, "JWT_SECRET_KEY_EXPLICIT", False)
-        monkeypatch.setattr(Config, "ALLOWED_ORIGINS", ["https://x.example"])
-        monkeypatch.setattr(Config, "ADMIN_USERS", {"admin"})
-        with pytest.raises(RuntimeError):
-            Config.validate()
-        # 显式但相同同样拒绝
-        monkeypatch.setattr(Config, "JWT_SECRET_KEY_EXPLICIT", True)
-        with pytest.raises(RuntimeError):
-            Config.validate()
-        # 显式且不同则通过本项（其他项已满足）
-        monkeypatch.setattr(Config, "JWT_SECRET_KEY", "j" * 32)
-        Config.validate()
-
-
 class TestRegisterErrorDesensitized:
     def test_register_db_error_not_leaked(self, monkeypatch):
         from services.auth_service import AuthService

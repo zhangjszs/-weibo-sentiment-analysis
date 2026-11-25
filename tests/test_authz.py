@@ -282,3 +282,18 @@ def test_quick_crawl_blocks_non_admin(spider_client_with_mock_user):
         headers={"X-Test-User": "user"},
     )
     assert response.status_code == 403
+
+
+def test_admin_required_uses_current_allowlist_for_authenticated_user(monkeypatch):
+    app = Flask(__name__)
+    monkeypatch.setattr(Config, "ADMIN_USERS", {"operator"})
+
+    @admin_required
+    def handler():
+        return "ok", 200
+
+    with app.test_request_context("/"):
+        request.current_user = {"username": "operator", "role": "admin", "is_admin": True}
+        assert handler()[1] == 200
+        Config.ADMIN_USERS.remove("operator")
+        assert handler()[1] == 403
