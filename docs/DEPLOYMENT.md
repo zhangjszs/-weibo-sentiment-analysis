@@ -143,11 +143,9 @@ mysql -u root -p
 # 创建数据库
 CREATE DATABASE wb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 建表（Alembic 单一真相，替代手写 SQL）
-# 在项目根目录执行：
+# 退出 MySQL 后，在项目根目录对空库执行
+#   mysql -u root -p wb < docs/database/init_database.sql
 #   alembic upgrade head
-# 归档 SQL 仅作离线审计：docs/database/init_database.sql
-# 若需 MySQL 交互式建库，可直接 CREATE DATABASE 后执行上条 alembic 命令。
 
 # 创建用户（可选）
 CREATE USER 'weibo_user'@'localhost' IDENTIFIED BY 'your_password';

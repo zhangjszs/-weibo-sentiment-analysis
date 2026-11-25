@@ -149,11 +149,11 @@ EXIT;
 ### 2.2 导入数据库结构（Alembic 单一真相）
 
 ```bash
-# 推荐：Alembic 建表（唯一真相源，见 docs/database/README.md）
-alembic upgrade head
+# 仅在空库加载无账户的兼容基础表
+mysql -u root -p wb < docs/database/init_database.sql
 
-# 离线审计/种子（可选，归档 SQL 已冻结至 docs/database/）：
-# mysql -u root -p wb < docs/database/init_database.sql
+# 应用后续 schema 迁移
+alembic upgrade head
 ```
 
 ### 2.3 验证数据库
@@ -280,11 +280,12 @@ LOG_LEVEL=INFO
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 # ========== 管理员配置 ==========
-ADMIN_USERS=admin
-AUTO_CREATE_DEMO_ADMIN=True
-DEMO_ADMIN_USERNAME=admin
-DEMO_ADMIN_PASSWORD=Admin123!
+ADMIN_USERS=
+AUTO_CREATE_DEMO_ADMIN=False
+DEMO_ADMIN_PASSWORD=
 ```
+
+需要管理员时，先填入计划使用的 `ADMIN_USERS`，再通过 [首次管理员创建流程](../README.md#5-创建首个账号) 在交互式终端创建。
 
 **方法2：使用环境变量（Linux/macOS）**
 

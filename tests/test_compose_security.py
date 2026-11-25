@@ -113,3 +113,34 @@ def test_database_and_redis_preflight(services, service, env, valid):
     assert (result.returncode == 0) is valid
     if not valid:
         assert "PASSWORD" in result.stderr
+
+
+def test_docker_compose_resolves_required_configuration(tmp_path):
+    docker = shutil.which("docker")
+    if not docker or subprocess.run(
+        [docker, "compose", "version"], capture_output=True, timeout=15
+    ).returncode:
+        pytest.skip("Docker Compose CLI is unavailable")
+
+    env_file = tmp_path / "empty.env"
+    env_file.touch()
+    command = [docker, "compose", "--env-file", str(env_file), "-f", str(COMPOSE_PATH), "config", "--quiet"]
+    required = (
+        "SECRET_KEY",
+        "JWT_SECRET_KEY",
+        "MYSQL_ROOT_PASSWORD",
+        "MYSQL_PASSWORD",
+        "REDIS_PASSWORD",
+        "SPIDER_SERVICE_TOKEN",
+        "NLP_SERVICE_TOKEN",
+    )
+    env = {**os.environ, **{key: f"{i:064x}" for i, key in enumerate(required, 1)}}
+    result = subprocess.run(command, env=env, capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+
+    for key in required:
+        result = subprocess.run(
+            command, env={**env, key: ""}, capture_output=True, text=True, timeout=15
+        )
+        assert result.returncode != 0
+        assert key in result.stderr
