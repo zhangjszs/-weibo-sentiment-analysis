@@ -49,7 +49,8 @@ class AuthService:
 
         clear_failures(username, client_ip)
 
-        # Generate Token
+        # MySQL may match login input case-insensitively. Authorize the stored identity.
+        username = user["username"]
         token = create_token(user.get("id"), username)
         user_data = {
             "token": token,
@@ -79,6 +80,9 @@ class AuthService:
         strength = check_password_strength(password)
         if not strength["valid"]:
             return False, f"密码强度不足：{', '.join(strength['suggestions'])}"
+
+        if username in Config.ADMIN_USERS:
+            return False, "该用户名不可用"
 
         if self.user_repo.find_by_username(username):
             return False, "该用户名已被注册"

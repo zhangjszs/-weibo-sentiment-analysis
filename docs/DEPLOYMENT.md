@@ -61,8 +61,10 @@ python run.py  # 后端
 - `redis`（任务队列/结果后端）
 - `web`（Flask 后端，端口 `5000`）
 - `frontend`（Nginx 前端，端口 `3000`）
-- `spider-api`、`spider-worker`（端口 `8090`）
-- `nlp-api`、`nlp-worker`（端口 `8091`）
+- `spider-api`、`spider-worker`（Spider API 在容器网络监听 `8090`）
+- `nlp-api`、`nlp-worker`（NLP API 在容器网络监听 `8091`）
+
+启动前把 `.env.example` 复制为 `.env`，为 `SECRET_KEY`、`JWT_SECRET_KEY`、`SPIDER_SERVICE_TOKEN` 和 `NLP_SERVICE_TOKEN` 分别生成随机值。每项可单独运行 `python -c "import secrets; print(secrets.token_hex(32))"`。两把签名密钥必须不同。更换旧 JWT 密钥后，用户需重新登录。
 
 启动：
 ```bash
@@ -74,18 +76,7 @@ docker compose up -d --build
 docker compose down
 ```
 
-仅启动 Spider/NLP 独立服务（宿主机 Flask 模式）：
-```bash
-docker compose up -d --build redis spider-api spider-worker nlp-api nlp-worker
-```
-
-宿主机 `.env` 需启用远程调度配置：
-```bash
-SPIDER_SERVICE_ENABLED=True
-SPIDER_SERVICE_BASE_URL=http://localhost:8090
-NLP_SERVICE_ENABLED=True
-NLP_SERVICE_BASE_URL=http://localhost:8091
-```
+如需宿主机直连，使用 [README 中的本地回环地址覆盖配置](../README.md#宿主机联调辅助-api)。
 
 ## 🔧 环境要求
 
@@ -170,8 +161,9 @@ DB_PORT=3306
 DB_USER=weibo_user
 DB_PASSWORD=your_password
 DB_NAME=wb
-SECRET_KEY=replace-me
-JWT_SECRET_KEY=replace-me-too
+# 将下列两项分别填为独立生成的随机值（每项至少 32 字符）
+SECRET_KEY=
+JWT_SECRET_KEY=
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 

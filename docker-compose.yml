@@ -57,8 +57,8 @@ services:
       # Flask 配置
       FLASK_ENV: ${FLASK_ENV:-development}
       DEBUG: ${DEBUG:-False}
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY to a unique random value in .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY to a unique random value in .env}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       
@@ -67,11 +67,11 @@ services:
       AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-weibo_access_token}
       
       # 管理员配置
-      ADMIN_USERS: ${ADMIN_USERS:-admin}
-      # 安全收紧（评估 P0 #7）：默认不自动创建弱口令 demo 管理员；开发环境显式置 True
+      ADMIN_USERS: ${ADMIN_USERS:-}
+      # 演示管理员仅限开发环境，启用时显式配置密码
       AUTO_CREATE_DEMO_ADMIN: ${AUTO_CREATE_DEMO_ADMIN:-False}
       DEMO_ADMIN_USERNAME: ${DEMO_ADMIN_USERNAME:-admin}
-      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-Admin123!}
+      DEMO_ADMIN_PASSWORD: ${DEMO_ADMIN_PASSWORD:-}
       
       # 数据库配置
       DB_HOST: mysql
@@ -99,14 +99,14 @@ services:
       SPIDER_SERVICE_ENABLED: ${SPIDER_SERVICE_ENABLED:-True}
       SPIDER_SERVICE_BASE_URL: http://spider-api:8090
       SPIDER_SERVICE_TIMEOUT: ${SPIDER_SERVICE_TIMEOUT:-15}
-      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:-}
+      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:?Set SPIDER_SERVICE_TOKEN in .env}
       SPIDER_SERVICE_FALLBACK_LOCAL: ${SPIDER_SERVICE_FALLBACK_LOCAL:-True}
 
       # NLP 服务配置
       NLP_SERVICE_ENABLED: ${NLP_SERVICE_ENABLED:-True}
       NLP_SERVICE_BASE_URL: http://nlp-api:8091
       NLP_SERVICE_TIMEOUT: ${NLP_SERVICE_TIMEOUT:-20}
-      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
+      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:?Set NLP_SERVICE_TOKEN in .env}
       NLP_SERVICE_FALLBACK_LOCAL: ${NLP_SERVICE_FALLBACK_LOCAL:-True}
       
       # LLM 配置
@@ -153,12 +153,12 @@ services:
       DEBUG: ${DEBUG:-False}
 
       # 鉴权/密钥（必须与 web 一致）
-      SECRET_KEY: ${SECRET_KEY:-change-me-in-production}
-      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY to a unique random value in .env}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY to a unique random value in .env}
       JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS:-24}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-weibo_access_token}
-      ADMIN_USERS: ${ADMIN_USERS:-admin}
+      ADMIN_USERS: ${ADMIN_USERS:-}
 
       # 数据库配置
       DB_HOST: mysql
@@ -193,7 +193,12 @@ services:
       BERT_MODEL_NAME: ${BERT_MODEL_NAME:-IDEA-CCNL/Erlangshen-Roberta-110M-Sentiment}
       BERT_DEVICE: ${BERT_DEVICE:-cpu}
       BERT_FALLBACK_TO_SKLEARN: ${BERT_FALLBACK_TO_SKLEARN:-True}
-    command: ["celery", "-A", "tasks.celery_config:celery_app", "worker", "--loglevel=info", "-Q", "sentiment,default"]
+    command:
+      - sh
+      - -ec
+      - |
+        python -c 'from config.settings import Config; Config.validate()'
+        exec celery -A tasks.celery_config:celery_app worker --loglevel=info -Q sentiment,default
     depends_on:
       mysql:
         condition: service_healthy
@@ -247,10 +252,8 @@ services:
       SPIDER_USE_PROXY: ${SPIDER_USE_PROXY:-False}
       
       # 服务鉴权
-      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:-}
+      SPIDER_SERVICE_TOKEN: ${SPIDER_SERVICE_TOKEN:?Set SPIDER_SERVICE_TOKEN in .env}
     command: ["python", "app/main.py"]
-    ports:
-      - "8090:8090"
     depends_on:
       mysql:
         condition: service_healthy
@@ -321,10 +324,8 @@ services:
       LLM_TIMEOUT: ${LLM_TIMEOUT:-30}
 
       # 服务鉴权
-      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:-}
+      NLP_SERVICE_TOKEN: ${NLP_SERVICE_TOKEN:?Set NLP_SERVICE_TOKEN in .env}
     command: ["python", "app/main.py"]
-    ports:
-      - "8091:8091"
     depends_on:
       redis:
         condition: service_healthy

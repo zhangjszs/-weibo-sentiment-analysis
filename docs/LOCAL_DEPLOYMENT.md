@@ -237,8 +237,9 @@ cp .env.example .env
 
 ```ini
 # ========== Flask 配置 ==========
-SECRET_KEY=your-very-long-secret-key-here-at-least-32-characters
-JWT_SECRET_KEY=your-jwt-secret-key-here-at-least-32-characters
+# 用 python -c "import secrets; print(secrets.token_hex(32))" 分别生成两项再填入
+SECRET_KEY=
+JWT_SECRET_KEY=
 JWT_EXPIRATION_HOURS=24
 FLASK_ENV=production
 DEBUG=False

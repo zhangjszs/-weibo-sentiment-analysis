@@ -230,8 +230,8 @@ Vite 开发服务器已把 `/api` 与 `/user` 代理到 `http://127.0.0.1:5000`�
 
 系统默认不自动创建任何账号。二选一：
 
-- 开发环境：在 `.env` 中设置 `AUTO_CREATE_DEMO_ADMIN=True`，重启后按 `DEMO_ADMIN_USERNAME` / `DEMO_ADMIN_PASSWORD` 登录
-- 常规方式：访问前端 `/register` 或调用公开接口 `/api/auth/register` 注册；需要管理员权限时把用户名加入 `ADMIN_USERS`
+- 开发环境：在 `.env` 中设置 `AUTO_CREATE_DEMO_ADMIN=True` 并显式填写强随机的 `DEMO_ADMIN_PASSWORD`，重启后按 `DEMO_ADMIN_USERNAME` 和该密码登录
+- 常规方式：访问前端 `/register` 或调用公开接口 `/api/auth/register` 注册；需要管理员权限时，先确认账号由你控制，再把数据库中保存的用户名原样加入 `ADMIN_USERS` 并重启后端。公开注册拒绝已列入名单的用户名
 
 ### 认证行为
 
@@ -241,12 +241,12 @@ Vite 开发服务器已把 `/api` 与 `/user` 代理到 `http://127.0.0.1:5000`�
 
 ## 配置
 
-生产环境（`FLASK_ENV=production`）启动时 `Config.validate()` 会强制校验以下变量，缺失即启动失败：
+生产和预发布环境（`FLASK_ENV=production` / `staging`）启动时会校验以下变量，缺失即启动失败。直接运行单进程 Flask 做本地开发时，两把密钥可留空，由进程分别生成临时值。需要跨进程或重启后继续使用已有会话时，请显式配置两把密钥。
 
 | 变量 | 要求 |
 | --- | --- |
-| `SECRET_KEY` | 显式设置的强随机值 |
-| `JWT_SECRET_KEY` | 显式设置，且必须不同于 `SECRET_KEY` |
+| `SECRET_KEY` | 显式设置的强随机值，至少 32 字符 |
+| `JWT_SECRET_KEY` | 独立生成的强随机值，至少 32 字符，且必须不同于 `SECRET_KEY` |
 | `ALLOWED_ORIGINS` | 显式列出允许的前端来源 |
 | `ADMIN_USERS` | 显式列出管理员用户名 |
 
@@ -271,6 +271,10 @@ Vite 开发服务器已把 `/api` 与 `/user` 代理到 `http://127.0.0.1:5000`�
 
 ## 容器编排
 
+从 `.env.example` 创建 `.env` 后，分别为 `SECRET_KEY`、`JWT_SECRET_KEY`、`SPIDER_SERVICE_TOKEN`、`NLP_SERVICE_TOKEN` 生成并填写独立随机值。每项运行一次 `python -c "import secrets; print(secrets.token_hex(32))"`。
+
+已有部署升级时请轮换 JWT 签名密钥，使旧会话失效，并替换仍使用旧默认值或示例值的 Flask 密钥。用户需要重新登录。管理员名单应只填写已存在且可信的账号。使用独立辅助服务时，请在 `.env` 中将对应的 `*_SERVICE_ENABLED` 设为 `True`。
+
 ```bash
 docker compose up -d --build
 ```
@@ -282,16 +286,29 @@ docker compose up -d --build
 | `web` | 5000 | Flask 后端 |
 | `web-worker` | — | 主应用 Celery worker，消费 `sentiment` / `default` 队列 |
 | `frontend` | 3000 | Nginx 托管的构建产物 |
-| `spider-api` / `spider-worker` | 8090 | 独立采集服务 |
-| `nlp-api` / `nlp-worker` | 8091 | 独立 NLP 服务 |
+| `spider-api` / `spider-worker` | 8090（容器网络） | 独立采集服务 |
+| `nlp-api` / `nlp-worker` | 8091（容器网络） | 独立 NLP 服务 |
 
-主后端跑在宿主机、只用容器提供 Spider/NLP 时：
+### 宿主机联调辅助 API
 
-```bash
-docker compose up -d --build redis spider-api spider-worker nlp-api nlp-worker
+默认 Compose 通过服务名访问 Spider/NLP，两个 API 均只在容器网络内提供。如果宿主机上的 Flask 或调试工具需要直连，可在本地覆盖文件中显式绑定回环地址。
+
+```yaml
+# compose.local.yml（仅用于本地联调）
+services:
+  spider-api:
+    ports:
+      - "127.0.0.1:8090:8090"
+  nlp-api:
+    ports:
+      - "127.0.0.1:8091:8091"
 ```
 
-并在宿主机 `.env` 中开启 `SPIDER_SERVICE_ENABLED` / `NLP_SERVICE_ENABLED`，把对应的 `*_BASE_URL` 指向 `http://localhost:8090` 与 `http://localhost:8091`。
+```bash
+docker compose -f docker-compose.yml -f compose.local.yml up -d --build redis spider-api spider-worker nlp-api nlp-worker
+```
+
+宿主机 Flask 需要开启对应的 `*_SERVICE_ENABLED`，使用 `http://127.0.0.1:8090` / `http://127.0.0.1:8091` 和 Compose 中相同的服务令牌。NLP 服务依赖容器内的 `web`，该命令也会拉起它。若已占用宿主机的 5000 端口，可用 `python -m flask --app run:app run --port 5001` 在另一个端口启动宿主机 Flask。
 
 **可观测性栈**（Jaeger + OTel Collector，默认不启动）：
 
