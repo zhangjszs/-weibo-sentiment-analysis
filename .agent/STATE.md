@@ -3,14 +3,14 @@
 > 事实账本（可机器解析）。「已完成」仅保留最近 20 条，更早的见 git 历史。
 
 ## 当前活跃
-- 更新时间：2026-11-22T13:05:20+08:00
-- 当前任务：无；本轮队列无 `ready`。待 Planner 验收：#141、#142、#144、#145（`in-review`）；#143（`blocked`）。
-- 分支：业务交付已合入 `origin/main`；续查通过隔离工作树完成，原用户 `main` 工作树未动。
-- 未完成工作：#143 历史 auth 双文件漂移未复现；当前聚合分支漂移已定位至 `mergeProcessCovs` 顺序，解除条件见 HANDOFF / Issue。
-- 最近业务提交：`b0737dd`（#145 契约盘点）、`d423f3b`（#143 调查台账）、`b6661ad`（#144 锁更新），均已推送、各五项 CI 成功。#141/#142 既有补证及 CI 已在日报恢复。
-- 前轮交接 `818860b` 已推送，查得 backend-fast / frontend-fast / integration / rust-core / security-scan 五项均 `completed/success`；续查未领取任务。
-- 今日日报：已写 `.agent/DIARY/2026-11-22.md`。
-- 已知环境限制：原工作树已有未暂存改动，`git pull --rebase` 退出 128；隔离工作树同步成功。Node 26 干净配置须 `NODE_OPTIONS=--no-webstorage` 才由 jsdom 提供测试存储。
+
+- 更新时间 `2026-11-23T12:56:55+08:00`
+- 当前任务 无。#147、#150、#151 为 `in-review`，GitHub 无新增 `ready`；#98 依 D-019 A 冻结。
+- 分支 执行交接 `agent/session-2026-11-23`，三个任务已通过独立 PR 合入远端 main。
+- 未完成工作 Planner 验收 #147/#150/#151；#143 的历史样本和 #109 的环境仍阻塞。
+- 最近提交 #147 `cce6cf5` / `1834f8c`，#150 `9888bc6` / `34927c6`，#151 `5e3f799` / `df989ea`。三个 PR 及合并后 CI 已查。
+- 今日日报 已写 `.agent/DIARY/2026-11-23.md`。
+- 已知环境限制 原树 Git 元数据只读，代理 socket 在默认沙箱无法连接；隔离副本经授权可以同步。原树六个既有改动及暂存状态已核对。
 
 ## 阻塞项
 - #143（blocked）：需要历史 `auth.js` / `Login.vue` 跳变的 V8 原始输入，或 Planner 独立划定工具链验证范围；不改测试凑指标。
@@ -31,6 +31,11 @@
 - **user store 会话恢复（#127）/ chinaMap 单例（#128）/ tabs 状态机（#131）**：既往实测记录，本会话未改动这些测试文件。
 
 ## 已完成（最近）
+
+- #151（in-review）：`5e3f799` 已合入 `df989ea`，仅 §9.4，隔离编译、两条负例及 Chromium 冒烟通过。[执行报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151#issuecomment-7091921052)
+- #150（in-review）：`9888bc6` 已合入 `34927c6`，新增两种混合 401 到达顺序，前端 47/323。[执行报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150#issuecomment-7091772787)
+- #147（in-review）：补证 `cce6cf5` 已合入 `1834f8c`，两处回退各命中一次，原锁在新目录复跑 54 例和 18 组排列。[执行报告](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7091656500)
+- #146（done）：Planner 已于 2026-11-23 验收关闭。[验收](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146#issuecomment-7091137981)
 - #145：`b0737dd` 已推送，盘点 §9，7 TS/0 JS/Vue、49 个链接及五项 CI 成功；报告 7074006035。
 - #143：`d423f3b` 已推送，取证台账，未修复；报告 7073909332、CI 补证 7073952654。
 - #144：`b6661ad` 已推送，三项目标告警消失，47/321、bundle 和 CI 通过；报告 7073836608。
@@ -49,4 +54,4 @@
 - **#113–#119 验收关闭（2026-10-19/20）**：见 git 历史。
 
 ## 交接
-- 本轮结束以 `.agent/HANDOFF.md` 与 `.agent/DIARY/2026-11-22.md` 为准；历史 10-27 日报不改。
+- 本轮交接见 `.agent/HANDOFF.md` 与 `.agent/DIARY/2026-11-23.md`。
