@@ -24,7 +24,7 @@
 
 四项均维持 11-23 的验收结论，不 reopen。上述遗留以 Issue 评论追加记录，不改写原验收。
 
-## 未完成任务全表（12 个 Open Issues）
+## 未完成任务全表（11 个 Open Issues）
 
 | Issue | 标题 | 优先级 | 状态 | Milestone | 治理结论 |
 |---|---|---|---|---|---|
@@ -32,7 +32,6 @@
 | [#156](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/156) | 锁定六个会话 API 包装的真实请求与响应契约 | P3 | `ready` | [请求层迁移](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/4) | 现有页面及 store 测试 mock 整个 auth 模块，本项覆盖真实包装和公共实例。 |
 | [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143) | 稳定 auth 域覆盖率并验证漂移机制（#138） | P3 | `ready` | — | **本轮重新界定范围**：原标准依赖已不可获得的历史原始样本，现改为可执行的测试侧隔离修复（见 Issue 内 Planner 重新界定块）；原验收标准整体保留在 Issue 历史中。 |
 | [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | [auto-discovered] src/api/auth.js 与 src/views/auth/Login.vue 覆盖率在同 HEAD 下跨运行波动 | P3 | 无生命周期标签 | — | 现象与根因档案（Planner 单文件隔离实测已确认 mock 工厂替换机制）。不作为可领取任务，修复由 #143 承接。 |
-| [#161](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/161) | 评估并决定 PR #158 / #159 的安全加固合并 | P2 | `needs-info` | — | 11-25 提出的两个 PR，CI 全绿但从未合并；触及 JWT 签发者版本、管理员注册、Socket.IO 鉴权与部署密钥，属 §1.10 红线，等用户拍板（D-053）。 |
 | [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | [M7](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/2) | 本机无 Docker/Podman 命令或默认 socket，无已授权远端；不以 console 替代。 |
 | [#102](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) | [M7-5][P2] CI ABI parity matrix + cross-impl fallback contract tests | P2 | `needs-info` | [M7](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/2) | #98 未通过；跨版本矩阵未获授权，D-019 A 冻结。 |
 | [#101](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/101) | [M7-4][P3] Streaming summary via SSE（AI layer 切片2） | P3 | `needs-info` | [M7](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/2) | 产品入口、数据与成本未授权，D-019 A 冻结。 |
@@ -46,5 +45,5 @@
 - **昨日日报缺失**：11-24 至 11-27 无 Executor 执行会话、无日报。主干最后一份日报是 11-22；11-22 晚间补记与 11-23 日报此前只存在于未合并分支，本轮已归位主干。11-23 的工作由 Issue 评论、PR 与 Git 反推，并经三项独立复验补证。
 - **镜像脱节 5 天**：11-23 规划轮的三份文档滞留在 PR #152 未合并，主干 `TASKS.md` 仍把已关闭的 #146/#147 列为 `ready`。本轮已合并 #152 并整体重写本表。此后每轮 Planner 须当轮合并自己的规划 PR。
 - **#143 解除阻塞**：原标准要求复现 `ce3ab0d` 时代的历史 auth 双漂移原始样本；Executor 已报告原始日志不在本机，独立复验也确认仓库内无对应样本。该前提已不可获得，继续挂 `blocked` 只会空转。已按契约 4.1 重新界定为可执行的测试侧隔离修复并转 `ready`，#138 保留为现象档案。
-- **#158 / #159 纳入总线**：两个 PR 由仓库所有者于 11-25 提出，CI 全绿、从未合并，也没有任何 Issue 或日报记录其存在。已补建 #161 记录范围与红线，`needs-info` 等用户拍板，不进今日队列。
-- **无 pending 转正项**：D-012 A、D-019 A、D-023 A 继续有效。开放 P0 = 0、P1 = 0。M6 10/10 成员关闭（成功信号 1/3）；M7 6/11 且冻结。
+- **#158 / #159 纳入总线并结案**：两个 PR 由仓库所有者于 11-25 提出，CI 全绿、从未合并，也没有任何 Issue 或日报记录其存在。已补建 #161 记录范围与红线；用户于 2026-11-28 答复按推荐方案 **暂不合并，两个 PR 保持开放**，#161 已关闭（D-053、D-054）。代价：主干仍保留默认管理员名单与演示密码，辅助服务仍存在无凭据入站路径。重新触发条件见 D-054。
+- **无 pending 项**：D-053 已由用户答复转为已确认（D-054），本轮无待转正项。D-012 A、D-019 A、D-023 A 继续有效。开放 P0 = 0、P1 = 0。M6 10/10 成员关闭（成功信号 1/3）；M7 6/11 且冻结。
