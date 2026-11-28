@@ -1,44 +1,44 @@
 # TASKS — GitHub Issue 本地镜像
 
-> 2026-11-22 同日续接，按 GitHub open Issues 整体重建；未降级。变更状态先操作 Issue，再同步本文件。没有生命周期标签的记录不可领取。
+> 2026-11-23 · 同日续接。默认沙箱的 `gh` 连接代理失败，GitHub 连接器与隔离副本的授权 `gh` 查询可用。以实时 GitHub Issues 整体重建镜像，Executor 先更新 Issue，再同步对应行。
 
-## 今日队列（按建议顺序）
+## 今日队列（建议顺序）
 
-| 顺序 | Issue | 优先级 | 状态 | 交付范围与验收入口 |
+| 顺序 | Issue | 优先级 | 状态 | 依赖与验收入口 |
 |---|---|---|---|---|
-| 1 | [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146) | P1 | `ready` | 五个传递依赖的同范围锁更新；独立分支 `agent/issue-146-transitive-lock-audit`。仅依赖已 `done` 的 #144；逐项复核版本树、审计及现有前端门禁。 |
-| 2 | [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | P3 | `ready` | V8 合并确定性与正确性验证；独立分支 `agent/issue-147-v8-coverage-merge-study`。无未完成前置；同一批原始输入排列回放，核对 `addTab` 与 Vue 映射，仅追加 TEST_PERF §7.5。 |
+| 1 | [#156](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/156) 锁定六个会话 API 包装的真实请求与响应契约 | P3 | `ready` | #145、#150 已验收。单文件 adapter 测试覆盖六条路径、完整包络与可缺席 data。分支 `agent/issue-156-auth-api-contract`。 |
+| 2 | [#157](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/157) 迁移公共请求实例至 TypeScript 并在入口装配导航 | P2 | `ready` | #145、#150、#151 已验收。生产 8 TS / 0 JS 或 Vue、两条浏览器入口及 401 等价回归。分支 `agent/issue-157-request-typescript`。 |
 
-两项均有范围、非目标、可判定标准和可达输入；无产品选择、无红线、无相互前置。P0=0，P1=1。
+两项的 Issue 均给出范围、排除项、已完成前置及逐条可测标准。无产品选择、红线或相互硬依赖。开放 P0/P1 均为 0。
 
-## 本轮验收（不在领取队列）
+## 本轮验收
 
 | Issue | 结论 | 关键证据 |
 |---|---|---|
-| [#141](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/141#issuecomment-7074613252) | 通过，`done` / CLOSED | `9349e44`，29 项图标同序、转译 diff 0、覆盖 100→100；负例和日报已按恢复口径补证。 |
-| [#142](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/142#issuecomment-7074613243) | 通过，`done` / CLOSED | `ccac121` + `85e2845`；ESLint 重载 0 / 重复 1；锁 +97/−0，新锁项 5、复用 3，文档已纠正同区间不保证同版。 |
-| [#144](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/144#issuecomment-7074613225) | 通过，`done` / CLOSED | `b6661ad` 仅两条锁链；三项目标告警消失，前端 47/321 与体积预算通过；其余五项归 #146。 |
-| [#145](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/145#issuecomment-7074613322) | 通过，`done` / CLOSED | `b0737dd` 仅新增契约清单 §9；六接口、闭环与候选边界核对，7 TS / 0 JS 或 Vue；未授权实现。 |
-| [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143#issuecomment-7074612895) | 部分通过，保留 `blocked` | `d423f3b` 的取证与台账通过，未修复历史 auth 漂移；取得可重复的原始双漂移样本才恢复。#147 不替代本项验收。 |
+| [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146#issuecomment-7091137981) | 通过，`done` / CLOSED | `9deea56` 仅五个锁项，原锁结构和目标版本已核对。上半轮配对生产审计 5→0，前端 47/321，原 PR CI 5/5。 |
+| [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147#issuecomment-7104222957) | 补证通过，`done` / CLOSED | 首次部分通过的两项差距已由 `cce6cf5` 补齐。两处回退 L/R/T 都为 0/0/1。从提交逐字提取探针，用原锁独立复跑 54 例与 18 次排列。仅 §7.5 新增 156 行，原 PR CI 5/5。 |
+| [#150](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/150#issuecomment-7104225273) | 通过，`done` / CLOSED | `9888bc6` 仅既有请求错误测试。两种到达顺序、首次清态、去重释放及拒绝身份可判定。独立定向 53 例（目标文件 27 例），全量 47/323，原 PR CI 5/5。 |
+| [#151](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/151#issuecomment-7104227740) | 通过，`done` / CLOSED | `5e3f799` 仅 §9.4 新增 80 行。主干类型门禁独立复跑 7/0。候选 8/0、TS2322/TS2739 与浏览器证据来自执行时记录，候选产物未推送。原 PR CI 5/5。 |
+| [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143#issuecomment-7091138663) | 延续前次部分通过，`blocked` | 原始 auth 双漂移输入及顺序仍缺。#147 的固定聚合样本支持独立结论。 |
 
 ## 未完成任务全表（11 个 Open Issues）
 
 | Issue | 标题 | 优先级 | 状态 | Milestone | 治理结论 |
 |---|---|---|---|---|---|
-| [#146](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/146) | 更新现有范围内的五个前端传递依赖锁项 | P1 | `ready` | — | 五个已发布目标版本均在现有父约束内；不改清单、业务、CI 或 Node。 |
-| [#147](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/147) | 验证 V8 覆盖合并的确定性方案，保留用例和映射语义 | P3 | `ready` | — | 仅对照现有工具链的候选算法，不提交工具补丁。 |
-| [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143) | 稳定 auth 域覆盖率并验证漂移机制（#138） | P3 | `blocked` | — | 历史双漂移原始样本缺失；不改 mock 凑读数。 |
-| [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | auth.js 与 Login.vue 覆盖率在同 HEAD 下跨运行波动 | P3 | 无生命周期标签 | — | D-044 已定级；历史现象档案，不与 #143 重复领取，不属于 M6/M7。 |
-| [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | M7 | 未发现 Docker/Podman 命令或默认 Docker socket，无已授权远端；console 不替代验收。 |
-| [#102](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) | CI ABI parity matrix + cross-impl fallback contract tests | P2 | `needs-info` | M7 | #98 未通过；跨版本矩阵未授权。 |
-| [#101](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/101) | Streaming summary via SSE（AI layer 切片2） | P3 | `needs-info` | M7 | D-019 A 冻结；产品入口、数据及成本未授权。 |
-| [#100](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/100) | Qdrant 语义搜索端点（AI layer 切片1） | P3 | `needs-info` | M7 | D-019 A 冻结；新增服务与成本未授权。 |
-| [#98](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | Rust 第一切片迁移：deduplicator + normalize（criterion before/after） | P2 | `in-progress` | M7 | D-019 A 有意冻结，非疑似中断，不重置。 |
-| [#96](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | Rust-Accelerated Core + Observable AI | P2 | `needs-info` | — | 冻结 Epic，不计 M7 分母。 |
-| [#59](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/59) | 产品功能迭代：需求收集与规划 | P2 | `needs-info` | — | 无具体产品需求，遵 D-012 A，不重复问。 |
+| [#157](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/157) | 迁移公共请求实例至 TypeScript 并在入口装配导航 | P2 | `ready` | [请求层迁移](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/4) | 已有候选、行为基线及可检查边界，生产 8/0。 |
+| [#156](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/156) | 锁定六个会话 API 包装的真实请求与响应契约 | P3 | `ready` | [请求层迁移](https://github.com/zhangjszs/-weibo-sentiment-analysis/milestone/4) | 现有页面及 store 测试 mock 整个 auth 模块，本项覆盖真实包装和公共实例。 |
+| [#143](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/143) | 稳定 auth 域覆盖率并验证漂移机制（#138） | P3 | `blocked` | — | 等历史双文件原始样本和顺序，保留原验收标准。 |
+| [#138](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/138) | [auto-discovered] src/api/auth.js 与 src/views/auth/Login.vue 覆盖率在同 HEAD 下跨运行波动 | P3 | 无生命周期标签 | — | D-044/D-048 已定级，标题保留来源，修复由 #143 承接。 |
+| [#109](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/109) | 验证并修正现有 OTLP 链路的 metrics 接收与 Jaeger 展示 | P2 | `blocked` | M7 | 本机无 Docker/Podman 命令及默认 socket，等待可用容器环境或已授权主机。 |
+| [#102](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/102) | [M7-5][P2] CI ABI parity matrix + cross-impl fallback contract tests | P2 | `needs-info` | M7 | 依赖 #98 和主要 CI 扩展授权，D-019 A 冻结。 |
+| [#101](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/101) | [M7-4][P3] Streaming summary via SSE（AI layer 切片2） | P3 | `needs-info` | M7 | 产品入口及成本待授权，D-019 A 冻结。 |
+| [#100](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/100) | [M7-3][P3] Qdrant 语义搜索端点（AI layer 切片1） | P3 | `needs-info` | M7 | 向量服务和长期成本待授权，D-019 A 冻结。 |
+| [#98](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/98) | [M7-1][P2] Rust 第一切片迁移：deduplicator + normalize（criterion before/after） | P2 | `in-progress` | M7 | D-019 A 有意冻结原现场，继续保留状态。 |
+| [#96](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/96) | [M7] Rust-Accelerated Core + Observable AI（炫技重构主轴） | P2 | `needs-info` | — | D-019 A 冻结的扩展 Epic。 |
+| [#59](https://github.com/zhangjszs/-weibo-sentiment-analysis/issues/59) | [P2] 产品功能迭代：需求收集与规划 | P2 | `needs-info` | — | 按 D-012 A 等具体产品需求。 |
 
 ## 交接
 
-- 2026-11-21 日报缺失；Git、Issue 评论和 Executor `STATE` 无该日独立交付证据。验收依据是 11-22 日报中的恢复补记和实际执行，不把 10-27 实现或 11-22 交付回填到 11-21。
-- 入轮 Issue 与镜像的状态一致，但旧「今日队列」已无可领项；本轮按实时 Issue 重建。`STATE`/`HANDOFF` 仍是上轮执行时点快照，待 Executor 刷新，不由 Planner 改写。
-- 无缺优先级、未定级 `auto-discovered` 或已跨两个完成 Milestone 的低优先级任务。M6 10/10 成员关闭（成功信号 1/3）；M7 6/11 关闭且冻结。
+- 原主干镜像停在 11-22 午间规划，完整 [11-22 日报](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/c9e9e8dc39eb9246606f7da3c47b59e3bb72a324/.agent/DIARY/2026-11-22.md) 在已推送的晚间交接分支。[11-23 日报](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/4386751e82e975bf57d9f85cae77d940ce044fdf/.agent/DIARY/2026-11-23.md) 和 [HANDOFF](https://github.com/zhangjszs/-weibo-sentiment-analysis/blob/4386751e82e975bf57d9f85cae77d940ce044fdf/.agent/HANDOFF.md) 在执行交接分支，已记录镜像时间差及当时的三个 `in-review`。此表以实际验收和刷新后的 Issue 状态为准。
+- 逐项比较结果为无可合并领取项、缺优先级、待定级来源标签或跨两个已完成 Milestone 的 P3/P4。#98 为确认冻结。#143、#109 的可执行前置仍缺。
+- 迁移准备里程碑 2/2 已关闭，新里程碑 0/2。M6 10/10、M7 6/11，均开放。没有新增产品决策；D-012 A、D-019 A、D-023 A 继续有效。
