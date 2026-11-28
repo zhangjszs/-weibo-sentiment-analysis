@@ -681,19 +681,11 @@ def create_app() -> Flask:
     admin_bootstrap = ensure_demo_admin()
     if admin_bootstrap.get("action") == "created":
         logger.info(
-            "已创建演示管理员账号: %s（请通过环境变量修改默认密码）",
+            "已创建演示管理员账号: %s",
             admin_bootstrap.get("username"),
         )
-    elif admin_bootstrap.get("action") == "reset_password":
-        logger.info(
-            "已重置演示管理员账号密码: %s",
-            admin_bootstrap.get("username"),
-        )
-    elif admin_bootstrap.get("action") == "error":
-        logger.warning(
-            "演示管理员账号引导失败: %s",
-            admin_bootstrap.get("error"),
-        )
+    elif admin_bootstrap.get("action") in {"invalid_config", "account_conflict", "error"}:
+        logger.warning("演示管理员账号引导失败: %s", admin_bootstrap["action"])
 
     # wire 扩展：WebSocket / 通知桥接
     websocket_service.init_app(app)

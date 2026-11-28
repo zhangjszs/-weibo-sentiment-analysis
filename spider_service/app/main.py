@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from hmac import compare_digest
 
 from flask import Flask, jsonify, request
 
@@ -29,20 +30,19 @@ def _error(message: str, code: int = 400):
     return jsonify({"code": code, "msg": message, "data": {}}), code
 
 
-def _unauthorized_if_needed():
-    token = os.getenv("SPIDER_SERVICE_TOKEN", "").strip()
-    if not token or request.path == "/health":
-        return None
-
-    auth_header = request.headers.get("Authorization", "").strip()
-    if auth_header != f"Bearer {token}":
-        return _error("unauthorized", 401)
-    return None
-
-
 @app.before_request
 def _check_auth():
-    return _unauthorized_if_needed()
+    if request.path == "/health":
+        return None
+
+    token = os.getenv("SPIDER_SERVICE_TOKEN", "").strip()
+    if not token:
+        return _error("service token not configured", 503)
+
+    auth_header = request.headers.get("Authorization", "").strip()
+    if not compare_digest(auth_header.encode(), f"Bearer {token}".encode()):
+        return _error("unauthorized", 401)
+    return None
 
 
 @app.get("/health")

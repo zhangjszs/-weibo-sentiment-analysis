@@ -41,9 +41,9 @@ source venv/bin/activate  # Linux/Mac
 pip install -r requirements/requirements.txt
 
 # 3. 数据库初始化（Alembic 单一真相，见 docs/database/README.md）
-# 归档 SQL 已冻结至 docs/database/，不再作为建表依据
+# 在已创建的空库中加载无账户的兼容基础表，再应用迁移
+mysql -u root -p wb < docs/database/init_database.sql
 alembic upgrade head
-# 离线审计/种子（可选）：mysql -u root -p wb < docs/database/init_database.sql
 
 # 4. 配置环境变量
 cp .env.example .env
@@ -59,10 +59,12 @@ python run.py  # 后端
 项目根目录提供 `docker-compose.yml`，默认拉起以下服务：
 - `mysql`（业务数据库）
 - `redis`（任务队列/结果后端）
-- `web`（Flask 后端，端口 `5000`）
+- `web`（Flask 后端，默认仅将 `5000` 绑定到宿主机回环地址）
 - `frontend`（Nginx 前端，端口 `3000`）
-- `spider-api`、`spider-worker`（端口 `8090`）
-- `nlp-api`、`nlp-worker`（端口 `8091`）
+- `spider-api`、`spider-worker`（Spider API 在容器网络监听 `8090`）
+- `nlp-api`、`nlp-worker`（NLP API 在容器网络监听 `8091`）
+
+启动前把 `.env.example` 复制为 `.env`，为 `SECRET_KEY`、`JWT_SECRET_KEY`、`SPIDER_SERVICE_TOKEN` 、`NLP_SERVICE_TOKEN`、`MYSQL_ROOT_PASSWORD`、`MYSQL_PASSWORD` 和 `REDIS_PASSWORD` 分别生成随机值。每项可单独运行 `python -c "import secrets; print(secrets.token_hex(32))"`。两把签名密钥必须不同。更换旧 JWT 密钥后，用户需重新登录。
 
 启动：
 ```bash
@@ -74,18 +76,11 @@ docker compose up -d --build
 docker compose down
 ```
 
-仅启动 Spider/NLP 独立服务（宿主机 Flask 模式）：
-```bash
-docker compose up -d --build redis spider-api spider-worker nlp-api nlp-worker
-```
+如需宿主机直连，使用 [README 中的本地回环地址覆盖配置](../README.md#宿主机联调辅助-api)。新卷通过无账户的初始化 SQL 创建基础表，首个管理员通过 [终端创建流程](../README.md#5-创建首个账号) 创建。
 
-宿主机 `.env` 需启用远程调度配置：
-```bash
-SPIDER_SERVICE_ENABLED=True
-SPIDER_SERVICE_BASE_URL=http://localhost:8090
-NLP_SERVICE_ENABLED=True
-NLP_SERVICE_BASE_URL=http://localhost:8091
-```
+### 已有 Compose 数据卷升级
+
+MySQL 镜像只在首次初始化空卷时应用环境变量。保留数据卷的升级要先备份，在现有 MySQL 实例内轮换 root 密码，创建或更新 `MYSQL_USER` 对应的应用账号，并只授予该业务库权限。将对应的新值填入 `.env` 后再切换 Compose。旧版初始化脚本曾写入演示账户。上线前审计这些身份，禁用或更换曾使用公开凭据的账户密码，并仅保留可信管理员。已签发的旧格式 JWT 升级后会失效。
 
 ## 🔧 环境要求
 
@@ -148,11 +143,9 @@ mysql -u root -p
 # 创建数据库
 CREATE DATABASE wb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
-# 建表（Alembic 单一真相，替代手写 SQL）
-# 在项目根目录执行：
+# 退出 MySQL 后，在项目根目录对空库执行
+#   mysql -u root -p wb < docs/database/init_database.sql
 #   alembic upgrade head
-# 归档 SQL 仅作离线审计：docs/database/init_database.sql
-# 若需 MySQL 交互式建库，可直接 CREATE DATABASE 后执行上条 alembic 命令。
 
 # 创建用户（可选）
 CREATE USER 'weibo_user'@'localhost' IDENTIFIED BY 'your_password';
@@ -170,15 +163,15 @@ DB_PORT=3306
 DB_USER=weibo_user
 DB_PASSWORD=your_password
 DB_NAME=wb
-SECRET_KEY=replace-me
-JWT_SECRET_KEY=replace-me-too
+# 将下列两项分别填为独立生成的随机值（每项至少 32 字符）
+SECRET_KEY=
+JWT_SECRET_KEY=
 ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
 安全建议：
 
 - 保持 `AUTO_CREATE_DEMO_ADMIN=False`
-- 保持 `DEMO_ADMIN_RESET_PASSWORD=False`
 - 生产环境务必设置 `FLASK_ENV=production`
 
 ## 📦 依赖安装

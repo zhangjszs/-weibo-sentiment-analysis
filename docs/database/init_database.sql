@@ -1,18 +1,13 @@
 -- ===========================================
 -- 微博舆情分析系统 - 完整数据库初始化脚本
 -- ===========================================
--- 此脚本包含所有表结构和初始数据
--- 执行方式: mysql -u root -p < init_database.sql
+-- 兼容初始化结构，不创建任何账户
+-- 执行方式: mysql -u root -p <database> < init_database.sql
 -- ===========================================
 
 -- 设置字符集
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
-
--- 创建数据库
-DROP DATABASE IF EXISTS `wb`;
-CREATE DATABASE `wb` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `wb`;
 
 -- ===========================================
 -- 1. 用户表 (user)
@@ -206,20 +201,7 @@ CREATE TABLE `alerts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预警消息表';
 
 -- ===========================================
--- 插入初始数据
--- ===========================================
-
--- 初始用户数据
--- 密码已使用 bcrypt 哈希（rounds=12），原始明文仅供开发演示：
---   admin / Admin123!  (与 docker-compose.yml 的 DEMO_ADMIN_PASSWORD 一致)
---   Edward / 123123
---   EdwardD / 123123
---   test_user / 123456
-INSERT INTO `user` (`id`, `username`, `password`, `create_time`, `is_admin`, `nickname`, `email`) VALUES
-(1, 'admin', '$2b$12$2H4lUDRAjOFzkzLjP80ArOF3ZtfFBTAPb4BKm7c/pBwtFhej4OCF6', CURDATE(), 1, '系统管理员', 'admin@example.com'),
-(2, 'Edward', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-03-06', 0, 'Edward', 'edward@example.com'),
-(3, 'EdwardD', '$2b$12$jT1NgPWFKeCfYspcA7urtOiNTn5V113yjaNuPT3XQqflmSoRl79Ee', '2023-08-08', 0, 'EdwardD', 'edwardd@example.com'),
-(4, 'test_user', '$2b$12$jUS./uWfpcNjrqQHNkoKIO/4kFAL5dVOl/abobS6u4MB3i8LoR1/W', CURDATE(), 0, '测试用户', 'test@example.com');
+-- 管理员由运维显式创建。
 
 SET FOREIGN_KEY_CHECKS = 1;
 

@@ -24,7 +24,6 @@ def test_ensure_demo_admin_creates_user_sqlite(monkeypatch):
 
     import database
     import models  # noqa: F401  # 确保 ORM 表已注册再 create_all
-    import utils.query as query_module
     from database import Base
     from models.user import User
     from utils.password_hasher import verify_password
@@ -38,16 +37,12 @@ def test_ensure_demo_admin_creates_user_sqlite(monkeypatch):
     session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
     )
-    # querys 在 utils.query 模块内解析全局 engine；ORM 路径在函数调用时读取
-    # database.db_session——两处都 patch 到同一测试库，保证 SELECT 与 INSERT 同库
     monkeypatch.setattr(database, "db_session", session)
-    monkeypatch.setattr(query_module, "engine", test_engine)
 
     monkeypatch.setattr(Config, "IS_DEVELOPMENT", True)
     monkeypatch.setattr(Config, "AUTO_CREATE_DEMO_ADMIN", True)
     monkeypatch.setattr(Config, "DEMO_ADMIN_USERNAME", "admin")
-    monkeypatch.setattr(Config, "DEMO_ADMIN_PASSWORD", "Admin123!")
-    monkeypatch.setattr(Config, "DEMO_ADMIN_RESET_PASSWORD", True)
+    monkeypatch.setattr(Config, "DEMO_ADMIN_PASSWORD", "fixture-Long-Demo-283@")
     monkeypatch.setattr(Config, "ADMIN_USERS", set())
 
     result = startup_service.ensure_demo_admin()
@@ -60,34 +55,45 @@ def test_ensure_demo_admin_creates_user_sqlite(monkeypatch):
     assert row.create_time is not None
     assert row.create_time.tzinfo is None
     assert abs((datetime.now(UTC).replace(tzinfo=None) - row.create_time).total_seconds()) < 10
-    assert verify_password("Admin123!", row.password)
+    assert verify_password("fixture-Long-Demo-283@", row.password)
     session.remove()
 
 
-def test_ensure_demo_admin_resets_legacy_password(monkeypatch):
+def test_ensure_demo_admin_leaves_existing_account_untouched(monkeypatch, alert_db):
+    from models.user import User
+    from utils.password_hasher import hash_password
+
+    stored = hash_password("fixture-Original-322@")
+    alert_db.add(User(username="operator", password=stored))
+    alert_db.commit()
+
     monkeypatch.setattr(Config, "IS_DEVELOPMENT", True)
     monkeypatch.setattr(Config, "AUTO_CREATE_DEMO_ADMIN", True)
-    monkeypatch.setattr(Config, "DEMO_ADMIN_USERNAME", "admin")
-    monkeypatch.setattr(Config, "DEMO_ADMIN_PASSWORD", "Admin123!")
-    monkeypatch.setattr(Config, "DEMO_ADMIN_RESET_PASSWORD", True)
-    monkeypatch.setattr(Config, "ADMIN_USERS", {"admin"})
-
-    calls = []
-
-    def fake_querys(sql, params=None, type="no_select"):
-        calls.append((sql, params, type))
-        if "SELECT id, password FROM user" in sql:
-            return [{"id": 1, "password": "123123"}]
-        return "数据库语句执行成功"
-
-    monkeypatch.setattr(startup_service, "querys", fake_querys)
-    monkeypatch.setattr(startup_service, "hash_password", lambda raw: f"hashed:{raw}")
+    monkeypatch.setattr(Config, "DEMO_ADMIN_USERNAME", "operator")
+    monkeypatch.setattr(Config, "DEMO_ADMIN_PASSWORD", "fixture-Different-310@")
+    monkeypatch.setattr(Config, "ADMIN_USERS", set())
 
     result = startup_service.ensure_demo_admin()
 
-    assert result["enabled"] is True
-    assert result["action"] == "reset_password"
-    assert any("UPDATE user SET password" in sql for sql, _, _ in calls)
+    assert result["action"] == "account_conflict"
+    assert not result["enabled"]
+    assert "operator" not in Config.ADMIN_USERS
+    assert alert_db.query(User).filter_by(username="operator").one().password == stored
+
+
+@pytest.mark.parametrize("password", ["", "too-short"])
+def test_ensure_demo_admin_rejects_missing_or_weak_password(monkeypatch, alert_db, password):
+    from models.user import User
+
+    monkeypatch.setattr(Config, "IS_DEVELOPMENT", True)
+    monkeypatch.setattr(Config, "AUTO_CREATE_DEMO_ADMIN", True)
+    monkeypatch.setattr(Config, "DEMO_ADMIN_USERNAME", "operator")
+    monkeypatch.setattr(Config, "DEMO_ADMIN_PASSWORD", password)
+    monkeypatch.setattr(Config, "ADMIN_USERS", set())
+
+    assert startup_service.ensure_demo_admin()["action"] == "invalid_config"
+    assert alert_db.query(User).filter_by(username="operator").first() is None
+    assert not Config.ADMIN_USERS
 
 
 def test_development_defaults_do_not_auto_create_or_reset_demo_admin(monkeypatch):

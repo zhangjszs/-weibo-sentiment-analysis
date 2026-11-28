@@ -23,7 +23,8 @@ JWT_ALGORITHM = "HS256"
 # aud/iss（#15）：此前签发的 token 无任何受众/签发者声明，一份 token 可以
 # 被任意接受方原样转发使用。注意：上线后旧 token（无 aud/iss）会验签失败，
 # 用户需重新登录一次，属预期行为。
-JWT_ISSUER = "weibo-sentiment-api"
+# v2 is issued only after login resolves the canonical database identity.
+JWT_ISSUER = "weibo-sentiment-api/v2"
 JWT_AUDIENCE = "weibo-sentiment-web"
 
 

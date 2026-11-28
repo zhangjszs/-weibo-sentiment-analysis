@@ -260,17 +260,32 @@ class TestLogin:
 
         assert data["user"]["id"] == 99
 
-    def test_username_in_data_uses_login_input(
+    def test_login_uses_canonical_username_for_token_and_admin_status(
         self, mock_user_repo, patched_collaborators, patched_admin_users
     ):
-        """返回数据中的 username 使用入参（而非仓储返回的 username）"""
-        user = _make_user(username="repo_name")
-        mock_user_repo.find_by_username.return_value = user
-        service = AuthService()
+        """A case-insensitive repository lookup returns the stored identity."""
+        patched_admin_users.ADMIN_USERS = {"Operator"}
+        mock_user_repo.find_by_username.return_value = _make_user(username="operator")
 
-        _, _, data = service.login("input_name", "secret")
+        success, _, data = AuthService().login("Operator", "secret")
 
-        assert data["user"]["username"] == "input_name"
+        assert success
+        assert data["user"]["username"] == "operator"
+        assert data["user"]["is_admin"] is False
+        patched_collaborators["create_token"].assert_called_once_with(1, "operator")
+
+
+@pytest.mark.parametrize("username", ["operator", "Operator", "OPERATOR"])
+def test_public_registration_cannot_claim_an_allowlisted_name(
+    mock_user_repo, patched_collaborators, patched_admin_users, username
+):
+    patched_admin_users.ADMIN_USERS = {"operator"}
+    mock_user_repo.find_by_username.return_value = None
+
+    success, _ = AuthService().register(username, "strong-password", "strong-password")
+
+    assert not success
+    mock_user_repo.create.assert_not_called()
 
 
 # ---------------------------------------------------------------------------
